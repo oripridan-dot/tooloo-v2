@@ -51,15 +51,19 @@ class JITExecutor:
         self,
         work_fn: Callable[[Envelope], Any],
         envelopes: list[Envelope],
+        max_workers: int | None = None,
     ) -> list[ExecutionResult]:
         """Execute `work_fn(envelope)` for each envelope in parallel.
 
         Returns results in the same order as the input envelopes.
+        `max_workers` overrides the instance default for this call only
+        (used by ScopeEvaluator to allocate the right thread count).
         """
+        effective_workers = max_workers or self._max_workers
         results: dict[str, ExecutionResult] = {}
         futures = {}
 
-        with ThreadPoolExecutor(max_workers=min(self._max_workers, len(envelopes) or 1)) as pool:
+        with ThreadPoolExecutor(max_workers=min(effective_workers, len(envelopes) or 1)) as pool:
             for env in envelopes:
                 fut = pool.submit(self._run, work_fn, env)
                 futures[fut] = env.mandate_id

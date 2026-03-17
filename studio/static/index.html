@@ -1,393 +1,1463 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TooLoo V2 — Governor Dashboard</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237c3aed'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='20' fill='white'%3ET%3C/text%3E%3C/svg%3E" />
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+  <title>TooLoo Studio — powered by Buddy</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0d0d0f;
-      --surface: #141418;
-      --border: #1f1f27;
-      --accent: #7c3aed;
-      --accent-light: #a78bfa;
-      --green: #22c55e;
-      --red: #ef4444;
-      --yellow: #eab308;
-      --text: #e2e8f0;
-      --muted: #64748b;
-      --font: 'Inter', system-ui, -apple-system, sans-serif;
-      --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      --primary: #6C63FF;
+      --primary-dim: rgba(108, 99, 255, 0.12);
+      --primary-glow: rgba(108, 99, 255, 0.35);
+      --surface: #1A1A2E;
+      --surface-alt: #16213E;
+      --surface-card: #1f1f38;
+      --border: #2a2a48;
+      --text: #E0E0E0;
+      --muted: #7a7a9a;
+      --accent: #F5A623;
+      --danger: #FF4757;
+      --success: #2ED573;
+      --warn: #FFA502;
+      --font: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --radius: 8px;
     }
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
 
-    /* Layout */
-    .layout { display: grid; grid-template-rows: 52px 1fr; grid-template-columns: 260px 1fr 300px; min-height: 100vh; }
-    header { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 0 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
-    .logo { width: 28px; height: 28px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
-    .title { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
-    .title span { color: var(--accent-light); }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-left: auto; }
-    .status-dot.red { background: var(--red); }
-    #version-badge { font-size: 11px; color: var(--muted); margin-left: 6px; }
-
-    /* Left sidebar */
-    aside { border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; }
-    .panel-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; }
-    .rule-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .rule-item { background: var(--border); border-radius: 6px; padding: 9px 11px; }
-    .rule-id { font-family: var(--mono); font-size: 11px; color: var(--accent-light); }
-    .rule-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .rule-cat { display: inline-block; margin-top: 5px; font-size: 10px; padding: 2px 6px; border-radius: 20px; background: rgba(124,58,237,0.2); color: var(--accent-light); }
-
-    /* Main panel */
-    main { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-
-    /* Mandate input */
-    .input-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-    textarea#mandate-input {
-      width: 100%; min-height: 72px; background: var(--bg); color: var(--text);
-      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
-      font-family: var(--mono); font-size: 13px; resize: vertical; outline: none;
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    textarea#mandate-input:focus { border-color: var(--accent); }
-    .input-actions { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
-    button {
-      background: var(--accent); color: #fff; border: none; border-radius: 6px;
-      padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
-      transition: opacity 0.15s;
+
+    html,
+    body {
+      height: 100%;
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
     }
-    button:hover { opacity: 0.85; }
-    button.secondary { background: var(--border); color: var(--text); font-weight: 500; }
-    #route-label { font-size: 12px; color: var(--muted); margin-left: auto; }
-    #confidence-badge { font-size: 13px; font-weight: 700; color: var(--accent-light); }
 
-    /* Cards */
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-    .card-title { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+    #app {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      grid-template-rows: 52px 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
 
-    /* Breaker */
-    .breaker-row { display: flex; align-items: center; gap: 10px; }
-    #breaker-state { font-size: 13px; font-weight: 600; }
-    #breaker-state.open { color: var(--red); }
-    #breaker-state.closed { color: var(--green); }
-    #fail-count { font-size: 12px; color: var(--muted); }
+    #topbar {
+      grid-column: 1/-1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
 
-    /* Wave plan */
-    .wave-list { display: flex; flex-direction: column; gap: 6px; }
-    .wave-row { display: flex; gap: 8px; align-items: center; }
-    .wave-label { font-size: 11px; color: var(--muted); min-width: 52px; }
-    .wave-nodes { display: flex; flex-wrap: wrap; gap: 4px; }
-    .node-chip { font-family: var(--mono); font-size: 11px; background: rgba(124,58,237,0.15); color: var(--accent-light); border-radius: 4px; padding: 2px 7px; }
-    .node-chip.done { background: rgba(34,197,94,0.12); color: var(--green); }
-    .node-chip.fail { background: rgba(239,68,68,0.12); color: var(--red); }
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      color: #fff;
+      flex-shrink: 0;
+    }
 
-    /* Buddy stream */
-    .buddy-box { font-family: var(--mono); font-size: 12px; color: var(--text); background: var(--bg); border-radius: 6px; padding: 12px; min-height: 88px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; }
-    .buddy-prefix { color: var(--accent-light); font-weight: 600; }
+    .topbar-title {
+      font-weight: 700;
+      font-size: 15px;
+    }
 
-    /* Right sidebar */
-    .right-sidebar { border-left: 1px solid var(--border); padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
-    .event-log { font-family: var(--mono); font-size: 11px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
-    .event-row { padding: 5px 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; }
-    .event-row.route { background: rgba(124,58,237,0.08); }
-    .event-row.tribunal { background: rgba(239,68,68,0.07); }
-    .event-row.plan { background: rgba(234,179,8,0.07); }
-    .event-row.execution { background: rgba(34,197,94,0.07); }
-    .event-row.connected { background: rgba(100,116,139,0.07); }
-    .event-time { color: var(--muted); font-size: 10px; }
-    .event-type { font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; }
-    .event-type.route { color: var(--accent-light); }
-    .event-type.tribunal { color: var(--red); }
-    .event-type.plan { color: var(--yellow); }
-    .event-type.execution { color: var(--green); }
-    .event-content { font-size: 11px; }
+    .topbar-title em {
+      color: var(--accent);
+      font-style: normal;
+    }
 
-    /* Metric tiles */
-    .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .metric { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
-    .metric-val { font-size: 22px; font-weight: 700; color: var(--accent-light); line-height: 1.1; }
-    .metric-label { font-size: 10px; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
+    .topbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .breaker-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(46, 213, 115, 0.12);
+      color: var(--success);
+      border: 1px solid rgba(46, 213, 115, 0.25);
+      cursor: default;
+      user-select: none;
+      letter-spacing: .04em;
+    }
+
+    .breaker-pill.open {
+      background: rgba(255, 71, 87, .12);
+      color: var(--danger);
+      border-color: rgba(255, 71, 87, .25);
+    }
+
+    .btn-sm {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 6px;
+      background: var(--primary-dim);
+      color: var(--primary);
+      border: 1px solid var(--primary-glow);
+      cursor: pointer;
+      transition: background .15s;
+    }
+
+    .btn-sm:hover {
+      background: rgba(108, 99, 255, 0.22);
+    }
+
+    .conn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+
+    .conn-dot.off {
+      background: var(--muted);
+      box-shadow: none;
+    }
+
+    #sidebar {
+      background: var(--surface-alt);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 10px;
+      gap: 4px;
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      color: var(--muted);
+      padding: 10px 8px 4px;
+      text-transform: uppercase;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      transition: background .12s, color .12s;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-btn:hover {
+      background: var(--primary-dim);
+      color: var(--text);
+    }
+
+    .nav-btn.active {
+      background: var(--primary-dim);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .nav-btn .icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 10px;
+      padding: 1px 6px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .agent-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .agent-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .pulse {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      flex-shrink: 0;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(46, 213, 115, .4)
+      }
+
+      50% {
+        opacity: .8;
+        box-shadow: 0 0 0 4px transparent
+      }
+    }
+
+    #main {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .view {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .view.active {
+      display: flex;
+    }
+
+    .view-header {
+      padding: 16px 24px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .view-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .view-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    /* Chat */
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 80%;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .msg.buddy {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .msg-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .msg-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .msg.user .msg-row {
+      flex-direction: row-reverse;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 14px;
+      line-height: 1.6;
+      font-size: 14px;
+      word-wrap: break-word;
+    }
+
+    .msg.user .bubble {
+      background: var(--primary);
+      color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+
+    .msg.buddy .bubble {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-bottom-left-radius: 3px;
+    }
+
+    .bubble.thinking {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .msg-meta {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 0 4px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .intent-tag {
+      font-weight: 700;
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: var(--primary-dim);
+      color: var(--primary);
+      letter-spacing: .05em;
+    }
+
+    .intent-tag.blocked {
+      background: rgba(255, 71, 87, .12);
+      color: var(--danger);
+    }
+
+    .conf-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .conf-bar {
+      width: 60px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
+    .conf-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--success);
+    }
+
+    .conf-bar-fill.warn {
+      background: var(--warn);
+    }
+
+    .conf-bar-fill.low {
+      background: var(--danger);
+    }
+
+    .tribunal-block {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: rgba(255, 71, 87, .08);
+      border: 1px solid rgba(255, 71, 87, .2);
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--danger);
+    }
+
+    .tribunal-block.clean {
+      background: rgba(46, 213, 115, .06);
+      border-color: rgba(46, 213, 115, .2);
+      color: var(--success);
+    }
+
+    .plan-waves {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .wave-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .wave-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      font-family: var(--mono);
+      min-width: 42px;
+    }
+
+    .wave-node {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--primary-dim);
+      color: var(--primary);
+      border: 1px solid var(--primary-glow);
+      font-family: var(--mono);
+    }
+
+    .wave-sep {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .scope-block {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: rgba(108, 99, 255, 0.07);
+      border: 1px solid rgba(108, 99, 255, 0.2);
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--primary);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .scope-block-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .scope-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: var(--primary-dim);
+      color: var(--primary);
+      margin-right: 4px;
+    }
+
+    .refine-block {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: var(--mono);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .refine-block.pass {
+      background: rgba(46, 213, 115, .06);
+      border: 1px solid rgba(46, 213, 115, .2);
+      color: var(--success);
+    }
+
+    .refine-block.warn {
+      background: rgba(255, 165, 0, .07);
+      border: 1px solid rgba(255, 165, 0, .2);
+      color: var(--warn);
+    }
+
+    .refine-block.fail {
+      background: rgba(255, 71, 87, .08);
+      border: 1px solid rgba(255, 71, 87, .2);
+      color: var(--danger);
+    }
+
+    .refine-rec {
+      font-size: 11px;
+      opacity: .85;
+    }
+
+    .conv-plan-block {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .conv-plan-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-family: var(--mono);
+      margin-bottom: 2px;
+    }
+
+    .conv-phase-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .conv-phase-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: var(--mono);
+      min-width: 38px;
+    }
+
+    .conv-phase-node {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(0, 210, 255, .08);
+      color: var(--accent);
+      border: 1px solid rgba(0, 210, 255, .2);
+      font-family: var(--mono);
+    }
+
+    .tone-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: rgba(0, 210, 255, .1);
+      color: var(--accent);
+      border: 1px solid rgba(0, 210, 255, .2);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .model-label {
+      font-size: 10px;
+      color: var(--muted);
+      opacity: .7;
+      font-family: var(--mono);
+    }
+
+    .suggestions-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      padding-left: 34px;
+    }
+
+    .suggestion-chip {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+      white-space: nowrap;
+    }
+
+    .suggestion-chip:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    #chat-input-area {
+      flex-shrink: 0;
+      padding: 14px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--surface-alt);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    #msg-input {
+      flex: 1;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 13px;
+      font-family: var(--font);
+      font-size: 14px;
+      resize: none;
+      outline: none;
+      line-height: 1.5;
+      max-height: 120px;
+      min-height: 42px;
+      overflow-y: auto;
+    }
+
+    #msg-input:focus {
+      border-color: var(--primary);
+    }
+
+    #send-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 0 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      height: 42px;
+      flex-shrink: 0;
+      transition: opacity .15s;
+    }
+
+    #send-btn:hover {
+      opacity: .85;
+    }
+
+    #send-btn:disabled {
+      opacity: .35;
+      cursor: default;
+    }
+
+    /* Feed */
+    #feed-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .feed-empty,
+    .dag-empty,
+    .bank-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 13px;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .feed-event {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      border-left: 3px solid var(--primary);
+      animation: slideIn .2s ease;
+    }
+
+    .feed-event.tribunal {
+      border-left-color: var(--danger);
+    }
+
+    .feed-event.plan {
+      border-left-color: var(--accent);
+    }
+
+    .feed-event.execution {
+      border-left-color: var(--success);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-6px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .feed-event-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .feed-type-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: var(--primary-dim);
+      color: var(--primary);
+    }
+
+    .feed-type-badge.tribunal {
+      background: rgba(255, 71, 87, .12);
+      color: var(--danger);
+    }
+
+    .feed-type-badge.plan {
+      background: rgba(245, 166, 35, .1);
+      color: var(--accent);
+    }
+
+    .feed-type-badge.execution {
+      background: rgba(46, 213, 115, .1);
+      color: var(--success);
+    }
+
+    .feed-type-badge.scope {
+      background: rgba(108, 99, 255, .12);
+      color: var(--primary);
+    }
+
+    .feed-type-badge.refinement {
+      background: rgba(245, 166, 35, .1);
+      color: var(--accent);
+    }
+
+    .feed-mid {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .feed-ts {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .feed-body-text {
+      font-size: 12px;
+      color: var(--text);
+      opacity: .85;
+      font-family: var(--mono);
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 80px;
+      overflow: hidden;
+    }
+
+    /* DAG */
+    #dag-body {
+      flex: 1;
+      overflow: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .dag-stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .dag-stat {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 110px;
+    }
+
+    .dag-stat-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .dag-stat-label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    #dag-canvas {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      overflow-x: auto;
+    }
+
+    .dag-nodes {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .dag-wave-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .dag-wave-label {
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--mono);
+      color: var(--muted);
+      min-width: 54px;
+    }
+
+    .dag-node-box {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1.5px solid var(--primary);
+      background: var(--primary-dim);
+      color: var(--primary);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dag-arrow {
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    /* PsycheBank */
+    #bank-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .bank-rule {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      border-left: 3px solid var(--danger);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bank-rule-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .bank-rule-id {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .bank-rule-cat {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: rgba(255, 71, 87, .1);
+      color: var(--danger);
+      letter-spacing: .05em;
+    }
+
+    .bank-rule-enf {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: rgba(255, 71, 87, .15);
+      color: var(--danger);
+    }
+
+    .bank-rule-src {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .bank-rule-desc {
+      font-size: 13px;
+      color: var(--text);
+      opacity: .85;
+    }
+
+    .bank-rule-pattern {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--warn);
+      background: rgba(255, 165, 0, .07);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
   </style>
 </head>
+
 <body>
-<div class="layout">
+  <div id="app">
 
-  <!-- ── Header ── -->
-  <header>
-    <div class="logo">T</div>
-    <div class="title">TooLoo <span>V2</span> — Governor Dashboard</div>
-    <span id="version-badge">v2.0.0</span>
-    <div class="status-dot" id="conn-dot"></div>
-  </header>
-
-  <!-- ── Left sidebar: PsycheBank ── -->
-  <aside>
-    <div class="panel-label">PsycheBank Rules</div>
-    <ul class="rule-list" id="rule-list">
-      <li class="rule-item"><div class="rule-id">loading…</div></li>
-    </ul>
-  </aside>
-
-  <!-- ── Main panel ── -->
-  <main>
-
-    <!-- Mandate input -->
-    <div class="input-card">
-      <div class="panel-label">Issue a Mandate</div>
-      <textarea id="mandate-input" placeholder="build a DAG planner that composes SOTA strategies…"></textarea>
-      <div class="input-actions">
-        <button id="send-btn">Send Mandate</button>
-        <button class="secondary" id="reset-btn">Reset Breaker</button>
-        <div id="route-label">Confidence: <span id="confidence-badge">—</span></div>
+    <div id="topbar">
+      <div class="logo-mark">T</div>
+      <div class="topbar-title">TooLoo <em>Studio</em></div>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+      <span style="font-size:12px;color:var(--muted)">powered by</span>
+      <span style="font-size:12px;font-weight:700;color:var(--accent)">🤖 Buddy</span>
+      <div class="topbar-right">
+        <span class="breaker-pill" id="breaker-pill">CLOSED</span>
+        <button class="btn-sm" id="reset-btn">Reset Breaker</button>
+        <div class="conn-dot off" id="conn-dot" title="SSE connection"></div>
       </div>
     </div>
 
-    <!-- DAG wave plan -->
-    <div class="card">
-      <div class="card-title">DAG Execution Plan</div>
-      <div class="wave-list" id="wave-list">
-        <div style="color:var(--muted);font-size:12px;">No mandate issued yet.</div>
+    <nav id="sidebar">
+      <div class="nav-section">Workspace</div>
+      <button class="nav-btn active" data-view="chat"><span class="icon">💬</span> Buddy Chat</button>
+      <button class="nav-btn" data-view="feed">
+        <span class="icon">📡</span> Live Feed
+        <span class="nav-badge" id="feed-badge" style="display:none">0</span>
+      </button>
+      <div class="nav-section">System</div>
+      <button class="nav-btn" data-view="dag"><span class="icon">🕸</span> DAG View</button>
+      <button class="nav-btn" data-view="bank">
+        <span class="icon">🧬</span> PsycheBank
+        <span class="nav-badge" id="bank-badge" style="display:none">0</span>
+      </button>
+      <div class="sidebar-footer">
+        <div class="agent-card">
+          <div class="agent-name">🤖 Buddy</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div class="pulse"></div><span style="font-size:11px;color:var(--muted)" id="agent-status">Online ·
+              Ready</span>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px" id="engine-ver">TooLoo V2</div>
+        </div>
       </div>
-    </div>
+    </nav>
 
-    <!-- Buddy stream -->
-    <div class="card">
-      <div class="card-title">Buddy Narration</div>
-      <div class="buddy-box" id="buddy-box"><span class="buddy-prefix">Buddy &rsaquo;</span> Ready. Issue a mandate to begin.</div>
-    </div>
+    <main id="main">
 
-    <!-- Circuit breaker + metrics -->
-    <div class="card">
-      <div class="card-title">Circuit Breaker</div>
-      <div class="breaker-row">
-        <div id="breaker-state" class="closed">CLOSED</div>
-        <div id="fail-count">0 / 3 failures</div>
-      </div>
-    </div>
+      <!-- CHAT -->
+      <section class="view active" id="view-chat">
+        <div class="view-header">
+          <div>
+            <div class="view-title">💬 Buddy Chat</div>
+            <div class="view-sub">Send mandates — Buddy routes, plans, executes, and defends.</div>
+          </div>
+        </div>
+        <div id="chat-messages">
+          <div class="msg buddy">
+            <div class="msg-row">
+              <div class="msg-avatar">🤖</div>
+              <div class="bubble">
+                Hey! I'm <strong>Buddy</strong> — your TooLoo V2 build host.<br>
+                Tell me what you need: <em>build a feature, fix a bug, audit a module, explore ideas…</em><br>
+                I remember our conversation, plan each response as a DAG, and intercept anything unsafe.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="chat-input-area">
+          <textarea id="msg-input" rows="1"
+            placeholder="Give Buddy a mandate… (Enter to send, Shift+Enter for newline)"></textarea>
+          <button id="send-btn">Send →</button>
+        </div>
+      </section>
 
-  </main>
+      <!-- FEED -->
+      <section class="view" id="view-feed">
+        <div class="view-header">
+          <div>
+            <div class="view-title">📡 Live Event Feed</div>
+            <div class="view-sub">Real-time SSE stream — route · tribunal · plan · execution events</div>
+          </div>
+          <button class="btn-sm" id="clear-feed-btn" style="margin-left:auto">Clear</button>
+        </div>
+        <div id="feed-body">
+          <div class="feed-empty" id="feed-empty">
+            <span style="font-size:28px">📡</span>
+            Waiting for events… send a mandate in the Chat view.
+          </div>
+        </div>
+      </section>
 
-  <!-- ── Right sidebar: events + metrics ── -->
-  <div class="right-sidebar">
-    <div>
-      <div class="panel-label">Live Events</div>
-      <div class="event-log" id="event-log"></div>
-    </div>
+      <!-- DAG -->
+      <section class="view" id="view-dag">
+        <div class="view-header">
+          <div>
+            <div class="view-title">🕸 DAG View</div>
+            <div class="view-sub">Cognitive graph snapshot — nodes and dependency edges</div>
+          </div>
+          <button class="btn-sm" id="refresh-dag-btn" style="margin-left:auto">↻ Refresh</button>
+        </div>
+        <div id="dag-body">
+          <div class="dag-empty" id="dag-empty">
+            <span style="font-size:28px">🕸</span>
+            No DAG nodes yet. Send a mandate to build the graph.
+          </div>
+          <div id="dag-content" style="display:none;flex-direction:column;gap:20px">
+            <div class="dag-stats" id="dag-stats"></div>
+            <div id="dag-canvas">
+              <div class="dag-nodes" id="dag-nodes"></div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-    <div>
-      <div class="panel-label">Metrics</div>
-      <div class="metrics">
-        <div class="metric"><div class="metric-val" id="m-mandates">0</div><div class="metric-label">Mandates</div></div>
-        <div class="metric"><div class="metric-val" id="m-latency">—</div><div class="metric-label">Last ms</div></div>
-        <div class="metric"><div class="metric-val" id="m-rules">0</div><div class="metric-label">COG Rules</div></div>
-        <div class="metric"><div class="metric-val" id="m-nodes">0</div><div class="metric-label">DAG Nodes</div></div>
-      </div>
-    </div>
+      <!-- PSYCHEBANK -->
+      <section class="view" id="view-bank">
+        <div class="view-header">
+          <div>
+            <div class="view-title">🧬 PsycheBank</div>
+            <div class="view-sub">Tribunal VastLearn rule store — OWASP violations captured mid-flight</div>
+          </div>
+          <button class="btn-sm" id="refresh-bank-btn" style="margin-left:auto">↻ Refresh</button>
+        </div>
+        <div id="bank-body">
+          <div class="bank-empty" id="bank-empty">
+            <span style="font-size:28px">🧬</span>
+            No rules captured yet. Send a poisoned mandate to populate.
+          </div>
+          <div id="bank-rules" style="display:contents"></div>
+        </div>
+      </section>
+
+    </main>
   </div>
 
-</div>
+  <script>
+    (() => {
+      'use strict';
 
-<script>
-  // ── state ──────────────────────────────────────────────────────────────────
-  let totalMandates = 0;
+      const navBtns = document.querySelectorAll('.nav-btn[data-view]');
+      const views = document.querySelectorAll('.view');
 
-  // ── helpers ────────────────────────────────────────────────────────────────
-  function nowStr() {
-    return new Date().toLocaleTimeString('en-GB', {hour12: false});
-  }
-
-  function pushEvent(raw) {
-    let data;
-    try { data = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return; }
-
-    const log = document.getElementById('event-log');
-    const row = document.createElement('div');
-    const type = data.type || 'info';
-    row.className = `event-row ${type}`;
-
-    let content = '';
-    if (type === 'route') {
-      const route = data.route || {};
-      // Normalise confidence from both possible shapes
-      const conf = typeof data.conf === 'number'
-        ? data.conf
-        : typeof route.confidence === 'number'
-          ? route.confidence
-          : typeof route.conf === 'number'
-            ? route.conf
-            : null;
-      const confPct = conf !== null ? `${(conf * 100).toFixed(0)}%` : '—';
-
-      document.getElementById('confidence-badge').textContent = confPct;
-      content = `Intent: ${route.intent || '?'} · conf: ${confPct}`;
-
-      if (route.buddy_line) {
-        const box = document.getElementById('buddy-box');
-        box.innerHTML = `<span class="buddy-prefix">Buddy &rsaquo;</span> ${route.buddy_line}`;
+      function showView(id) {
+        views.forEach(v => v.classList.toggle('active', v.id === 'view-' + id));
+        navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === id));
+        if (id === 'dag') loadDag();
+        if (id === 'bank') loadBank();
       }
-    } else if (type === 'tribunal') {
-      const r = data.result || {};
-      content = r.poison_detected ? `⚠ Poison: ${(r.violations||[]).join(', ')}` : '✓ Clean';
-    } else if (type === 'plan') {
-      const waves = data.waves || [];
-      renderWaves(waves);
-      content = `${waves.length} waves`;
-    } else if (type === 'execution') {
-      const results = data.results || [];
-      const ok = results.filter(r => r.success).length;
-      content = `${ok}/${results.length} success`;
-      markWavesDone(results);
-    } else if (type === 'connected') {
-      content = `SSE connected`;
-    } else if (type === 'heartbeat') {
-      return; // silent
-    } else {
-      content = JSON.stringify(data).slice(0, 80);
-    }
+      navBtns.forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
 
-    row.innerHTML = `<span class="event-time">${nowStr()}</span>
-      <span class="event-type ${type}">${type}</span>
-      <span class="event-content">${content}</span>`;
-    log.prepend(row);
-    while (log.children.length > 50) log.removeChild(log.lastChild);
-  }
+      async function refreshBreaker() {
+        try {
+          const d = await (await fetch('/v2/router-status')).json();
+          const pill = document.getElementById('breaker-pill');
+          const open = d.circuit_open;
+          pill.textContent = (open ? 'OPEN' : 'CLOSED') + ' ' + d.consecutive_failures + '/' + d.max_fails;
+          pill.className = 'breaker-pill' + (open ? ' open' : '');
+          document.getElementById('agent-status').textContent = open ? 'Circuit OPEN — reset needed' : 'Online · Ready';
+        } catch { }
+      }
 
-  // ── DAG wave renderer ─────────────────────────────────────────────────────
-  function renderWaves(waves) {
-    const el = document.getElementById('wave-list');
-    el.innerHTML = '';
-    waves.forEach((wave, i) => {
-      const row = document.createElement('div');
-      row.className = 'wave-row';
-      row.dataset.wave = i;
-      const nodes = Array.isArray(wave) ? wave : [wave];
-      row.innerHTML = `<span class="wave-label">Wave ${i}</span>
-        <div class="wave-nodes">${nodes.map(n => `<span class="node-chip" data-node="${n}">${n}</span>`).join('')}</div>`;
-      el.appendChild(row);
-    });
-  }
+      document.getElementById('reset-btn').addEventListener('click', async () => {
+        await fetch('/v2/router-reset', { method: 'POST' });
+        refreshBreaker();
+        appendBuddyMsg('Circuit breaker reset. Ready to go. 🟢', null);
+      });
 
-  function markWavesDone(results) {
-    results.forEach(r => {
-      // match by wave index embedded in mandate_id like "m-abc123-0"
-      const parts = (r.mandate_id || '').split('-');
-      const waveIdx = parseInt(parts[parts.length - 1], 10);
-      if (!isNaN(waveIdx)) {
-        const row = document.querySelector(`.wave-row[data-wave="${waveIdx}"]`);
-        if (row) {
-          row.querySelectorAll('.node-chip').forEach(chip => {
-            chip.classList.add(r.success ? 'done' : 'fail');
-          });
+      let feedCount = 0;
+      let _sseDelay = 2000;
+      function connectSSE() {
+        const dot = document.getElementById('conn-dot');
+        const statusEl = document.getElementById('agent-status');
+        const es = new EventSource('/v2/events');
+        es.onopen = () => {
+          dot.classList.remove('off');
+          _sseDelay = 2000;
+          statusEl.textContent = 'Online · Ready';
+        };
+        es.onerror = () => {
+          dot.classList.add('off');
+          es.close();
+          const wait = Math.min(_sseDelay, 30000);
+          _sseDelay = Math.min(_sseDelay * 2, 30000);
+          statusEl.textContent = 'Reconnecting in ' + (wait / 1000).toFixed(0) + 's…';
+          setTimeout(connectSSE, wait);
+        };
+        es.onmessage = (e) => {
+          try { const ev = JSON.parse(e.data); if (ev.type !== 'heartbeat') pushFeed(ev); } catch { }
+        };
+      }
+
+      const feedBody = document.getElementById('feed-body');
+      const feedEmpty = document.getElementById('feed-empty');
+      const feedBadge = document.getElementById('feed-badge');
+
+      function pushFeed(ev) {
+        feedEmpty.style.display = 'none';
+        feedCount++;
+        const active = document.querySelector('.view.active')?.id;
+        if (active !== 'view-feed') { feedBadge.style.display = ''; feedBadge.textContent = feedCount; }
+        const typeMap = { route: '', tribunal: 'tribunal', plan: 'plan', execution: 'execution', scope: 'scope', refinement: 'refinement', conversation: 'plan' };
+        const cls = typeMap[ev.type] || '';
+        const card = document.createElement('div');
+        card.className = 'feed-event ' + cls;
+        card.innerHTML =
+          '<div class="feed-event-header">' +
+          '<span class="feed-type-badge ' + cls + '">' + ev.type.toUpperCase() + '</span>' +
+          '<span class="feed-mid">' + esc(ev.mandate_id || '') + '</span>' +
+          '<span class="feed-ts">' + new Date().toLocaleTimeString() + '</span>' +
+          '</div>' +
+          '<div class="feed-body-text">' + esc(summary(ev)) + '</div>';
+        feedBody.prepend(card);
+      }
+
+      function summary(ev) {
+        if (ev.type === 'route') {
+          const r = ev.route || {};
+          return 'Intent: ' + r.intent + '  conf: ' + ((r.confidence || 0) * 100).toFixed(0) + '%\n"' + (r.buddy_line || '').slice(0, 80) + '"';
         }
+        if (ev.type === 'tribunal') {
+          const t = ev.result || {};
+          return 'passed:' + t.passed + '  poison:' + t.poison_detected + '  healed:' + t.heal_applied + '  vastlearn:' + t.vast_learn_triggered + '\nviolations: ' + ((t.violations || []).join(', ') || 'none');
+        }
+        if (ev.type === 'plan') return 'waves: ' + (ev.waves || []).map((w, i) => 'W' + (i + 1) + '[' + w.join('|') + ']').join(' → ');
+        if (ev.type === 'execution') return (ev.results || []).map(r => r.mandate_id + ': ' + (r.success ? '✓' : '✗') + ' (' + r.latency_ms + 'ms)').join('\n');
+        if (ev.type === 'scope') {
+          const sc = ev.scope || {};
+          return '🔍 ' + (sc.scope_summary || '') + '\nstrategy:' + sc.strategy + '  workers:' + sc.recommended_workers + '  risk_surface:' + sc.risk_surface;
+        }
+        if (ev.type === 'refinement') {
+          const ref = ev.report || {};
+          return (ref.verdict === 'pass' ? '✓' : ref.verdict === 'warn' ? '⚠' : '✗') +
+            ' verdict:' + ref.verdict + '  ' + ref.succeeded + '/' + ref.total + ' passed' +
+            '  avg:' + (ref.avg_latency_ms || 0).toFixed(1) + 'ms' +
+            (ref.recommendations && ref.recommendations.length ? '\n➤ ' + ref.recommendations[0] : '');
+        }
+        if (ev.type === 'conversation') {
+          const c = ev.conversation || {};
+          const plan = c.plan || {};
+          return 'session:' + (ev.session_id || '').slice(0, 12) +
+            '  intent:' + (c.intent || '?') +
+            '  tone:' + (c.tone || '?') +
+            '  model:' + (c.model_used || '?') +
+            '  phases:' + (plan.waves || 0) +
+            (plan.needs_clarification ? '  [clarification]' : '') +
+            '\n"' + (c.response_text || '').slice(0, 90) + '"';
+        }
+        return JSON.stringify(ev).slice(0, 120);
       }
-    });
-  }
 
-  // ── circuit breaker ───────────────────────────────────────────────────────
-  async function refreshBreakerStatus() {
-    try {
-      const res = await fetch('/v2/router-status');
-      const d = await res.json();
-      const stateEl = document.getElementById('breaker-state');
-      const open = d.circuit_open || false;
-      stateEl.textContent = open ? 'OPEN' : 'CLOSED';
-      stateEl.className = open ? 'open' : 'closed';
-      document.getElementById('fail-count').textContent =
-        `${d.consecutive_failures ?? 0} / ${d.max_fails ?? 3} failures`;
-    } catch {}
-  }
+      document.getElementById('clear-feed-btn').addEventListener('click', () => {
+        feedCount = 0; feedBadge.style.display = 'none';
+        feedBody.innerHTML = ''; feedBody.appendChild(feedEmpty); feedEmpty.style.display = '';
+      });
+      navBtns.forEach(b => b.addEventListener('click', () => { if (b.dataset.view === 'feed') feedBadge.style.display = 'none'; }));
 
-  // ── psyche bank ───────────────────────────────────────────────────────────
-  async function refreshPsycheBank() {
-    try {
-      const res = await fetch('/v2/psyche-bank');
-      const d = await res.json();
-      const rules = d.rules || [];
-      const list = document.getElementById('rule-list');
-      list.innerHTML = '';
-      document.getElementById('m-rules').textContent = rules.length;
-      if (!rules.length) {
-        list.innerHTML = '<li class="rule-item"><div class="rule-desc">No rules yet.</div></li>';
-        return;
+      async function loadDag() {
+        try {
+          const d = await (await fetch('/v2/dag')).json();
+          const empty = document.getElementById('dag-empty');
+          const content = document.getElementById('dag-content');
+          if (!d.nodes || !d.nodes.length) { empty.style.display = ''; content.style.display = 'none'; return; }
+          empty.style.display = 'none'; content.style.display = 'flex';
+          document.getElementById('dag-stats').innerHTML =
+            stat(d.node_count, 'Nodes') + stat(d.edge_count, 'Edges') + stat('✓', 'Acyclic');
+          const edges = d.edges || [];
+          const placed = new Set(); let remaining = [...d.nodes]; const waves = [];
+          while (remaining.length) {
+            const wave = remaining.filter(n => edges.filter(e => e.to === n).map(e => e.from).every(p => placed.has(p)));
+            if (!wave.length) { waves.push(remaining); break; }
+            waves.push(wave); wave.forEach(n => placed.add(n)); remaining = remaining.filter(n => !placed.has(n));
+          }
+          document.getElementById('dag-nodes').innerHTML = waves.map((wave, wi) =>
+            '<div class="dag-wave-row">' +
+            '<span class="dag-wave-label">Wave ' + (wi + 1) + '</span>' +
+            wave.map((n, ni) =>
+              (ni > 0 ? '<span class="dag-arrow">‖</span>' : '') +
+              '<div class="dag-node-box"><span style="color:var(--muted);font-size:10px">W' + (wi + 1) + '</span>' + esc(n) + '</div>'
+            ).join('') +
+            '</div>' +
+            (wi < waves.length - 1 ? '<div style="padding-left:54px;color:var(--muted);font-size:16px">↓</div>' : '')
+          ).join('');
+        } catch (e) { document.getElementById('dag-empty').textContent = 'Error: ' + e.message; }
       }
-      rules.forEach(r => {
-        const li = document.createElement('li');
-        li.className = 'rule-item';
-        li.innerHTML = `<div class="rule-id">${r.id}</div>
-          <div class="rule-desc">${r.description}</div>
-          <span class="rule-cat">${r.category}</span>`;
-        list.appendChild(li);
-      });
-    } catch {}
-  }
+      function stat(v, l) { return '<div class="dag-stat"><div class="dag-stat-val">' + v + '</div><div class="dag-stat-label">' + l + '</div></div>'; }
+      document.getElementById('refresh-dag-btn').addEventListener('click', loadDag);
 
-  // ── DAG metrics ───────────────────────────────────────────────────────────
-  async function refreshDag() {
-    try {
-      const res = await fetch('/v2/dag');
-      const d = await res.json();
-      document.getElementById('m-nodes').textContent = d.node_count ?? 0;
-    } catch {}
-  }
+      async function loadBank() {
+        try {
+          const d = await (await fetch('/v2/psyche-bank')).json();
+          const rules = d.rules || [];
+          const empty = document.getElementById('bank-empty');
+          const el = document.getElementById('bank-rules');
+          const badge = document.getElementById('bank-badge');
+          if (rules.length) { badge.style.display = ''; badge.textContent = rules.length; }
+          if (!rules.length) { empty.style.display = ''; el.innerHTML = ''; return; }
+          empty.style.display = 'none';
+          el.innerHTML = rules.map(r =>
+            '<div class="bank-rule">' +
+            '<div class="bank-rule-header">' +
+            '<span class="bank-rule-id">' + esc(r.id) + '</span>' +
+            '<span class="bank-rule-cat">' + esc(r.category) + '</span>' +
+            '<span class="bank-rule-enf">' + esc(r.enforcement) + '</span>' +
+            '<span class="bank-rule-src">source: ' + esc(r.source) + '</span>' +
+            '</div>' +
+            '<div class="bank-rule-desc">' + esc(r.description) + '</div>' +
+            '<div class="bank-rule-pattern">pattern: ' + esc(r.pattern) + '</div>' +
+            '</div>'
+          ).join('');
+        } catch (e) { document.getElementById('bank-empty').textContent = 'Error: ' + e.message; }
+      }
+      document.getElementById('refresh-bank-btn').addEventListener('click', loadBank);
 
-  // ── send mandate ──────────────────────────────────────────────────────────
-  document.getElementById('send-btn').addEventListener('click', async () => {
-    const text = document.getElementById('mandate-input').value.trim();
-    if (!text) return;
-    totalMandates++;
-    document.getElementById('m-mandates').textContent = totalMandates;
+      const chatMessages = document.getElementById('chat-messages');
+      const msgInput = document.getElementById('msg-input');
+      const sendBtn = document.getElementById('send-btn');
 
-    // Optimistic UI: clear plan
-    document.getElementById('wave-list').innerHTML =
-      '<div style="color:var(--muted);font-size:12px;">Planning…</div>';
+      // Persistent session ID for multi-turn memory
+      let _sessionId = sessionStorage.getItem('buddy_session_id');
+      if (!_sessionId) {
+        _sessionId = 'web-' + Math.random().toString(36).slice(2, 14);
+        sessionStorage.setItem('buddy_session_id', _sessionId);
+      }
 
-    try {
-      const t0 = performance.now();
-      const res = await fetch('/v2/mandate', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({text}),
-      });
-      const d = await res.json();
-      const ms = (performance.now() - t0).toFixed(0);
-      document.getElementById('m-latency').textContent = ms;
-    } catch (e) {
-      pushEvent({type: 'error', message: e.message});
-    }
+      msgInput.addEventListener('input', () => { msgInput.style.height = 'auto'; msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px'; });
+      msgInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+      sendBtn.addEventListener('click', send);
 
-    await refreshBreakerStatus();
-    await refreshPsycheBank();
-    await refreshDag();
-  });
+      function scrollChat() { chatMessages.scrollTop = chatMessages.scrollHeight; }
 
-  // ── reset breaker ─────────────────────────────────────────────────────────
-  document.getElementById('reset-btn').addEventListener('click', async () => {
-    await fetch('/v2/router-reset', {method: 'POST'});
-    await refreshBreakerStatus();
-  });
+      // Click a suggestion chip -> pre-fill input and send
+      // Exposed on window so inline onclick handlers in dynamically created chips can reach it.
+      window.useChip = function useChip(btn) {
+        const text = btn.textContent.trim().replace(/\?$/, '');
+        msgInput.value = text;
+        msgInput.dispatchEvent(new Event('input'));
+        send();
+      };
 
-  // ── SSE ───────────────────────────────────────────────────────────────────
-  function connectSSE() {
-    const es = new EventSource('/v2/events');
-    const dot = document.getElementById('conn-dot');
+      function appendUserMsg(text) {
+        const el = document.createElement('div'); el.className = 'msg user';
+        el.innerHTML = '<div class="msg-row"><div class="bubble">' + esc(text) + '</div></div>';
+        chatMessages.appendChild(el); scrollChat();
+      }
 
-    es.onopen = () => { dot.classList.remove('red'); };
-    es.onerror = () => { dot.classList.add('red'); setTimeout(connectSSE, 3000); es.close(); };
-    es.onmessage = (e) => pushEvent(e.data);
-  }
+      function appendBuddyMsg(text, data) {
+        const el = document.createElement('div'); el.className = 'msg buddy';
+        let inner;
+        if (!data) {
+          inner = '<div class="bubble">' + esc(text) + '</div>';
+        } else {
+          const r = data.route || {};
+          const t = data.tribunal_result || {};
+          const conv = data.conversation || {};
+          const conf = typeof r.confidence === 'number' ? r.confidence : 0;
+          const pct = (conf * 100).toFixed(0) + '%';
+          const fc = conf >= 0.85 ? '' : conf >= 0.5 ? 'warn' : 'low';
+          const blocked = r.intent === 'BLOCKED' || r.circuit_open === true;
 
-  // ── init ──────────────────────────────────────────────────────────────────
-  connectSSE();
-  refreshBreakerStatus();
-  refreshPsycheBank();
-  refreshDag();
-  setInterval(() => { refreshBreakerStatus(); refreshPsycheBank(); refreshDag(); }, 10000);
-</script>
+          // Main response text: prefer rich conv.response_text, fall back to buddy_line
+          const mainText = esc(conv.response_text || r.buddy_line || text);
+
+          // Tribunal block
+          const tribunalHtml = t.poison_detected ?
+            '<div class="tribunal-block">&#x2695; Tribunal: ' + esc((t.violations || []).join(', ')) + ' \u2014 healed \xb7 VastLearn captured</div>' :
+            (data.mandate_id ? '<div class="tribunal-block clean">\u2713 Tribunal: no violations</div>' : '');
+
+          // Scope evaluation block (from /v2/mandate)
+          const sc = data.scope || {};
+          const scopeHtml = sc.scope_summary
+            ? '<div class="scope-block">' +
+            '<div class="scope-block-title">\uD83D\uDD2D Action Scope Evaluation</div>' +
+            '<div>' + esc(sc.scope_summary) + '</div>' +
+            '</div>'
+            : '';
+
+          // Conversation plan phases (from /v2/chat)
+          const cp = conv.plan || {};
+          const convPlanHtml = (cp.phases && cp.phases.length)
+            ? '<div class="conv-plan-block">' +
+            '<div class="conv-plan-title">Conversation plan (' + cp.waves + ' wave' + (cp.waves !== 1 ? 's' : '') + ')</div>' +
+            cp.phases.map(p =>
+              '<div class="conv-phase-row"><span class="conv-phase-label">W' + (p.wave + 1) + '</span>' +
+              '<span class="conv-phase-node">' + esc(p.name) + '</span>' +
+              '</div>'
+            ).join('') +
+            '</div>'
+            : '';
+
+          // Execution wave plan (from /v2/mandate)
+          const execPlanHtml = (!convPlanHtml && (data.plan || []).length)
+            ? '<div class="plan-waves"><div style="font-size:11px;color:var(--muted);margin-bottom:2px;font-family:var(--mono)">Execution plan (' + data.plan.length + ' wave' + (data.plan.length !== 1 ? 's' : '') + ')</div>' +
+            data.plan.map((w, i) => '<div class="wave-row"><span class="wave-label">W' + (i + 1) + '</span>' + w.map((n, ni) => (ni > 0 ? '<span class="wave-sep">\u2016</span>' : '') + '<span class="wave-node">' + esc(n) + '</span>').join('') + '</div>').join('') +
+            '</div>'
+            : '';
+
+          // Refinement report (from /v2/mandate)
+          const ref = data.refinement || {};
+          const refHtml = ref.verdict
+            ? '<div class="refine-block ' + esc(ref.verdict) + '">' +
+            (ref.verdict === 'pass' ? '\u2713' : ref.verdict === 'warn' ? '\u26a0' : '\u2717') +
+            ' Refinement: ' + ref.succeeded + '/' + ref.total + ' passed' +
+            ' \xb7 avg ' + (ref.avg_latency_ms || 0).toFixed(1) + 'ms' +
+            (ref.rerun_advised ? ' \xb7 re-run advised' : '') +
+            (ref.recommendations && ref.recommendations.length
+              ? '<div class="refine-rec">' + esc(ref.recommendations[0]) + '</div>'
+              : '') +
+            '</div>'
+            : '';
+
+          // Tone badge + model label (from /v2/chat)
+          const toneHtml = conv.tone
+            ? '<span class="tone-badge">' + esc(conv.tone) + '</span>'
+            : '';
+          const modelHtml = conv.model_used
+            ? '<span class="model-label">via ' + esc(conv.model_used) + '</span>'
+            : '';
+
+          // Suggestion chips (from /v2/chat)
+          const suggsHtml = (conv.suggestions && conv.suggestions.length)
+            ? '<div class="suggestions-row">' +
+            conv.suggestions.map(s =>
+              '<button class="suggestion-chip" onclick="useChip(this)">' + esc(s) + '</button>'
+            ).join('') +
+            '</div>'
+            : '';
+
+          inner =
+            '<div class="bubble">' + mainText + tribunalHtml + scopeHtml + convPlanHtml + execPlanHtml + refHtml + '</div>' +
+            '<div class="msg-meta">' +
+            (blocked
+              ? '<span class="intent-tag blocked">CIRCUIT OPEN</span> hit <strong>Reset Breaker</strong> to resume'
+              : '<span class="intent-tag">' + esc(r.intent || '?') + '</span>' +
+              '<div class="conf-bar-wrap"><div class="conf-bar"><div class="conf-bar-fill ' + fc + '" style="width:' + Math.round(conf * 100) + '%"></div></div><span>' + pct + '</span></div>' +
+              toneHtml + modelHtml +
+              (data.latency_ms != null ? '<span>' + data.latency_ms + 'ms</span>' : '')
+            ) + '</div>' +
+            suggsHtml;
+        }
+        el.innerHTML = '<div class="msg-row"><div class="msg-avatar">🤖</div>' + inner + '</div>';
+        chatMessages.appendChild(el); scrollChat(); return el;
+      }
+
+      async function send() {
+        const text = msgInput.value.trim(); if (!text) return;
+        msgInput.value = ''; msgInput.style.height = 'auto'; sendBtn.disabled = true;
+        appendUserMsg(text);
+        const thinkEl = document.createElement('div'); thinkEl.className = 'msg buddy';
+        thinkEl.innerHTML = '<div class="msg-row"><div class="msg-avatar">🤖</div><div class="bubble thinking">Thinking…</div></div>';
+        chatMessages.appendChild(thinkEl); scrollChat();
+        const doFetch = () => fetch('/v2/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, session_id: _sessionId }),
+        });
+        try {
+          let res;
+          try { res = await doFetch(); }
+          catch { await new Promise(r => setTimeout(r, 1500)); res = await doFetch(); }
+          const data = await res.json();
+          thinkEl.remove();
+          appendBuddyMsg('', data);
+          if (data.tribunal_result?.vast_learn_triggered) loadBank();
+        } catch (err) {
+          const isNet = err.message.toLowerCase().includes('fetch') || err.message.toLowerCase().includes('network');
+          const msg = isNet
+            ? '⚠ Network error — server unreachable. Check your connection and try again.'
+            : '⚠ Error: ' + err.message;
+          const bubble = thinkEl.querySelector('.bubble');
+          bubble.classList.remove('thinking');
+          bubble.innerHTML = esc(msg) + '<br><button style="margin-top:8px;font-size:11px;padding:3px 10px;border-radius:5px;background:var(--primary-dim);color:var(--primary);border:1px solid var(--primary-glow);cursor:pointer" onclick="this.closest(\'div.msg\').remove();document.getElementById(\'msg-input\').value=' + JSON.stringify(JSON.stringify(text)) + ';document.getElementById(\'send-btn\').click()">↩ Retry</button>';
+        }
+        sendBtn.disabled = false; refreshBreaker();
+      }
+
+      async function loadHealth() {
+        try {
+          const d = await (await fetch('/v2/health')).json();
+          document.getElementById('engine-ver').textContent = 'TooLoo V' + (d.version || '2') + ' · ' + (d.components?.psyche_bank || '');
+        } catch { }
+      }
+
+      function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+      connectSSE(); refreshBreaker(); loadHealth();
+    })();
+  </script>
 </body>
+
 </html>

@@ -22,15 +22,19 @@ from typing import Any, AsyncGenerator
 
 import uvicorn
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from engine.config import settings
+from engine.conversation import ConversationEngine
 from engine.executor import Envelope, JITExecutor
 from engine.graph import CognitiveGraph, TopologicalSorter
+from engine.jit_booster import JITBooster
 from engine.psyche_bank import PsycheBank
+from engine.refinement import RefinementLoop
 from engine.router import MandateRouter
+from engine.scope_evaluator import ScopeEvaluator
 from engine.tribunal import Engram, Tribunal
 
 # ── Singletons ────────────────────────────────────────────────────────────────
@@ -40,6 +44,10 @@ _bank = PsycheBank()
 _tribunal = Tribunal(bank=_bank)
 _executor = JITExecutor()
 _sorter = TopologicalSorter()
+_scope_evaluator = ScopeEvaluator()
+_refinement_loop = RefinementLoop()
+_conversation_engine = ConversationEngine()
+_jit_booster = JITBooster()
 
 _STATIC = Path(__file__).parent / "static"
 
@@ -62,6 +70,14 @@ app = FastAPI(title="TooLoo V2 Governor Dashboard", version="2.0.0")
 
 # ── Routes ───────────────────────────────────────────────────────────────────
 
+app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon() -> FileResponse:
+    return FileResponse(str(_STATIC / "favicon.ico"))
+
+
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def serve_index() -> HTMLResponse:
     html = (_STATIC / "index.html").read_text(encoding="utf-8")
@@ -79,12 +95,18 @@ async def health() -> dict[str, Any]:
             "psyche_bank": f"{len(_bank.all_rules())} rules",
             "tribunal": "up",
             "executor": "up",
+            "jit_booster": "up",
         },
     }
 
 
 class MandateRequest(BaseModel):
     text: str
+
+
+class ChatRequest(BaseModel):
+    text: str
+    session_id: str = ""
 
 
 @app.post("/v2/mandate")
@@ -94,19 +116,27 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
 
     # 1. Route
     route = _router.route(req.text)
-    _broadcast({"type": "route", "mandate_id": mandate_id, "route": route.to_dict()})
+    _broadcast({"type": "route", "mandate_id": mandate_id,
+               "route": route.to_dict()})
 
-    # Open-circuit → return early
-    if route.circuit_open:
+    # Open-circuit → return early only when the breaker is globally tripped
+    if route.intent == "BLOCKED":
         return {
             "mandate_id": mandate_id,
             "route": route.to_dict(),
+            "jit_boost": None,
             "plan": [],
             "execution": [],
             "latency_ms": round((time.monotonic() - t0) * 1000, 2),
         }
 
-    # 2. Build a minimal engram for tribunal check
+    # 2. JIT SOTA boost (mandatory — runs before tribunal and plan)
+    jit_result = _jit_booster.fetch(route)
+    _router.apply_jit_boost(route, jit_result.boosted_confidence)
+    _broadcast({"type": "jit_boost", "mandate_id": mandate_id,
+               "jit_boost": jit_result.to_dict()})
+
+    # 3. Build a minimal engram for tribunal check
     engram = Engram(
         slug=mandate_id,
         intent=route.intent,
@@ -115,9 +145,10 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
         mandate_level="L2",
     )
     tribunal_result = _tribunal.evaluate(engram)
-    _broadcast({"type": "tribunal", "mandate_id": mandate_id, "result": tribunal_result.to_dict()})
+    _broadcast({"type": "tribunal", "mandate_id": mandate_id,
+               "result": tribunal_result.to_dict()})
 
-    # 3. Build a toy DAG plan from route
+    # 4. Build a toy DAG plan from route
     spec: list[tuple[str, list[str]]] = [
         (f"{mandate_id}-recon", []),
         (f"{mandate_id}-plan", [f"{mandate_id}-recon"]),
@@ -127,7 +158,12 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
     plan = _sorter.sort(spec)
     _broadcast({"type": "plan", "mandate_id": mandate_id, "waves": plan})
 
-    # 4. Fan-out execution
+    # 4. Action scope evaluation — understand full plan before allocating resources
+    scope = _scope_evaluator.evaluate(plan, intent=route.intent)
+    _broadcast({"type": "scope", "mandate_id": mandate_id,
+               "scope": scope.to_dict()})
+
+    # 5. Fan-out execution (workers sized by scope recommendation)
     envelopes = [
         Envelope(
             mandate_id=f"{mandate_id}-{i}",
@@ -141,18 +177,96 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
     def _work(env: Envelope) -> str:
         return f"wave-{env.metadata['wave']}-done"
 
-    exec_results = _executor.fan_out(_work, envelopes)
+    exec_results = _executor.fan_out(
+        _work, envelopes, max_workers=scope.recommended_workers
+    )
     flat = [r.to_dict() for r in exec_results]
     _broadcast({"type": "execution", "mandate_id": mandate_id, "results": flat})
+
+    # 6. Refinement loop — evaluate results, surface recommendations
+    refinement = _refinement_loop.evaluate(exec_results)
+    _broadcast({"type": "refinement", "mandate_id": mandate_id,
+                "report": refinement.to_dict()})
 
     latency_ms = round((time.monotonic() - t0) * 1000, 2)
     return {
         "mandate_id": mandate_id,
         "route": route.to_dict(),
+        "jit_boost": jit_result.to_dict(),
+        "scope": scope.to_dict(),
         "plan": plan,
         "execution": flat,
+        "refinement": refinement.to_dict(),
         "latency_ms": latency_ms,
     }
+
+
+@app.post("/v2/chat")
+async def buddy_chat(req: ChatRequest) -> dict[str, Any]:
+    t0 = time.monotonic()
+    mandate_id = f"c-{uuid.uuid4().hex[:8]}"
+    session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
+
+    # 1. Route (conversational path — does not touch circuit-breaker counters)
+    route = _router.route_chat(req.text)
+
+    # 2. JIT SOTA boost (mandatory — validates and enriches before generation)
+    jit_result = _jit_booster.fetch(route)
+    _router.apply_jit_boost(route, jit_result.boosted_confidence)
+
+    # 3. Tribunal scan
+    engram = Engram(
+        slug=mandate_id,
+        intent=route.intent,
+        logic_body=req.text,
+        domain="conversation",
+        mandate_level="L1",
+    )
+    tribunal_result = _tribunal.evaluate(engram)
+
+    # 4. Conversational planning + generation (receives JIT-validated route)
+    conv_result = _conversation_engine.process(
+        req.text, route, session_id, jit_result=jit_result)
+
+    # 4. SSE broadcast
+    _broadcast({
+        "type": "conversation",
+        "mandate_id": mandate_id,
+        "session_id": session_id,
+        "route": route.to_dict(),
+        "jit_boost": jit_result.to_dict(),
+        "tribunal_result": tribunal_result.to_dict(),
+        "conversation": conv_result.to_dict(),
+    })
+
+    latency_ms = round((time.monotonic() - t0) * 1000, 2)
+    return {
+        "mandate_id": mandate_id,
+        "session_id": session_id,
+        "route": route.to_dict(),
+        "jit_boost": jit_result.to_dict(),
+        "tribunal_result": tribunal_result.to_dict(),
+        "conversation": conv_result.to_dict(),
+        "latency_ms": latency_ms,
+    }
+
+
+@app.get("/v2/session/{session_id}")
+async def session_history(session_id: str) -> dict[str, Any]:
+    history = _conversation_engine.session_history(session_id)
+    session = _conversation_engine.get_session(session_id)
+    return {
+        "session_id": session_id,
+        "turn_count": len(history),
+        "turns": history,
+        "summary": session.to_dict() if session else None,
+    }
+
+
+@app.delete("/v2/session/{session_id}")
+async def clear_session(session_id: str) -> dict[str, Any]:
+    cleared = _conversation_engine.clear_session(session_id)
+    return {"session_id": session_id, "cleared": cleared}
 
 
 @app.get("/v2/dag")

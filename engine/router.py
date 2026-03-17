@@ -98,6 +98,23 @@ _BUDDY_LINES: dict[str, str] = {
     "BLOCKED": "Circuit breaker is tripped. Governor reset required before proceeding.",
 }
 
+_HEDGE_THRESHOLD: float = 0.65  # below this confidence, buddy_line includes a hedge
+
+
+def compute_buddy_line(intent: str, confidence: float) -> str:
+    """Derive the Buddy status line from intent + confidence.
+
+    Exported so JIT boost can recompute the line after updating confidence.
+    """
+    base = _BUDDY_LINES.get(intent, "")
+    if intent != "BLOCKED" and confidence < _HEDGE_THRESHOLD:
+        pct = round(confidence * 100)
+        return (
+            f"Best match looks like {intent} (~{pct}\u202f% confident) — "
+            f"redirect me if I've misread. {base}"
+        )
+    return base
+
 
 # ── Router ─────────────────────────────────────────────────────────────────────
 
@@ -153,10 +170,53 @@ class MandateRouter:
 
         return self._make(best, confidence, mandate_text, fired)
 
+    def route_chat(self, mandate_text: str) -> RouteResult:
+        """Route a conversational message without touching the circuit-breaker state.
+
+        Chat exchanges (short greetings, follow-ups, clarifications) routinely
+        score below CIRCUIT_BREAKER_THRESHOLD.  Counting them as CB failures
+        would trip the breaker on normal conversation — this method routes the
+        text but never increments fail_count or trips the breaker.
+        """
+        if self._tripped:
+            return RouteResult(
+                intent="BLOCKED",
+                confidence=0.0,
+                circuit_open=True,
+                mandate_text=mandate_text,
+                buddy_line=_BUDDY_LINES["BLOCKED"],
+            )
+
+        text = mandate_text.strip()
+        if not text:
+            return self._make("BUILD", 0.2, mandate_text)
+
+        scores = _score(text)
+        best = max(scores, key=lambda k: scores[k])
+        confidence = min(1.0, scores[best] * 8)
+        # Never set circuit_open=True for chat — low confidence in conversation is
+        # normal (greetings, short follow-ups).  The breaker counter is also untouched.
+        return self._make(best, confidence, mandate_text, fired=False)
+
     def reset(self) -> None:
         """Governor-only: clear the circuit breaker state."""
         self._tripped = False
         self._fail_count = 0
+
+    def apply_jit_boost(self, route: RouteResult, boosted_confidence: float) -> None:
+        """Apply a post-routing JIT confidence boost in-place.
+
+        Called after JITBooster.fetch() validates the route with SOTA signals.
+        Updates confidence, recomputes buddy_line, and undoes the circuit-breaker
+        failure increment if the boosted confidence now meets the threshold.
+        """
+        route.confidence = round(boosted_confidence, 4)
+        route.buddy_line = compute_buddy_line(route.intent, route.confidence)
+        if route.circuit_open and route.confidence >= CIRCUIT_BREAKER_THRESHOLD:
+            # JIT evidence validates this route — undo the premature CB failure
+            route.circuit_open = False
+            if self._fail_count > 0:
+                self._fail_count -= 1
 
     def _make(
         self,
@@ -170,5 +230,5 @@ class MandateRouter:
             confidence=round(confidence, 4),
             circuit_open=fired,
             mandate_text=text,
-            buddy_line=_BUDDY_LINES.get(intent, ""),
+            buddy_line=compute_buddy_line(intent, round(confidence, 4)),
         )

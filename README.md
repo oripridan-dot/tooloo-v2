@@ -6,7 +6,8 @@
 
 ```
 Mandate text
-  → MandateRouter      (intent classification + circuit breaker)
+  → MandateRouter      (intent classification + circuit breaker + hedge buddy_line)
+  → JITBooster         (SOTA signal fetch → confidence boost, mandatory)
   → Tribunal           (OWASP poison detection → heal → PsycheBank capture)
   → TopologicalSorter  (DAG wave planning — cycle-rejecting)
   → JITExecutor        (parallel fan-out via ThreadPoolExecutor)

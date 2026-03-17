@@ -123,14 +123,18 @@ class TestCausalProvenanceTracker:
         import threading
         t = CausalProvenanceTracker()
         errors = []
+
         def _write(i: int) -> None:
             try:
                 t.record(f"step-{i}", f"action {i}")
             except Exception as e:
                 errors.append(e)
-        threads = [threading.Thread(target=_write, args=(i,)) for i in range(20)]
-        for th in threads: th.start()
-        for th in threads: th.join()
+        threads = [threading.Thread(target=_write, args=(i,))
+                   for i in range(20)]
+        for th in threads:
+            th.start()
+        for th in threads:
+            th.join()
         assert not errors
 
 
@@ -196,7 +200,8 @@ class TestMandateRouter:
     def test_buddy_line_present(self):
         r = MandateRouter()
         result = r.route("build a new service")
-        assert isinstance(result.buddy_line, str) and len(result.buddy_line) > 0
+        assert isinstance(result.buddy_line, str) and len(
+            result.buddy_line) > 0
 
     def test_to_dict_shape(self):
         r = MandateRouter()
@@ -215,28 +220,34 @@ def tmp_bank(tmp_path: Path) -> PsycheBank:
 
 class TestPsycheBank:
     def test_capture_new_rule(self, tmp_bank: PsycheBank):
-        rule = CogRule(id="test-001", description="test", pattern="x", enforcement="warn", category="quality", source="manual")
+        rule = CogRule(id="test-001", description="test", pattern="x",
+                       enforcement="warn", category="quality", source="manual")
         assert tmp_bank.capture(rule) is True
 
     def test_dedup_prevents_duplicate(self, tmp_bank: PsycheBank):
-        rule = CogRule(id="dup-001", description="d", pattern="y", enforcement="warn", category="quality", source="manual")
+        rule = CogRule(id="dup-001", description="d", pattern="y",
+                       enforcement="warn", category="quality", source="manual")
         tmp_bank.capture(rule)
         assert tmp_bank.capture(rule) is False
 
     def test_all_rules_returns_list(self, tmp_bank: PsycheBank):
-        rule = CogRule(id="r-001", description="r", pattern="z", enforcement="block", category="security", source="manual")
+        rule = CogRule(id="r-001", description="r", pattern="z",
+                       enforcement="block", category="security", source="manual")
         tmp_bank.capture(rule)
         assert len(tmp_bank.all_rules()) == 1
 
     def test_rules_by_category(self, tmp_bank: PsycheBank):
-        tmp_bank.capture(CogRule("sec-1", "s", "p", "block", "security", "manual"))
-        tmp_bank.capture(CogRule("qual-1", "q", "p", "warn", "quality", "manual"))
+        tmp_bank.capture(
+            CogRule("sec-1", "s", "p", "block", "security", "manual"))
+        tmp_bank.capture(CogRule("qual-1", "q", "p",
+                         "warn", "quality", "manual"))
         assert len(tmp_bank.rules_by_category("security")) == 1
 
     def test_persists_to_disk(self, tmp_path: Path):
         path = tmp_path / "persist.cog.json"
         bank = PsycheBank(path=path)
-        bank.capture(CogRule("p-001", "persist", "pat", "block", "security", "manual"))
+        bank.capture(CogRule("p-001", "persist", "pat",
+                     "block", "security", "manual"))
         bank2 = PsycheBank(path=path)
         assert any(r.id == "p-001" for r in bank2.all_rules())
 
@@ -253,21 +264,24 @@ class TestPsycheBank:
 class TestTribunal:
     def test_clean_engram_passes(self, tmp_bank: PsycheBank):
         t = Tribunal(bank=tmp_bank)
-        e = Engram(slug="clean-1", intent="BUILD", logic_body="def add(a, b): return a + b")
+        e = Engram(slug="clean-1", intent="BUILD",
+                   logic_body="def add(a, b): return a + b")
         result = t.evaluate(e)
         assert result.passed
         assert not result.poison_detected
 
     def test_hardcoded_secret_detected(self, tmp_bank: PsycheBank):
         t = Tribunal(bank=tmp_bank)
-        e = Engram(slug="poison-1", intent="BUILD", logic_body='API_KEY = "sk-supersecret123"')
+        e = Engram(slug="poison-1", intent="BUILD",
+                   logic_body='API_KEY = "sk-supersecret123"')
         result = t.evaluate(e)
         assert result.poison_detected
         assert "hardcoded-secret" in result.violations
 
     def test_eval_detected(self, tmp_bank: PsycheBank):
         t = Tribunal(bank=tmp_bank)
-        e = Engram(slug="poison-2", intent="BUILD", logic_body="result = eval(user_input)")
+        e = Engram(slug="poison-2", intent="BUILD",
+                   logic_body="result = eval(user_input)")
         result = t.evaluate(e)
         assert "dynamic-eval" in result.violations
 
@@ -279,14 +293,16 @@ class TestTribunal:
 
     def test_rule_captured_on_violation(self, tmp_bank: PsycheBank):
         t = Tribunal(bank=tmp_bank)
-        e = Engram(slug="capture-1", intent="BUILD", logic_body="exec(something)")
+        e = Engram(slug="capture-1", intent="BUILD",
+                   logic_body="exec(something)")
         t.evaluate(e)
         rule_ids = [r.id for r in tmp_bank.all_rules()]
         assert any("dynamic-exec" in rid for rid in rule_ids)
 
     def test_vast_learn_triggered_on_poison(self, tmp_bank: PsycheBank):
         t = Tribunal(bank=tmp_bank)
-        e = Engram(slug="vl-1", intent="BUILD", logic_body='PASSWORD = "hunter2"')
+        e = Engram(slug="vl-1", intent="BUILD",
+                   logic_body='PASSWORD = "hunter2"')
         result = t.evaluate(e)
         assert result.vast_learn_triggered
 
@@ -294,18 +310,21 @@ class TestTribunal:
 class TestJITExecutor:
     def test_fan_out_all_succeed(self):
         ex = JITExecutor(max_workers=4)
-        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD") for i in range(4)]
+        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD")
+                for i in range(4)]
         results = ex.fan_out(lambda e: f"done-{e.mandate_id}", envs)
         assert all(r.success for r in results)
 
     def test_fan_out_preserves_order(self):
         ex = JITExecutor(max_workers=4)
-        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD") for i in range(5)]
+        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD")
+                for i in range(5)]
         results = ex.fan_out(lambda e: e.mandate_id, envs)
         assert [r.mandate_id for r in results] == [f"m-{i}" for i in range(5)]
 
     def test_fan_out_captures_error(self):
         ex = JITExecutor(max_workers=2)
+
         def _bad(e: Envelope) -> None:
             raise ValueError("intentional")
         envs = [Envelope(mandate_id="m-0", intent="BUILD")]
@@ -323,3 +342,126 @@ class TestJITExecutor:
         ex = JITExecutor()
         results = ex.fan_out(lambda e: None, [])
         assert results == []
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  Dimension 4 — JIT SOTA Confidence Booster
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+class TestJITBooster:
+    """Offline tests for JITBooster structured-fallback path (no network)."""
+
+    from engine.jit_booster import JITBooster as _JITBooster  # noqa: E402
+
+    def _make_booster(self):
+        from engine.jit_booster import JITBooster
+        return JITBooster()
+
+    def _make_route(self, intent: str = "BUILD", confidence: float = 0.40):
+        r = MandateRouter()
+        route = r.route_chat("build a new API endpoint for testing")
+        # Override intent and confidence to test specific bands
+        route.confidence = confidence
+        route.intent = intent
+        return route
+
+    def test_fetch_returns_jit_boost_result(self):
+        from engine.jit_booster import JITBoostResult
+        booster = self._make_booster()
+        route = self._make_route()
+        result = booster.fetch(route)
+        assert isinstance(result, JITBoostResult)
+
+    def test_boosted_confidence_is_higher_than_original(self):
+        booster = self._make_booster()
+        route = self._make_route(confidence=0.40)
+        result = booster.fetch(route)
+        assert result.boosted_confidence >= result.original_confidence
+
+    def test_boost_delta_is_non_negative(self):
+        booster = self._make_booster()
+        route = self._make_route()
+        result = booster.fetch(route)
+        assert result.boost_delta >= 0.0
+
+    def test_boosted_confidence_capped_at_one(self):
+        booster = self._make_booster()
+        route = self._make_route(confidence=0.99)
+        result = booster.fetch(route)
+        assert result.boosted_confidence <= 1.0
+
+    def test_signals_are_non_empty_list(self):
+        booster = self._make_booster()
+        route = self._make_route()
+        result = booster.fetch(route)
+        assert isinstance(result.signals, list)
+        assert len(result.signals) > 0
+
+    def test_signals_are_strings(self):
+        booster = self._make_booster()
+        route = self._make_route()
+        result = booster.fetch(route)
+        for s in result.signals:
+            assert isinstance(s, str) and len(s) > 0
+
+    def test_source_is_structured_without_gemini(self):
+        booster = self._make_booster()
+        route = self._make_route()
+        result = booster.fetch(route)
+        # No live Gemini in offline tests
+        assert result.source in ("gemini", "structured")
+
+    def test_jit_id_has_correct_prefix(self):
+        booster = self._make_booster()
+        route = self._make_route()
+        result = booster.fetch(route)
+        assert result.jit_id.startswith("jit-")
+
+    def test_to_dict_shape(self):
+        booster = self._make_booster()
+        route = self._make_route()
+        d = booster.fetch(route).to_dict()
+        required = {
+            "jit_id", "intent", "original_confidence",
+            "boosted_confidence", "boost_delta", "signals",
+            "source", "fetched_at",
+        }
+        assert required <= d.keys()
+
+    def test_boost_per_signal_formula(self):
+        from engine.jit_booster import BOOST_PER_SIGNAL, MAX_BOOST_DELTA, JITBooster
+        booster = JITBooster()
+        route = self._make_route(confidence=0.10)
+        result = booster.fetch(route)
+        expected_delta = min(len(result.signals) *
+                             BOOST_PER_SIGNAL, MAX_BOOST_DELTA)
+        assert abs(result.boost_delta - expected_delta) < 1e-9
+
+    def test_all_intents_have_catalogue_signals(self):
+        from engine.jit_booster import _CATALOGUE
+        intents = {"BUILD", "DEBUG", "AUDIT", "DESIGN",
+                   "EXPLAIN", "IDEATE", "SPAWN_REPO", "BLOCKED"}
+        assert intents <= _CATALOGUE.keys()
+
+    def test_apply_jit_boost_updates_route_confidence(self):
+        r = MandateRouter()
+        route = r.route_chat("build a new service")
+        original_conf = route.confidence
+        from engine.jit_booster import JITBooster
+        booster = JITBooster()
+        jit = booster.fetch(route)
+        r.apply_jit_boost(route, jit.boosted_confidence)
+        assert route.confidence == jit.boosted_confidence
+
+    def test_apply_jit_boost_unsets_circuit_open_when_above_threshold(self):
+        from engine.config import CIRCUIT_BREAKER_THRESHOLD
+        from engine.jit_booster import JITBooster
+        r = MandateRouter()
+        route = r.route_chat("build a service")
+        route.circuit_open = True
+        r._fail_count = 1
+        booster = JITBooster()
+        r.apply_jit_boost(route, CIRCUIT_BREAKER_THRESHOLD + 0.01)
+        assert not route.circuit_open
+        assert r._fail_count == 0

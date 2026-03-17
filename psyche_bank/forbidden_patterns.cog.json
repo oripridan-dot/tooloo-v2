@@ -40,6 +40,38 @@
       "enforcement": "warn",
       "category": "quality",
       "source": "manual"
+    },
+    {
+      "id": "tribunal-auto-dynamic-eval-001",
+      "description": "Auto-captured by Tribunal during heal: dynamic-eval",
+      "pattern": "dynamic-eval",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal"
+    },
+    {
+      "id": "tribunal-auto-hardcoded-secret-001",
+      "description": "Auto-captured by Tribunal during heal: hardcoded-secret",
+      "pattern": "hardcoded-secret",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal"
+    },
+    {
+      "id": "tribunal-auto-sql-injection-001",
+      "description": "Auto-captured by Tribunal during heal: sql-injection",
+      "pattern": "sql-injection",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal"
+    },
+    {
+      "id": "tribunal-auto-dynamic-exec-001",
+      "description": "Auto-captured by Tribunal during heal: dynamic-exec",
+      "pattern": "dynamic-exec",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal"
     }
   ]
 }

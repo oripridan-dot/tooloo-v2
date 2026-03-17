@@ -20,7 +20,7 @@ def _get(key: str, default: str = "") -> str:
 
 # ── LLM ───────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY: str = _get("GEMINI_API_KEY")
-GEMINI_MODEL: str = _get("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL: str = _get("GEMINI_MODEL", "gemini-2.5-flash")
 
 # ── GitHub ────────────────────────────────────────────────────────────────────
 GITHUB_TOKEN: str = _get("GITHUB_TOKEN")
@@ -31,7 +31,8 @@ STUDIO_PORT: int = int(_get("STUDIO_PORT", "8002"))
 STUDIO_RELOAD: bool = _get("STUDIO_RELOAD", "false").lower() == "true"
 
 # ── Circuit breaker ───────────────────────────────────────────────────────────
-CIRCUIT_BREAKER_THRESHOLD: float = float(_get("CIRCUIT_BREAKER_THRESHOLD", "0.85"))
+CIRCUIT_BREAKER_THRESHOLD: float = float(
+    _get("CIRCUIT_BREAKER_THRESHOLD", "0.85"))
 CIRCUIT_BREAKER_MAX_FAILS: int = int(_get("CIRCUIT_BREAKER_MAX_FAILS", "3"))
 
 # ── Executor ──────────────────────────────────────────────────────────────────
