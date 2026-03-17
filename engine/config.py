@@ -38,6 +38,9 @@ CIRCUIT_BREAKER_MAX_FAILS: int = int(_get("CIRCUIT_BREAKER_MAX_FAILS", "3"))
 # ── Executor ──────────────────────────────────────────────────────────────────
 EXECUTOR_MAX_WORKERS: int = int(_get("EXECUTOR_MAX_WORKERS", "8"))
 
+# ── Sandbox ───────────────────────────────────────────────────────────────────
+SANDBOX_MAX_WORKERS: int = int(_get("SANDBOX_MAX_WORKERS", "25"))
+
 
 class _Settings:  # noqa: N801  (simple namespace)
     gemini_api_key = GEMINI_API_KEY
@@ -49,6 +52,7 @@ class _Settings:  # noqa: N801  (simple namespace)
     circuit_breaker_threshold = CIRCUIT_BREAKER_THRESHOLD
     circuit_breaker_max_fails = CIRCUIT_BREAKER_MAX_FAILS
     executor_max_workers = EXECUTOR_MAX_WORKERS
+    sandbox_max_workers = SANDBOX_MAX_WORKERS
 
 
 settings = _Settings()

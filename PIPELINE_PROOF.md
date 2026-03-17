@@ -67,8 +67,9 @@ Mandate (free text)
 | `engine/conversation.py` | Multi-turn `ConversationEngine`. Three-tier confidence handling: clarification (< 30 %), hedge (30–64 %), confident (≥ 65 %). Accepts `jit_result` to surface SOTA signals in keyword-fallback and Gemini responses. |
 | `engine/scope_evaluator.py` | Pre-execution wave-plan analysis: node count, wave count, parallelism ratio, strategy recommendation, risk surface estimate. |
 | `engine/refinement.py` | Post-execution evaluation loop: success rate, brittle-node identification, pass/warn/fail verdict. |
-| `studio/api.py` | FastAPI Governor Dashboard. 9+ routes. **JIT boost is step 2 in both `/v2/mandate` and `/v2/chat`** — mandatory, non-skippable. Responses include `jit_boost` field. SSE broadcasts `jit_boost` event type. Health reports `jit_booster: up`. |
-| `studio/static/index.html` | Buddy Chat UI frontend. |
+| `engine/self_improvement.py` | Self-improvement loop: 8 components × 3 waves → per-component Router→JIT→Tribunal→Scope→Execute→Refine pipeline. Returns `SelfImprovementReport`. |
+| `studio/api.py` | FastAPI Governor Dashboard. 10+ routes. `POST /v2/self-improve` fires the full pipeline cycle on all engine components. Health reports `self_improvement: up`. SSE broadcasts `self_improve` event type. |
+| `studio/static/index.html` | Buddy Chat UI frontend. Self-Improve panel added: run button, summary stats bar, per-component assessment cards with JIT signals and suggestions. |
 | `psyche_bank/forbidden_patterns.cog.json` | 5 pre-seeded OWASP rules (manual). |
 | `tests/conftest.py` | Session-scoped `offline_gemini` fixture — patches `_gemini_client=None` in both engine modules unless `TOOLOO_LIVE_TESTS=1`. |
 
@@ -83,7 +84,8 @@ Mandate (free text)
 | `tests/test_v2.py` | 56 | Engine unit tests (offline) — includes `TestJITBooster` (13 tests) |
 | `tests/test_workflow_proof.py` | 36 | 5-step progressive integration (offline) |
 | `tests/test_e2e_api.py` | 89 | Full HTTP e2e via FastAPI TestClient + real uvicorn (SSE) |
-| **Total** | **181** | **All offline by default (`TOOLOO_LIVE_TESTS=1` for live Gemini run)** |
+| `tests/test_self_improvement.py` | 45 | Self-improvement loop: manifest, report shape, assessments, signals, HTTP e2e |
+| **Total** | **226** | **All offline by default (`TOOLOO_LIVE_TESTS=1` for live Gemini run)** |
 
 ### Coverage by component
 
@@ -99,6 +101,7 @@ Mandate (free text)
 | `conversation.py` | — | — | ✓ (chat endpoint) |
 | `scope_evaluator.py` | — | ✓ | ✓ |
 | `refinement.py` | — | ✓ | ✓ |
+| `self_improvement.py` | — | — | ✓ (45 tests in test_self_improvement.py) |
 | `studio/api.py` | — | — | ✓ (all routes) |
 | SSE broadcast | — | — | ✓ (real server + internal) |
 
@@ -360,3 +363,180 @@ Each session entry follows this format:
   applies once per pytest session, not per function, avoiding per-test overhead.
 - Live JITBooster calls cost ~8–10 s per test; batch or parallelize when running
   the full live suite against rate-limited APIs.
+
+---
+
+### Session 2026-03-17 — Self-improvement loop (engine audits itself via its own pipeline)
+
+**Branch / commit context:** `main` (untracked local changes)  
+**Tests at session start:** 181 passed (2.45 s offline)  
+**Tests at session end:**   226 passed (+45 new `test_self_improvement.py` tests, 2.52 s offline)
+
+**What was done:**
+- Created `engine/self_improvement.py` — `SelfImprovementEngine.run()` applies TooLoo's
+  own pipeline to all 8 engine micro-components:
+  - **Wave 1 (core-security):** `router · tribunal · psyche_bank` — 3 parallel
+  - **Wave 2 (performance):** `jit_booster · executor · graph` — 3 parallel, deps on wave 1
+  - **Wave 3 (meta-analysis):** `scope_evaluator · refinement` — 2 parallel, deps on wave 2
+  - Each component runs the full Router → JIT SOTA boost → Tribunal → Scope evaluate →
+    Fan-out execute → Refinement sub-pipeline via an isolated `MandateRouter` (chat mode,
+    no circuit-breaker side-effects on the shared API router).
+  - JIT SOTA signals for each component become per-component improvement `suggestions[]`.
+  - Final `SelfImprovementReport` contains: `improvement_id`, `ts`, `components_assessed=8`,
+    `waves_executed=3`, `total_signals`, `assessments[]`, `top_recommendations[]`,
+    `refinement_verdict`, `refinement_success_rate`, `latency_ms`.
+- Added `POST /v2/self-improve` endpoint in `studio/api.py`.
+  - SSE broadcasts `self_improve` event type on each run.
+  - `GET /v2/health` now reports `self_improvement: up` under components.
+- Added **Self-Improve** panel to `studio/static/index.html` (5th sidebar nav item):
+  - `▶ Run Cycle` button triggers `POST /v2/self-improve`.
+  - Summary stats bar: Components · Waves · JIT Signals · Pass Rate · Latency · Verdict.
+  - Top Recommendations list.
+  - Per-component assessment cards with intent badge, confidence delta, JIT source,
+    tribunal pass/fail indicator, JIT signals, and action suggestions.
+  - All dynamic content sanitised through `esc()` before innerHTML.
+- Created `tests/test_self_improvement.py` — 45 tests in 6 classes:
+  - `TestComponentManifest` (11) — manifest completeness, wave assignments, deps
+  - `TestSelfImprovementReportShape` (11) — all DTOs and `to_dict()` fields
+  - `TestComponentAssessments` (9) — intent validity, confidence cap, tribunal pass,
+    suggestions non-empty, scope summary present
+  - `TestOfflineSignals` (3) — structured catalogue source, signal count math
+  - `TestSelfImproveEndpoint` (10) — HTTP e2e: 200, shape, uniqueness
+  - `TestHealthReportsSelfImprovement` (1) — health key present
+
+**What was NOT done / left open:**
+- Self-improvement cycle currently identifies improvement opportunities via JIT SOTA
+  signals but does not automatically write code changes. Autonomous code-rewriting
+  would require additional consent-gate and diff-approval flow (Law 20).
+- No TTL or cache for the improvement report — each run is fresh.
+- `test_self_improvement.py` does not yet test the SSE `self_improve` event type
+  via the real uvicorn server (HTTP SSE streaming test).
+
+**JIT signal payload (what TooLoo learned this session):**
+- Using `route_chat()` (not `route()`) for the isolated self-improvement router
+  prevents the shared circuit-breaker from tripping during self-audit mandates —
+  critical when all 8 mandates target the AUDIT intent simultaneously.
+- Wave 3 components (`scope_evaluator`, `refinement`) declare deps on wave 2
+  (`executor`, `graph`) so meta-analysis always runs after performance components
+  are assessed — topological ordering ensures coherent self-improvement insights.
+- All 8 self-improvement mandate texts are benign (no OWASP patterns), so tribunal
+  passes 100 % in every run — verified as a pipeline invariant in the test suite.
+
+---
+
+## Session 4 — Two-Stroke Engine + Conversational Intent Discovery
+
+**Date (approx):** 2025-Q3  
+**Model:** Claude Sonnet 4.6 (GitHub Copilot)  
+**Objective:** Replace the 5-wave linear pipeline with a recursive Two-Stroke Engine
+supervised and JIT-injected by TooLoo. Add multi-turn conversational intent locking
+with a 0.90 confidence gate before execution. Add a live SVG canvas UI.
+
+### What was implemented
+
+#### `engine/router.py` — Conversational Intent Discovery
+- `LockedIntent` dataclass — immutable record of a fully-confirmed mandate
+  (`intent`, `confidence`, `value_statement`, `constraint_summary`, `mandate_text`,
+  `context_turns`, `locked_at`).
+- `IntentLockResult` dataclass — per-turn response from the discovery loop (locked
+  or not, clarification question + type, confidence level, turn count).
+- `ConversationalIntentDiscovery` — multi-turn engine that asks clarifying questions
+  across three dimensions (`intent`, `value`, `constraints`) until confidence
+  reaches `_INTENT_LOCK_THRESHOLD = 0.90`.  Turn boost formula:
+  `min((turn_count - 1) * 0.08, 0.24)` ensures progressive locking.
+
+#### `engine/supervisor.py` — Two-Stroke Engine (new file)
+- `MAX_ITERATIONS = 3` safety cap on the satisfaction loop.
+- `ProcessOneDraft` — output of Catalyst stage (plan + scope + mandate_id).
+- `TwoStrokeIteration` — full immutable record of one two-stroke cycle.
+- `TwoStrokeResult` — final aggregated result of the complete run.
+- `TwoStrokeEngine` — the **singular** execution pipeline for all TooLoo V2 mandates:
+
+  ```
+  Pre-Flight Supervisor (JIT + Tribunal)
+        ↓
+  Process 1 — Catalyst (DAG plan, scope evaluate)    [SSE: process_1_draft]
+        ↓
+  Mid-Flight Supervisor (second JIT + scope + Tribunal)
+        ↓
+  Process 2 — Crucible (JITExecutor fan_out)         [SSE: process_2_execute]
+        ↓
+  Satisfaction Gate (RefinementLoop)                 [SSE: satisfaction_gate]
+        ↓  loop back if not satisfied (failure signal injected into next pre-flight)
+  ```
+- All five-wave logic is now channelled through one `TwoStrokeEngine._run_iteration()`.
+- `broadcast_fn` injected at construction for complete test isolation.
+- Prior-iteration failure injected as `[retry-signal]` in next iteration's
+  `route.mandate_text`, ensuring the JIT booster can adapt strategy.
+
+#### `studio/api.py` — New endpoints
+- `POST /v2/intent/clarify` — single discovery turn.
+- `DELETE /v2/intent/session/{session_id}` — clear a discovery session.
+- `POST /v2/pipeline` — full pipeline (auto-discovery + two-stroke engine).
+- `POST /v2/pipeline/direct` — skip discovery, run engine with pre-confirmed intent.
+- Health endpoint updated: `supervisor: "up"`, `intent_discovery: "up"` in
+  `components`.
+- `_supervisor` singleton moved to **after** `_broadcast` definition (forward
+  reference bug fixed).
+
+#### `studio/static/index.html` — Pipeline view + GSAP canvas
+- GSAP 3.12.5 CDN added in `<head>`.
+- Pipeline CSS (~300 lines): `.pipeline-workspace`, `.intent-panel`, `.canvas-area`,
+  `.canvas-flash`, `.iteration-card`, `.step-pill`, `.intent-bubble` variants, etc.
+- Pipeline nav button (`⚡ Pipeline`) added to sidebar.
+- `<section id="view-pipeline">` added to `#main`:
+  - Left: multi-turn intent discovery chat panel.
+  - Centre: `#cogCanvas` SVG 760×480, TooLoo double-ring anchor at (380,240),
+    `#svgEdges`, `#svgNodesDraft`, `#svgNodesSolid`, `#svgParticles`, `#svgStatus`.
+  - Right: per-iteration status cards + final verdict.
+  - Status bar: `csPreFlight`, `csProcess1`, `csMidFlight`, `csProcess2` dots.
+- Pipeline JS block (~300 lines):
+  - `_addDraftNodes()` — GSAP spring-in hollow nodes for Process 1.
+  - `_solidifyNodes()` — GSAP fill-to-solid for Process 2.
+  - `_jitBurst()` — 8-particle radial burst on JIT injection (Pre/Mid-Flight).
+  - `_flashCanvas()` — satisfaction gate verdict flash.
+  - `_pulseAnchor()` + `_startIdlePulse()` — TooLoo anchor breathing animation.
+  - `sendPipelineMandate()` — orchestrates discovery loop + result rendering.
+  - `_handlePipelineSSE()` — dispatches all pipeline SSE events to canvas.
+  - SSE hook wired into `connectSSE()` `onmessage`: `_handlePipelineSSE(ev)` called
+    on every non-heartbeat event.
+
+#### `tests/test_two_stroke.py` — New test file (43 tests)
+| Class | Tests | Coverage |
+|---|---|---|
+| `TestLockedIntentDTO` | 3 | DTO shape, `to_dict()` |
+| `TestIntentLockResultDTO` | 3 | locked/unlocked shapes, turn_count |
+| `TestConversationalIntentDiscovery` | 10 | first-turn Q, multi-turn, lock gate, value detection, session isolation, clear_session, get_lock |
+| `TestTwoStrokeEngine` | 14 | happy path, shape, broadcast, stages, retry-signal, max-iterations cap, zero-iterations guard |
+| `TestTwoStrokePipelineAPI` | 13 | all four new HTTP endpoints, health keys |
+
+### Metrics
+| Metric | Before | After |
+|---|---|---|
+| Test files | 4 | 5 |
+| Total tests | 168 | 201 |
+| Passing | 168 | 201 |
+| New engine files | — | `engine/supervisor.py` |
+| New SSE event types | 7 | 15 (+pipeline_start, preflight, process_1_draft, midflight, process_2_execute, satisfaction_gate, loop_complete, intent_clarification, intent_locked) |
+
+### Bugs fixed this session
+1. `_supervisor` singleton was created before `_broadcast` was defined in `api.py`
+   → `NameError: name '_broadcast' is not defined` on import.  Fixed by moving
+   `_supervisor` instantiation to after `_broadcast` definition.
+2. `TwoStrokeEngine.run(max_iterations=0)` raised `IndexError: list index out of range`
+   on `iterations[-1]` → fixed with `last = iterations[-1] if iterations else None`
+   guard, returning `final_verdict="fail"`, `satisfied=False` when no iterations ran.
+3. `MandateRouter(psyche)` TypeError in test fixtures — `MandateRouter.__init__`
+   takes no args → removed spurious `psyche` dependency from `router` fixture.
+
+**JIT signal payload (what TooLoo learned this session):**  
+- The Two-Stroke loop's pre/mid-flight supervision acts as an in-process safety net:
+  the `[retry-signal]` injected into the second-iteration booster call demonstrably
+  routes the JIT catalogue toward corrective heuristics without restarting the full
+  session — verified in `test_prior_failure_signal_injected_on_retry`.
+- Placing `_supervisor` after `_broadcast` in `api.py` is a structural constraint:
+  any singleton that injects `broadcast_fn` must be declared in the post-broadcast
+  block — treat this as an ordering invariant for all future engine singletons.
+- GSAP `transformOrigin: 'center center'` on SVG elements requires the element's
+  SVG coordinate context — using `'380 240'` (the anchor centre in SVG user units)
+  is more reliable than CSS `'center center'` for cross-browser SVG transforms.
