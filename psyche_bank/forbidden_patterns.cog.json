@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "owasp-hardcoded-secret-001",
+      "description": "Hardcoded credentials detected (SECRET/PASSWORD/API_KEY/TOKEN with inline value)",
+      "pattern": "hardcoded-secret",
+      "enforcement": "block",
+      "category": "security",
+      "source": "manual"
+    },
+    {
+      "id": "owasp-sql-injection-001",
+      "description": "String-concatenated SQL query — potential injection vector",
+      "pattern": "sql-injection",
+      "enforcement": "block",
+      "category": "security",
+      "source": "manual"
+    },
+    {
+      "id": "owasp-eval-exec-001",
+      "description": "Dynamic eval() or exec() call — arbitrary code execution risk",
+      "pattern": "dynamic-eval",
+      "enforcement": "block",
+      "category": "security",
+      "source": "manual"
+    },
+    {
+      "id": "owasp-dynamic-import-001",
+      "description": "__import__() call — dynamic module loading bypass risk",
+      "pattern": "dynamic-import",
+      "enforcement": "block",
+      "category": "security",
+      "source": "manual"
+    },
+    {
+      "id": "quality-print-debug-001",
+      "description": "print() debug statement left in production logic",
+      "pattern": "print-debug",
+      "enforcement": "warn",
+      "category": "quality",
+      "source": "manual"
+    }
+  ]
+}

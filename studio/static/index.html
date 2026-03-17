@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TooLoo V2 — Governor Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237c3aed'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='20' fill='white'%3ET%3C/text%3E%3C/svg%3E" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d0f;
+      --surface: #141418;
+      --border: #1f1f27;
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --font: 'Inter', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+
+    /* Layout */
+    .layout { display: grid; grid-template-rows: 52px 1fr; grid-template-columns: 260px 1fr 300px; min-height: 100vh; }
+    header { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 0 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .logo { width: 28px; height: 28px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+    .title { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+    .title span { color: var(--accent-light); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-left: auto; }
+    .status-dot.red { background: var(--red); }
+    #version-badge { font-size: 11px; color: var(--muted); margin-left: 6px; }
+
+    /* Left sidebar */
+    aside { border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; }
+    .panel-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; }
+    .rule-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .rule-item { background: var(--border); border-radius: 6px; padding: 9px 11px; }
+    .rule-id { font-family: var(--mono); font-size: 11px; color: var(--accent-light); }
+    .rule-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .rule-cat { display: inline-block; margin-top: 5px; font-size: 10px; padding: 2px 6px; border-radius: 20px; background: rgba(124,58,237,0.2); color: var(--accent-light); }
+
+    /* Main panel */
+    main { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Mandate input */
+    .input-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    textarea#mandate-input {
+      width: 100%; min-height: 72px; background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      font-family: var(--mono); font-size: 13px; resize: vertical; outline: none;
+    }
+    textarea#mandate-input:focus { border-color: var(--accent); }
+    .input-actions { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+    button {
+      background: var(--accent); color: #fff; border: none; border-radius: 6px;
+      padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+    button.secondary { background: var(--border); color: var(--text); font-weight: 500; }
+    #route-label { font-size: 12px; color: var(--muted); margin-left: auto; }
+    #confidence-badge { font-size: 13px; font-weight: 700; color: var(--accent-light); }
+
+    /* Cards */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .card-title { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* Breaker */
+    .breaker-row { display: flex; align-items: center; gap: 10px; }
+    #breaker-state { font-size: 13px; font-weight: 600; }
+    #breaker-state.open { color: var(--red); }
+    #breaker-state.closed { color: var(--green); }
+    #fail-count { font-size: 12px; color: var(--muted); }
+
+    /* Wave plan */
+    .wave-list { display: flex; flex-direction: column; gap: 6px; }
+    .wave-row { display: flex; gap: 8px; align-items: center; }
+    .wave-label { font-size: 11px; color: var(--muted); min-width: 52px; }
+    .wave-nodes { display: flex; flex-wrap: wrap; gap: 4px; }
+    .node-chip { font-family: var(--mono); font-size: 11px; background: rgba(124,58,237,0.15); color: var(--accent-light); border-radius: 4px; padding: 2px 7px; }
+    .node-chip.done { background: rgba(34,197,94,0.12); color: var(--green); }
+    .node-chip.fail { background: rgba(239,68,68,0.12); color: var(--red); }
+
+    /* Buddy stream */
+    .buddy-box { font-family: var(--mono); font-size: 12px; color: var(--text); background: var(--bg); border-radius: 6px; padding: 12px; min-height: 88px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; }
+    .buddy-prefix { color: var(--accent-light); font-weight: 600; }
+
+    /* Right sidebar */
+    .right-sidebar { border-left: 1px solid var(--border); padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+    .event-log { font-family: var(--mono); font-size: 11px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
+    .event-row { padding: 5px 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; }
+    .event-row.route { background: rgba(124,58,237,0.08); }
+    .event-row.tribunal { background: rgba(239,68,68,0.07); }
+    .event-row.plan { background: rgba(234,179,8,0.07); }
+    .event-row.execution { background: rgba(34,197,94,0.07); }
+    .event-row.connected { background: rgba(100,116,139,0.07); }
+    .event-time { color: var(--muted); font-size: 10px; }
+    .event-type { font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; }
+    .event-type.route { color: var(--accent-light); }
+    .event-type.tribunal { color: var(--red); }
+    .event-type.plan { color: var(--yellow); }
+    .event-type.execution { color: var(--green); }
+    .event-content { font-size: 11px; }
+
+    /* Metric tiles */
+    .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .metric { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+    .metric-val { font-size: 22px; font-weight: 700; color: var(--accent-light); line-height: 1.1; }
+    .metric-label { font-size: 10px; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="logo">T</div>
+    <div class="title">TooLoo <span>V2</span> — Governor Dashboard</div>
+    <span id="version-badge">v2.0.0</span>
+    <div class="status-dot" id="conn-dot"></div>
+  </header>
+
+  <!-- ── Left sidebar: PsycheBank ── -->
+  <aside>
+    <div class="panel-label">PsycheBank Rules</div>
+    <ul class="rule-list" id="rule-list">
+      <li class="rule-item"><div class="rule-id">loading…</div></li>
+    </ul>
+  </aside>
+
+  <!-- ── Main panel ── -->
+  <main>
+
+    <!-- Mandate input -->
+    <div class="input-card">
+      <div class="panel-label">Issue a Mandate</div>
+      <textarea id="mandate-input" placeholder="build a DAG planner that composes SOTA strategies…"></textarea>
+      <div class="input-actions">
+        <button id="send-btn">Send Mandate</button>
+        <button class="secondary" id="reset-btn">Reset Breaker</button>
+        <div id="route-label">Confidence: <span id="confidence-badge">—</span></div>
+      </div>
+    </div>
+
+    <!-- DAG wave plan -->
+    <div class="card">
+      <div class="card-title">DAG Execution Plan</div>
+      <div class="wave-list" id="wave-list">
+        <div style="color:var(--muted);font-size:12px;">No mandate issued yet.</div>
+      </div>
+    </div>
+
+    <!-- Buddy stream -->
+    <div class="card">
+      <div class="card-title">Buddy Narration</div>
+      <div class="buddy-box" id="buddy-box"><span class="buddy-prefix">Buddy &rsaquo;</span> Ready. Issue a mandate to begin.</div>
+    </div>
+
+    <!-- Circuit breaker + metrics -->
+    <div class="card">
+      <div class="card-title">Circuit Breaker</div>
+      <div class="breaker-row">
+        <div id="breaker-state" class="closed">CLOSED</div>
+        <div id="fail-count">0 / 3 failures</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── Right sidebar: events + metrics ── -->
+  <div class="right-sidebar">
+    <div>
+      <div class="panel-label">Live Events</div>
+      <div class="event-log" id="event-log"></div>
+    </div>
+
+    <div>
+      <div class="panel-label">Metrics</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-val" id="m-mandates">0</div><div class="metric-label">Mandates</div></div>
+        <div class="metric"><div class="metric-val" id="m-latency">—</div><div class="metric-label">Last ms</div></div>
+        <div class="metric"><div class="metric-val" id="m-rules">0</div><div class="metric-label">COG Rules</div></div>
+        <div class="metric"><div class="metric-val" id="m-nodes">0</div><div class="metric-label">DAG Nodes</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── state ──────────────────────────────────────────────────────────────────
+  let totalMandates = 0;
+
+  // ── helpers ────────────────────────────────────────────────────────────────
+  function nowStr() {
+    return new Date().toLocaleTimeString('en-GB', {hour12: false});
+  }
+
+  function pushEvent(raw) {
+    let data;
+    try { data = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return; }
+
+    const log = document.getElementById('event-log');
+    const row = document.createElement('div');
+    const type = data.type || 'info';
+    row.className = `event-row ${type}`;
+
+    let content = '';
+    if (type === 'route') {
+      const route = data.route || {};
+      // Normalise confidence from both possible shapes
+      const conf = typeof data.conf === 'number'
+        ? data.conf
+        : typeof route.confidence === 'number'
+          ? route.confidence
+          : typeof route.conf === 'number'
+            ? route.conf
+            : null;
+      const confPct = conf !== null ? `${(conf * 100).toFixed(0)}%` : '—';
+
+      document.getElementById('confidence-badge').textContent = confPct;
+      content = `Intent: ${route.intent || '?'} · conf: ${confPct}`;
+
+      if (route.buddy_line) {
+        const box = document.getElementById('buddy-box');
+        box.innerHTML = `<span class="buddy-prefix">Buddy &rsaquo;</span> ${route.buddy_line}`;
+      }
+    } else if (type === 'tribunal') {
+      const r = data.result || {};
+      content = r.poison_detected ? `⚠ Poison: ${(r.violations||[]).join(', ')}` : '✓ Clean';
+    } else if (type === 'plan') {
+      const waves = data.waves || [];
+      renderWaves(waves);
+      content = `${waves.length} waves`;
+    } else if (type === 'execution') {
+      const results = data.results || [];
+      const ok = results.filter(r => r.success).length;
+      content = `${ok}/${results.length} success`;
+      markWavesDone(results);
+    } else if (type === 'connected') {
+      content = `SSE connected`;
+    } else if (type === 'heartbeat') {
+      return; // silent
+    } else {
+      content = JSON.stringify(data).slice(0, 80);
+    }
+
+    row.innerHTML = `<span class="event-time">${nowStr()}</span>
+      <span class="event-type ${type}">${type}</span>
+      <span class="event-content">${content}</span>`;
+    log.prepend(row);
+    while (log.children.length > 50) log.removeChild(log.lastChild);
+  }
+
+  // ── DAG wave renderer ─────────────────────────────────────────────────────
+  function renderWaves(waves) {
+    const el = document.getElementById('wave-list');
+    el.innerHTML = '';
+    waves.forEach((wave, i) => {
+      const row = document.createElement('div');
+      row.className = 'wave-row';
+      row.dataset.wave = i;
+      const nodes = Array.isArray(wave) ? wave : [wave];
+      row.innerHTML = `<span class="wave-label">Wave ${i}</span>
+        <div class="wave-nodes">${nodes.map(n => `<span class="node-chip" data-node="${n}">${n}</span>`).join('')}</div>`;
+      el.appendChild(row);
+    });
+  }
+
+  function markWavesDone(results) {
+    results.forEach(r => {
+      // match by wave index embedded in mandate_id like "m-abc123-0"
+      const parts = (r.mandate_id || '').split('-');
+      const waveIdx = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(waveIdx)) {
+        const row = document.querySelector(`.wave-row[data-wave="${waveIdx}"]`);
+        if (row) {
+          row.querySelectorAll('.node-chip').forEach(chip => {
+            chip.classList.add(r.success ? 'done' : 'fail');
+          });
+        }
+      }
+    });
+  }
+
+  // ── circuit breaker ───────────────────────────────────────────────────────
+  async function refreshBreakerStatus() {
+    try {
+      const res = await fetch('/v2/router-status');
+      const d = await res.json();
+      const stateEl = document.getElementById('breaker-state');
+      const open = d.circuit_open || false;
+      stateEl.textContent = open ? 'OPEN' : 'CLOSED';
+      stateEl.className = open ? 'open' : 'closed';
+      document.getElementById('fail-count').textContent =
+        `${d.consecutive_failures ?? 0} / ${d.max_fails ?? 3} failures`;
+    } catch {}
+  }
+
+  // ── psyche bank ───────────────────────────────────────────────────────────
+  async function refreshPsycheBank() {
+    try {
+      const res = await fetch('/v2/psyche-bank');
+      const d = await res.json();
+      const rules = d.rules || [];
+      const list = document.getElementById('rule-list');
+      list.innerHTML = '';
+      document.getElementById('m-rules').textContent = rules.length;
+      if (!rules.length) {
+        list.innerHTML = '<li class="rule-item"><div class="rule-desc">No rules yet.</div></li>';
+        return;
+      }
+      rules.forEach(r => {
+        const li = document.createElement('li');
+        li.className = 'rule-item';
+        li.innerHTML = `<div class="rule-id">${r.id}</div>
+          <div class="rule-desc">${r.description}</div>
+          <span class="rule-cat">${r.category}</span>`;
+        list.appendChild(li);
+      });
+    } catch {}
+  }
+
+  // ── DAG metrics ───────────────────────────────────────────────────────────
+  async function refreshDag() {
+    try {
+      const res = await fetch('/v2/dag');
+      const d = await res.json();
+      document.getElementById('m-nodes').textContent = d.node_count ?? 0;
+    } catch {}
+  }
+
+  // ── send mandate ──────────────────────────────────────────────────────────
+  document.getElementById('send-btn').addEventListener('click', async () => {
+    const text = document.getElementById('mandate-input').value.trim();
+    if (!text) return;
+    totalMandates++;
+    document.getElementById('m-mandates').textContent = totalMandates;
+
+    // Optimistic UI: clear plan
+    document.getElementById('wave-list').innerHTML =
+      '<div style="color:var(--muted);font-size:12px;">Planning…</div>';
+
+    try {
+      const t0 = performance.now();
+      const res = await fetch('/v2/mandate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text}),
+      });
+      const d = await res.json();
+      const ms = (performance.now() - t0).toFixed(0);
+      document.getElementById('m-latency').textContent = ms;
+    } catch (e) {
+      pushEvent({type: 'error', message: e.message});
+    }
+
+    await refreshBreakerStatus();
+    await refreshPsycheBank();
+    await refreshDag();
+  });
+
+  // ── reset breaker ─────────────────────────────────────────────────────────
+  document.getElementById('reset-btn').addEventListener('click', async () => {
+    await fetch('/v2/router-reset', {method: 'POST'});
+    await refreshBreakerStatus();
+  });
+
+  // ── SSE ───────────────────────────────────────────────────────────────────
+  function connectSSE() {
+    const es = new EventSource('/v2/events');
+    const dot = document.getElementById('conn-dot');
+
+    es.onopen = () => { dot.classList.remove('red'); };
+    es.onerror = () => { dot.classList.add('red'); setTimeout(connectSSE, 3000); es.close(); };
+    es.onmessage = (e) => pushEvent(e.data);
+  }
+
+  // ── init ──────────────────────────────────────────────────────────────────
+  connectSSE();
+  refreshBreakerStatus();
+  refreshPsycheBank();
+  refreshDag();
+  setInterval(() => { refreshBreakerStatus(); refreshPsycheBank(); refreshDag(); }, 10000);
+</script>
+</body>
+</html>

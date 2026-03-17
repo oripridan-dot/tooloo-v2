@@ -1,0 +1,26 @@
+# git
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+*.db
+*.db-journal
+tooloo_v2.db
+
+# storage
+psyche_bank/*.cog.json
+!psyche_bank/forbidden_patterns.cog.json
+studio/storage/
+logs/
+
+# IDE / OS
+.DS_Store
+.vscode/settings.json
+*.swp

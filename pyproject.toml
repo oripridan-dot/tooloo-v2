@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["engine*", "studio*"]
+
+[project]
+name = "tooloo-v2"
+version = "2.0.0"
+description = "TooLoo V2 — Pure DAG Cognitive OS. Self-building autonomous intelligence engine."
+requires-python = ">=3.12"
+dependencies = [
+    "networkx>=3.2",
+    "pydantic>=2.12",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-dotenv>=1.2",
+    "google-genai>=1.64.0",
+    "PyGithub>=2.5",
+    "httpx>=0.28",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.25",
+    "pytest-timeout>=2.3",
+    "ruff>=0.15",
+]
+
+[project.scripts]
+tooloo-v2 = "studio.api:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+timeout = 30
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["E501", "B008", "RUF012"]

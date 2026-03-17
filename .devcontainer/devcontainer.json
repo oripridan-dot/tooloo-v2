@@ -1,0 +1,26 @@
+{
+  "name": "TooLoo V2",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "python.testing.pytestEnabled": true,
+        "python.testing.autoTestDiscoverOnSaveEnabled": false,
+        "python.analysis.diagnosticMode": "openFilesOnly",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+  "postStartCommand": "code --uninstall-extension tamasfe.even-better-toml 2>/dev/null; python --version && echo '✅ TooLoo V2 ready'",
+  "postCreateCommand": "pip install -e '.[dev]' -q && echo '✅ deps installed'",
+  "remoteUser": "vscode"
+}
