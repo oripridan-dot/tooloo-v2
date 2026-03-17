@@ -1,8 +1,6 @@
 {
   "name": "TooLoo V2",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
   "customizations": {
     "vscode": {
       "extensions": [
