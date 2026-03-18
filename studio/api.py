@@ -46,6 +46,10 @@ from engine.router import ConversationalIntentDiscovery, LockedIntent, MandateRo
 from engine.sandbox import SandboxOrchestrator
 from engine.scope_evaluator import ScopeEvaluator
 from engine.self_improvement import SelfImprovementEngine
+from engine.mcp_manager import MCPManager
+from engine.model_selector import ModelSelector
+from engine.n_stroke import NStrokeEngine
+from engine.refinement_supervisor import RefinementSupervisor
 from engine.supervisor import TwoStrokeEngine
 from engine.tribunal import Engram, Tribunal
 
@@ -63,8 +67,10 @@ _jit_booster = JITBooster()
 _engram_generator = VisualEngramGenerator()
 _self_improvement_engine = SelfImprovementEngine(
     booster=_jit_booster, bank=_bank)
+_mcp_manager = MCPManager()
+_model_selector = ModelSelector()
+_refinement_supervisor = RefinementSupervisor()
 _intent_discovery = ConversationalIntentDiscovery()
-
 _STATIC = Path(__file__).parent / "static"
 _STARTUP_TIME: str = datetime.now(UTC).isoformat()
 
@@ -72,7 +78,7 @@ _STARTUP_TIME: str = datetime.now(UTC).isoformat()
 _sse_queues: list[asyncio.Queue[str]] = []
 
 
-def _broadcast(event: dict[str, Any]) -> None:
+def _broadcast(event: dict[str, Any]) -> None:  # noqa: F811
     data = json.dumps(event)
     for q in list(_sse_queues):
         try:
@@ -90,6 +96,19 @@ _supervisor = TwoStrokeEngine(
     executor=_executor,
     scope_evaluator=_scope_evaluator,
     refinement_loop=_refinement_loop,
+    broadcast_fn=_broadcast,
+)
+_n_stroke_engine = NStrokeEngine(
+    router=_router,
+    booster=_jit_booster,
+    tribunal=_tribunal,
+    sorter=_sorter,
+    executor=_executor,
+    scope_evaluator=_scope_evaluator,
+    refinement_loop=_refinement_loop,
+    mcp_manager=_mcp_manager,
+    model_selector=_model_selector,
+    refinement_supervisor=_refinement_supervisor,
     broadcast_fn=_broadcast,
 )
 _roadmap = RoadmapManager()
@@ -205,6 +224,7 @@ async def serve_index() -> HTMLResponse:
 
 @app.get("/v2/health")
 async def health() -> dict[str, Any]:
+    mcp_tool_count = len(_mcp_manager.manifest())
     return {
         "status": "ok",
         "version": "2.0.0",
@@ -219,6 +239,10 @@ async def health() -> dict[str, Any]:
             "self_improvement": "up",
             "supervisor": "up",
             "intent_discovery": "up",
+            "mcp_manager": f"{mcp_tool_count} tools",
+            "model_selector": "up",
+            "refinement_supervisor": "up",
+            "n_stroke_engine": "up",
         },
     }
 
@@ -643,6 +667,105 @@ async def self_improve() -> dict[str, Any]:
     _broadcast({"type": "self_improve", "report": report.to_dict()})
     latency_ms = round((time.monotonic() - t0) * 1000, 2)
     return {"self_improvement": report.to_dict(), "latency_ms": latency_ms}
+
+
+# ── N-Stroke pipeline endpoints ───────────────────────────────────────────────
+
+
+class NStrokeRequest(BaseModel):
+    """Request body for /v2/n-stroke.
+
+    Requires a pre-confirmed LockedIntent.  To build one via multi-turn
+    discovery first, use /v2/intent/clarify then pass the locked_intent here.
+    """
+    intent: str
+    confidence: float
+    value_statement: str
+    constraint_summary: str = ""
+    mandate_text: str
+    session_id: str = ""
+    max_strokes: int = 7
+
+
+@app.post("/v2/n-stroke")
+async def run_n_stroke(req: NStrokeRequest) -> dict[str, Any]:
+    """N-Stroke Autonomous Cognitive Loop.
+
+    Runs the full N-stroke pipeline:
+      PreflightSupervisor → Process 1 → MidflightSupervisor →
+      Process 2 → Satisfaction Gate → (loop with model escalation if needed)
+
+    Features vs /v2/pipeline:
+      - Dynamic model selection (Flash → Pro-Thinking on failures)
+      - MCP tool manifest injected into every stroke's execution context
+      - RefinementSupervisor autonomous healing on 3+ node failures
+      - Loops up to max_strokes (default 7, vs 3 for two-stroke)
+
+    SSE events: n_stroke_start · model_selected · healing_triggered ·
+                preflight · plan · midflight · execution ·
+                satisfaction_gate · n_stroke_complete
+    """
+    t0 = time.monotonic()
+    from datetime import UTC as _UTC, datetime as _dt
+    pipeline_id = f"ns-{uuid.uuid4().hex[:8]}"
+    session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
+
+    locked = LockedIntent(
+        intent=req.intent,
+        confidence=req.confidence,
+        value_statement=req.value_statement,
+        constraint_summary=req.constraint_summary,
+        mandate_text=req.mandate_text,
+        context_turns=[],
+        locked_at=_dt.now(_UTC).isoformat(),
+    )
+
+    loop = asyncio.get_event_loop()
+    # Honour max_strokes override
+    engine = _n_stroke_engine
+    if req.max_strokes != 7:
+        from engine.n_stroke import NStrokeEngine as _NSE
+        engine = _NSE(
+            router=_router,
+            booster=_jit_booster,
+            tribunal=_tribunal,
+            sorter=_sorter,
+            executor=_executor,
+            scope_evaluator=_scope_evaluator,
+            refinement_loop=_refinement_loop,
+            mcp_manager=_mcp_manager,
+            model_selector=_model_selector,
+            refinement_supervisor=_refinement_supervisor,
+            broadcast_fn=_broadcast,
+            max_strokes=req.max_strokes,
+        )
+
+    result = await loop.run_in_executor(
+        None,
+        lambda: engine.run(locked, pipeline_id=pipeline_id),
+    )
+
+    return {
+        "pipeline_id": pipeline_id,
+        "session_id": session_id,
+        "result": result.to_dict(),
+        "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+    }
+
+
+@app.get("/v2/mcp/tools")
+async def mcp_tool_manifest() -> dict[str, Any]:
+    """Return the complete MCP tool manifest.
+
+    Each entry describes one registered tool with its URI, name,
+    description, and parameter schema.  The manifest is static for the
+    lifetime of the process — tools are registered at import time.
+    """
+    tools = _mcp_manager.manifest()
+    return {
+        "tool_count": len(tools),
+        "tools": [t.to_dict() for t in tools],
+    }
 
 
 @app.get("/v2/events")

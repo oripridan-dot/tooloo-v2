@@ -540,3 +540,119 @@ with a 0.90 confidence gate before execution. Add a live SVG canvas UI.
 - GSAP `transformOrigin: 'center center'` on SVG elements requires the element's
   SVG coordinate context — using `'380 240'` (the anchor centre in SVG user units)
   is more reliable than CSS `'center center'` for cross-browser SVG transforms.
+
+---
+
+## Session 4 — N-Stroke Autonomous Cognitive Loop (2026-03-18)
+
+### Goal
+Generalise the Two-Stroke Engine to an **N-Stroke loop** with three structural
+upgrades: dynamic model selection, MCP tool injection, and autonomous healing.
+
+### What was built
+
+#### `engine/mcp_manager.py` — MCP (Model Context Protocol) Tool Manager
+- 6 built-in tools registered at import time under the `mcp://tooloo/` URI prefix:
+  - `file_read` — read workspace file with path-traversal guard (no `../` escape)
+  - `file_write` — write file inside workspace; rejects forbidden extensions
+    (`.sh`, `.bash`, `.exe`, `.bin`, `.so`, …)
+  - `code_analyze` — parse traceback / code snippet → detects async misuse, etc.
+  - `web_lookup` — structured SOTA signal retrieval by keyword (offline catalogue)
+  - `run_tests` — run pytest on a test module; rejects paths outside `tests/`
+  - `read_error` — parse error string → `{type, message, hint}` struct
+- `MCPCallResult.to_dict()` shape includes `tool`, `uri`, `success`, `output`, `error`.
+- All tool output capped at 8 000 chars and stripped of control characters.
+
+#### `engine/model_selector.py` — Dynamic Model Escalation
+- Four-tier ladder: Flash → Flash-Exp → Pro → Pro-Thinking.
+- Escalation rules (fully deterministic, no LLM calls):
+  - Stroke 1, `intent in {SPAWN_REPO, DEBUG, AUDIT}` → tier 2
+  - Stroke 1, default → tier 1
+  - Stroke N (fail) → `min(N, 4)` tier
+  - Stroke N (warn) → `min(N, 3)` tier
+  - Stroke N (pass) → `min(2, N)` tier
+- `ModelSelection.to_dict()` shape: `{stroke, intent, model, tier, rationale}`.
+- `force_tier` override clamped to `[1, 4]` for safety.
+
+#### `engine/refinement_supervisor.py` — Autonomous Healing Supervisor
+- Triggered when any DAG node reaches `NODE_FAIL_THRESHOLD = 3` failures
+  across N-Stroke iterations.
+- Healing pipeline per failing node:
+  1. `MCPManager.read_error()` — parse the last traceback into structured form.
+  2. `MCPManager.web_lookup()` — retrieve SOTA fix signals by error keyword.
+  3. Synthesise a `HealingPrescription` with `fix_strategy`.
+  4. Poison-guard: `re.compile(r"\b(eval|exec|__import__|subprocess\.run|os\.system)\s*\(")` —
+     any synthesised fix strategy containing these patterns is rejected.
+  5. Returns a `HealingReport` with `healed_work_fn` callable for the next stroke.
+- `HealingReport.to_dict()` shape includes `healing_id`, `nodes_healed`,
+  `prescriptions`, `verdict`, `latency_ms`.
+
+#### `engine/n_stroke.py` — N-Stroke Engine
+- `NStrokeEngine.run()` loops up to `MAX_STROKES = 7` (hard cap).
+- Per-stroke pipeline: ModelSelector → healing-check → JIT preflight → Process 1
+  → JIT midflight → Process 2 → Satisfaction Gate.
+- MCP tool manifest injected into every stroke's `execution_metadata`.
+- Per-node fail counters keyed by **canonical node name** (last segment of
+  `mandate_id`) so the same logical node accumulates failures across strokes.
+- Fail counters reset after healing; healed work function swapped in.
+- `NStrokeResult.to_dict()` shape: `{pipeline_id, locked_intent, strokes,
+  final_verdict, satisfied, total_strokes, model_escalations,
+  healing_invocations, latency_ms}`.
+- SSE events emitted: `n_stroke_start`, `model_selected`, `healing_triggered`,
+  `preflight`, `plan`, `midflight`, `execution`, `satisfaction_gate`,
+  `n_stroke_complete`.
+
+#### `studio/api.py` — Two new HTTP endpoints
+| Endpoint | Method | Description |
+|---|---|---|
+| `POST /v2/n-stroke` | POST | Run the N-Stroke loop; returns full `NStrokeResult` |
+| `GET /v2/mcp/tools` | GET | Return the complete MCP tool manifest (`tool_count`, `tools[]`) |
+- `/v2/health` updated to report `n_stroke_engine` and `mcp_manager` component
+  keys with `tool_count`.
+- `NStrokeRequest` DTO: `intent`, `confidence`, `value_statement`,
+  `constraint_summary`, `mandate_text`, `session_id`, `max_strokes`.
+
+#### `tests/test_n_stroke_stress.py` — New stress-test file (81 tests)
+| Class | Tests | Coverage |
+|---|---|---|
+| `TestMCPManager` | 12 | manifest shape, all 6 dispatch paths, security guards, `to_dict` shape |
+| `TestModelSelector` | 12 | per-stroke tier assignment, escalation ladder, force-tier, shape |
+| `TestRefinementSupervisor` | 12 | heal shape, verdict, prescriptions, SOTA signals, poison guard |
+| `TestNStrokeHappyPath` | 15 | result/stroke shapes, model tiers, MCP injection, SSE events |
+| `TestNStrokeModelEscalation` | 5 | tier escalation across strokes, retry-signal injection |
+| `TestImpossibleTask` | 5 | multi-stroke forcing, model upgrade, eventual pass, SOTA solution |
+| `TestNStrokeAutoHealing` | 5 | healing trigger, SSE, healed work_fn, report, counter reset |
+| `TestHighConcurrencyMandates` | 4 | 50 concurrent mandates, wall-time, unique pipeline IDs |
+| `TestNStrokeHTTPEndpoints` | 11 | `/v2/n-stroke` and `/v2/mcp/tools` endpoint shapes |
+
+### Metrics
+| Metric | Before | After |
+|---|---|---|
+| Test files | 5 | 6 |
+| Total tests | 201 | 278 (+77 from n_stroke stress file; earlier state had +4 in self-improve/e2e) |
+| Passing | 201 | 278 |
+| New engine files | — | `engine/mcp_manager.py`, `engine/model_selector.py`, `engine/n_stroke.py`, `engine/refinement_supervisor.py` |
+| New SSE event types | 15 | 20 (+n_stroke_start, model_selected, healing_triggered, n_stroke_complete, satisfaction_gate updated) |
+
+### Bugs fixed this session
+1. **Node fail counting** — `node_fail_counts` was incrementing the full
+   `mandate_id` (e.g. `"nstroke-abc-implement"`) rather than the canonical
+   node name (`"implement"`). Fixed with `r.mandate_id.rsplit("-", 1)[-1]`.
+2. **Healing counter key mismatch** — `healing_report.nodes_healed` carried
+   canonical names but `node_fail_counts` was keyed by full IDs, so fail
+   counts were not being reset after healing. Fixed by popping both the
+   canonical name and any fully-qualified ID variant.
+3. **`satisfaction_gate` SSE key** — test expected `satisfied` key but the
+   event emitted `gate_passed`. Renamed to `satisfied` throughout for
+   consistency.
+
+**JIT signal payload (what TooLoo learned this session):**
+- `mandate_id.rsplit("-", 1)[-1]` is the canonical node name convention;
+  all per-node counters and healing lookups must use this form to survive
+  across strokes where the pipeline prefix changes.
+- `NODE_FAIL_THRESHOLD = 3` is the right default: low enough to catch
+  genuinely stuck nodes early, high enough to avoid false-positive healing
+  on transient failures.
+- Injecting the MCP manifest into `execution_metadata` (not the work
+  function itself) keeps the execution path pure while giving audit tools
+  full visibility of which tools were available at each stroke.
