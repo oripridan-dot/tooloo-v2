@@ -83,9 +83,11 @@ Mandate (free text)
 |-----------|-------|-------|
 | `tests/test_v2.py` | 56 | Engine unit tests (offline) — includes `TestJITBooster` (13 tests) |
 | `tests/test_workflow_proof.py` | 36 | 5-step progressive integration (offline) |
-| `tests/test_e2e_api.py` | 89 | Full HTTP e2e via FastAPI TestClient + real uvicorn (SSE) |
+| `tests/test_two_stroke.py` | 43 | Two-Stroke Engine + Conversational Intent Discovery |
+| `tests/test_n_stroke_stress.py` | 81 | N-Stroke loop: MCP, ModelSelector, healing, concurrency, HTTP |
 | `tests/test_self_improvement.py` | 45 | Self-improvement loop: manifest, report shape, assessments, signals, HTTP e2e |
-| **Total** | **226** | **All offline by default (`TOOLOO_LIVE_TESTS=1` for live Gemini run)** |
+| `tests/test_e2e_api.py` | 89 | Full HTTP e2e via FastAPI TestClient + real uvicorn (SSE) |
+| **Total** | **350** | **All offline by default (`TOOLOO_LIVE_TESTS=1` for live Gemini run)** |
 
 ### Coverage by component
 
@@ -102,6 +104,11 @@ Mandate (free text)
 | `scope_evaluator.py` | — | ✓ | ✓ |
 | `refinement.py` | — | ✓ | ✓ |
 | `self_improvement.py` | — | — | ✓ (45 tests in test_self_improvement.py) |
+| `supervisor.py` (two-stroke) | — | — | ✓ (test_two_stroke.py) |
+| `mcp_manager.py` | ✓ (12) | — | ✓ (test_n_stroke_stress.py) |
+| `model_selector.py` | ✓ (12) | — | ✓ (test_n_stroke_stress.py) |
+| `n_stroke.py` | ✓ (45) | — | ✓ (test_n_stroke_stress.py) |
+| `refinement_supervisor.py` | ✓ (12) | — | ✓ (test_n_stroke_stress.py) |
 | `studio/api.py` | — | — | ✓ (all routes) |
 | SSE broadcast | — | — | ✓ (real server + internal) |
 
@@ -150,8 +157,8 @@ pytest tests/test_e2e_api.py::TestMandateCleanPaths -v
 TOOLOO_LIVE_TESTS=1 pytest tests/test_v2.py::TestJITBooster -v
 ```
 
-Expected output (offline): `181 passed, 2 warnings` (websockets deprecation warnings from uvicorn
-are benign and expected).
+Expected output (offline): `350 passed` (fast test suite, no I/O). The two deprecation warnings
+from `datetime.utcnow()` in `test_two_stroke.py` are benign and expected.
 
 ---
 
@@ -424,7 +431,7 @@ Each session entry follows this format:
 
 ---
 
-## Session 4 — Two-Stroke Engine + Conversational Intent Discovery
+## Session 3 — Two-Stroke Engine + Conversational Intent Discovery
 
 **Date (approx):** 2025-Q3  
 **Model:** Claude Sonnet 4.6 (GitHub Copilot)  
@@ -543,7 +550,7 @@ with a 0.90 confidence gate before execution. Add a live SVG canvas UI.
 
 ---
 
-## Session 4 — N-Stroke Autonomous Cognitive Loop (2026-03-18)
+## Session 5 — N-Stroke Autonomous Cognitive Loop (2026-03-18)
 
 ### Goal
 Generalise the Two-Stroke Engine to an **N-Stroke loop** with three structural
