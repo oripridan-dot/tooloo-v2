@@ -24,3 +24,12 @@ logs/
 .DS_Store
 .vscode/settings.json
 *.swp
+*.bak
+# pip version-specifier garbage files (e.g. `pip install =1.x.y` typos)
+=*
+
+# GCP service account key — never commit
+tooloo-sa-key.json
+*.sa-key.json
+too-loo-zi8g7e-42ad0fb883ee.json
+too-loo-zi8g7e-755de9c9051a.json

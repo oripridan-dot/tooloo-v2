@@ -59,6 +59,14 @@ class ScopeEvaluator:
     # Intents with elevated probability of tribunal intercepts
     _HIGH_RISK_INTENTS: frozenset[str] = frozenset({"BUILD", "DEBUG", "AUDIT"})
 
+    # Node suffixes that are forbidden in Wave 1 or 2 — must come later
+    _LATE_PHASE_NODES: frozenset[str] = frozenset(
+        {"implement", "emit", "file_write"})
+
+    # Mandatory discovery node prefix patterns that must appear in Wave 1 or 2
+    _DISCOVERY_PREFIXES: tuple[str, ...] = (
+        "audit", "design", "ux_eval", "blueprint")
+
     def evaluate(
         self,
         waves: list[list[str]],
@@ -70,7 +78,9 @@ class ScopeEvaluator:
         max_wave_width = max((len(w) for w in waves), default=1)
         critical_path_length = wave_count  # serial depth equals the wave count
 
-        parallelism_ratio = max_wave_width / max(node_count, 1)
+        # Average wave width vs max wave width: shows fill efficiency (0=all serial, 1=all waves at max width)
+        avg_wave_width = node_count / max(wave_count, 1)
+        parallelism_ratio = avg_wave_width / max(max_wave_width, 1)
 
         # Allocate just enough threads to saturate the widest wave, capped at 8
         recommended_workers = min(max(max_wave_width, 1), 8)
@@ -90,6 +100,9 @@ class ScopeEvaluator:
             else 0
         )
 
+        # Validate topology: discovery nodes must precede implement nodes
+        topology_warnings = self._validate_topology(waves)
+
         scope_summary = (
             f"{node_count} node{'s' if node_count != 1 else ''} across "
             f"{wave_count} wave{'s' if wave_count != 1 else ''} · "
@@ -97,6 +110,7 @@ class ScopeEvaluator:
             f"strategy: {strategy} · "
             f"{recommended_workers} thread{'s' if recommended_workers != 1 else ''} allocated"
             + (f" · ~{risk_surface} tribunal candidate{'s' if risk_surface != 1 else ''}" if risk_surface else "")
+            + (f" · ⚠ topology: {topology_warnings[0]}" if topology_warnings else "")
         )
 
         return ScopeEvaluation(
@@ -110,3 +124,24 @@ class ScopeEvaluator:
             risk_surface=risk_surface,
             scope_summary=scope_summary,
         )
+
+    def _validate_topology(self, waves: list[list[str]]) -> list[str]:
+        """Warn if IMPLEMENT nodes appear before discovery nodes (Law: measure twice).
+
+        Returns a list of warning strings (empty = clean topology).
+        """
+        warnings: list[str] = []
+        if len(waves) < 2:
+            return warnings
+
+        early_waves = waves[:2]  # Wave 1 and Wave 2 only
+        for idx, wave in enumerate(early_waves, start=1):
+            for node_id in wave:
+                suffix = node_id.rsplit("-", 1)[-1]
+                if suffix in self._LATE_PHASE_NODES:
+                    warnings.append(
+                        f"implement-class node '{node_id}' in wave {idx} "
+                        f"violates 'Measure Twice' law — should be wave 3+"
+                    )
+
+        return warnings

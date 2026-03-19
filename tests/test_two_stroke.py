@@ -110,7 +110,7 @@ def _make_locked(
         constraint_summary="",
         mandate_text=mandate_text,
         context_turns=[{"user": mandate_text}],
-        locked_at=datetime.datetime.utcnow().isoformat(),
+        locked_at=datetime.datetime.now(datetime.UTC).isoformat(),
     )
 
 

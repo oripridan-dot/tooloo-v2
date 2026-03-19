@@ -42,6 +42,14 @@
       "source": "manual"
     },
     {
+      "id": "owasp-path-traversal-001",
+      "description": "Path-traversal sequence detected (../ or ..\\) — OWASP A01:2021 Broken Access Control",
+      "pattern": "path-traversal",
+      "enforcement": "block",
+      "category": "security",
+      "source": "manual"
+    },
+    {
       "id": "tribunal-auto-dynamic-eval-001",
       "description": "Auto-captured by Tribunal during heal: dynamic-eval",
       "pattern": "dynamic-eval",

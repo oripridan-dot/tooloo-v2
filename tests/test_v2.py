@@ -306,6 +306,22 @@ class TestTribunal:
         result = t.evaluate(e)
         assert result.vast_learn_triggered
 
+    def test_path_traversal_detected(self, tmp_bank: PsycheBank):
+        t = Tribunal(bank=tmp_bank)
+        e = Engram(slug="pt-1", intent="BUILD",
+                   logic_body="open('../etc/passwd', 'r')")
+        result = t.evaluate(e)
+        assert result.poison_detected
+        assert "path-traversal" in result.violations
+
+    def test_path_traversal_backslash_detected(self, tmp_bank: PsycheBank):
+        t = Tribunal(bank=tmp_bank)
+        e = Engram(slug="pt-2", intent="BUILD",
+                   logic_body="path = user_dir + '..\\secrets'")
+        result = t.evaluate(e)
+        assert result.poison_detected
+        assert "path-traversal" in result.violations
+
 
 class TestJITExecutor:
     def test_fan_out_all_succeed(self):
@@ -342,6 +358,27 @@ class TestJITExecutor:
         ex = JITExecutor()
         results = ex.fan_out(lambda e: None, [])
         assert results == []
+
+    def test_latency_p90_is_none_before_any_fanout(self):
+        ex = JITExecutor(max_workers=2)
+        assert ex.latency_p90() is None
+
+    def test_latency_p90_after_fanout(self):
+        ex = JITExecutor(max_workers=2)
+        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD")
+                for i in range(5)]
+        ex.fan_out(lambda e: None, envs)
+        p90 = ex.latency_p90()
+        assert p90 is not None
+        assert p90 >= 0.0
+
+    def test_reset_histogram_clears_data(self):
+        ex = JITExecutor(max_workers=2)
+        envs = [Envelope(mandate_id="m-0", intent="BUILD")]
+        ex.fan_out(lambda e: None, envs)
+        assert ex.latency_p90() is not None
+        ex.reset_histogram()
+        assert ex.latency_p90() is None
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

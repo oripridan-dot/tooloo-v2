@@ -26,10 +26,14 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from engine.config import GEMINI_API_KEY, GEMINI_MODEL
+from engine.config import GEMINI_API_KEY, VERTEX_DEFAULT_MODEL, _vertex_client as _vertex_client_cfg
 from engine.router import RouteResult
+from engine.model_garden import get_garden, INTENT_TASK as _GARDEN_INTENT_TASK
 
-# ── Gemini client (re-uses same optional pattern as conversation.py) ──────────
+# ── Vertex AI client (primary — enterprise-grade Model Garden via unified SDK) ───────
+_vertex_client = _vertex_client_cfg
+
+# ── Gemini Direct client (secondary fallback — consumer API) ─────────────────────
 _gemini_client = None
 if GEMINI_API_KEY:
     try:
@@ -54,10 +58,10 @@ _CATALOGUE: dict[str, list[tuple[str, float]]] = {
         ("Structured logging with correlation IDs (JSON + trace_id) is table stakes for observability", 0.75),
     ],
     "DEBUG": [
-        ("Structured JSON logging with correlation IDs is the baseline for distributed tracing", 0.92),
+        ("OpenTelemetry 2.0 with AI-powered root-cause analysis via Jaeger + Grafana is the 2026 observability standard", 0.94),
+        ("LLM-assisted debugging (GitHub Copilot Workspace, Cursor, Aider) reduces mean time to resolution by 60%", 0.91),
         ("Flamegraph profiling (py-spy / async-profiler) localises hot paths in under 60 seconds", 0.88),
-        ("Chaos-engineering fault injection is standard practice for validating resilience post-fix", 0.82),
-        ("OpenTelemetry traces + spans are the primary tool for root-cause analysis in 2026", 0.78),
+        ("Chaos-engineering fault injection (Chaos Monkey, Gremlin) validates resilience post-fix", 0.82),
         ("Continuous profiling (Pyroscope / Grafana Phlare) catches regressions before production", 0.74),
     ],
     "AUDIT": [
@@ -100,6 +104,36 @@ _CATALOGUE: dict[str, list[tuple[str, float]]] = {
         ("Review recent mandate history and confidence distribution before resetting the breaker", 0.85),
         ("Consider adjusting CIRCUIT_BREAKER_THRESHOLD in config if legitimate mandates keep tripping it", 0.80),
     ],
+    # UI/UX evaluation — fires when a node touches studio/static/ or frontend targets
+    "UX_EVAL": [
+        ("WCAG 2.2 Level AA is the minimum accessibility compliance bar; use aXe or Lighthouse CI", 0.95),
+        ("Cognitive load reduction: max 5 primary actions per screen, clear visual hierarchy via CSS custom properties", 0.93),
+        ("GSAP 3.12 ScrollTrigger + MotionPath for smooth state transitions; avoid requestAnimationFrame loops", 0.91),
+        ("CSS Container Queries replace JS-based responsive logic; Baseline 2024 — safe to use broadly", 0.88),
+        ("Radix UI primitives provide accessible headless components; pair with design tokens via Style Dictionary v4", 0.85),
+    ],
+    # Blueprint planning — fires in Phase 1 mandatory blueprint strokes
+    "BLUEPRINT": [
+        ("C4 model (Context→Container→Component→Code) is the SOTA architecture documentation standard 2026", 0.93),
+        ("Blast-radius analysis must precede any structural change; use dependency graph traversal", 0.90),
+        ("Decision Records (ADRs) capture rationale; paired with Mermaid diagrams for visual verification", 0.87),
+        ("Impact simulation with dry-run diff output is required before any live file mutation", 0.84),
+        ("DORA metrics anchor success criteria for implementation plans", 0.80),
+    ],
+    # Dry-run simulation signals
+    "DRY_RUN": [
+        ("Structural diff output (unified diff format) is the SOTA dry-run artefact; parse with difflib", 0.93),
+        ("Simulate side effects using read-only MCP tool calls before committing any writes", 0.90),
+        ("Staging area pattern: write to plans/ dir first, promote to live only after Satisfaction Gate passes", 0.87),
+        ("Static analysis (ruff, mypy --strict) on generated code before file_write MCP invocation", 0.84),
+        ("Simulate UI component rendering mentally using computed property inference", 0.80),
+    ],
+    # Fallback signals for unrecognised or ambiguous intents
+    "UNKNOWN": [
+        ("Clarify the mandate intent before routing — ambiguous requests risk misconfigured pipelines", 0.88),
+        ("Use structured input validation at the API boundary to reduce UNKNOWN intent frequency", 0.84),
+        ("Log UNKNOWN routing events to PsycheBank for ongoing intent-classifier improvement", 0.78),
+    ],
 }
 
 _JIT_FETCH_PROMPT = (
@@ -108,6 +142,25 @@ _JIT_FETCH_PROMPT = (
     "list exactly 3 concrete, current, specific data points as bullet lines (starting with -) "
     "covering relevant SOTA tools, patterns, risks, or standards as of 2026. "
     "Be terse and specific. No preamble. No post-amble."
+)
+
+_JIT_NODE_PROMPT = (
+    "You are a real-time SOTA intelligence agent for TooLoo V2 node-level grounding. "
+    "Node type: '{node_type}'. Mandate intent: '{intent}'. "
+    "Node objective: \"{action_context}\". "
+    "List exactly 3 hyper-specific SOTA signals (bullet lines starting with -) "
+    "most critical for this specific node's execution in 2026. "
+    "Bias towards UI/UX excellence if the node touches frontend files. "
+    "No preamble. No post-amble."
+)
+
+_JIT_MCP_GROUNDING_PROMPT = (
+    "You are a real-time best-practice verifier for MCP tool usage in TooLoo V2. "
+    "MCP Tool: '{tool_name}'. Target context: \"{target_context}\". "
+    "List exactly 3 critical best-practice checks (bullet lines starting with -) "
+    "that MUST pass before this tool executes in 2026. "
+    "Focus on security, correctness, and human interface quality. "
+    "No preamble. No post-amble."
 )
 
 
@@ -148,24 +201,55 @@ class JITBooster:
     """
     Fetches SOTA signals JIT and boosts a RouteResult's confidence score.
 
-    This is a mandatory step — every mandate and chat turn must pass through
-    ``fetch()`` before response generation.  The returned ``JITBoostResult``
-    carries the validated (boosted) confidence alongside the concrete signals
-    that justified it, so callers can both apply the boost and surface the
-    evidence to users.
+    Extended with:
+      - Node-level context (``fetch_for_node``) for per-DAG-node grounding.
+      - MCP tool grounding (``fetch_mcp_grounding``) pre-invocation verification.
+      - UI/UX awareness: when action_context touches frontend files the booster
+        automatically biases towards UX_EVAL signals.
 
     Usage::
 
         booster = JITBooster()
+        # Mandate-level (pre-flight / mid-flight):
         jit = booster.fetch(route)
-        # Apply via router.apply_jit_boost(route, jit.boosted_confidence)
+        # Node-level (per DAG node before execution):
+        node_jit = booster.fetch_for_node(route, node_type="implement",
+                                           action_context="write auth middleware")
+        # MCP tool pre-invocation grounding:
+        checks = booster.fetch_mcp_grounding("file_write", "studio/static/index.html")
     """
 
-    def fetch(self, route: RouteResult) -> JITBoostResult:
-        """Mandatory pre-execution step: fetch SOTA signals, compute boost."""
+    _FRONTEND_PATTERNS: frozenset[str] = frozenset(
+        {".html", ".css", ".js", ".ts", ".tsx", ".jsx", ".vue", ".svelte",
+         "studio/static", "frontend", "/ui/", "index.html"}
+    )
+
+    def fetch(
+        self,
+        route: RouteResult,
+        vertex_model_id: str | None = None,
+        action_context: str | None = None,
+    ) -> JITBoostResult:
+        """Mandatory pre-execution step: fetch SOTA signals, compute boost.
+
+        Args:
+            route:            Routed intent with mandate text.
+            vertex_model_id:  Optional Vertex AI model ID from the N-Stroke
+                              model selector.  Falls back to VERTEX_DEFAULT_MODEL.
+            action_context:   Optional node/action description for richer signals.
+        """
         jit_id = f"jit-{uuid.uuid4().hex[:8]}"
         original = route.confidence
-        signals, source = self._fetch_signals(route.intent, route.mandate_text)
+
+        # Auto-bias to UX_EVAL when context touches frontend files
+        effective_intent = route.intent
+        if action_context and self._is_frontend_context(action_context):
+            effective_intent = "UX_EVAL"
+
+        signals, source = self._fetch_signals(
+            effective_intent, route.mandate_text, vertex_model_id,
+            action_context=action_context,
+        )
         boost_delta = min(len(signals) * BOOST_PER_SIGNAL, MAX_BOOST_DELTA)
         boosted = min(original + boost_delta, 1.0)
 
@@ -179,24 +263,270 @@ class JITBooster:
             source=source,
         )
 
+    def fetch_for_node(
+        self,
+        route: RouteResult,
+        node_type: str,
+        action_context: str,
+        vertex_model_id: str | None = None,
+    ) -> JITBoostResult:
+        """Node-level JIT grounding — hyper-specific signals for one DAG node.
+
+        Called by the NStrokeEngine before processing each node so every work
+        unit gets its own targeted SOTA context on top of the mandate-level boost.
+
+        Args:
+            route:          The active RouteResult (intent + confidence).
+            node_type:      DAG node type (ingest / analyse / design / implement
+                            / validate / emit / ux_eval / blueprint / dry_run).
+            action_context: Specific objective of this node (1-2 sentences).
+            vertex_model_id: Optional model override.
+        """
+        jit_id = f"jit-node-{uuid.uuid4().hex[:8]}"
+        original = route.confidence
+
+        # Determine effective intent based on node type and context
+        if self._is_frontend_context(action_context) or node_type == "ux_eval":
+            effective_intent = "UX_EVAL"
+        elif node_type in ("blueprint", "audit_wave"):
+            effective_intent = "BLUEPRINT"
+        elif node_type == "dry_run":
+            effective_intent = "DRY_RUN"
+        else:
+            effective_intent = route.intent
+
+        signals, source = self._fetch_node_signals(
+            node_type=node_type,
+            intent=effective_intent,
+            mandate_text=route.mandate_text,
+            action_context=action_context,
+            vertex_model_id=vertex_model_id,
+        )
+        boost_delta = min(len(signals) * BOOST_PER_SIGNAL, MAX_BOOST_DELTA)
+        boosted = min(original + boost_delta, 1.0)
+
+        return JITBoostResult(
+            jit_id=jit_id,
+            intent=effective_intent,
+            original_confidence=round(original, 4),
+            boosted_confidence=round(boosted, 4),
+            boost_delta=round(boost_delta, 4),
+            signals=signals,
+            source=source,
+        )
+
+    def fetch_mcp_grounding(
+        self,
+        tool_name: str,
+        target_context: str,
+        vertex_model_id: str | None = None,
+    ) -> list[str]:
+        """MCP tool pre-invocation best-practice verification.
+
+        Before invoking any MCP tool (file_write, code_analyze, run_tests …),
+        the engine queries the JIT catalog to verify best practices for this
+        specific tool and its target context.
+
+        Args:
+            tool_name:      MCP tool name (e.g. 'file_write', 'run_tests').
+            target_context: File path, module, or target description.
+            vertex_model_id: Optional model override.
+        """
+        model_id = vertex_model_id or VERTEX_DEFAULT_MODEL
+
+        if _vertex_client is not None:
+            try:
+                prompt = _JIT_MCP_GROUNDING_PROMPT.format(
+                    tool_name=tool_name, target_context=target_context[:200]
+                )
+                resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
+                    model=VERTEX_DEFAULT_MODEL, contents=prompt
+                )
+                bullets = _parse_bullets(resp.text)
+                if bullets:
+                    return bullets
+            except Exception:
+                pass
+
+        if _gemini_client is not None:
+            try:
+                prompt = _JIT_MCP_GROUNDING_PROMPT.format(
+                    tool_name=tool_name, target_context=target_context[:200]
+                )
+                resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
+                    model=VERTEX_DEFAULT_MODEL, contents=prompt
+                )
+                bullets = _parse_bullets(resp.text)
+                if bullets:
+                    return bullets
+            except Exception:
+                pass
+
+        return self._structured_mcp_grounding(tool_name)
+
+    # ── Internal helpers ───────────────────────────────────────────────────────
+
+    def _is_frontend_context(self, context: str) -> bool:
+        """Return True if context string refers to a frontend / UI target."""
+        ctx_lower = context.lower()
+        return any(p in ctx_lower for p in self._FRONTEND_PATTERNS)
+
+    @staticmethod
+    def _structured_mcp_grounding(tool_name: str) -> list[str]:
+        """Structured fallback best-practice checks for MCP tool invocations."""
+        _MCP_GROUNDING: dict[str, list[str]] = {
+            "file_write": [
+                "Verify the target path is inside workspace root — no ../ traversal",
+                "Run static analysis (ruff check) on generated Python before writing",
+                "Confirm there are no uncommitted edits to the file to avoid conflicts",
+            ],
+            "file_read": [
+                "Confirm path is within workspace root before reading",
+                "Cap read length to avoid context overflow (8000 chars max)",
+                "Do not cache sensitive file contents beyond the current stroke",
+            ],
+            "code_analyze": [
+                "Treat LLM analysis output as untrusted — do not exec() any suggestion",
+                "Cross-check identified patterns against PsycheBank forbidden rules",
+                "Sanitise all output before surfacing to the UI via esc()",
+            ],
+            "run_tests": [
+                "Run in isolated subprocess — never import test modules directly",
+                "Capture stdout/stderr; timeout at 60 s to prevent hang",
+                "Verify test module is inside tests/ directory before invocation",
+            ],
+            "web_lookup": [
+                "Sanitise all retrieved content through esc() before rendering in UI",
+                "Cache results with TTL — do not re-query the same keyword within 60 s",
+                "Treat retrieved content as untrusted external data",
+            ],
+            "read_error": [
+                "Do not surface raw tracebacks to end-users — use structured hint only",
+                "Log full traceback to structured log; show hint only in UI",
+                "Cross-reference error type against known PsycheBank healing patterns",
+            ],
+        }
+        return _MCP_GROUNDING.get(tool_name, [
+            "Validate all inputs to this MCP tool against workspace security policies",
+            "Treat tool output as untrusted text — sanitise before use",
+            "Log tool invocation to structured audit log for traceability",
+        ])
+
     # ── Signal fetching ────────────────────────────────────────────────────────
 
     def _fetch_signals(
-        self, intent: str, mandate_text: str
+        self,
+        intent: str,
+        mandate_text: str,
+        vertex_model_id: str | None = None,
+        action_context: str | None = None,
     ) -> tuple[list[str], str]:
+        # Resolve model: prefer caller-specified, then garden's best for the intent
+        task_type = _GARDEN_INTENT_TASK.get(intent, "reasoning")
+        garden = get_garden()
+        model_id = vertex_model_id or garden.get_tier_model(1, intent)
+
+        base = _JIT_FETCH_PROMPT.format(
+            intent=intent, mandate_text=mandate_text[:280])
+        prompt = base if not action_context else (
+            base + f" Node context: {action_context[:100]}"
+        )
+
+        # 1. ModelGarden — dispatches to Google or Anthropic per capability
+        try:
+            text = garden.call(model_id, prompt)
+            bullets = _parse_bullets(text)
+            if bullets:
+                return bullets, garden.source_for(model_id)
+        except Exception:
+            pass
+
+        # 2. Gemini Direct — secondary fallback
         if _gemini_client is not None:
             try:
-                return self._fetch_gemini(intent, mandate_text), "gemini"
+                resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
+                    model=VERTEX_DEFAULT_MODEL, contents=prompt
+                )
+                bullets = _parse_bullets(resp.text)
+                if bullets:
+                    return bullets, "gemini"
             except Exception:
                 pass
+
         return self._fetch_structured(intent), "structured"
 
-    def _fetch_gemini(self, intent: str, mandate_text: str) -> list[str]:
-        prompt = _JIT_FETCH_PROMPT.format(
-            intent=intent, mandate_text=mandate_text[:300]
+    def _fetch_node_signals(
+        self,
+        node_type: str,
+        intent: str,
+        mandate_text: str,
+        action_context: str,
+        vertex_model_id: str | None = None,
+    ) -> tuple[list[str], str]:
+        """Fetch hyper-specific signals for a single DAG node via best available model."""
+        garden = get_garden()
+        model_id = vertex_model_id or garden.get_tier_model(2, intent)
+        prompt = _JIT_NODE_PROMPT.format(
+            node_type=node_type, intent=intent,
+            action_context=action_context[:300],
+        )
+
+        # 1. ModelGarden — multi-provider dispatch
+        try:
+            text = garden.call(model_id, prompt)
+            bullets = _parse_bullets(text)
+            if bullets:
+                return bullets, garden.source_for(model_id)
+        except Exception:
+            pass
+
+        # 2. Gemini Direct — secondary fallback
+        if _gemini_client is not None:
+            try:
+                resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
+                    model=VERTEX_DEFAULT_MODEL, contents=prompt
+                )
+                bullets = _parse_bullets(resp.text)
+                if bullets:
+                    return bullets, "gemini"
+            except Exception:
+                pass
+
+        return self._fetch_structured(intent), "structured"
+
+    def _fetch_vertex(
+        self,
+        intent: str,
+        mandate_text: str,
+        model_id: str,
+        action_context: str | None = None,
+    ) -> list[str]:
+        base = _JIT_FETCH_PROMPT.format(
+            intent=intent, mandate_text=mandate_text[:280])
+        prompt = base if not action_context else (
+            base + f" Node context: {action_context[:100]}"
+        )
+        resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
+            model=model_id, contents=prompt
+        )
+        bullets = _parse_bullets(resp.text)
+        if not bullets:
+            raise ValueError("Vertex returned no parseable signals")
+        return bullets
+
+    def _fetch_gemini(
+        self,
+        intent: str,
+        mandate_text: str,
+        action_context: str | None = None,
+    ) -> list[str]:
+        base = _JIT_FETCH_PROMPT.format(
+            intent=intent, mandate_text=mandate_text[:280])
+        prompt = base if not action_context else (
+            base + f" Node context: {action_context[:100]}"
         )
         resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
-            model=GEMINI_MODEL, contents=prompt
+            model=VERTEX_DEFAULT_MODEL, contents=prompt
         )
         bullets = _parse_bullets(resp.text)
         if not bullets:
@@ -205,7 +535,9 @@ class JITBooster:
         return bullets
 
     def _fetch_structured(self, intent: str) -> list[str]:
-        entries = _CATALOGUE.get(intent, _CATALOGUE["BUILD"])
+        # Fall back to UNKNOWN catalogue entry for unrecognised intents rather
+        # than silently defaulting to BUILD signals.
+        entries = _CATALOGUE.get(intent) or _CATALOGUE["UNKNOWN"]
         # Sort by relevance weight descending; return top 3 signal texts
         return [
             text

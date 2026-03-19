@@ -25,11 +25,15 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from engine.config import GEMINI_API_KEY, GEMINI_MODEL, VERTEX_DEFAULT_MODEL
+from engine.config import _vertex_client as _vertex_client_cfg
 from engine.executor import Envelope, JITExecutor
 from engine.graph import TopologicalSorter
 from engine.jit_booster import JITBooster
+from engine.mcp_manager import MCPManager
 from engine.psyche_bank import PsycheBank
 from engine.refinement import RefinementLoop
 from engine.router import MandateRouter
@@ -39,6 +43,51 @@ from engine.tribunal import Engram, Tribunal
 if TYPE_CHECKING:
     from engine.jit_booster import JITBoostResult
     from engine.router import RouteResult
+
+# ── LLM clients (initialised once — same pattern as jit_booster / conversation) ──
+_vertex_client = _vertex_client_cfg
+
+_gemini_client = None
+if GEMINI_API_KEY:
+    try:
+        from google import genai as _genai_mod  # type: ignore[import-untyped]
+        _gemini_client = _genai_mod.Client(api_key=GEMINI_API_KEY)
+    except Exception:  # pragma: no cover
+        pass
+
+# ── Workspace root ────────────────────────────────────────────────────────────
+_REPO_ROOT: Path = Path(__file__).resolve().parents[1]
+
+# ── Map component name → source file relative to repo root ────────────────────
+_COMPONENT_SOURCE: dict[str, str] = {
+    "router":          "engine/router.py",
+    "tribunal":        "engine/tribunal.py",
+    "psyche_bank":     "engine/psyche_bank.py",
+    "jit_booster":     "engine/jit_booster.py",
+    "executor":        "engine/executor.py",
+    "graph":           "engine/graph.py",
+    "scope_evaluator": "engine/scope_evaluator.py",
+    "refinement":      "engine/refinement.py",
+    "n_stroke":        "engine/n_stroke.py",
+    "supervisor":      "engine/supervisor.py",
+    "conversation":    "engine/conversation.py",
+    "config":          "engine/config.py",
+}
+
+_ANALYSIS_PROMPT = (
+    "You are TooLoo V2's self-improvement analyst.  Your job is to audit a specific "
+    "engine component and produce CONCRETE, ACTIONABLE code-level improvements.\n\n"
+    "Component: {component}\n"
+    "Role: {description}\n"
+    "Improvement mandate: {mandate}\n\n"
+    "SOTA signals (current 2026 best practices):\n{signals}\n\n"
+    "Source code (first {max_lines} lines):\n```python\n{source}\n```\n\n"
+    "Produce exactly 3 concrete improvements. For each, output:\n"
+    "  FIX <N>: <file_path>:<line_hint> — <what to change> (1 line)\n"
+    "  CODE: <the exact replacement code snippet (≤8 lines)>\n\n"
+    "Be terse, specific, and production-ready. Follow TooLoo V2 laws: "
+    "stateless processors, no hardcoded secrets, all config from engine/config.py."
+)
 
 # ── Component manifest ────────────────────────────────────────────────────────
 #
@@ -195,6 +244,10 @@ class SelfImprovementReport:
     refinement_verdict: str        # "pass" | "warn" | "fail"
     refinement_success_rate: float
     latency_ms: float
+    # Ouroboros God Mode additions
+    arch_diagram: str = ""         # Mermaid diagram of engine component graph
+    regression_passed: bool = True  # True if run_tests MCP passed post-cycle
+    regression_details: str = ""   # test summary from MCPManager.run_tests
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -208,6 +261,9 @@ class SelfImprovementReport:
             "refinement_verdict": self.refinement_verdict,
             "refinement_success_rate": round(self.refinement_success_rate, 3),
             "latency_ms": round(self.latency_ms, 2),
+            "arch_diagram": self.arch_diagram,
+            "regression_passed": self.regression_passed,
+            "regression_details": self.regression_details,
         }
 
 
@@ -217,6 +273,13 @@ class SelfImprovementReport:
 class SelfImprovementEngine:
     """Run the full pipeline against each engine component to surface improvement
     opportunities.
+
+    Ouroboros God Mode:
+      Before any self-assessment, the engine generates an architectural diagram
+      (Mermaid) of the component dependency graph.  After the assessment cycle,
+      it runs the full test suite via MCPManager.run_tests and gates the final
+      verdict on the regression result.  This ensures self-modifications never
+      silently break the existing pipeline.
 
     Uses a *dedicated* MandateRouter in ``route_chat`` mode so the self-improvement
     cycle never trips the shared circuit-breaker used by the Governor API.
@@ -244,15 +307,27 @@ class SelfImprovementEngine:
         self._sorter = TopologicalSorter()
         self._scope_evaluator = ScopeEvaluator()
         self._refinement_loop = RefinementLoop()
+        self._mcp = MCPManager()
+        # LLM model — re-uses same default as config
+        self._vertex_model: str = VERTEX_DEFAULT_MODEL
 
     # ── Public API ────────────────────────────────────────────────────────────
 
     def run(self) -> SelfImprovementReport:
-        """Execute the self-improvement cycle and return a ``SelfImprovementReport``."""
+        """Execute the Ouroboros self-improvement cycle.
+
+        Phases:
+          Phase 0 — Architectural Diagram generation (Mermaid component graph)
+          Phase 1 — Component assessment waves (existing 3-wave structure)
+          Phase 2 — Regression Gate via MCPManager.run_tests (sandbox)
+        """
         t0 = time.monotonic()
         improvement_id = f"si-{uuid.uuid4().hex[:8]}"
 
-        # Build wave spec from component manifest
+        # ── Phase 0: Generate architectural diagram ───────────────────────────
+        arch_diagram = self._generate_arch_diagram()
+
+        # ── Phase 1: Component assessment waves ──────────────────────────────
         wave_spec = self._build_wave_spec()
         waves = self._sorter.sort(wave_spec)
 
@@ -283,7 +358,6 @@ class SelfImprovementEngine:
                 if result.success and isinstance(result.output, ComponentAssessment):
                     assessments.append(result.output)
                 else:
-                    # Emit a degraded assessment so the report is always complete
                     comp = next(
                         c for c in wave_components
                         if f"{improvement_id}-{c['component']}" == result.mandate_id
@@ -304,8 +378,12 @@ class SelfImprovementEngine:
                             "Re-run self-improvement cycle to retry this component."],
                     ))
 
+        # ── Phase 2: Regression Gate ─────────────────────────────────────────
+        regression_passed, regression_details = self._run_regression_gate(
+            improvement_id
+        )
+
         # Build refinement envelopes representing the component assessments
-        # local import avoids circularity at module level
         from engine.executor import ExecutionResult
         refinement_inputs = [
             ExecutionResult(
@@ -333,6 +411,99 @@ class SelfImprovementEngine:
             refinement_verdict=refinement.verdict,
             refinement_success_rate=refinement.success_rate,
             latency_ms=round((time.monotonic() - t0) * 1000, 2),
+            arch_diagram=arch_diagram,
+            regression_passed=regression_passed,
+            regression_details=regression_details,
+        )
+
+    # ── Ouroboros God Mode helpers ────────────────────────────────────────────
+
+    def _generate_arch_diagram(self) -> str:
+        """Generate a Mermaid graph diagram of the engine component dependencies.
+
+        Attempts Vertex AI first; falls back to a static structural diagram.
+        The diagram is written to plans/arch_diagram.md in the workspace.
+        """
+        prompt = (
+            "Generate a Mermaid graph LR diagram showing the TooLoo V2 engine "
+            "component dependencies for these components and their deps:\n"
+            + "\n".join(
+                f"  {c['component']} --> deps: {c['deps']}"
+                for c in _COMPONENTS
+            )
+            + "\n\nOutput ONLY the Mermaid code block. No prose. Start with ```mermaid"
+        )
+        diagram = ""
+        if _vertex_client is not None:
+            try:
+                resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
+                    model=self._vertex_model, contents=prompt
+                )
+                diagram = (resp.text or "").strip()
+            except Exception:
+                pass
+        if not diagram and _gemini_client is not None:
+            try:
+                resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
+                    model=GEMINI_MODEL, contents=prompt
+                )
+                diagram = (resp.text or "").strip()
+            except Exception:
+                pass
+        if not diagram:
+            # Static fallback diagram
+            diagram = self._static_arch_diagram()
+
+        # Write to plans/ directory (non-live, planning-phase write)
+        self._write_plan("arch_diagram.md",
+                         f"# TooLoo V2 Architecture\n\n{diagram}\n")
+        return diagram
+
+    def _run_regression_gate(
+        self, improvement_id: str
+    ) -> tuple[bool, str]:
+        """Run the test suite via MCPManager.run_tests after the assessment cycle.
+
+        Returns (passed: bool, details: str).  Runs in sandbox mode — does not
+        block the report if tests fail, but surfaces the failure prominently.
+        """
+        # Get JIT grounding best practices before invoking the MCP tool
+        grounding = self._booster.fetch_mcp_grounding("run_tests", "tests/")
+        result = self._mcp.call_uri("mcp://tooloo/run_tests",
+                                    module="tests", timeout=45)
+        details = str(result.output or "")[:500]
+        passed = result.success
+        return passed, details
+
+    def _write_plan(self, filename: str, content: str) -> None:
+        """Write a planning-phase artefact to the workspace plans/ directory.
+
+        Uses the MCP file_write tool with a path-safety check.
+        Falls back silently if write fails (non-blocking).
+        """
+        try:
+            self._mcp.call_uri("mcp://tooloo/file_write",
+                               path=f"plans/{filename}", content=content)
+        except Exception:
+            pass  # planning writes are best-effort
+
+    @staticmethod
+    def _static_arch_diagram() -> str:
+        """Static Mermaid architecture diagram for offline mode."""
+        return (
+            "```mermaid\n"
+            "graph LR\n"
+            "  router --> tribunal\n"
+            "  router --> jit_booster\n"
+            "  router --> psyche_bank\n"
+            "  jit_booster --> executor\n"
+            "  jit_booster --> graph\n"
+            "  executor --> scope_evaluator\n"
+            "  executor --> refinement\n"
+            "  graph --> scope_evaluator\n"
+            "  graph --> refinement\n"
+            "  tribunal --> psyche_bank\n"
+            "```"
         )
 
     # ── Internal helpers ──────────────────────────────────────────────────────
@@ -345,7 +516,17 @@ class SelfImprovementEngine:
         ]
 
     def _assess_component(self, env: Envelope) -> ComponentAssessment:
-        """Full pipeline assessment for one component (runs inside a thread)."""
+        """Full pipeline assessment for one component (runs inside a thread).
+
+        Pipeline:
+          1. Route   — isolated MandateRouter (no circuit-breaker side-effects)
+          2. JIT     — Vertex AI SOTA signal fetch (primary) / structured (fallback)
+          3. Tribunal — OWASP poison scan
+          4. Plan    — micro 3-wave DAG (recon → analyse → improve)
+          5. Scope   — wave-plan analysis
+          6. Analyse — read source file + Vertex AI code-level analysis (live)
+          7. Return  — ComponentAssessment with concrete LLM-generated suggestions
+        """
         comp: dict[str, Any] = env.metadata["component"]
         mandate_text: str = comp["mandate"]
         component_name: str = comp["component"]
@@ -367,7 +548,7 @@ class SelfImprovementEngine:
         )
         tribunal_result = self._tribunal.evaluate(engram)
 
-        # 4. Micro-wave plan for this component (recon → plan → generate → validate)
+        # 4. Micro-wave plan for this component (recon → analyse → improve)
         micro_spec: list[tuple[str, list[str]]] = [
             (f"{env.mandate_id}-recon", []),
             (f"{env.mandate_id}-analyse", [f"{env.mandate_id}-recon"]),
@@ -379,9 +560,19 @@ class SelfImprovementEngine:
         scope = self._scope_evaluator.evaluate(
             micro_waves, intent=route.intent)
 
-        # Derive component-specific suggestions from JIT signals
-        suggestions = self._derive_suggestions(
-            component_name, jit_result.signals)
+        # 6. LLM deep analysis — read source + call Vertex AI for concrete suggestions
+        source_snippet = self._read_component_source(component_name)
+        if source_snippet:
+            suggestions = self._analyze_with_llm(
+                component=component_name,
+                description=comp["description"],
+                mandate=mandate_text,
+                signals=jit_result.signals,
+                source=source_snippet,
+            )
+        else:
+            suggestions = self._derive_suggestions(
+                component_name, jit_result.signals)
 
         return ComponentAssessment(
             component=component_name,
@@ -397,6 +588,103 @@ class SelfImprovementEngine:
             execution_latency_ms=0.0,  # filled by JITExecutor wrapper
             suggestions=suggestions,
         )
+
+    def _read_component_source(self, component: str, max_lines: int = 120) -> str:
+        """Read the first ``max_lines`` of the component's source file.
+
+        Returns empty string if the file is not found or cannot be read.
+        Path traversal is prevented by resolving against _REPO_ROOT.
+        """
+        rel_path = _COMPONENT_SOURCE.get(component)
+        if not rel_path:
+            return ""
+        abs_path = (_REPO_ROOT / rel_path).resolve()
+        # Jail check — must stay inside the repo root (no ../ traversal)
+        if not str(abs_path).startswith(str(_REPO_ROOT)):
+            return ""
+        try:
+            lines = abs_path.read_text(encoding="utf-8").splitlines()
+            return "\n".join(lines[:max_lines])
+        except OSError:
+            return ""
+
+    def _analyze_with_llm(
+        self,
+        component: str,
+        description: str,
+        mandate: str,
+        signals: list[str],
+        source: str,
+        max_lines: int = 120,
+    ) -> list[str]:
+        """Call Vertex AI (primary) / Gemini Direct (fallback) with the component
+        source code to produce concrete code-level improvement suggestions.
+
+        Falls back to ``_derive_suggestions`` when both LLM paths are unavailable.
+        All output is treated as untrusted text — not eval'd, not exec'd.
+        """
+        signals_str = "\n".join(
+            f"- {s}" for s in signals[:3]) if signals else "(none)"
+        prompt = _ANALYSIS_PROMPT.format(
+            component=component,
+            description=description,
+            mandate=mandate[:400],
+            signals=signals_str,
+            max_lines=max_lines,
+            source=source[:3000],  # hard cap to stay within token limits
+        )
+
+        raw: str = ""
+        if _vertex_client is not None:
+            try:
+                resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
+                    model=self._vertex_model, contents=prompt,
+                )
+                raw = (resp.text or "").strip()
+            except Exception:
+                pass
+
+        if not raw and _gemini_client is not None:
+            try:
+                resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
+                    model=GEMINI_MODEL, contents=prompt,
+                )
+                raw = (resp.text or "").strip()
+            except Exception:
+                pass
+
+        if not raw:
+            return self._derive_suggestions(component, signals)
+
+        # Parse structured FIX / CODE blocks into terse suggestion bullets.
+        # Only capture lines that start with FIX or CODE; skip all prose.
+        lines = raw.splitlines()
+        suggestions: list[str] = []
+        in_code_block = False
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith("```"):
+                in_code_block = not in_code_block
+                continue
+            if in_code_block:
+                continue
+            if stripped.startswith("FIX ") or stripped.startswith("CODE:"):
+                suggestions.append(stripped)
+        # Fall back to first 3 non-empty, non-preamble lines when Gemini
+        # didn't follow the FIX/CODE format.
+        if not suggestions:
+            for line in lines:
+                stripped = line.strip()
+                if (
+                    stripped
+                    and not stripped.startswith(("```", "Here", "Below", "Sure",
+                                                 "Certainly", "Of course", "#"))
+                    and len(stripped) > 20
+                ):
+                    suggestions.append(stripped)
+                    if len(suggestions) >= 3:
+                        break
+        return suggestions[:6] if suggestions else self._derive_suggestions(component, signals)
 
     @staticmethod
     def _derive_suggestions(

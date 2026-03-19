@@ -19,13 +19,15 @@ Routes:
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import time
 import uuid
-from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator
+from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, AsyncGenerator
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI
@@ -39,17 +41,30 @@ from engine.engram_visual import VisualEngramGenerator
 from engine.executor import Envelope, JITExecutor
 from engine.graph import CognitiveGraph, TopologicalSorter
 from engine.jit_booster import JITBooster
-from engine.psyche_bank import PsycheBank
-from engine.refinement import RefinementLoop
-from engine.roadmap import RoadmapManager
-from engine.router import ConversationalIntentDiscovery, LockedIntent, MandateRouter
-from engine.sandbox import SandboxOrchestrator
-from engine.scope_evaluator import ScopeEvaluator
-from engine.self_improvement import SelfImprovementEngine
+from engine.mandate_executor import make_live_work_fn
 from engine.mcp_manager import MCPManager
 from engine.model_selector import ModelSelector
 from engine.n_stroke import NStrokeEngine
+from engine.psyche_bank import PsycheBank
+from engine.refinement import RefinementLoop
 from engine.refinement_supervisor import RefinementSupervisor
+from engine.roadmap import RoadmapManager
+from engine.router import (
+    ConversationalIntentDiscovery,
+    LockedIntent,
+    MandateRouter,
+    compute_buddy_line,
+)
+from engine.sandbox import SandboxOrchestrator
+from engine.scope_evaluator import ScopeEvaluator
+from engine.branch_executor import (
+    BRANCH_CLONE,
+    BRANCH_FORK,
+    BRANCH_SHARE,
+    BranchExecutor,
+    BranchSpec,
+)
+from engine.self_improvement import SelfImprovementEngine
 from engine.supervisor import TwoStrokeEngine
 from engine.tribunal import Engram, Tribunal
 
@@ -78,13 +93,11 @@ _STARTUP_TIME: str = datetime.now(UTC).isoformat()
 _sse_queues: list[asyncio.Queue[str]] = []
 
 
-def _broadcast(event: dict[str, Any]) -> None:  # noqa: F811
+def _broadcast(event: dict[str, Any]) -> None:
     data = json.dumps(event)
     for q in list(_sse_queues):
-        try:
+        with suppress(asyncio.QueueFull):
             q.put_nowait(data)
-        except asyncio.QueueFull:
-            pass
 
 
 # ── Sandbox + Roadmap singletons (after _broadcast so they can be wired) ─────
@@ -109,6 +122,16 @@ _n_stroke_engine = NStrokeEngine(
     mcp_manager=_mcp_manager,
     model_selector=_model_selector,
     refinement_supervisor=_refinement_supervisor,
+    broadcast_fn=_broadcast,
+)
+_branch_executor = BranchExecutor(
+    router=_router,
+    booster=_jit_booster,
+    tribunal=_tribunal,
+    sorter=_sorter,
+    jit_executor=_executor,
+    scope_evaluator=_scope_evaluator,
+    refinement_loop=_refinement_loop,
     broadcast_fn=_broadcast,
 )
 _roadmap = RoadmapManager()
@@ -197,7 +220,7 @@ async def _autonomous_loop() -> None:
                 "proven_count": proven,
                 "stats": dict(_loop_stats),
             })
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             _broadcast(
                 {"type": "auto_loop", "phase": "error", "error": str(exc)})
 
@@ -243,6 +266,7 @@ async def health() -> dict[str, Any]:
             "model_selector": "up",
             "refinement_supervisor": "up",
             "n_stroke_engine": "up",
+            "branch_executor": "up",
         },
     }
 
@@ -254,11 +278,19 @@ class MandateRequest(BaseModel):
 class ChatRequest(BaseModel):
     text: str
     session_id: str = ""
+    # User-selected intent override (empty = auto-detect)
+    forced_intent: str = ""
 
 
 class IntentClarifyRequest(BaseModel):
     text: str
     session_id: str = ""
+
+
+class BuddyChatRequest(BaseModel):
+    text: str
+    session_id: str = ""
+    depth_level: int = 1  # 1=Chat/Explore, 2=JIT Validation (deeper signals)
 
 
 class PipelineRequest(BaseModel):
@@ -276,6 +308,97 @@ class LockedIntentRequest(BaseModel):
     mandate_text: str
     session_id: str = ""
     max_iterations: int = 3
+
+
+# ── Buddy Chat fast-path ─────────────────────────────────────────────────────
+
+# Intents that require full N-Stroke execution and must not be served via chat.
+_EXECUTION_INTENTS = frozenset({"BUILD", "DEBUG", "SPAWN_REPO"})
+
+
+@app.post("/v2/buddy/chat")
+async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
+    """Lightweight Buddy Chat fast-path for exploratory / conversational intents.
+
+    Routes the mandate and:
+      - Returns HTTP 400 for execution intents (BUILD / DEBUG / SPAWN_REPO),
+        instructing the client to use /v2/pipeline or /v2/n-stroke instead.
+      - For IDEATE / EXPLAIN / DESIGN / AUDIT, fetches SOTA signals via
+        JITBooster, runs a Tribunal scan, then generates a response via
+        ConversationEngine (ModelGarden → Gemini Direct → keyword fallback).
+
+    Does NOT trigger the N-Stroke Engine or the SimulationGate.
+    """
+    t0 = time.monotonic()
+    mandate_id = f"bc-{uuid.uuid4().hex[:8]}"
+    session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
+
+    # 1. Route (chat path — no circuit-breaker counter increments)
+    route = _router.route_chat(req.text)
+
+    # 2. Gate execution intents — they must use the N-Stroke pipeline
+    if route.intent in _EXECUTION_INTENTS:
+        return {
+            "error": (
+                f"Intent '{route.intent}' requires N-Stroke execution. "
+                "Use /v2/pipeline or /v2/n-stroke for build / debug / spawn tasks."
+            ),
+            "intent": route.intent,
+            "confidence": route.confidence,
+        }
+
+    # 3. JIT SOTA grounding — depth_level drives how deep JITBooster searches
+    _action_context_map = {
+        1: req.text[:200],
+        2: f"deep_research: {req.text[:300]}",
+    }
+    jit_result = _jit_booster.fetch_for_node(
+        route=route,
+        node_type="chat",
+        action_context=_action_context_map.get(
+            req.depth_level, req.text[:200]),
+        vertex_model_id=None,
+    )
+    _router.apply_jit_boost(route, jit_result.boosted_confidence)
+
+    # 4. Tribunal scan (OWASP poison guard)
+    engram = Engram(
+        slug=mandate_id,
+        intent=route.intent,
+        logic_body=req.text,
+        domain="conversation",
+        mandate_level="L1",
+    )
+    tribunal_result = _tribunal.evaluate(engram)
+
+    # 5. Generate response via ConversationEngine (ModelGarden inside)
+    conv_result = _conversation_engine.process(
+        req.text, route, session_id, jit_result=jit_result
+    )
+
+    # 6. SSE broadcast
+    _broadcast({
+        "type": "buddy_chat_fast",
+        "mandate_id": mandate_id,
+        "session_id": session_id,
+        "intent": route.intent,
+        "confidence": route.confidence,
+        "jit_boost": jit_result.to_dict(),
+    })
+
+    return {
+        "mandate_id": mandate_id,
+        "session_id": session_id,
+        "response": conv_result.response_text,
+        "intent": route.intent,
+        "confidence": route.confidence,
+        "suggestions": conv_result.suggestions,
+        "model_used": conv_result.model_used,
+        "jit_boost": jit_result.to_dict(),
+        "tribunal_passed": tribunal_result.passed,
+        "depth_level": req.depth_level,
+        "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+    }
 
 
 # ── Intent Discovery endpoint ─────────────────────────────────────────────────
@@ -377,7 +500,6 @@ async def run_pipeline_direct(req: LockedIntentRequest) -> dict[str, Any]:
     t0 = time.monotonic()
     session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
     pipeline_id = f"pipe-{uuid.uuid4().hex[:8]}"
-    from datetime import UTC, datetime as _dt
     locked = LockedIntent(
         intent=req.intent,
         confidence=req.confidence,
@@ -385,7 +507,7 @@ async def run_pipeline_direct(req: LockedIntentRequest) -> dict[str, Any]:
         constraint_summary=req.constraint_summary,
         mandate_text=req.mandate_text,
         context_turns=[],
-        locked_at=_dt.now(UTC).isoformat(),
+        locked_at=datetime.now(UTC).isoformat(),
     )
 
     loop = asyncio.get_event_loop()
@@ -474,7 +596,8 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
     _broadcast({"type": "scope", "mandate_id": mandate_id,
                "scope": scope.to_dict()})
 
-    # 5. Fan-out execution (workers sized by scope recommendation)
+    # 5. Fan-out execution — real LLM-powered nodes (falls back to symbolic
+    #    when Vertex AI + Gemini Direct are both unavailable)
     envelopes = [
         Envelope(
             mandate_id=f"{mandate_id}-{i}",
@@ -485,11 +608,14 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
         for i, wave in enumerate(plan)
     ]
 
-    def _work(env: Envelope) -> str:
-        return f"wave-{env.metadata['wave']}-done"
+    _live_work = make_live_work_fn(
+        mandate_text=req.text,
+        intent=route.intent,
+        jit_signals=jit_result.signals,
+    )
 
     exec_results = _executor.fan_out(
-        _work, envelopes, max_workers=scope.recommended_workers
+        _live_work, envelopes, max_workers=scope.recommended_workers
     )
     flat = [r.to_dict() for r in exec_results]
     _broadcast({"type": "execution", "mandate_id": mandate_id, "results": flat})
@@ -532,6 +658,14 @@ async def buddy_chat(req: ChatRequest) -> dict[str, Any]:
 
     # 1. Route (conversational path — does not touch circuit-breaker counters)
     route = _router.route_chat(req.text)
+
+    # 1a. User-selected intent override — full confidence, recompute buddy_line
+    _VALID_INTENTS = {"BUILD", "DEBUG", "AUDIT",
+                      "DESIGN", "EXPLAIN", "IDEATE", "SPAWN_REPO"}
+    if req.forced_intent and req.forced_intent.upper() in _VALID_INTENTS:
+        route.intent = req.forced_intent.upper()
+        route.confidence = 1.0
+        route.buddy_line = compute_buddy_line(route.intent, route.confidence)
 
     # 2. JIT SOTA boost (mandatory — validates and enriches before generation)
     jit_result = _jit_booster.fetch(route)
@@ -706,7 +840,6 @@ async def run_n_stroke(req: NStrokeRequest) -> dict[str, Any]:
                 satisfaction_gate · n_stroke_complete
     """
     t0 = time.monotonic()
-    from datetime import UTC as _UTC, datetime as _dt
     pipeline_id = f"ns-{uuid.uuid4().hex[:8]}"
     session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
 
@@ -717,7 +850,7 @@ async def run_n_stroke(req: NStrokeRequest) -> dict[str, Any]:
         constraint_summary=req.constraint_summary,
         mandate_text=req.mandate_text,
         context_turns=[],
-        locked_at=_dt.now(_UTC).isoformat(),
+        locked_at=datetime.now(UTC).isoformat(),
     )
 
     loop = asyncio.get_event_loop()
@@ -1032,3 +1165,87 @@ async def promote_roadmap_item(item_id: str) -> dict[str, Any]:
     _broadcast({"type": "roadmap_promote",
                "item_id": item_id, "title": item.title})
     return {"promoted": True, "item_id": item_id, "title": item.title}
+
+
+# ── Branch Executor endpoints ─────────────────────────────────────────────────
+
+_VALID_BRANCH_TYPES = {BRANCH_FORK, BRANCH_CLONE, BRANCH_SHARE}
+
+
+class BranchSpecRequest(BaseModel):
+    """One branch specification for /v2/branch."""
+    branch_id: str = ""
+    branch_type: str = BRANCH_FORK
+    mandate_text: str
+    intent: str = "BUILD"
+    target: str = ""
+    parent_branch_id: str | None = None
+    metadata: dict = {}
+
+
+class BranchRequest(BaseModel):
+    branches: list[BranchSpecRequest]
+    timeout: float = 120.0
+
+
+@app.post("/v2/branch")
+async def run_branches(req: BranchRequest) -> dict[str, Any]:
+    """Run a set of branched parallel autonomous processes.
+
+    Each branch spec describes an independent (FORK/CLONE) or dependent
+    (SHARE) pipeline segment.  All branches execute concurrently; SHARE
+    branches wait for their parent to post a result first.
+
+    Branch types:
+      - ``fork``  — independent parallel paths from a parent context
+      - ``clone`` — identical logic applied to multiple targets
+      - ``share`` — waits for parent branch result, inherits context
+
+    SSE events: branch_run_start · branch_spawned · branch_complete ·
+                branch_run_complete
+    """
+    t0 = time.monotonic()
+
+    # Validate and build BranchSpec list (input validation boundary)
+    specs: list[BranchSpec] = []
+    for i, s in enumerate(req.branches):
+        branch_type = s.branch_type.lower() if s.branch_type else BRANCH_FORK
+        if branch_type not in _VALID_BRANCH_TYPES:
+            return {
+                "error": f"Invalid branch_type '{s.branch_type}'. "
+                f"Must be one of: {sorted(_VALID_BRANCH_TYPES)}",
+                "branch_index": i,
+            }
+        intent = s.intent.upper() if s.intent else "BUILD"
+        specs.append(BranchSpec(
+            branch_id=s.branch_id or f"b-{uuid.uuid4().hex[:8]}",
+            branch_type=branch_type,
+            mandate_text=s.mandate_text,
+            intent=intent,
+            target=s.target,
+            parent_branch_id=s.parent_branch_id,
+            metadata=s.metadata,
+        ))
+
+    run_result = await _branch_executor.run_branches(specs, timeout=req.timeout)
+
+    _broadcast({"type": "branch_run_complete",
+                "run_id": run_result.run_id,
+                "satisfied": run_result.satisfied_count,
+                "failed": run_result.failed_count})
+
+    return {
+        "run_id": run_result.run_id,
+        "result": run_result.to_dict(),
+        "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+    }
+
+
+@app.get("/v2/branches")
+async def list_branches() -> dict[str, Any]:
+    """Return status snapshot of all known branch processes."""
+    branches = _branch_executor.active_branches()
+    return {
+        "total": len(branches),
+        "branches": branches,
+    }

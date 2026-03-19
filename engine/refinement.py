@@ -65,7 +65,7 @@ class RefinementLoop:
 
     SLOW_THRESHOLD_MS: float = 500.0   # nodes slower than this are flagged
 
-    # Thresholds for verdict classification
+    # Default thresholds for verdict classification (overridable per-call)
     _WARN_THRESHOLD: float = 0.70
     _FAIL_THRESHOLD: float = 0.50
 
@@ -73,6 +73,8 @@ class RefinementLoop:
         self,
         results: list[ExecutionResult],
         iteration: int = 1,
+        warn_threshold: float | None = None,
+        fail_threshold: float | None = None,
     ) -> RefinementReport:
         """Analyse results and return a RefinementReport."""
         if not results:
@@ -83,6 +85,10 @@ class RefinementLoop:
                 recommendations=["No nodes executed — nothing to refine."],
                 rerun_advised=False, verdict="pass", iterations=iteration,
             )
+
+        # Allow dynamic threshold overrides for adaptive refinement
+        warn_thr = warn_threshold if warn_threshold is not None else self._WARN_THRESHOLD
+        fail_thr = fail_threshold if fail_threshold is not None else self._FAIL_THRESHOLD
 
         total = len(results)
         succeeded = sum(1 for r in results if r.success)
@@ -115,14 +121,14 @@ class RefinementLoop:
                 f"{', '.join(slow_nodes)}"
             )
 
-        if success_rate < self._FAIL_THRESHOLD:
+        if success_rate < fail_thr:
             recommendations.append(
-                "Success rate below 50% — consider reducing wave width, "
+                f"Success rate below {fail_thr:.0%} — consider reducing wave width, "
                 "adding retry logic, or splitting large nodes."
             )
-        elif success_rate < self._WARN_THRESHOLD:
+        elif success_rate < warn_thr:
             recommendations.append(
-                "Success rate below 70% — partial re-run of failed nodes recommended."
+                f"Success rate below {warn_thr:.0%} — partial re-run of failed nodes recommended."
             )
 
         if success_rate == 1.0 and not slow_nodes:
@@ -131,11 +137,11 @@ class RefinementLoop:
             )
 
         # Rerun is worth attempting when there are failures but not total collapse
-        rerun_advised = 0 < failed < total and success_rate >= self._FAIL_THRESHOLD
+        rerun_advised = 0 < failed < total and success_rate >= fail_thr
 
         if success_rate == 1.0:
             verdict = "pass"
-        elif success_rate >= self._WARN_THRESHOLD:
+        elif success_rate >= warn_thr:
             verdict = "warn"
         else:
             verdict = "fail"

@@ -21,13 +21,17 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
-from engine.config import GEMINI_API_KEY, GEMINI_MODEL
+from engine.config import GEMINI_API_KEY, VERTEX_DEFAULT_MODEL, _vertex_client as _vertex_client_cfg
 from engine.router import RouteResult
+from engine.model_garden import get_garden
 
 if TYPE_CHECKING:
     from engine.jit_booster import JITBoostResult
 
-# ── Gemini client (optional — graceful degradation) ───────────────────────────
+# ── Vertex AI client (primary — enterprise-grade Model Garden via unified SDK) ───────
+_vertex_client = _vertex_client_cfg
+
+# ── Gemini Direct client (secondary fallback — consumer API) ─────────────────────
 _gemini_client = None
 if GEMINI_API_KEY:
     try:
@@ -440,14 +444,30 @@ class ConversationEngine:
         session: ConversationSession,
         plan: ConversationPlan,
         jit_result: JITBoostResult | None = None,
+        vertex_model_id: str | None = None,
     ) -> tuple[str, str]:
-        """Return (response_text, model_used_label)."""
+        """Return (response_text, model_used_label).
+
+        Priority: Vertex AI (Model Garden) → Gemini Direct → keyword fallback.
+        """
         if plan.needs_clarification:
             return plan.clarification_question, "clarification"
 
+        model_id = vertex_model_id or VERTEX_DEFAULT_MODEL
+
+        # 1. ModelGarden — dispatches to best available provider (Google or Anthropic)
+        garden = get_garden()
+        try:
+            text = garden.call(model_id, self._build_prompt(
+                route, session, jit_result))
+            return text, garden.source_for(model_id)
+        except Exception:
+            pass  # fall through to Gemini Direct
+
+        # 2. Gemini Direct — secondary fallback (model name always mirrors Vertex)
         if _gemini_client is not None:
             try:
-                return self._call_gemini(route, session, jit_result), GEMINI_MODEL
+                return self._call_gemini(route, session, jit_result), VERTEX_DEFAULT_MODEL
             except Exception:
                 pass  # fall through to keyword fallback
 
@@ -495,6 +515,42 @@ class ConversationEngine:
             )
         return f"{opener} {response}"
 
+    def _build_prompt(
+        self,
+        route: RouteResult,
+        session: ConversationSession,
+        jit_result: JITBoostResult | None = None,
+    ) -> str:
+        """Assemble the full prompt string from session context + JIT signals."""
+        context = _build_context_block(session)
+        context_section = f"\n\nRecent conversation:\n{context}" if context else ""
+        jit_section = ""
+        if jit_result and jit_result.signals:
+            jit_section = (
+                f"\n\nSOTA signals fetched JIT ({jit_result.source}, "
+                f"boosted confidence {jit_result.boosted_confidence:.0%}):\n"
+                + "\n".join(f"- {s}" for s in jit_result.signals)
+            )
+        return (
+            f"{_SYSTEM_PROMPT}{context_section}{jit_section}\n\n"
+            f"Intent: {route.intent} (confidence {route.confidence:.0%})\n"
+            f"User: {route.mandate_text}"
+        )
+
+    def _call_vertex(
+        self,
+        route: RouteResult,
+        session: ConversationSession,
+        jit_result: JITBoostResult | None = None,
+        model_id: str = "",
+    ) -> str:
+        """Call Vertex AI Model Garden with session context + JIT signals."""
+        prompt = self._build_prompt(route, session, jit_result)
+        resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
+            model=model_id or VERTEX_DEFAULT_MODEL, contents=prompt
+        )
+        return resp.text.strip()
+
     def _call_gemini(
         self,
         route: RouteResult,
@@ -516,7 +572,7 @@ class ConversationEngine:
             f"User: {route.mandate_text}"
         )
         resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
-            model=GEMINI_MODEL, contents=prompt)
+            model=VERTEX_DEFAULT_MODEL, contents=prompt)
         return resp.text.strip()
 
     # ── Session management ────────────────────────────────────────────────────

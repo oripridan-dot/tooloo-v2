@@ -28,13 +28,24 @@ _HEAL_TOMBSTONE = (
 )
 
 # OWASP-aligned patterns — ranked by severity
+# Aligned with OWASP Top 10 2025: A01 Broken Access Control, A03 Injection,
+# A08 Software Integrity Failures.
 _POISON: list[tuple[str, re.Pattern[str]]] = [
     (
         "hardcoded-secret",
         re.compile(
-            r'(?:SECRET|PASSWORD|API_KEY|TOKEN|PRIVATE_KEY)\s*=\s*["\'][^"\']{3,}["\']',
+            r'(?:SECRET|PASSWORD|API_KEY|TOKEN|PRIVATE_KEY|AUTH|CREDENTIAL|ACCESS_KEY)'
+            r'\s*=\s*["\'][^"\']{3,}["\']',
             re.IGNORECASE,
         ),
+    ),
+    (
+        "aws-key-leak",
+        re.compile(r'\bAKIA[0-9A-Z]{16}\b'),
+    ),
+    (
+        "bearer-token-leak",
+        re.compile(r'\bBearer\s+[A-Za-z0-9\-_+/]{20,}\.', re.IGNORECASE),
     ),
     (
         "sql-injection",
@@ -51,6 +62,11 @@ _POISON: list[tuple[str, re.Pattern[str]]] = [
     (
         "dynamic-import",
         re.compile(r'__import__\s*\(', re.IGNORECASE),
+    ),
+    (
+        # OWASP A01:2021 — Broken Access Control: path-traversal escape sequences
+        "path-traversal",
+        re.compile(r'\.\.[/\\]'),
     ),
 ]
 
@@ -93,7 +109,8 @@ class Tribunal:
         self._bank = bank or PsycheBank()
 
     def evaluate(self, engram: Engram) -> TribunalResult:
-        violations = [name for name, pat in _POISON if pat.search(engram.logic_body)]
+        violations = [name for name,
+                      pat in _POISON if pat.search(engram.logic_body)]
 
         if not violations:
             return TribunalResult(

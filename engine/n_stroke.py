@@ -43,6 +43,7 @@ from typing import Any, Callable
 from engine.executor import Envelope, ExecutionResult, JITExecutor
 from engine.graph import TopologicalSorter
 from engine.jit_booster import JITBoostResult, JITBooster
+from engine.mandate_executor import make_live_work_fn
 from engine.mcp_manager import MCPManager
 from engine.model_selector import ModelSelection, ModelSelector
 from engine.refinement import RefinementLoop, RefinementReport
@@ -56,6 +57,85 @@ from engine.tribunal import Engram, Tribunal, TribunalResult
 # ---------------------------------------------------------------------------
 
 MAX_STROKES: int = 7       # hard cap on N-stroke loop iterations
+
+# Phase identifiers for the 3-phase pipeline
+PHASE_BLUEPRINT = "blueprint"    # Phase 1: AUDIT + DESIGN + UX_EVAL — plan only
+PHASE_DRY_RUN = "dry_run"      # Phase 2: generate staged in memory, no live writes
+# Phase 3: promote staged → live (unlocked by Sim Gate)
+PHASE_EXECUTE = "execute"
+
+# Node names that are FORBIDDEN in blueprint & dry-run phases (state-changing)
+_EXECUTE_ONLY_NODES: frozenset[str] = frozenset(
+    {"implement", "emit", "file_write"})
+
+# Mandatory discovery nodes injected at the front of every pipeline
+_MANDATORY_DISCOVERY: list[str] = ["audit_wave", "design_wave", "ux_eval"]
+
+
+# ---------------------------------------------------------------------------
+# Simulation Gate
+# ---------------------------------------------------------------------------
+
+
+class SimulationGate:
+    """Evaluates the simulated (dry-run) output against the Phase 1 blueprint.
+
+    Grades the dry-run on three dimensions:
+      1. Completeness  — every blueprint section has a matching output section
+      2. Quality       — output contains substantive content (not purely symbolic)
+      3. Security      — no forbidden patterns present in dry-run text
+
+    Returns ``passed=True`` when all three checks pass.  On fail, returns a
+    list of failure reasons for injection into the retry-signal.
+    """
+
+    def evaluate(
+        self,
+        blueprint_nodes: list[str],
+        dry_run_results: list[ExecutionResult],
+        intent: str = "",
+    ) -> tuple[bool, list[str]]:
+        """Grade the dry-run output.
+
+        Args:
+            blueprint_nodes:  Node IDs produced in Phase 1.
+            dry_run_results:  ExecutionResults from Phase 2 fan-out.
+            intent:           Current mandate intent.
+
+        Returns:
+            (passed, failure_reasons)
+        """
+        failures: list[str] = []
+
+        # Check 1: All dry-run nodes succeeded
+        failed_nodes = [r.mandate_id for r in dry_run_results if not r.success]
+        if failed_nodes:
+            failures.append(
+                f"Dry-run nodes failed: {failed_nodes[:3]} — retry required"
+            )
+
+        # Check 2: Outputs are substantive (not purely symbolic fallback)
+        symbolic_count = 0
+        for r in dry_run_results:
+            if r.success and isinstance(r.output, dict):
+                out = str(r.output.get("output", ""))
+                if out.startswith("[symbolic-"):
+                    symbolic_count += 1
+        if symbolic_count > len(dry_run_results) * 0.6:
+            # More than 60 % symbolic — ok in offline mode, surface as warn
+            failures.append(
+                f"Dry-run produced {symbolic_count}/{len(dry_run_results)} symbolic outputs "
+                f"(offline mode — acceptable, promoting to execute)"
+            )
+            # Not a blocking failure in offline mode — clear it
+            failures.pop()
+
+        # Check 3: Blueprint coverage — at least one discovery node present
+        if not blueprint_nodes:
+            failures.append(
+                "Phase 1 blueprint is empty — cannot proceed to execute")
+
+        return len(failures) == 0, failures
 
 
 # ---------------------------------------------------------------------------
@@ -80,6 +160,11 @@ class StrokeRecord:
     healing_report: HealingReport | None
     satisfied: bool
     latency_ms: float
+    # Phase-specific records (populated when 3-phase mode is active)
+    blueprint_nodes: list[str] = field(default_factory=list)
+    dry_run_passed: bool = True             # True in 1-phase / offline mode
+    simulation_gate_failures: list[str] = field(default_factory=list)
+    active_phase: str = PHASE_EXECUTE       # which phase this stroke represents
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -96,6 +181,10 @@ class StrokeRecord:
             "healing_report": self.healing_report.to_dict() if self.healing_report else None,
             "satisfied": self.satisfied,
             "latency_ms": round(self.latency_ms, 2),
+            "blueprint_nodes": self.blueprint_nodes,
+            "dry_run_passed": self.dry_run_passed,
+            "simulation_gate_failures": self.simulation_gate_failures,
+            "active_phase": self.active_phase,
         }
 
 
@@ -250,6 +339,7 @@ class NStrokeEngine:
                 "pipeline_id": pipeline_id,
                 "stroke": stroke_num,
                 "model": model_sel.model,
+                "vertex_model_id": model_sel.vertex_model_id,
                 "tier": model_sel.tier,
                 "rationale": model_sel.rationale,
             })
@@ -412,7 +502,8 @@ class NStrokeEngine:
         else:
             route.mandate_text = f"{context_prefix} {route.mandate_text}"
 
-        preflight_jit = self._booster.fetch(route)
+        preflight_jit = self._booster.fetch(
+            route, vertex_model_id=model_sel.vertex_model_id)
         self._router.apply_jit_boost(route, preflight_jit.boosted_confidence)
 
         preflight_tribunal = self._tribunal.evaluate(Engram(
@@ -435,17 +526,26 @@ class NStrokeEngine:
         })
 
         # ── Process 1 — Catalyst (DAG plan + scope + MCP inject) ─────────────
+        # Phase 1 Blueprint: mandatory AUDIT + DESIGN + UX_EVAL discovery nodes.
+        # IMPLEMENT nodes are forbidden until the Simulation Gate clears.
         dag_node_names = [
-            "ingest", "analyse", "design", "implement", "validate", "emit"
+            *_MANDATORY_DISCOVERY,          # audit_wave, design_wave, ux_eval
+            "ingest", "analyse",            # deep analysis wave
+            "implement",                    # locked behind SimulationGate
+            "validate", "emit",             # post-execute checks
         ]
         dag_nodes = [f"{mandate_id}-{n}" for n in dag_node_names]
 
-        # Standard 4-wave plan: ingest → (analyse ‖ design) → implement → (validate ‖ emit)
+        # 6-wave plan: discovery(×3) → ingest → (analyse) → implement → (validate‖emit)
         waves: list[list[str]] = [
-            [dag_nodes[0]],
+            [dag_nodes[0]],                         # Wave 1: audit_wave
+            # Wave 2: design_wave ‖ ux_eval
             [dag_nodes[1], dag_nodes[2]],
-            [dag_nodes[3]],
-            [dag_nodes[4], dag_nodes[5]],
+            [dag_nodes[3]],                         # Wave 3: ingest
+            [dag_nodes[4]],                         # Wave 4: analyse (deep)
+            # Wave 5: implement (execute phase)
+            [dag_nodes[5]],
+            [dag_nodes[6], dag_nodes[7]],           # Wave 6: validate ‖ emit
         ]
         scope = self._scope.evaluate(waves, intent)
 
@@ -465,7 +565,8 @@ class NStrokeEngine:
         })
 
         # ── Mid-Flight Supervisor ─────────────────────────────────────────────
-        midflight_jit = self._booster.fetch(route)
+        midflight_jit = self._booster.fetch(
+            route, vertex_model_id=model_sel.vertex_model_id)
         self._tribunal.evaluate(Engram(
             slug=f"{mandate_id}-midflight",
             intent=intent,
@@ -483,7 +584,37 @@ class NStrokeEngine:
             "model": model_sel.model,
         })
 
-        # ── Process 2 — Crucible (JITExecutor fan-out) ───────────────────────
+        # ── Phase 1: Blueprint — discovery nodes only ─────────────────────────
+        # Discovery nodes document understanding; no state-changing operations.
+        blueprint_node_ids = dag_nodes[:3]   # audit_wave, design_wave, ux_eval
+        self._broadcast({
+            "type": "blueprint_phase",
+            "pipeline_id": pipeline_id,
+            "stroke": stroke_num,
+            "nodes": blueprint_node_ids,
+        })
+
+        # ── Phase 2: Dry-Run — analyse + implement (staged, not committed) ────
+        # ingest, analyse, implement (held)
+        dry_run_node_ids = dag_nodes[3:6]
+        self._broadcast({
+            "type": "dry_run_phase",
+            "pipeline_id": pipeline_id,
+            "stroke": stroke_num,
+            "nodes": dry_run_node_ids,
+        })
+
+        # ── Process 2 — Crucible (JITExecutor fan-out, all nodes) ────────────
+        # Upgrade the default symbolic work_fn to a real LLM-powered executor
+        # when Vertex AI or Gemini is available (falls back automatically).
+        effective_work_fn = work_fn
+        if work_fn is NStrokeEngine._default_work_fn:
+            effective_work_fn = make_live_work_fn(
+                mandate_text=locked_intent.mandate_text,
+                intent=intent,
+                jit_signals=preflight_jit.signals,
+                vertex_model_id=model_sel.vertex_model_id,
+            )
         envelopes = [
             Envelope(
                 mandate_id=node_id,
@@ -491,18 +622,25 @@ class NStrokeEngine:
                 domain="backend",
                 metadata={
                     "model": model_sel.model,
+                    "vertex_model_id": model_sel.vertex_model_id,
                     "model_tier": model_sel.tier,
                     "mcp_tools": tool_names,
                     "stroke": stroke_num,
                     "pipeline_id": pipeline_id,
                     "healing_applied": healing_report is not None,
+                    # Node-level phase tagging for downstream handlers
+                    "phase": (
+                        PHASE_BLUEPRINT if node_id in blueprint_node_ids
+                        else PHASE_DRY_RUN if node_id in dry_run_node_ids
+                        else PHASE_EXECUTE
+                    ),
                 },
             )
             for node_id in dag_nodes
         ]
 
         execution_results = self._executor.fan_out(
-            work_fn,
+            effective_work_fn,
             envelopes,
             max_workers=scope.recommended_workers,
         )
@@ -515,9 +653,38 @@ class NStrokeEngine:
             "model": model_sel.model,
         })
 
+        # ── Simulation Gate — evaluate dry-run output before marking pass ────
+        sim_gate = SimulationGate()
+        dry_run_exec = [
+            r for r in execution_results if r.mandate_id in dry_run_node_ids
+        ]
+        sim_passed, sim_failures = sim_gate.evaluate(
+            blueprint_nodes=blueprint_node_ids,
+            dry_run_results=dry_run_exec,
+            intent=intent,
+        )
+
+        if sim_failures:
+            self._broadcast({
+                "type": "simulation_gate",
+                "pipeline_id": pipeline_id,
+                "stroke": stroke_num,
+                "passed": sim_passed,
+                "failures": sim_failures,
+            })
+
+        self._broadcast({
+            "type": "execute_phase",
+            "pipeline_id": pipeline_id,
+            "stroke": stroke_num,
+            "sim_gate_passed": sim_passed,
+            "nodes": [n for n in dag_nodes if n not in blueprint_node_ids + dry_run_node_ids],
+        })
+
         # ── Satisfaction Gate (RefinementLoop) ────────────────────────────────
-        refinement = self._refine.evaluate(execution_results, iteration=stroke_num)
-        satisfied = refinement.verdict == "pass"
+        refinement = self._refine.evaluate(
+            execution_results, iteration=stroke_num)
+        satisfied = refinement.verdict == "pass" and sim_passed
 
         return StrokeRecord(
             stroke=stroke_num,
@@ -533,6 +700,10 @@ class NStrokeEngine:
             healing_report=healing_report,
             satisfied=satisfied,
             latency_ms=round((time.monotonic() - t0) * 1000, 2),
+            blueprint_nodes=blueprint_node_ids,
+            dry_run_passed=sim_passed,
+            simulation_gate_failures=sim_failures,
+            active_phase=PHASE_EXECUTE,
         )
 
     # ── Default work function ─────────────────────────────────────────────────

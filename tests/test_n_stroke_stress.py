@@ -160,7 +160,8 @@ class TestMCPManager:
 
     def test_call_uri_dispatch(self) -> None:
         mcp = MCPManager()
-        result = mcp.call_uri("mcp://tooloo/web_lookup", query="security owasp")
+        result = mcp.call_uri("mcp://tooloo/web_lookup",
+                              query="security owasp")
         assert result.success
         assert result.output["signals"]
 
@@ -203,7 +204,8 @@ class TestMCPManager:
 
     def test_file_write_forbidden_extension_rejected(self) -> None:
         mcp = MCPManager()
-        result = mcp.call("file_write", path="engine/evil.sh", content="rm -rf /")
+        result = mcp.call("file_write", path="engine/evil.sh",
+                          content="rm -rf /")
         assert not result.success
         assert "not permitted" in (result.error or "").lower()
 
@@ -280,7 +282,8 @@ class TestModelSelector:
     def test_selection_to_dict_shape(self) -> None:
         sel = ModelSelector().select(stroke=1, intent="BUILD")
         d = sel.to_dict()
-        assert set(d) == {"stroke", "intent", "model", "tier", "rationale"}
+        assert set(d) == {"stroke", "intent", "model",
+                          "tier", "rationale", "vertex_model_id"}
 
     def test_rationale_is_non_empty(self) -> None:
         for stroke in (1, 2, 3, 4):
@@ -392,7 +395,8 @@ class TestRefinementSupervisor:
 
     def test_fix_strategy_has_no_poison(self) -> None:
         import re
-        _POISON = re.compile(r"\b(eval|exec|__import__|subprocess\.run|os\.system)\s*\(")
+        _POISON = re.compile(
+            r"\b(eval|exec|__import__|subprocess\.run|os\.system)\s*\(")
         report = self._heal()
         for rx in report.prescriptions:
             assert not _POISON.search(rx.fix_strategy), (
@@ -523,7 +527,8 @@ class TestNStrokeHappyPath:
         events: list[dict[str, Any]] = []
         engine = _make_engine(broadcast_events=events)
         engine.run(_make_locked())
-        complete_events = [e for e in events if e["type"] == "n_stroke_complete"]
+        complete_events = [
+            e for e in events if e["type"] == "n_stroke_complete"]
         assert len(complete_events) == 1
         e = complete_events[0]
         assert e["satisfied"] is True
@@ -605,7 +610,8 @@ class TestNStrokeModelEscalation:
         result = engine.run(_make_locked(), work_fn=work_fn)
 
         # The 5th stroke (if reached) should use tier 4
-        tier_4_strokes = [s for s in result.strokes if s.model_selection.tier == 4]
+        tier_4_strokes = [
+            s for s in result.strokes if s.model_selection.tier == 4]
         assert tier_4_strokes or result.total_strokes >= 4, (
             "Expected tier-4 escalation after 4 failures"
         )
@@ -790,7 +796,8 @@ class TestNStrokeAutoHealing:
         work_fn = self._persistent_fail_fn("-implement")
         engine.run(_make_locked(), work_fn=work_fn)
 
-        healing_events = [e for e in events if e["type"] == "healing_triggered"]
+        healing_events = [
+            e for e in events if e["type"] == "healing_triggered"]
         assert healing_events, "Expected at least one healing_triggered SSE event"
         e = healing_events[0]
         assert "nodes_healed" in e
@@ -806,8 +813,10 @@ class TestNStrokeAutoHealing:
             stroke = env.metadata.get("stroke", 1)
             if stroke <= NODE_FAIL_THRESHOLD and env.mandate_id.endswith("-implement"):
                 fail_counter["count"] += 1
-                raise RuntimeError("Deliberate persistent failure for healing test.")
-            out = {"status": "healed_or_ok", "node": env.mandate_id, "stroke": stroke}
+                raise RuntimeError(
+                    "Deliberate persistent failure for healing test.")
+            out = {"status": "healed_or_ok",
+                   "node": env.mandate_id, "stroke": stroke}
             outputs.append(out)
             return out
 
@@ -815,7 +824,8 @@ class TestNStrokeAutoHealing:
         engine.run(_make_locked(), work_fn=_smart_work)
 
         # After healing, the function should produce successful outputs
-        healed_outputs = [o for o in outputs if o.get("stroke", 1) > NODE_FAIL_THRESHOLD]
+        healed_outputs = [o for o in outputs if o.get(
+            "stroke", 1) > NODE_FAIL_THRESHOLD]
         assert healed_outputs or fail_counter["count"] >= 1, (
             "Expected either healed outputs or proof the initial failures were recorded."
         )
@@ -827,7 +837,8 @@ class TestNStrokeAutoHealing:
         result = engine.run(_make_locked(), work_fn=work_fn)
 
         # Find the stroke where healing was applied
-        healed_strokes = [s for s in result.strokes if s.healing_report is not None]
+        healed_strokes = [
+            s for s in result.strokes if s.healing_report is not None]
         assert healed_strokes, "Expected at least one stroke with a healing_report"
         hr = healed_strokes[0].healing_report
         assert hr.verdict in ("healed", "partial")
@@ -843,7 +854,8 @@ class TestNStrokeAutoHealing:
 
         sat_events = [e for e in events if e["type"] == "satisfaction_gate"]
         # Find the satisfaction_gate event right after healing
-        healing_events = [e for e in events if e["type"] == "healing_triggered"]
+        healing_events = [
+            e for e in events if e["type"] == "healing_triggered"]
         if healing_events:
             heal_stroke = healing_events[0]["stroke"]
             # The stroke after healing should have cleared the fail counter
@@ -913,18 +925,21 @@ class TestHighConcurrencyMandates:
         results: list[NStrokeResult] = []
 
         with ThreadPoolExecutor(max_workers=10) as pool:
-            futures = [pool.submit(self._run_single_mandate, i) for i in range(self.N_CONCURRENT)]
+            futures = [pool.submit(self._run_single_mandate, i)
+                       for i in range(self.N_CONCURRENT)]
             for fut in as_completed(futures):
                 results.append(fut.result())
 
         ids = [r.pipeline_id for r in results]
-        assert len(ids) == len(set(ids)), "Duplicate pipeline_ids detected — DAG isolation broken"
+        assert len(ids) == len(
+            set(ids)), "Duplicate pipeline_ids detected — DAG isolation broken"
 
     def test_all_50_results_satisfied(self) -> None:
         results: list[NStrokeResult] = []
 
         with ThreadPoolExecutor(max_workers=10) as pool:
-            futures = [pool.submit(self._run_single_mandate, i) for i in range(self.N_CONCURRENT)]
+            futures = [pool.submit(self._run_single_mandate, i)
+                       for i in range(self.N_CONCURRENT)]
             for fut in as_completed(futures):
                 results.append(fut.result())
 
@@ -938,7 +953,8 @@ class TestHighConcurrencyMandates:
         """50 offline runs should complete in under 30s on a modest machine."""
         t0 = time.monotonic()
         with ThreadPoolExecutor(max_workers=10) as pool:
-            futures = [pool.submit(self._run_single_mandate, i) for i in range(self.N_CONCURRENT)]
+            futures = [pool.submit(self._run_single_mandate, i)
+                       for i in range(self.N_CONCURRENT)]
             for fut in as_completed(futures):
                 fut.result()
         elapsed = time.monotonic() - t0

@@ -5,6 +5,7 @@ No imports from tooloo-core. Uses stdlib ThreadPoolExecutor.
 """
 from __future__ import annotations
 
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
@@ -46,6 +47,8 @@ class JITExecutor:
 
     def __init__(self, max_workers: int | None = None) -> None:
         self._max_workers = max_workers or settings.executor_max_workers
+        self._latency_histogram: list[float] = []
+        self._hist_lock = threading.Lock()
 
     def fan_out(
         self,
@@ -73,8 +76,25 @@ class JITExecutor:
                 result = fut.result()
                 results[mid] = result
 
-        # Preserve input ordering
-        return [results[e.mandate_id] for e in envelopes]
+        # Preserve input ordering and record latencies in histogram
+        ordered = [results[e.mandate_id] for e in envelopes]
+        with self._hist_lock:
+            self._latency_histogram.extend(r.latency_ms for r in ordered)
+        return ordered
+
+    def latency_p90(self) -> float | None:
+        """Return the p90 latency in ms across all completed tasks, or None if empty."""
+        with self._hist_lock:
+            if not self._latency_histogram:
+                return None
+            sorted_hist = sorted(self._latency_histogram)
+            idx = max(0, int(len(sorted_hist) * 0.9) - 1)
+            return sorted_hist[idx]
+
+    def reset_histogram(self) -> None:
+        """Clear the accumulated latency histogram."""
+        with self._hist_lock:
+            self._latency_histogram.clear()
 
     @staticmethod
     def _run(

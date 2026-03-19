@@ -26,6 +26,14 @@
             --font: 'Inter', system-ui, sans-serif;
             --mono: 'JetBrains Mono', 'Fira Code', monospace;
             --radius: 8px;
+            /* ── Neural Command Center tokens ── */
+            --bg: #0D0D12;
+            --cyan: #00E5FF;
+            --cyan-dim: rgba(0, 229, 255, 0.10);
+            --cyan-glow: rgba(0, 229, 255, 0.30);
+            --purple-deep: #B388FF;
+            --purple-deep-dim: rgba(179, 136, 255, 0.12);
+            --amber: #FFAB40;
         }
 
         *,
@@ -39,7 +47,7 @@
         html,
         body {
             height: 100%;
-            background: var(--surface);
+            background: var(--bg);
             color: var(--text);
             font-family: var(--font);
             font-size: 14px;
@@ -1455,6 +1463,308 @@
         .canvas-flash.fail {
             background: rgba(255, 71, 87, .18);
         }
+
+        /* ── Intent Picker ─────────────────────────────────────────────────── */
+        #intent-picker {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 24px 0;
+            flex-shrink: 0;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        #intent-picker::-webkit-scrollbar {
+            display: none;
+        }
+
+        .ipick-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--muted);
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            flex-shrink: 0;
+            margin-right: 2px;
+        }
+
+        .ipick-chip {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 11px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: border-color .12s, color .12s, background .12s;
+            font-family: var(--font);
+            letter-spacing: .02em;
+        }
+
+        .ipick-chip:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-dim);
+        }
+
+        .ipick-chip.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        .ipick-chip.ipick-auto {
+            border-style: dashed;
+        }
+
+        .ipick-chip.ipick-auto.selected {
+            border-style: solid;
+            background: rgba(122, 122, 154, .15);
+            color: var(--muted);
+            box-shadow: none;
+            border-color: var(--muted);
+        }
+
+        .ipick-chip[data-intent="BUILD"].selected {
+            background: #4361ee;
+            border-color: #4361ee;
+        }
+
+        .ipick-chip[data-intent="DEBUG"].selected {
+            background: #e63946;
+            border-color: #e63946;
+        }
+
+        .ipick-chip[data-intent="AUDIT"].selected {
+            background: #2a9d8f;
+            border-color: #2a9d8f;
+        }
+
+        .ipick-chip[data-intent="DESIGN"].selected {
+            background: #7209b7;
+            border-color: #7209b7;
+        }
+
+        .ipick-chip[data-intent="EXPLAIN"].selected {
+            background: #f4a261;
+            border-color: #f4a261;
+            color: #111;
+        }
+
+        .ipick-chip[data-intent="IDEATE"].selected {
+            background: #6a4c93;
+            border-color: #6a4c93;
+        }
+
+        .ipick-chip[data-intent="SPAWN_REPO"].selected {
+            background: #023e8a;
+            border-color: #023e8a;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           NEURAL COMMAND CENTER — 3-pane Chat View
+        ═══════════════════════════════════════════════════════════════════ */
+        #view-chat.active {
+            display: grid !important;
+            grid-template-columns: 1fr 54% 21%;
+            grid-template-rows: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* LEFT PANE — Buddy Stream ---------------------------------------- */
+        .buddy-stream-pane {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            border-right: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        /* CENTER PANE — Fractal Canvas ------------------------------------ */
+        .fractal-canvas-pane {
+            position: relative;
+            background: radial-gradient(ellipse at 50% 55%, #1a1a24 0%, var(--bg) 80%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #buddyCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* RIGHT PANE — Cognitive Telemetry ------------------------------- */
+        .cognitive-telemetry-pane {
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            border-left: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .tele-block {
+            border-bottom: 1px solid var(--border);
+            padding: 12px 14px;
+        }
+
+        .tele-heading {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            font-family: var(--mono);
+            margin-bottom: 8px;
+        }
+
+        .tele-body {
+            font-size: 11px;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .tele-mono {
+            font-family: var(--mono);
+        }
+
+        .tele-gate-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+            font-size: 11px;
+            font-family: var(--mono);
+        }
+
+        .tele-pass {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .tele-warn {
+            color: var(--warn);
+            font-weight: 700;
+        }
+
+        .tele-fail {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .tele-branch-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 0;
+            font-size: 11px;
+            font-family: var(--mono);
+            overflow: hidden;
+        }
+
+        .tele-branch-type {
+            font-size: 9px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .branch-fork {
+            background: var(--cyan-dim);
+            color: var(--cyan);
+        }
+
+        .branch-clone {
+            background: var(--purple-deep-dim);
+            color: var(--purple-deep);
+        }
+
+        .branch-share {
+            background: rgba(255, 171, 64, 0.12);
+            color: var(--amber);
+        }
+
+        /* DEEPENING SLIDER ------------------------------------------------ */
+        .deepening-control {
+            flex-shrink: 0;
+            padding: 8px 16px 4px;
+            background: var(--surface-alt);
+            border-top: 1px solid var(--border);
+        }
+
+        .deepening-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .deepening-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--muted);
+            font-family: var(--mono);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+        }
+
+        .depth-value {
+            font-size: 10px;
+            font-family: var(--mono);
+            color: var(--cyan);
+            font-weight: 600;
+        }
+
+        #depth-slider {
+            width: 100%;
+            accent-color: var(--purple-deep);
+            cursor: pointer;
+            margin: 0;
+            height: 4px;
+        }
+
+        /* JIT GROUNDING PILLS --------------------------------------------- */
+        .jit-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .jit-pill {
+            font-size: 10px;
+            font-family: var(--mono);
+            background: var(--cyan-dim);
+            color: var(--cyan);
+            padding: 2px 7px;
+            border-radius: 10px;
+            border: 1px solid var(--cyan-glow);
+            white-space: nowrap;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Glassmorphism on step-pills and iteration cards */
+        .step-pill,
+        .iteration-card,
+        .pipeline-final-verdict {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background: rgba(26, 26, 36, 0.72) !important;
+        }
     </style>
 </head>
 
@@ -1496,6 +1806,10 @@
                 <span class="icon">🧪</span> Sandbox Lab
                 <span class="nav-badge" id="sandbox-badge" style="display:none">0</span>
             </button>
+            <button class="nav-btn" data-view="branch">
+                <span class="icon">🌿</span> Branch Exec
+                <span class="nav-badge" id="branch-badge" style="display:none">0</span>
+            </button>
             <div class="sidebar-footer">
                 <div class="agent-card">
                     <div class="agent-name">🤖 Buddy</div>
@@ -1511,32 +1825,124 @@
 
         <main id="main">
 
-            <!-- CHAT -->
+            <!-- CHAT — Neural Command Center (3-pane Grid) -->
             <section class="view active" id="view-chat">
-                <div class="view-header">
-                    <div>
-                        <div class="view-title">💬 Buddy Chat</div>
-                        <div class="view-sub">Send mandates — Buddy routes, plans, executes, and defends.</div>
+
+                <!-- LEFT: Buddy Stream ─────────────────────────────────── -->
+                <div class="buddy-stream-pane">
+                    <div class="view-header" style="flex-shrink:0">
+                        <div>
+                            <div class="view-title">💬 Buddy</div>
+                            <div class="view-sub">Fast-path · Depth 3–4 escalates to Pipeline Engine.</div>
+                        </div>
                     </div>
-                </div>
-                <div id="chat-messages">
-                    <div class="msg buddy">
-                        <div class="msg-row">
-                            <div class="msg-avatar">🤖</div>
-                            <div class="bubble">
-                                Hey! I'm <strong>Buddy</strong> — your TooLoo V2 build host.<br>
-                                Tell me what you need: <em>build a feature, fix a bug, audit a module, explore
-                                    ideas…</em><br>
-                                I remember our conversation, plan each response as a DAG, and intercept anything unsafe.
+                    <div id="chat-messages">
+                        <div class="msg buddy">
+                            <div class="msg-row">
+                                <div class="msg-avatar">🤖</div>
+                                <div class="bubble">
+                                    Hey! I'm <strong>Buddy</strong> — your TooLoo V2 build host.<br>
+                                    Tell me what you need: <em>build a feature, fix a bug, audit a module, explore
+                                        ideas…</em><br>
+                                    I remember our conversation, plan each response as a DAG, and intercept anything
+                                    unsafe.
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <div id="intent-picker">
+                        <span class="ipick-label">Intent</span>
+                        <button class="ipick-chip ipick-auto selected" data-intent="">⚡ auto</button>
+                        <button class="ipick-chip" data-intent="BUILD">🔨 BUILD</button>
+                        <button class="ipick-chip" data-intent="DEBUG">🐛 DEBUG</button>
+                        <button class="ipick-chip" data-intent="AUDIT">🛡 AUDIT</button>
+                        <button class="ipick-chip" data-intent="DESIGN">🎨 DESIGN</button>
+                        <button class="ipick-chip" data-intent="EXPLAIN">💡 EXPLAIN</button>
+                        <button class="ipick-chip" data-intent="IDEATE">✨ IDEATE</button>
+                        <button class="ipick-chip" data-intent="SPAWN_REPO">🚀 SPAWN</button>
+                    </div>
+                    <!-- Deepening Slider -->
+                    <div class="deepening-control">
+                        <div class="deepening-wrapper">
+                            <span class="deepening-label">⚡ Depth</span>
+                            <span id="depth-label" class="depth-value">1 — Chat / Explore</span>
+                        </div>
+                        <input type="range" id="depth-slider" min="1" max="4" value="1"
+                            oninput="updateDepthLabel(this.value)">
+                    </div>
+                    <div id="chat-input-area">
+                        <textarea id="msg-input" rows="1"
+                            placeholder="Give Buddy a mandate… (Enter to send, Shift+Enter for newline)"></textarea>
+                        <button id="send-btn">Send →</button>
+                    </div>
                 </div>
-                <div id="chat-input-area">
-                    <textarea id="msg-input" rows="1"
-                        placeholder="Give Buddy a mandate… (Enter to send, Shift+Enter for newline)"></textarea>
-                    <button id="send-btn">Send →</button>
+
+                <!-- CENTER: Fractal Canvas ──────────────────────────────── -->
+                <div class="fractal-canvas-pane">
+                    <svg id="buddyCanvas" viewBox="0 0 760 480">
+                        <defs>
+                            <radialGradient id="buddyAnchorGrad" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="var(--cyan)" stop-opacity=".9" />
+                                <stop offset="100%" stop-color="var(--purple-deep)" stop-opacity=".4" />
+                            </radialGradient>
+                            <filter id="buddyGlow" x="-30%" y="-30%" width="160%" height="160%">
+                                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+                                <feMerge>
+                                    <feMergeNode in="blur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <g id="buddyEdges"></g>
+                        <g id="buddyNodesDraft"></g>
+                        <g id="buddyNodesSolid"></g>
+                        <g id="buddyParticles"></g>
+                        <g id="buddyAnchorGroup">
+                            <circle id="buddyAnchorRingOuter" cx="380" cy="240" r="30" fill="none" stroke="var(--cyan)"
+                                stroke-width="1" opacity="0.18" />
+                            <circle id="buddyAnchorRingMid" cx="380" cy="240" r="19" fill="none" stroke="var(--cyan)"
+                                stroke-width="1.5" opacity="0.35" />
+                            <circle id="buddyAnchorCore" cx="380" cy="240" r="10" fill="url(#buddyAnchorGrad)"
+                                filter="url(#buddyGlow)" />
+                        </g>
+                    </svg>
+                    <div id="buddy-canvas-status"
+                        style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:10px;font-family:var(--mono);color:var(--muted);opacity:0.45;white-space:nowrap;pointer-events:none">
+                        Neural canvas ready · awaiting signal
+                    </div>
                 </div>
+
+                <!-- RIGHT: Cognitive Telemetry ──────────────────────────── -->
+                <div class="cognitive-telemetry-pane">
+                    <div class="tele-block">
+                        <div class="tele-heading">⚡ JIT Signals</div>
+                        <div id="tele-jit-feed" class="tele-body" style="color:var(--muted)">Awaiting mandate…</div>
+                    </div>
+                    <div class="tele-block">
+                        <div class="tele-heading">🧠 Model Tier</div>
+                        <div id="tele-model-tier" class="tele-body tele-mono" style="color:var(--muted)">—</div>
+                    </div>
+                    <div class="tele-block">
+                        <div class="tele-heading">🎯 Last Intent</div>
+                        <div class="tele-body"><span id="tele-intent" style="color:var(--muted)">—</span></div>
+                    </div>
+                    <div class="tele-block">
+                        <div class="tele-heading">🌿 Active Branches</div>
+                        <div id="tele-branches" class="tele-body" style="color:var(--muted)">No active branches.</div>
+                    </div>
+                    <div class="tele-block">
+                        <div class="tele-heading">🔬 Sim Gate</div>
+                        <div id="tele-sim-gate" class="tele-body">
+                            <div class="tele-gate-row"><span>Blueprint</span><span id="tele-gate-bp"
+                                    class="tele-warn">STANDBY</span></div>
+                            <div class="tele-gate-row"><span>Dry-Run</span><span id="tele-gate-dr"
+                                    class="tele-warn">STANDBY</span></div>
+                            <div class="tele-gate-row"><span>Execute</span><span id="tele-gate-ex"
+                                    class="tele-warn">STANDBY</span></div>
+                        </div>
+                    </div>
+                </div>
+
             </section>
 
             <!-- FEED -->
@@ -1627,6 +2033,21 @@
                         style="display:none;flex-direction:column;gap:16px;padding:16px;overflow-y:auto;height:100%">
                         <div id="si-summary" style="display:flex;gap:16px;flex-wrap:wrap"></div>
                         <div id="si-recs"></div>
+                        <!-- Ouroboros God Mode: arch diagram + regression gate -->
+                        <div id="si-arch-block"
+                            style="display:none;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px;padding:12px 16px">
+                            <div
+                                style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-bottom:6px">
+                                ARCHITECTURE DIAGRAM</div>
+                            <pre id="si-arch-diagram"
+                                style="font-size:11px;line-height:1.5;overflow-x:auto;white-space:pre;margin:0;color:var(--text)"></pre>
+                        </div>
+                        <div id="si-regression-block"
+                            style="display:none;padding:8px 14px;border-radius:8px;font-size:12px;border:1px solid var(--border)">
+                            <span id="si-regression-icon" style="margin-right:6px"></span>
+                            <strong>Regression Gate:</strong>
+                            <span id="si-regression-details"></span>
+                        </div>
                         <div id="si-assessments"></div>
                     </div>
                 </div>
@@ -1695,6 +2116,93 @@
                         </div>
                     </div>
                     <div id="sandbox-list" style="display:flex;flex-direction:column;gap:10px"></div>
+                </div>
+            </section>
+
+            <!-- BRANCH EXECUTOR -->
+            <section class="view" id="view-branch">
+                <div class="view-header" style="flex-shrink:0">
+                    <div>
+                        <div class="view-title">🌿 Branch Executor</div>
+                        <div class="view-sub">Split / Share / Clone — branched async parallel autonomous processes
+                            · JIT → Tribunal → Scope → Execute → Refine per branch</div>
+                    </div>
+                    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+                        <button class="btn-sm" id="branch-add-btn">＋ Add Branch</button>
+                        <button class="btn-sm" id="branch-run-btn"
+                            style="background:var(--primary);color:#fff;border-color:var(--primary)">▶ Run
+                            Branches</button>
+                        <button class="btn-sm" id="branch-clear-btn">✕ Clear</button>
+                    </div>
+                </div>
+
+                <!-- Branch form -->
+                <div id="branch-form-panel"
+                    style="border-bottom:1px solid var(--border);padding:14px 24px;flex-shrink:0;background:var(--surface-alt)">
+                    <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+                        <div style="flex:0 0 130px">
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Branch Type</div>
+                            <select id="branch-type-select"
+                                style="width:100%;padding:6px 8px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px">
+                                <option value="fork">Fork (independent)</option>
+                                <option value="clone">Clone (same logic)</option>
+                                <option value="share">Share (await parent)</option>
+                            </select>
+                        </div>
+                        <div style="flex:0 0 120px">
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Intent</div>
+                            <select id="branch-intent-select"
+                                style="width:100%;padding:6px 8px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px">
+                                <option value="BUILD">BUILD</option>
+                                <option value="DEBUG">DEBUG</option>
+                                <option value="DESIGN">DESIGN</option>
+                                <option value="AUDIT">AUDIT</option>
+                                <option value="EXPLAIN">EXPLAIN</option>
+                                <option value="IDEATE">IDEATE</option>
+                            </select>
+                        </div>
+                        <div style="flex:0 0 160px">
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Target (optional)</div>
+                            <input id="branch-target-input" type="text"
+                                style="width:100%;padding:6px 8px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px"
+                                placeholder="file.py · service name…" />
+                        </div>
+                        <div style="flex:0 0 160px">
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Parent Branch ID (share)
+                            </div>
+                            <input id="branch-parent-input" type="text"
+                                style="width:100%;padding:6px 8px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px"
+                                placeholder="b-xxxxxxxx" />
+                        </div>
+                        <div style="flex:1;min-width:220px">
+                            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Mandate Text</div>
+                            <textarea id="branch-mandate-input" rows="2"
+                                style="width:100%;padding:6px 8px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;resize:none"
+                                placeholder="Describe what this branch should do…"></textarea>
+                        </div>
+                    </div>
+                    <div id="branch-queued-list"
+                        style="margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto">
+                    </div>
+                </div>
+
+                <!-- Status / results body -->
+                <div id="branch-body"
+                    style="flex:1;overflow-y:auto;padding:16px 24px;display:flex;flex-direction:column;gap:10px">
+                    <div id="branch-empty"
+                        style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--muted)">
+                        <span style="font-size:40px">🌿</span>
+                        <div style="text-align:center">No branches yet.<br>Add branch specs above, then click
+                            <strong>▶ Run Branches</strong>.
+                        </div>
+                        <div style="font-size:11px;text-align:center;max-width:400px;color:var(--muted)">Full isolated
+                            pipeline per branch: JIT SOTA → Tribunal → Scope → Execute → Refine. SHARE branches wait for
+                            parent to post result.</div>
+                    </div>
+                    <div id="branch-run-summary"
+                        style="display:none;padding:10px 14px;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px;font-size:12px">
+                    </div>
+                    <div id="branch-list" style="display:flex;flex-direction:column;gap:10px"></div>
                 </div>
             </section>
 
@@ -1794,6 +2302,17 @@
                                 Waiting for intent lock…
                             </div>
                         </div>
+                        <!-- Visual Results Verification Gate -->
+                        <div id="sim-gate-panel"
+                            style="display:none;flex-shrink:0;border-top:1px solid var(--border);padding:10px 14px;background:var(--surface-alt)">
+                            <div
+                                style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">
+                                SIMULATION GATE</div>
+                            <div id="sim-gate-status" style="font-size:12px;font-weight:600;margin-bottom:4px"></div>
+                            <div id="sim-gate-blueprint" style="font-size:11px;color:var(--muted);margin-bottom:4px">
+                            </div>
+                            <div id="sim-gate-failures" style="font-size:11px;color:#f59e0b"></div>
+                        </div>
                     </div>
 
                 </div>
@@ -1817,6 +2336,7 @@
                 if (id === 'bank') loadBank();
                 if (id === 'self-improve') resetSIIdle();
                 if (id === 'sandbox') loadSandboxes();
+                if (id === 'branch') loadBranches();
                 if (id === 'pipeline') {
                     // Kick-start anchor idle pulse (GSAP must be loaded)
                     if (typeof _startIdlePulse !== 'undefined') _startIdlePulse();
@@ -1863,10 +2383,11 @@
                 es.onmessage = (e) => {
                     try {
                         const ev = JSON.parse(e.data);
-                        if (ev.type !== 'heartbeat') pushFeed(ev);
+                        if (ev.type !== 'heartbeat' && ev.type !== 'connected') pushFeed(ev);
                         if (ev.type === 'sandbox' && ev.report) addSandboxCard(ev.report);
                         if (ev.type === 'roadmap_run') { loadRoadmap(); }
                         if (typeof _handlePipelineSSE !== 'undefined') _handlePipelineSSE(ev);
+                        if (typeof window._handleBranchAndGateSSE !== 'undefined') window._handleBranchAndGateSSE(ev);
                     } catch { }
                 };
             }
@@ -2000,6 +2521,29 @@
             const msgInput = document.getElementById('msg-input');
             const sendBtn = document.getElementById('send-btn');
 
+            // ── Intent Picker ──────────────────────────────────────────────────
+            let _forcedIntent = '';
+            const ipickChips = document.querySelectorAll('.ipick-chip');
+            ipickChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const val = chip.dataset.intent;
+                    // Clicking the already-selected non-auto chip reverts to auto
+                    if (val && _forcedIntent === val) {
+                        _forcedIntent = '';
+                        ipickChips.forEach(c => c.classList.toggle('selected', c.dataset.intent === ''));
+                    } else {
+                        _forcedIntent = val;
+                        ipickChips.forEach(c => c.classList.toggle('selected', c.dataset.intent === val));
+                    }
+                    msgInput.focus();
+                });
+            });
+
+            function resetIntentPicker() {
+                _forcedIntent = '';
+                ipickChips.forEach(c => c.classList.toggle('selected', c.dataset.intent === ''));
+            }
+
             // Persistent session ID for multi-turn memory
             let _sessionId = sessionStorage.getItem('buddy_session_id');
             if (!_sessionId) {
@@ -2008,8 +2552,8 @@
             }
 
             msgInput.addEventListener('input', () => { msgInput.style.height = 'auto'; msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px'; });
-            msgInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
-            sendBtn.addEventListener('click', send);
+            msgInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBuddyChat(); } });
+            sendBtn.addEventListener('click', sendBuddyChat);
 
             function scrollChat() { chatMessages.scrollTop = chatMessages.scrollHeight; }
 
@@ -2019,7 +2563,7 @@
                 const text = btn.textContent.trim().replace(/\?$/, '');
                 msgInput.value = text;
                 msgInput.dispatchEvent(new Event('input'));
-                send();
+                sendBuddyChat();
             };
 
             function appendUserMsg(text) {
@@ -2115,7 +2659,8 @@
                         '<div class="msg-meta">' +
                         (blocked
                             ? '<span class="intent-tag blocked">CIRCUIT OPEN</span> hit <strong>Reset Breaker</strong> to resume'
-                            : '<span class="intent-tag">' + esc(r.intent || '?') + '</span>' +
+                            : '<span class="intent-tag" title="' + (conf >= 1.0 ? 'User-selected intent' : 'Auto-detected intent') + '">' +
+                            (conf >= 1.0 ? '\uD83D\uDD12\u202F' : '') + esc(r.intent || '?') + '</span>' +
                             '<div class="conf-bar-wrap"><div class="conf-bar"><div class="conf-bar-fill ' + fc + '" style="width:' + Math.round(conf * 100) + '%"></div></div><span>' + pct + '</span></div>' +
                             toneHtml + modelHtml +
                             (data.latency_ms != null ? '<span>' + data.latency_ms + 'ms</span>' : '')
@@ -2133,10 +2678,12 @@
                 const thinkEl = document.createElement('div'); thinkEl.className = 'msg buddy';
                 thinkEl.innerHTML = '<div class="msg-row"><div class="msg-avatar">🤖</div><div class="bubble thinking">Thinking…</div></div>';
                 chatMessages.appendChild(thinkEl); scrollChat();
+                const _intentForThisSend = _forcedIntent;
+                resetIntentPicker();
                 const doFetch = () => fetch('/v2/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, session_id: _sessionId }),
+                    body: JSON.stringify({ text, session_id: _sessionId, forced_intent: _intentForThisSend }),
                 });
                 try {
                     let res;
@@ -2158,6 +2705,246 @@
                 sendBtn.disabled = false; refreshBreaker();
             }
 
+            // ── Deepening Slider ────────────────────────────────────────────────
+            const _DEPTH_LABELS = {
+                1: '1 — Chat / Explore',
+                2: '2 — JIT Validation',
+                3: '3 — Blueprint (Sim Gate)',
+                4: '4 — Ouroboros (Execute)',
+            };
+            const _DEPTH_COLORS = {
+                1: 'var(--cyan)', 2: 'var(--purple-deep)', 3: 'var(--amber)', 4: 'var(--danger)',
+            };
+            function updateDepthLabel(val) {
+                const lbl = document.getElementById('depth-label');
+                if (!lbl) return;
+                lbl.textContent = _DEPTH_LABELS[val] || val;
+                lbl.style.color = _DEPTH_COLORS[val] || 'var(--text)';
+            }
+            window.updateDepthLabel = updateDepthLabel; // expose for oninput attribute + testability
+
+            // ── sendBuddyChat (depth-aware orchestrator) ────────────────────────
+            async function sendBuddyChat() {
+                const text = msgInput.value.trim();
+                if (!text) return;
+                msgInput.value = ''; msgInput.style.height = 'auto'; sendBtn.disabled = true;
+                const depth = parseInt(document.getElementById('depth-slider')?.value || '1');
+                appendUserMsg(text);
+                const _intentForThisSend = _forcedIntent;
+                resetIntentPicker();
+
+                // Depth 3–4: escalate to full Pipeline Engine
+                if (depth >= 3) {
+                    const el = document.createElement('div'); el.className = 'msg buddy';
+                    el.innerHTML = '<div class="msg-row"><div class="msg-avatar">🤖</div><div class="bubble">' +
+                        '<span style="color:var(--amber)">⬆ Depth ' + depth + ' — routing to Pipeline Engine…</span>' +
+                        '</div></div>';
+                    chatMessages.appendChild(el); scrollChat();
+                    sendBtn.disabled = false;
+                    setTimeout(() => {
+                        showView('pipeline');
+                        const plInput = document.getElementById('pipeline-input');
+                        const plBtn = document.getElementById('pipeline-send-btn');
+                        if (plInput) { plInput.value = text; plInput.dispatchEvent(new Event('input')); }
+                        if (plBtn) plBtn.click();
+                    }, 350);
+                    return;
+                }
+
+                // Depth 1–2: Buddy fast-path
+                const thinkEl = document.createElement('div'); thinkEl.className = 'msg buddy';
+                thinkEl.innerHTML = '<div class="msg-row"><div class="msg-avatar">🤖</div><div class="bubble thinking">Thinking…</div></div>';
+                chatMessages.appendChild(thinkEl); scrollChat();
+                try {
+                    const resp = await fetch('/v2/buddy/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text, session_id: _sessionId,
+                            forced_intent: _intentForThisSend,
+                            depth_level: depth,
+                        }),
+                    });
+                    const data = await resp.json();
+                    thinkEl.remove();
+                    if (data.error && data.intent) {
+                        // Execution intent detected — seamless escalation
+                        const escEl = document.createElement('div'); escEl.className = 'msg buddy';
+                        escEl.innerHTML = '<div class="msg-row"><div class="msg-avatar">🤖</div><div class="bubble">' +
+                            '<span style="color:var(--amber)">⬆ <strong>' + esc(data.intent) + '</strong> intent — auto-escalating to pipeline…</span>' +
+                            '</div></div>';
+                        chatMessages.appendChild(escEl); scrollChat();
+                        setTimeout(() => {
+                            showView('pipeline');
+                            const plInput = document.getElementById('pipeline-input');
+                            const plBtn = document.getElementById('pipeline-send-btn');
+                            if (plInput) { plInput.value = text; plInput.dispatchEvent(new Event('input')); }
+                            if (plBtn) plBtn.click();
+                        }, 500);
+                    } else {
+                        _renderBuddyChatResponse(data);
+                        _updateTelemetry(data);
+                    }
+                    if (data.tribunal_passed === false) loadBank();
+                } catch (err) {
+                    thinkEl.remove();
+                    const msg = (err.message || '').toLowerCase().includes('fetch')
+                        ? '⚠ Network error — server unreachable.'
+                        : '⚠ Error: ' + err.message;
+                    const errEl = document.createElement('div'); errEl.className = 'msg buddy';
+                    errEl.innerHTML = '<div class="msg-row"><div class="msg-avatar">🤖</div><div class="bubble">' + esc(msg) + '</div></div>';
+                    chatMessages.appendChild(errEl); scrollChat();
+                }
+                sendBtn.disabled = false; refreshBreaker();
+            }
+
+            // ── _renderBuddyChatResponse ────────────────────────────────────────
+            function _renderBuddyChatResponse(data) {
+                const el = document.createElement('div');
+                el.className = 'msg buddy';
+                const responseText = data.response || data.response_text || '';
+                const confidence = data.confidence || 0;
+                const confPct = Math.round(confidence * 100);
+                const fc = confidence >= 0.85 ? '' : confidence >= 0.6 ? 'warn' : 'low';
+
+                let html = '<div class="msg-row"><div class="msg-avatar">🤖</div><div class="bubble">' +
+                    '<div style="line-height:1.6;margin-bottom:6px">' +
+                    esc(responseText).replace(/\n/g, '<br>') + '</div>';
+
+                // Omnipresent JIT grounding pills
+                if (data.jit_boost?.signals?.length) {
+                    html += '<div class="jit-pills">';
+                    data.jit_boost.signals.slice(0, 6).forEach(sig => {
+                        const short = sig.length > 50 ? sig.substring(0, 50) + '…' : sig;
+                        html += '<span class="jit-pill">⚡ ' + esc(short) + '</span>';
+                    });
+                    html += '</div>';
+                }
+                // Meta row
+                html += '<div class="msg-meta" style="margin-top:6px">';
+                if (data.intent) html += '<span class="intent-tag">' + esc(data.intent) + '</span>';
+                html += '<div class="conf-bar-wrap"><div class="conf-bar"><div class="conf-bar-fill ' + fc +
+                    '" style="width:' + confPct + '%"></div></div><span>' + confPct + '%</span></div>';
+                if (data.jit_boost?.source)
+                    html += '<span style="font-size:10px;font-family:var(--mono);color:var(--cyan)">' +
+                        esc(data.jit_boost.source) + '</span>';
+                if (data.model_used)
+                    html += '<span class="model-label">via ' + esc(data.model_used) + '</span>';
+                if (data.latency_ms != null) html += '<span>' + Math.round(data.latency_ms) + 'ms</span>';
+                html += '</div>';
+                // Suggestion chips
+                if (data.suggestions?.length) {
+                    html += '<div class="suggestions-row" style="margin-top:8px">' +
+                        data.suggestions.map(s =>
+                            '<button class="suggestion-chip" onclick="useChip(this)">' + esc(s) + '</button>'
+                        ).join('') + '</div>';
+                }
+                html += '</div></div>';
+                el.innerHTML = html;
+                chatMessages.appendChild(el); scrollChat();
+            }
+
+            // ── _updateTelemetry ────────────────────────────────────────────────
+            function _updateTelemetry(data) {
+                const jitFeed = document.getElementById('tele-jit-feed');
+                if (jitFeed && data.jit_boost?.signals?.length) {
+                    jitFeed.innerHTML = data.jit_boost.signals.map(s =>
+                        '<div style="padding:3px 0;border-bottom:1px solid var(--border);word-break:break-word;color:var(--text)">' +
+                        esc(s) + '</div>'
+                    ).join('');
+                }
+                const tierEl = document.getElementById('tele-model-tier');
+                if (tierEl) {
+                    const model = data.model_used || data.jit_boost?.source || '—';
+                    tierEl.innerHTML = '<span style="color:var(--cyan)">' + esc(model) + '</span>';
+                }
+                const intentEl = document.getElementById('tele-intent');
+                if (intentEl && data.intent) {
+                    intentEl.textContent = data.intent;
+                    intentEl.style.color = 'var(--cyan)';
+                }
+                // Pulse buddy canvas anchor on response
+                const core = document.getElementById('buddyAnchorCore');
+                if (core && typeof gsap !== 'undefined') {
+                    gsap.to(core, {
+                        attr: { r: 15 }, duration: 0.2, yoyo: true, repeat: 1,
+                        ease: 'power2.out', transformOrigin: '380 240'
+                    });
+                }
+            }
+
+            // ── _animateMitosis (GSAP branch split on buddyCanvas) ──────────────
+            function _animateMitosis(parentNodeId, spawnedIds, branchType) {
+                const edgesG = document.getElementById('buddyEdges');
+                const solidG = document.getElementById('buddyNodesSolid');
+                if (!edgesG || !solidG) return;
+
+                const parentEl = document.getElementById('buddy-node-' + parentNodeId);
+                const px = parentEl ? parseFloat(parentEl.getAttribute('cx')) : 380;
+                const py = parentEl ? parseFloat(parentEl.getAttribute('cy')) : 240;
+                if (parentEl && typeof gsap !== 'undefined') {
+                    gsap.to(parentEl, { attr: { r: 7 }, duration: 0.2, ease: 'power2.in' });
+                }
+
+                const branchColor = branchType === 'BRANCH_FORK' ? 'var(--cyan)'
+                    : branchType === 'BRANCH_CLONE' ? 'var(--purple-deep)' : 'var(--amber)';
+                const count = Math.max(spawnedIds.length, 1);
+                const spread = Math.min(120, 60 + count * 18);
+
+                spawnedIds.forEach((id, idx) => {
+                    const angle = (idx / count) * Math.PI * 2 - Math.PI / 2;
+                    const tx = px + Math.cos(angle) * spread;
+                    const ty = py + Math.sin(angle) * spread;
+
+                    // Fork edge
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', px); line.setAttribute('y1', py);
+                    line.setAttribute('x2', px); line.setAttribute('y2', py);
+                    line.setAttribute('stroke', 'var(--border)');
+                    line.setAttribute('stroke-width', '1.5');
+                    line.setAttribute('stroke-dasharray', '5 3');
+                    line.setAttribute('opacity', '0.6');
+                    edgesG.appendChild(line);
+                    if (typeof gsap !== 'undefined')
+                        gsap.to(line, {
+                            attr: { x2: tx, y2: ty }, duration: 0.7,
+                            delay: idx * 0.08, ease: 'elastic.out(1, 0.55)'
+                        });
+
+                    // Child node
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('id', 'buddy-node-' + id);
+                    circle.setAttribute('cx', px); circle.setAttribute('cy', py);
+                    circle.setAttribute('r', '3');
+                    circle.setAttribute('fill', branchColor);
+                    circle.setAttribute('opacity', '0.5');
+                    solidG.appendChild(circle);
+                    if (typeof gsap !== 'undefined')
+                        gsap.to(circle, {
+                            attr: { cx: tx, cy: ty, r: 11 }, opacity: 1,
+                            duration: 0.7, delay: idx * 0.08, ease: 'elastic.out(1, 0.55)'
+                        });
+
+                    // Update telemetry sidebar
+                    const brEl = document.getElementById('tele-branches');
+                    if (brEl) {
+                        if (brEl.textContent.includes('No active')) brEl.innerHTML = '';
+                        const typeClass = branchType === 'BRANCH_FORK' ? 'branch-fork'
+                            : branchType === 'BRANCH_CLONE' ? 'branch-clone' : 'branch-share';
+                        brEl.insertAdjacentHTML('beforeend',
+                            '<div class="tele-branch-item">' +
+                            '<span class="tele-branch-type ' + typeClass + '">' +
+                            esc(branchType.replace('BRANCH_', '')) + '</span>' +
+                            '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)">' +
+                            esc(String(id).slice(0, 22)) + '</span></div>');
+                    }
+                });
+
+                // Update canvas status
+                const status = document.getElementById('buddy-canvas-status');
+                if (status) status.textContent = branchType + ' · ' + spawnedIds.length + ' children';
+            }
+
             async function loadHealth() {
                 try {
                     const d = await (await fetch('/v2/health')).json();
@@ -2166,6 +2953,7 @@
             }
 
             function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+            window.esc = esc; // expose for testability and outer IIFE usage
 
             // ── Self-Improvement panel ──────────────────────────────────────────────
             function resetSIIdle() {
@@ -2218,6 +3006,26 @@
                     recs.map(rec => '<li style="color:var(--text);font-size:12px">' + esc(rec) + '</li>').join('') +
                     '</ol>'
                     : '';
+
+                // Arch diagram (Ouroboros God Mode)
+                const archBlock = document.getElementById('si-arch-block');
+                if (r.arch_diagram) {
+                    archBlock.style.display = 'block';
+                    document.getElementById('si-arch-diagram').textContent = r.arch_diagram;
+                } else {
+                    archBlock.style.display = 'none';
+                }
+
+                // Regression gate result
+                const regBlock = document.getElementById('si-regression-block');
+                if (typeof r.regression_passed !== 'undefined') {
+                    regBlock.style.display = 'block';
+                    regBlock.style.background = r.regression_passed ? 'rgba(16,185,129,.08)' : 'rgba(239,68,68,.08)';
+                    regBlock.style.borderColor = r.regression_passed ? 'var(--success)' : 'var(--danger)';
+                    document.getElementById('si-regression-icon').textContent = r.regression_passed ? '✓' : '✗';
+                    document.getElementById('si-regression-details').textContent =
+                        r.regression_details || (r.regression_passed ? 'Tests passed.' : 'Tests failed.');
+                }
 
                 // Per-component assessments
                 const assessments = r.assessments || [];
@@ -2887,7 +3695,216 @@
             } catch (e) { alert('Roadmap run error: ' + e.message); }
             btn.disabled = false; btn.textContent = '\u25B6 Run Roadmap';
         });
-        }) ();
+
+        // ── Branch Executor ─────────────────────────────────────────────────
+        let _branchQueue = [];  // pending BranchSpecRequest objects
+
+        function loadBranches() {
+            document.getElementById('branch-badge').style.display = 'none';
+            renderBranchQueue();
+        }
+
+        function renderBranchQueue() {
+            const list = document.getElementById('branch-queued-list');
+            if (!_branchQueue.length) { list.innerHTML = ''; return; }
+            list.innerHTML = _branchQueue.map((b, i) =>
+                '<div style="display:flex;gap:8px;align-items:center;font-size:11px;background:var(--surface-card);border:1px solid var(--border);border-radius:6px;padding:4px 10px">' +
+                '<span style="background:var(--primary-dim);color:var(--primary);padding:1px 6px;border-radius:4px">' + esc(b.branch_type.toUpperCase()) + '</span>' +
+                '<span style="color:var(--muted)">' + esc(b.intent) + '</span>' +
+                (b.target ? '<span style="color:var(--muted)">→ ' + esc(b.target) + '</span>' : '') +
+                '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(b.mandate_text.slice(0, 80)) + '</span>' +
+                '<button style="font-size:10px;padding:1px 7px;border-radius:4px;background:var(--surface-alt);border:1px solid var(--border);color:var(--muted);cursor:pointer" onclick="removeBranch(' + i + ')">✕</button>' +
+                '</div>'
+            ).join('');
+        }
+
+        function removeBranch(i) {
+            _branchQueue.splice(i, 1);
+            renderBranchQueue();
+        }
+
+        document.getElementById('branch-add-btn').addEventListener('click', () => {
+            const mandate = document.getElementById('branch-mandate-input').value.trim();
+            if (!mandate) { alert('Enter a mandate text for this branch.'); return; }
+            _branchQueue.push({
+                branch_type: document.getElementById('branch-type-select').value,
+                intent: document.getElementById('branch-intent-select').value,
+                target: document.getElementById('branch-target-input').value.trim(),
+                parent_branch_id: document.getElementById('branch-parent-input').value.trim() || null,
+                mandate_text: mandate,
+                metadata: {},
+            });
+            document.getElementById('branch-mandate-input').value = '';
+            document.getElementById('branch-target-input').value = '';
+            document.getElementById('branch-parent-input').value = '';
+            renderBranchQueue();
+        });
+
+        document.getElementById('branch-clear-btn').addEventListener('click', () => {
+            _branchQueue = [];
+            renderBranchQueue();
+            document.getElementById('branch-list').innerHTML = '';
+            document.getElementById('branch-run-summary').style.display = 'none';
+            document.getElementById('branch-empty').style.display = 'flex';
+        });
+
+        document.getElementById('branch-run-btn').addEventListener('click', async () => {
+            if (!_branchQueue.length) { alert('Add at least one branch spec first.'); return; }
+            const btn = document.getElementById('branch-run-btn');
+            btn.disabled = true; btn.textContent = '⏳ Running…';
+            document.getElementById('branch-empty').style.display = 'none';
+            document.getElementById('branch-list').innerHTML = '';
+            document.getElementById('branch-run-summary').style.display = 'none';
+            try {
+                const resp = await fetch('/v2/branch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ branches: _branchQueue, timeout: 120 }),
+                });
+                const data = await resp.json();
+                if (data.error) { alert('Branch error: ' + data.error); btn.disabled = false; btn.textContent = '▶ Run Branches'; return; }
+                renderBranchRun(data.result);
+                _branchQueue = []; renderBranchQueue();
+            } catch (e) {
+                alert('Branch run error: ' + e.message);
+            }
+            btn.disabled = false; btn.textContent = '▶ Run Branches';
+        });
+
+        function renderBranchRun(result) {
+            const summary = document.getElementById('branch-run-summary');
+            const list = document.getElementById('branch-list');
+            summary.style.display = 'block';
+            summary.innerHTML =
+                '<strong>Run ' + esc(result.run_id) + '</strong> · ' +
+                '<span style="color:var(--success)">' + result.satisfied_count + ' satisfied</span> · ' +
+                '<span style="color:' + (result.failed_count ? 'var(--danger)' : 'var(--muted)') + '">' + result.failed_count + ' failed</span> · ' +
+                result.latency_ms.toFixed(0) + 'ms total';
+            list.innerHTML = '';
+            (result.branches || []).forEach(b => {
+                const card = document.createElement('div');
+                const border = b.satisfied ? 'var(--success)' : (b.error ? 'var(--danger)' : 'var(--border)');
+                card.style.cssText = 'background:var(--surface-card);border:1px solid ' + border + ';border-radius:8px;padding:12px 16px';
+                const ref = b.refinement || {};
+                card.innerHTML =
+                    '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px">' +
+                    '<strong>' + esc(b.branch_id) + '</strong>' +
+                    '<span style="background:var(--primary-dim);color:var(--primary);font-size:10px;padding:1px 7px;border-radius:4px">' + esc((b.branch_type || '').toUpperCase()) + '</span>' +
+                    '<span style="font-size:11px;color:var(--muted)">' + esc(b.intent) + '</span>' +
+                    '<span style="font-size:11px;color:' + (b.satisfied ? 'var(--success)' : 'var(--danger)') + '">' + (b.satisfied ? '✓ satisfied' : '✗ unsatisfied') + '</span>' +
+                    '<span style="font-size:11px;color:var(--muted)">' + b.latency_ms.toFixed(0) + 'ms</span>' +
+                    (b.error ? '<span style="font-size:11px;color:var(--danger)">err: ' + esc(b.error) + '</span>' : '') +
+                    '</div>' +
+                    (ref.verdict
+                        ? '<div style="font-size:11px;color:var(--muted)">refinement: <strong style="color:' + (ref.verdict === 'pass' ? 'var(--success)' : ref.verdict === 'warn' ? 'var(--warn)' : 'var(--danger)') + '">' + esc(ref.verdict) + '</strong>' +
+                        (ref.recommendations && ref.recommendations.length ? ' · ' + esc(ref.recommendations[0]) : '') + '</div>'
+                        : '') +
+                    (b.jit_boost && b.jit_boost.signals && b.jit_boost.signals.length
+                        ? '<div style="font-size:10px;color:var(--muted);margin-top:4px">JIT: ' + b.jit_boost.signals.slice(0, 3).map(s => esc(s)).join(' · ') + '</div>'
+                        : '');
+                list.appendChild(card);
+            });
+        }
+
+        // SSE: handle simulation_gate and branch events
+        const _origOnmessage = document.querySelector.bind(document);
+        (function patchSSEForNewEvents() {
+            const _origConnect = connectSSE;
+            // Patch by hooking into es.onmessage — we augment the pushFeed call
+            // by registering a secondary handler via the existing pipeline hook mechanism.
+            // This is simpler: we check event type in the SSE handler added above.
+            // We extend the existing onmessage by intercepting via _handlePipelineSSE supplement.
+            const _origHandlePipeline = typeof _handlePipelineSSE !== 'undefined'
+                ? _handlePipelineSSE : null;
+            window._handleBranchAndGateSSE = function (ev) {
+                // Visual Simulation Gate events
+                if (ev.type === 'simulation_gate') {
+                    const panel = document.getElementById('sim-gate-panel');
+                    if (!panel) return;
+                    panel.style.display = 'block';
+                    const status = document.getElementById('sim-gate-status');
+                    const failures = document.getElementById('sim-gate-failures');
+                    const blueprint = document.getElementById('sim-gate-blueprint');
+                    const passed = ev.passed !== false;
+                    status.textContent = passed ? '✓ Gate Passed — Execute phase unlocked' : '✗ Gate Blocked — executing anyway in offline mode';
+                    status.style.color = passed ? 'var(--success)' : 'var(--warn)';
+                    blueprint.textContent = ev.blueprint_nodes && ev.blueprint_nodes.length
+                        ? 'Blueprint: ' + ev.blueprint_nodes.join(' · ')
+                        : '';
+                    failures.textContent = ev.failures && ev.failures.length
+                        ? 'Failures: ' + ev.failures.join(', ')
+                        : '';
+                }
+                if (ev.type === 'blueprint_phase') {
+                    const panel = document.getElementById('sim-gate-panel');
+                    if (panel) { panel.style.display = 'block'; document.getElementById('sim-gate-status').textContent = '🟡 Blueprint phase…'; document.getElementById('sim-gate-status').style.color = 'var(--warn)'; }
+                }
+                if (ev.type === 'dry_run_phase') {
+                    const panel = document.getElementById('sim-gate-panel');
+                    if (panel) { document.getElementById('sim-gate-status').textContent = '🔵 Dry-run phase…'; document.getElementById('sim-gate-status').style.color = 'var(--primary)'; }
+                }
+                if (ev.type === 'execute_phase') {
+                    const panel = document.getElementById('sim-gate-panel');
+                    if (panel) { document.getElementById('sim-gate-status').textContent = '🟢 Execute phase…'; document.getElementById('sim-gate-status').style.color = 'var(--success)'; }
+                }
+                // Branch executor SSE updates (badge)
+                if (ev.type === 'branch_run_complete') {
+                    const badge = document.getElementById('branch-badge');
+                    if (badge) {
+                        badge.style.display = '';
+                        badge.textContent = (parseInt(badge.textContent || '0') || 0) + 1;
+                    }
+                }
+                // ── Neural Command Center telemetry updates ──────────────────
+                if (ev.type === 'branch_mitosis') {
+                    _animateMitosis(
+                        ev.parent_branch_id || 'root',
+                        ev.spawned_branch_ids || [],
+                        'BRANCH_FORK'
+                    );
+                }
+                if (ev.type === 'branch_spawned') {
+                    _animateMitosis(
+                        ev.parent_branch_id || 'root',
+                        [ev.branch_id || ev.id || 'child'],
+                        ev.branch_type || 'BRANCH_FORK'
+                    );
+                }
+                if (ev.type === 'buddy_chat_fast') {
+                    _updateTelemetry({ jit_boost: ev.jit_boost, intent: ev.intent });
+                }
+                if (ev.type === 'model_selected') {
+                    const tierEl = document.getElementById('tele-model-tier');
+                    if (tierEl) tierEl.innerHTML =
+                        '<span style="color:var(--cyan)">' + esc(ev.model || ev.model_id || '—') + '</span>';
+                }
+                if (ev.type === 'blueprint_phase') {
+                    const bp = document.getElementById('tele-gate-bp');
+                    if (bp) { bp.textContent = 'RUNNING'; bp.className = 'tele-warn'; }
+                }
+                if (ev.type === 'dry_run_phase') {
+                    const dr = document.getElementById('tele-gate-dr');
+                    if (dr) { dr.textContent = 'RUNNING'; dr.className = 'tele-warn'; }
+                }
+                if (ev.type === 'execute_phase') {
+                    const ex = document.getElementById('tele-gate-ex');
+                    if (ex) { ex.textContent = 'RUNNING'; ex.className = 'tele-pass'; }
+                }
+                if (ev.type === 'simulation_gate') {
+                    const passed = ev.passed !== false;
+                    const bp = document.getElementById('tele-gate-bp');
+                    const dr = document.getElementById('tele-gate-dr');
+                    const ex = document.getElementById('tele-gate-ex');
+                    if (bp) { bp.textContent = 'DONE'; bp.className = 'tele-pass'; }
+                    if (dr) { dr.textContent = 'DONE'; dr.className = 'tele-pass'; }
+                    if (ex) {
+                        ex.textContent = passed ? 'PASS' : 'OFFLINE';
+                        ex.className = passed ? 'tele-pass' : 'tele-warn';
+                    }
+                }
+            };
+        })();
+
     </script>
 </body>
 
