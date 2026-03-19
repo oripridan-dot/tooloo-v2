@@ -1806,6 +1806,10 @@
                 <span class="icon">🧪</span> Sandbox Lab
                 <span class="nav-badge" id="sandbox-badge" style="display:none">0</span>
             </button>
+            <button class="nav-btn" data-view="daemon">
+                <span class="icon">🛸</span> RT Daemon
+                <span class="nav-badge" id="daemon-badge" style="display:none">0</span>
+            </button>
             <button class="nav-btn" data-view="branch">
                 <span class="icon">🌿</span> Branch Exec
                 <span class="nav-badge" id="branch-badge" style="display:none">0</span>
@@ -2391,6 +2395,8 @@
                     } catch { }
                 };
             }
+            // Expose connectSSE globally so outer IIFEs (patchSSEForNewEvents) can reference it.
+            window.connectSSE = connectSSE;
 
             const feedBody = document.getElementById('feed-body');
             const feedEmpty = document.getElementById('feed-empty');
@@ -2401,7 +2407,78 @@
                 feedCount++;
                 const active = document.querySelector('.view.active')?.id;
                 if (active !== 'view-feed') { feedBadge.style.display = ''; feedBadge.textContent = feedCount; }
-                const typeMap = { route: '', tribunal: 'tribunal', plan: 'plan', execution: 'execution', scope: 'scope', refinement: 'refinement', conversation: 'plan', sandbox: 'plan', roadmap_run: 'execution' };
+                
+        // DAEMON JS
+        const daemonLog = document.getElementById('daemon-log');
+        const daemonApprovals = document.getElementById('daemon-approvals');
+        
+        function addDaemonLog(msg) {
+            const div = document.createElement('div');
+            div.style.marginBottom = '4px';
+            div.innerHTML = `<span style="color:var(--fg)">${new Date().toLocaleTimeString()}</span> - ${esc(msg)}`;
+            daemonLog.appendChild(div);
+            daemonLog.scrollTop = daemonLog.scrollHeight;
+        }
+
+        document.getElementById('btn-start-daemon').addEventListener('click', async () => {
+            await fetch('/v2/daemon/start', {method: 'POST'});
+            addDaemonLog("Triggered daemon start.");
+        });
+        document.getElementById('btn-stop-daemon').addEventListener('click', async () => {
+            await fetch('/v2/daemon/stop', {method: 'POST'});
+            addDaemonLog("Triggered daemon stop.");
+        });
+
+        function handleDaemonSSE(ev) {
+            if (ev.type === 'daemon_rt') {
+                addDaemonLog(ev.msg);
+            } else if (ev.type === 'daemon_status') {
+                addDaemonLog("STATUS CHANGED: " + ev.status);
+            } else if (ev.type === 'daemon_approval_needed') {
+                const p = ev.proposal;
+                
+                if (daemonApprovals.innerHTML.includes('No pending')) {
+                    daemonApprovals.innerHTML = '';
+                }
+                
+                const div = document.createElement('div');
+                div.style.border = '1px solid var(--border)';
+                div.style.padding = '12px';
+                div.style.borderRadius = '6px';
+                div.style.background = 'var(--bg)';
+                div.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                        <strong>${esc(p.component)}</strong>
+                        <span style="font-family:var(--mono);font-size:10px;background:var(--warn-dim);color:var(--warn);padding:2px 6px;border-radius:4px">Risk: ${p.risk}</span>
+                    </div>
+                    <div style="font-size:13px;color:var(--muted);margin-bottom:12px">${esc(p.suggestion)}</div>
+                    <button class="btn-sm" style="background:var(--success);color:var(--bg)" onclick="approveDaemon('${p.id}', this)">✓ Approve Execution</button>
+                    <button class="btn-sm" onclick="this.parentElement.remove()">✗ Reject</button>
+                `;
+                daemonApprovals.appendChild(div);
+                
+                // badge
+                const b = document.getElementById('daemon-badge');
+                b.style.display = 'flex';
+                b.textContent = daemonApprovals.children.length;
+            }
+        }
+        
+        window.approveDaemon = async (pid, btn) => {
+            btn.textContent = 'Approving...';
+            btn.disabled = true;
+            await fetch('/v2/daemon/approve/' + pid, {method: 'POST'});
+            btn.parentElement.remove();
+            const b = document.getElementById('daemon-badge');
+            if (daemonApprovals.children.length === 0) {
+                b.style.display = 'none';
+                daemonApprovals.innerHTML = '<div style="font-size:12px;color:var(--muted)">No pending approvals.</div>';
+            } else {
+                b.textContent = daemonApprovals.children.length;
+            }
+        };
+
+        const typeMap = { route: '', tribunal: 'tribunal', plan: 'plan', execution: 'execution', scope: 'scope', refinement: 'refinement', conversation: 'plan', sandbox: 'plan', roadmap_run: 'execution' };
                 const cls = typeMap[ev.type] || '';
                 const card = document.createElement('div');
                 card.className = 'feed-event ' + cls;

@@ -38,6 +38,7 @@ from pydantic import BaseModel
 from engine.config import settings
 from engine.conversation import ConversationEngine
 from engine.engram_visual import VisualEngramGenerator
+from engine.model_garden import get_garden
 from engine.executor import Envelope, JITExecutor
 from engine.graph import CognitiveGraph, TopologicalSorter
 from engine.jit_booster import JITBooster
@@ -65,6 +66,7 @@ from engine.branch_executor import (
     BranchSpec,
 )
 from engine.self_improvement import SelfImprovementEngine
+from engine.daemon import BackgroundDaemon
 from engine.supervisor import TwoStrokeEngine
 from engine.tribunal import Engram, Tribunal
 
@@ -98,6 +100,8 @@ def _broadcast(event: dict[str, Any]) -> None:
     for q in list(_sse_queues):
         with suppress(asyncio.QueueFull):
             q.put_nowait(data)
+
+_daemon = BackgroundDaemon(_broadcast)
 
 
 # ── Sandbox + Roadmap singletons (after _broadcast so they can be wired) ─────
@@ -267,6 +271,7 @@ async def health() -> dict[str, Any]:
             "refinement_supervisor": "up",
             "n_stroke_engine": "up",
             "branch_executor": "up",
+            "model_garden": get_garden().to_status(),
         },
     }
 
@@ -1249,3 +1254,21 @@ async def list_branches() -> dict[str, Any]:
         "total": len(branches),
         "branches": branches,
     }
+
+@app.post("/v2/daemon/start")
+async def start_daemon():
+    if not _daemon.active:
+        asyncio.create_task(_daemon.start())
+        return {"status": "started"}
+    return {"status": "already_running"}
+
+@app.post("/v2/daemon/stop")
+async def stop_daemon():
+    _daemon.stop()
+    return {"status": "stopped"}
+
+@app.post("/v2/daemon/approve/{proposal_id}")
+async def approve_daemon_proposal(proposal_id: str):
+    res = _daemon.approve(proposal_id)
+    return res
+
