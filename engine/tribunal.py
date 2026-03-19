@@ -68,6 +68,43 @@ _POISON: list[tuple[str, re.Pattern[str]]] = [
         "path-traversal",
         re.compile(r'\.\.[/\\]'),
     ),
+    (
+        # OWASP A03:2021 — Injection: Server-Side Template Injection (SSTI)
+        # Detects {{ ... }} template syntax in logic bodies (Jinja2, Mako, etc.)
+        "ssti-template-injection",
+        re.compile(r'\{\{.*?\}\}'),
+    ),
+    (
+        # OWASP A03:2021 — Injection: Command Injection via os.system / subprocess shell
+        "command-injection",
+        re.compile(
+            r'\bos\.system\s*\(|subprocess\.(run|call|Popen)\s*\([^)]*shell\s*=\s*True',
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        # OWASP A01:2021 — Broken Object Level Authorization (BOLA/IDOR)
+        # Detects direct DB/ORM queries using a raw user-supplied identifier without
+        # an ownership filter (e.g. filter(id=request.user_id) with no owner check).
+        "bola-idor",
+        re.compile(
+            r'\.(?:filter|get|find|fetch|load|delete|update)\s*\('
+            r'[^)]*\b(?:id|pk|user_id|object_id|resource_id|item_id|record_id)\s*='
+            r'\s*(?:request|req|params|args|data|form|kwargs)\b',
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        # OWASP A10:2021 — Server-Side Request Forgery (SSRF)
+        # Detects HTTP client calls where the URL is constructed from user-controlled
+        # request attributes (requests.get(req.data['url']), httpx.get(params['uri']), …)
+        "ssrf",
+        re.compile(
+            r'(?:requests|httpx|aiohttp|urllib\.request)\s*\.\s*(?:get|post|put|delete|request)\s*\('
+            r'\s*(?:request|req|params|args|data|form|kwargs)\b',
+            re.IGNORECASE,
+        ),
+    ),
 ]
 
 

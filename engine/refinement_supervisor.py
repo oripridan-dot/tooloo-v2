@@ -24,10 +24,12 @@ from typing import Any, Callable
 
 from engine.executor import Envelope
 
-NODE_FAIL_THRESHOLD: int = 3   # failures before healing is triggered
+# DEV MODE: fail threshold raised 3→6 — allow more retries before healing kicks in
+NODE_FAIL_THRESHOLD: int = 6   # failures before healing is triggered
 
 # Simple poison guard for synthesised fix strategies (no eval / exec)
-_POISON_RE = re.compile(r"\b(eval|exec|__import__|subprocess\.run|os\.system)\s*\(")
+_POISON_RE = re.compile(
+    r"\b(eval|exec|__import__|subprocess\.run|os\.system)\s*\(")
 
 
 # ── DTOs ──────────────────────────────────────────────────────────────────────
@@ -172,7 +174,8 @@ class RefinementSupervisor:
             nodes_healed.append(node_id)
 
         # Step 4: Build healed work function from prescriptions
-        healed_fn = self._build_healed_work_fn(prescriptions) if nodes_healed else None
+        healed_fn = self._build_healed_work_fn(
+            prescriptions) if nodes_healed else None
 
         verdict = (
             "healed" if len(nodes_healed) == len(failed_node_ids)

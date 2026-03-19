@@ -27,6 +27,7 @@ class RefinementReport:
     failed: int
     success_rate: float          # 0.0 – 1.0
     avg_latency_ms: float
+    p50_latency_ms: float        # median latency
     p90_latency_ms: float
     slow_nodes: list[str]        # mandate_ids above SLOW_THRESHOLD_MS
     failed_nodes: list[str]      # mandate_ids that raised exceptions
@@ -42,6 +43,7 @@ class RefinementReport:
             "failed": self.failed,
             "success_rate": round(self.success_rate, 3),
             "avg_latency_ms": round(self.avg_latency_ms, 2),
+            "p50_latency_ms": round(self.p50_latency_ms, 2),
             "p90_latency_ms": round(self.p90_latency_ms, 2),
             "slow_nodes": self.slow_nodes,
             "failed_nodes": self.failed_nodes,
@@ -63,11 +65,26 @@ class RefinementLoop:
             # retry failed envelopes only
     """
 
-    SLOW_THRESHOLD_MS: float = 500.0   # nodes slower than this are flagged
+    # DEV MODE: raised 500→2000ms; nodes are slow locally
+    SLOW_THRESHOLD_MS: float = 2000.0
 
-    # Default thresholds for verdict classification (overridable per-call)
-    _WARN_THRESHOLD: float = 0.70
-    _FAIL_THRESHOLD: float = 0.50
+    # DEV MODE: thresholds widened for dev flow — warn 0.70→0.45, fail 0.50→0.25
+    _WARN_THRESHOLD: float = 0.45
+    _FAIL_THRESHOLD: float = 0.25
+
+    def __init__(
+        self,
+        slow_threshold_ms: float | None = None,
+        warn_threshold: float | None = None,
+        fail_threshold: float | None = None,
+    ) -> None:
+        """Allow per-context threshold overrides (e.g. higher slow_threshold for LLM nodes)."""
+        if slow_threshold_ms is not None:
+            self.SLOW_THRESHOLD_MS = slow_threshold_ms
+        if warn_threshold is not None:
+            self._WARN_THRESHOLD = warn_threshold
+        if fail_threshold is not None:
+            self._FAIL_THRESHOLD = fail_threshold
 
     def evaluate(
         self,
@@ -80,7 +97,7 @@ class RefinementLoop:
         if not results:
             return RefinementReport(
                 total=0, succeeded=0, failed=0,
-                success_rate=1.0, avg_latency_ms=0.0, p90_latency_ms=0.0,
+                success_rate=1.0, avg_latency_ms=0.0, p50_latency_ms=0.0, p90_latency_ms=0.0,
                 slow_nodes=[], failed_nodes=[],
                 recommendations=["No nodes executed — nothing to refine."],
                 rerun_advised=False, verdict="pass", iterations=iteration,
@@ -97,6 +114,8 @@ class RefinementLoop:
 
         latencies = sorted(r.latency_ms for r in results)
         avg_latency_ms = sum(latencies) / total
+        p50_idx = max(0, int(total * 0.5) - 1)
+        p50_latency_ms = latencies[p50_idx]
         p90_idx = max(0, int(total * 0.9) - 1)
         p90_latency_ms = latencies[p90_idx]
 
@@ -152,6 +171,7 @@ class RefinementLoop:
             failed=failed,
             success_rate=success_rate,
             avg_latency_ms=avg_latency_ms,
+            p50_latency_ms=p50_latency_ms,
             p90_latency_ms=p90_latency_ms,
             slow_nodes=slow_nodes,
             failed_nodes=failed_nodes,

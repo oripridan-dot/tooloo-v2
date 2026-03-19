@@ -36,6 +36,9 @@ CROSS_MODEL_CONSENSUS_ENABLED: bool = (
     _get("CROSS_MODEL_CONSENSUS_ENABLED", "false").lower() == "true"
 )
 MODEL_GARDEN_CACHE_TTL: int = int(_get("MODEL_GARDEN_CACHE_TTL", "3600"))
+LOCAL_SLM_MODEL: str = _get("LOCAL_SLM_MODEL", "local/llama-3.2-3b-instruct")
+LOCAL_SLM_ENDPOINT: str = _get(
+    "LOCAL_SLM_ENDPOINT", "http://127.0.0.1:11434/api/generate")
 
 # VERTEX_DEFAULT_MODEL is the single-shot default used by legacy helpers
 # (JITBooster, ConversationEngine) when no explicit tier model is requested.
@@ -72,11 +75,34 @@ CIRCUIT_BREAKER_THRESHOLD: float = float(
     _get("CIRCUIT_BREAKER_THRESHOLD", "0.85"))
 CIRCUIT_BREAKER_MAX_FAILS: int = int(_get("CIRCUIT_BREAKER_MAX_FAILS", "3"))
 
+# ── Law 20 (Amended) — Autonomous Execution Authority ────────────────────────
+# When AUTONOMOUS_EXECUTION_ENABLED=true TooLoo may approve and apply its own
+# engine improvements without waiting for explicit human confirmation.
+# Safety invariants that always hold regardless of this flag:
+#   • Tribunal OWASP scan runs on every generated artefact.
+#   • All writes are sandboxed to engine/ components inside this workspace.
+#   • Activity is restricted to legal, non-criminal operations only.
+AUTONOMOUS_EXECUTION_ENABLED: bool = (
+    _get("AUTONOMOUS_EXECUTION_ENABLED", "true").lower() == "true"
+)
+AUTONOMOUS_CONFIDENCE_THRESHOLD: float = float(
+    _get("AUTONOMOUS_CONFIDENCE_THRESHOLD", "0.99")
+)
+
 # ── Executor ──────────────────────────────────────────────────────────────────
 EXECUTOR_MAX_WORKERS: int = int(_get("EXECUTOR_MAX_WORKERS", "8"))
 
 # ── Sandbox ───────────────────────────────────────────────────────────────────
 SANDBOX_MAX_WORKERS: int = int(_get("SANDBOX_MAX_WORKERS", "25"))
+
+
+# ── OpenTelemetry (microservice observability) ───────────────────────────────
+OTEL_EXPORTER_OTLP_ENDPOINT: str = _get(
+    "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"
+)
+OTEL_EXPORTER_OTLP_PROTOCOL: str = _get(
+    "OTEL_EXPORTER_OTLP_PROTOCOL", "grpc"
+)
 
 
 class _Settings:  # noqa: N801  (simple namespace)
@@ -89,13 +115,19 @@ class _Settings:  # noqa: N801  (simple namespace)
     anthropic_vertex_region = ANTHROPIC_VERTEX_REGION
     cross_model_consensus_enabled = CROSS_MODEL_CONSENSUS_ENABLED
     model_garden_cache_ttl = MODEL_GARDEN_CACHE_TTL
+    local_slm_model = LOCAL_SLM_MODEL
+    local_slm_endpoint = LOCAL_SLM_ENDPOINT
     studio_host = STUDIO_HOST
     studio_port = STUDIO_PORT
     studio_reload = STUDIO_RELOAD
     circuit_breaker_threshold = CIRCUIT_BREAKER_THRESHOLD
     circuit_breaker_max_fails = CIRCUIT_BREAKER_MAX_FAILS
+    autonomous_execution_enabled = AUTONOMOUS_EXECUTION_ENABLED
+    autonomous_confidence_threshold = AUTONOMOUS_CONFIDENCE_THRESHOLD
     executor_max_workers = EXECUTOR_MAX_WORKERS
     sandbox_max_workers = SANDBOX_MAX_WORKERS
+    OTEL_EXPORTER_OTLP_ENDPOINT = OTEL_EXPORTER_OTLP_ENDPOINT
+    OTEL_EXPORTER_OTLP_PROTOCOL = OTEL_EXPORTER_OTLP_PROTOCOL
 
 
 settings = _Settings()

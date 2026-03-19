@@ -17,6 +17,8 @@ import pytest
 
 from engine.executor import Envelope, JITExecutor
 from engine.graph import CognitiveGraph, CycleDetectedError, TopologicalSorter, CausalProvenanceTracker
+from engine.mcp_manager import MCPManager
+from engine.n_stroke import _infer_workspace_file_target
 from engine.psyche_bank import CogRule, PsycheBank
 from engine.router import MandateRouter
 from engine.tribunal import Engram, Tribunal
@@ -208,6 +210,13 @@ class TestMandateRouter:
         d = r.route("explain the architecture").to_dict()
         assert "intent" in d and "confidence" in d and "circuit_open" in d
 
+    def test_scaled_confidence_survives_keyword_dilution(self):
+        r = MandateRouter()
+        result = r.route(
+            "brainstorm ideas for platform strategy and recommend an approach")
+        assert result.intent == "IDEATE"
+        assert result.confidence >= 0.9
+
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  Dimension 3 — Execution
@@ -322,6 +331,30 @@ class TestTribunal:
         assert result.poison_detected
         assert "path-traversal" in result.violations
 
+    def test_ssti_jinja2_detected(self, tmp_bank: PsycheBank):
+        t = Tribunal(bank=tmp_bank)
+        e = Engram(slug="ssti-1", intent="BUILD",
+                   logic_body='template = "Hello {{ user_input }}"')
+        result = t.evaluate(e)
+        assert result.poison_detected
+        assert "ssti-template-injection" in result.violations
+
+    def test_command_injection_os_system_detected(self, tmp_bank: PsycheBank):
+        t = Tribunal(bank=tmp_bank)
+        e = Engram(slug="cmd-1", intent="BUILD",
+                   logic_body="os.system(user_cmd)")
+        result = t.evaluate(e)
+        assert result.poison_detected
+        assert "command-injection" in result.violations
+
+    def test_command_injection_subprocess_shell_detected(self, tmp_bank: PsycheBank):
+        t = Tribunal(bank=tmp_bank)
+        e = Engram(slug="cmd-2", intent="BUILD",
+                   logic_body="subprocess.run(cmd, shell=True)")
+        result = t.evaluate(e)
+        assert result.poison_detected
+        assert "command-injection" in result.violations
+
 
 class TestJITExecutor:
     def test_fan_out_all_succeed(self):
@@ -337,6 +370,43 @@ class TestJITExecutor:
                 for i in range(5)]
         results = ex.fan_out(lambda e: e.mandate_id, envs)
         assert [r.mandate_id for r in results] == [f"m-{i}" for i in range(5)]
+
+    def test_fan_out_dag_respects_dependencies(self):
+        ex = JITExecutor(max_workers=4)
+        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD")
+                for i in range(4)]
+        deps = {
+            "m-0": [],
+            "m-1": ["m-0"],
+            "m-2": ["m-0"],
+            "m-3": ["m-1", "m-2"],
+        }
+        seen: list[str] = []
+
+        def _work(env: Envelope) -> str:
+            seen.append(env.mandate_id)
+            return env.mandate_id
+
+        results = ex.fan_out_dag(_work, envs, deps)
+        assert [r.mandate_id for r in results] == [f"m-{i}" for i in range(4)]
+        assert seen[0] == "m-0"
+        assert seen[-1] == "m-3"
+
+    def test_fan_out_dag_blocks_downstream_on_failed_dependency(self):
+        ex = JITExecutor(max_workers=2)
+        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD")
+                for i in range(3)]
+        deps = {"m-0": [], "m-1": ["m-0"], "m-2": ["m-1"]}
+
+        def _work(env: Envelope) -> str:
+            if env.mandate_id == "m-1":
+                raise RuntimeError("boom")
+            return env.mandate_id
+
+        results = ex.fan_out_dag(_work, envs, deps)
+        assert results[1].success is False
+        assert results[2].success is False
+        assert "Blocked by failed dependency" in (results[2].error or "")
 
     def test_fan_out_captures_error(self):
         ex = JITExecutor(max_workers=2)
@@ -359,6 +429,30 @@ class TestJITExecutor:
         results = ex.fan_out(lambda e: None, [])
         assert results == []
 
+
+class TestMCPManager:
+    def test_spawn_process_tool_emits_branch_payload(self):
+        mcp = MCPManager()
+        result = mcp.call_uri(
+            "mcp://tooloo/spawn_process",
+            type="FORK",
+            intent="IDEATE",
+            mandate="Research Vertex AI vector search limits",
+            target="engine/jit_booster.py",
+        )
+        assert result.success is True
+        payload = result.output["spawned_branch"]
+        assert payload["branch_type"] == "fork"
+        assert payload["intent"] == "IDEATE"
+        assert payload["mandate_text"] == "Research Vertex AI vector search limits"
+
+
+class TestImplicitTargetInference:
+    def test_infer_workspace_file_target_from_backticked_path(self):
+        inferred = _infer_workspace_file_target(
+            "Please inspect `engine/router.py` and improve it")
+        assert inferred == "engine/router.py"
+
     def test_latency_p90_is_none_before_any_fanout(self):
         ex = JITExecutor(max_workers=2)
         assert ex.latency_p90() is None
@@ -379,6 +473,44 @@ class TestJITExecutor:
         assert ex.latency_p90() is not None
         ex.reset_histogram()
         assert ex.latency_p90() is None
+
+    def test_latency_p50_after_fanout(self):
+        ex = JITExecutor(max_workers=2)
+        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD")
+                for i in range(6)]
+        ex.fan_out(lambda e: None, envs)
+        p50 = ex.latency_p50()
+        assert p50 is not None
+        assert p50 >= 0.0
+
+    def test_latency_p99_after_fanout(self):
+        ex = JITExecutor(max_workers=2)
+        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD")
+                for i in range(6)]
+        ex.fan_out(lambda e: None, envs)
+        p99 = ex.latency_p99()
+        assert p99 is not None
+        assert p99 >= 0.0
+
+    def test_latency_p99_gte_p90_gte_p50(self):
+        ex = JITExecutor(max_workers=2)
+        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD")
+                for i in range(10)]
+        ex.fan_out(lambda e: None, envs)
+        p50 = ex.latency_p50()
+        p90 = ex.latency_p90()
+        p99 = ex.latency_p99()
+        assert p50 is not None and p90 is not None and p99 is not None
+        assert p50 <= p90 <= p99
+
+    def test_histogram_cap_prunes_oldest_entries(self):
+        ex = JITExecutor(max_workers=4)
+        ex._MAX_HIST_ENTRIES = 5  # shrink cap for test
+        envs = [Envelope(mandate_id=f"m-{i}", intent="BUILD")
+                for i in range(8)]
+        ex.fan_out(lambda e: None, envs)
+        with ex._hist_lock:
+            assert len(ex._latency_histogram) <= 5
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

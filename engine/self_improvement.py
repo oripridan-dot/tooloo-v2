@@ -11,21 +11,24 @@ The system applies its own pipeline capabilities to itself:
   5. Produce a SelfImprovementReport with verdicts and top recommendations
 
 Wave plan (3 waves, varying parallelism):
-  Wave 1 [core-security]  : router · tribunal · psyche_bank           (×3 parallel)
-  Wave 2 [performance]    : jit_booster · executor · graph             (×3 parallel)
-  Wave 3 [meta-analysis]  : scope_evaluator · refinement               (×2 parallel)
+    Wave 1 [core-security]  : router · tribunal · psyche_bank           (x3 parallel)
+    Wave 2 [performance]    : jit_booster · executor · graph            (x3 parallel)
+    Wave 3 [meta-analysis]  : scope_evaluator · refinement              (x2 parallel)
 
-Scope: 8 nodes · 3 waves · max ×3 parallel · strategy: deep-parallel
+Scope: 8 nodes · 3 waves · max x3 parallel · strategy: deep-parallel
 Risk:  router (circuit-breaker state), tribunal (OWASP patterns must not trigger
        on self-audit mandates — uses benign audit-only text)
 """
 from __future__ import annotations
 
+import os
 import time
 import uuid
-from dataclasses import dataclass, field
+from contextlib import suppress
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from engine.config import GEMINI_API_KEY, GEMINI_MODEL, VERTEX_DEFAULT_MODEL
@@ -60,18 +63,36 @@ _REPO_ROOT: Path = Path(__file__).resolve().parents[1]
 
 # ── Map component name → source file relative to repo root ────────────────────
 _COMPONENT_SOURCE: dict[str, str] = {
-    "router":          "engine/router.py",
-    "tribunal":        "engine/tribunal.py",
-    "psyche_bank":     "engine/psyche_bank.py",
-    "jit_booster":     "engine/jit_booster.py",
-    "executor":        "engine/executor.py",
-    "graph":           "engine/graph.py",
-    "scope_evaluator": "engine/scope_evaluator.py",
-    "refinement":      "engine/refinement.py",
-    "n_stroke":        "engine/n_stroke.py",
-    "supervisor":      "engine/supervisor.py",
-    "conversation":    "engine/conversation.py",
-    "config":          "engine/config.py",
+    "router":           "engine/router.py",
+    "tribunal":         "engine/tribunal.py",
+    "psyche_bank":      "engine/psyche_bank.py",
+    "jit_booster":      "engine/jit_booster.py",
+    "executor":         "engine/executor.py",
+    "graph":            "engine/graph.py",
+    "scope_evaluator":  "engine/scope_evaluator.py",
+    "refinement":       "engine/refinement.py",
+    "n_stroke":         "engine/n_stroke.py",
+    "supervisor":       "engine/supervisor.py",
+    "conversation":     "engine/conversation.py",
+    "config":           "engine/config.py",
+    # Wave 6 — advanced execution layer
+    "branch_executor":  "engine/branch_executor.py",
+    "mandate_executor": "engine/mandate_executor.py",
+    "model_garden":     "engine/model_garden.py",
+    "vector_store":     "engine/vector_store.py",
+    "daemon":           "engine/daemon.py",
+}
+
+_FOCUS_ALIASES: dict[str, str] = {
+    "balanced": "balanced",
+    "efficiency": "efficiency",
+    "quality": "quality",
+    "accuracy": "accuracy",
+    "speed": "speed",
+    "latency": "speed",
+    "performance": "speed",
+    "robustness": "quality",
+    "determinism": "accuracy",
 }
 
 _ANALYSIS_PROMPT = (
@@ -190,6 +211,117 @@ _COMPONENTS: list[dict[str, Any]] = [
         "wave": 3,
         "deps": ["executor", "graph"],
     },
+    # ── Wave 4: orchestration ─────────────────────────────────────────────────
+    {
+        "component": "n_stroke",
+        "description": "N-Stroke Autonomous Cognitive Loop engine",
+        "mandate": (
+            "build and improve the NStrokeEngine loop: review satisfaction-gate "
+            "thresholds, validate SimulationGate completeness and security checks, "
+            "recommend adaptive MAX_STROKES tuning based on mandate complexity, "
+            "improve SSE broadcast payload richness for observability"
+        ),
+        "wave": 4,
+        "deps": ["scope_evaluator", "refinement"],
+    },
+    {
+        "component": "supervisor",
+        "description": "TwoStrokeEngine sub-pipeline",
+        "mandate": (
+            "audit and improve the TwoStrokeEngine supervisor: review preflight and "
+            "midflight supervisor sequencing, validate Tribunal integration between "
+            "strokes, recommend pipeline shortcut conditions for low-complexity "
+            "mandates to reduce unnecessary strokes"
+        ),
+        "wave": 4,
+        "deps": ["scope_evaluator", "refinement"],
+    },
+    # ── Wave 5: intelligence layer ────────────────────────────────────────────
+    {
+        "component": "conversation",
+        "description": "Multi-turn ConversationEngine with confidence tiers",
+        "mandate": (
+            "build and improve the ConversationEngine: review three-tier confidence "
+            "handling boundaries (clarification / hedge / confident), improve JIT "
+            "signal surfacing in responses, recommend context-window management "
+            "strategies for long multi-turn sessions, validate OWASP input checks"
+        ),
+        "wave": 5,
+        "deps": ["n_stroke", "supervisor"],
+    },
+    {
+        "component": "config",
+        "description": "Single source of truth config loader",
+        "mandate": (
+            "audit and improve engine/config.py: validate all env-var fallbacks "
+            "are safe defaults, review CIRCUIT_BREAKER_THRESHOLD and MAX_STROKES "
+            "constants for 2026 SOTA calibration, recommend typed-config dataclass "
+            "pattern to eliminate ad-hoc os.getenv() calls across engine modules"
+        ),
+        "wave": 5,
+        "deps": ["n_stroke", "supervisor"],
+    },
+    # ── Wave 6: advanced execution layer ─────────────────────────────────────
+    {
+        "component": "branch_executor",
+        "description": "FORK/CLONE/SHARE async branch pipeline engine",
+        "mandate": (
+            "audit and improve BranchExecutor: review FORK/SHARE branch isolation "
+            "guarantees, validate SharedBlackboard read-only contract under concurrent "
+            "writes, recommend mitosis depth limits to prevent runaway branching, "
+            "improve asyncio.TaskGroup migration from gather() pattern"
+        ),
+        "wave": 6,
+        "deps": ["n_stroke", "conversation"],
+    },
+    {
+        "component": "mandate_executor",
+        "description": "LLM-powered DAG node executor (live work function factory)",
+        "mandate": (
+            "build and improve MandateExecutor: review make_live_work_fn closure "
+            "safety for ThreadPoolExecutor fan-out, validate node-type prompt "
+            "templates cover all 8 node types, recommend streaming output support "
+            "for long-running implement nodes, audit spawn_process tool output handling"
+        ),
+        "wave": 6,
+        "deps": ["n_stroke", "conversation"],
+    },
+    {
+        "component": "model_garden",
+        "description": "Multi-provider Model Garden — tier-based model selector",
+        "mandate": (
+            "audit and improve ModelGarden: review 4-tier capability scoring matrix "
+            "for 2026 model landscape accuracy, validate consensus() parallel "
+            "execution under ThreadPoolExecutor, recommend dynamic tier re-scoring "
+            "based on observed latency histograms, audit cross-provider error handling"
+        ),
+        "wave": 6,
+        "deps": ["config", "jit_booster"],
+    },
+    {
+        "component": "vector_store",
+        "description": "In-process TF-IDF vector store with cosine similarity",
+        "mandate": (
+            "implement and improve VectorStore: review TF-IDF incremental IDF "
+            "recomputation correctness, recommend approximate nearest-neighbour "
+            "upgrade path (HNSW/Annoy) for corpora >10k docs, validate thread-safety "
+            "of add/search under concurrent access, audit near-duplicate threshold calibration"
+        ),
+        "wave": 6,
+        "deps": ["config", "psyche_bank"],
+    },
+    {
+        "component": "daemon",
+        "description": "Background ROI scoring + autonomous proposal daemon",
+        "mandate": (
+            "audit and improve BackgroundDaemon: review asyncio event-loop isolation "
+            "from FastAPI lifespan, validate proposal scorer fallback when Gemini is "
+            "unavailable, recommend structured healthcheck endpoint for daemon status, "
+            "audit high-risk component approval gating (Law 20 invariants)"
+        ),
+        "wave": 6,
+        "deps": ["config", "psyche_bank"],
+    },
 ]
 
 
@@ -212,6 +344,11 @@ class ComponentAssessment:
     execution_success: bool
     execution_latency_ms: float
     suggestions: list[str]
+    # Value scoring — quantifies the expected business/engineering impact of applying
+    # the suggestions in this assessment.  Range 0.0-1.0.  Computed by
+    # SelfImprovementEngine._score_improvement_value().
+    value_score: float = 0.0
+    value_rationale: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -227,6 +364,8 @@ class ComponentAssessment:
             "execution_success": self.execution_success,
             "execution_latency_ms": round(self.execution_latency_ms, 2),
             "suggestions": self.suggestions,
+            "value_score": round(self.value_score, 3),
+            "value_rationale": self.value_rationale,
         }
 
 
@@ -291,29 +430,38 @@ class SelfImprovementEngine:
     """
 
     # Suggestions derived from verdicts — extracted from refinement recommendations
-    _WAVE_LABELS = {1: "core-security", 2: "performance", 3: "meta-analysis"}
+    _WAVE_LABELS: MappingProxyType = MappingProxyType(
+        {1: "core-security", 2: "performance", 3: "meta-analysis",
+         4: "orchestration", 5: "intelligence-layer",
+         6: "advanced-execution"})
 
     def __init__(
         self,
         booster: JITBooster | None = None,
         bank: PsycheBank | None = None,
+        optimization_focus: str = "balanced",
     ) -> None:
         # Isolated router — never touches the shared circuit-breaker
         self._router = MandateRouter()
         self._booster = booster or JITBooster()
         self._bank = bank or PsycheBank()
         self._tribunal = Tribunal(bank=self._bank)
-        self._executor = JITExecutor(max_workers=3)
+        self._executor = JITExecutor(max_workers=6)
         self._sorter = TopologicalSorter()
         self._scope_evaluator = ScopeEvaluator()
         self._refinement_loop = RefinementLoop()
         self._mcp = MCPManager()
         # LLM model — re-uses same default as config
         self._vertex_model: str = VERTEX_DEFAULT_MODEL
+        self._optimization_focus = self._normalise_focus(optimization_focus)
 
     # ── Public API ────────────────────────────────────────────────────────────
 
-    def run(self) -> SelfImprovementReport:
+    def run(
+        self,
+        optimization_focus: str | None = None,
+        run_regression_gate: bool = True,
+    ) -> SelfImprovementReport:
         """Execute the Ouroboros self-improvement cycle.
 
         Phases:
@@ -323,6 +471,8 @@ class SelfImprovementEngine:
         """
         t0 = time.monotonic()
         improvement_id = f"si-{uuid.uuid4().hex[:8]}"
+        if optimization_focus is not None:
+            self._optimization_focus = self._normalise_focus(optimization_focus)
 
         # ── Phase 0: Generate architectural diagram ───────────────────────────
         arch_diagram = self._generate_arch_diagram()
@@ -332,56 +482,65 @@ class SelfImprovementEngine:
         waves = self._sorter.sort(wave_spec)
 
         assessments: list[ComponentAssessment] = []
-
-        for wave_idx, wave_nodes in enumerate(waves, start=1):
-            wave_components = [
-                c for c in _COMPONENTS
-                if c["wave"] == wave_idx
-            ]
-
-            # Fan-out all components in this wave in parallel
-            envelopes = [
-                Envelope(
-                    mandate_id=f"{improvement_id}-{c['component']}",
-                    intent="AUDIT",
-                    domain="self-improvement",
-                    metadata={"component": c},
-                )
-                for c in wave_components
-            ]
-
-            wave_results = self._executor.fan_out(
-                self._assess_component, envelopes
+        component_id_map = {
+            c["component"]: f"{improvement_id}-{c['component']}"
+            for c in _COMPONENTS
+        }
+        envelopes = [
+            Envelope(
+                mandate_id=component_id_map[c["component"]],
+                intent="AUDIT",
+                domain="self-improvement",
+                metadata={"component": c},
             )
+            for c in _COMPONENTS
+        ]
+        dependency_map = {
+            component_id_map[c["component"]]: [
+                component_id_map[d] for d in c["deps"]]
+            for c in _COMPONENTS
+        }
 
-            for result in wave_results:
-                if result.success and isinstance(result.output, ComponentAssessment):
-                    assessments.append(result.output)
-                else:
-                    comp = next(
-                        c for c in wave_components
-                        if f"{improvement_id}-{c['component']}" == result.mandate_id
-                    )
-                    assessments.append(ComponentAssessment(
-                        component=comp["component"],
-                        description=comp["description"],
-                        intent="AUDIT",
-                        original_confidence=0.0,
-                        boosted_confidence=0.0,
-                        jit_signals=[],
-                        jit_source="none",
-                        tribunal_passed=False,
-                        scope_summary="assessment failed",
-                        execution_success=False,
-                        execution_latency_ms=result.latency_ms,
-                        suggestions=[
-                            "Re-run self-improvement cycle to retry this component."],
-                    ))
+        all_results = self._executor.fan_out_dag(
+            self._assess_component,
+            envelopes,
+            dependency_map,
+            max_workers=max(3, len(waves)),
+        )
+
+        for result in all_results:
+            if result.success and isinstance(result.output, ComponentAssessment):
+                result.output.execution_latency_ms = result.latency_ms
+                assessments.append(result.output)
+            else:
+                comp = next(
+                    c for c in _COMPONENTS
+                    if component_id_map[c["component"]] == result.mandate_id
+                )
+                assessments.append(ComponentAssessment(
+                    component=comp["component"],
+                    description=comp["description"],
+                    intent="AUDIT",
+                    original_confidence=0.0,
+                    boosted_confidence=0.0,
+                    jit_signals=[],
+                    jit_source="none",
+                    tribunal_passed=False,
+                    scope_summary="assessment failed",
+                    execution_success=False,
+                    execution_latency_ms=result.latency_ms,
+                    suggestions=[
+                        "Re-run self-improvement cycle to retry this component."],
+                    value_rationale=f"focus={self._optimization_focus}; assessment failed",
+                ))
 
         # ── Phase 2: Regression Gate ─────────────────────────────────────────
-        regression_passed, regression_details = self._run_regression_gate(
-            improvement_id
-        )
+        if run_regression_gate:
+            regression_passed, regression_details = self._run_regression_gate(
+                improvement_id
+            )
+        else:
+            regression_passed, regression_details = True, "skipped by caller"
 
         # Build refinement envelopes representing the component assessments
         from engine.executor import ExecutionResult
@@ -466,11 +625,14 @@ class SelfImprovementEngine:
 
         Returns (passed: bool, details: str).  Runs in sandbox mode — does not
         block the report if tests fail, but surfaces the failure prominently.
+
+        Skipped when executing inside an existing pytest session (PYTEST_CURRENT_TEST
+        is set) to avoid spawning a recursive subprocess that will time-out.
         """
-        # Get JIT grounding best practices before invoking the MCP tool
-        grounding = self._booster.fetch_mcp_grounding("run_tests", "tests/")
+        if os.environ.get("PYTEST_CURRENT_TEST"):
+            return True, "skipped (running inside pytest)"
         result = self._mcp.call_uri("mcp://tooloo/run_tests",
-                                    module="tests", timeout=45)
+                                    test_path="tests", timeout=45)
         details = str(result.output or "")[:500]
         passed = result.success
         return passed, details
@@ -481,11 +643,9 @@ class SelfImprovementEngine:
         Uses the MCP file_write tool with a path-safety check.
         Falls back silently if write fails (non-blocking).
         """
-        try:
+        with suppress(Exception):
             self._mcp.call_uri("mcp://tooloo/file_write",
                                path=f"plans/{filename}", content=content)
-        except Exception:
-            pass  # planning writes are best-effort
 
     @staticmethod
     def _static_arch_diagram() -> str:
@@ -535,7 +695,10 @@ class SelfImprovementEngine:
         route: RouteResult = self._router.route_chat(mandate_text)
 
         # 2. Mandatory JIT SOTA boost
-        jit_result: JITBoostResult = self._booster.fetch(route)
+        jit_result: JITBoostResult = self._booster.fetch(
+            route,
+            action_context=self._focus_action_context(component_name),
+        )
         self._router.apply_jit_boost(route, jit_result.boosted_confidence)
 
         # 3. Tribunal scan (mandate text is safe — no OWASP patterns)
@@ -566,13 +729,26 @@ class SelfImprovementEngine:
             suggestions = self._analyze_with_llm(
                 component=component_name,
                 description=comp["description"],
-                mandate=mandate_text,
+                mandate=(
+                    f"Focus: {self._optimization_focus}. "
+                    f"Prioritise efficiency, quality, accuracy, and speed.\n\n"
+                    f"{mandate_text}"
+                ),
                 signals=jit_result.signals,
                 source=source_snippet,
             )
         else:
             suggestions = self._derive_suggestions(
                 component_name, jit_result.signals)
+
+        value_score, value_rationale = self._score_improvement_value(
+            component=component_name,
+            suggestions=suggestions,
+            jit_signals=jit_result.signals,
+            confidence_delta=jit_result.boosted_confidence - jit_result.original_confidence,
+            tribunal_passed=tribunal_result.passed,
+            optimization_focus=self._optimization_focus,
+        )
 
         return ComponentAssessment(
             component=component_name,
@@ -587,6 +763,8 @@ class SelfImprovementEngine:
             execution_success=tribunal_result.passed,
             execution_latency_ms=0.0,  # filled by JITExecutor wrapper
             suggestions=suggestions,
+            value_score=value_score,
+            value_rationale=value_rationale,
         )
 
     def _read_component_source(self, component: str, max_lines: int = 120) -> str:
@@ -634,6 +812,14 @@ class SelfImprovementEngine:
             source=source[:3000],  # hard cap to stay within token limits
         )
 
+        # Fast-path: skip live LLM calls in offline mode (no TOOLOO_LIVE_TESTS).
+        # This keeps the offline cycle under 10 s instead of hitting the API.
+        import os as _os
+        _live = _os.environ.get("TOOLOO_LIVE_TESTS",
+                                "").lower() in ("1", "true", "yes")
+        if not _live:
+            return self._derive_suggestions(component, signals)
+
         raw: str = ""
         if _vertex_client is not None:
             try:
@@ -656,35 +842,65 @@ class SelfImprovementEngine:
         if not raw:
             return self._derive_suggestions(component, signals)
 
-        # Parse structured FIX / CODE blocks into terse suggestion bullets.
-        # Only capture lines that start with FIX or CODE; skip all prose.
+        # Parse LLM output into paired FIX+CODE suggestion blocks.
+        # Each returned string is a complete unit: "FIX N: file:line — desc\nCODE:\n<snippet>"
+        # so the daemon can extract the file path, line hint, and code in one piece.
         lines = raw.splitlines()
-        suggestions: list[str] = []
-        in_code_block = False
+        pairs: list[str] = []
+        current_fix: str | None = None
+        current_code_lines: list[str] = []
+        in_fence = False
+        in_code_section = False
+
         for line in lines:
             stripped = line.strip()
             if stripped.startswith("```"):
-                in_code_block = not in_code_block
+                in_fence = not in_fence
                 continue
-            if in_code_block:
+            if in_fence:
+                if in_code_section and current_fix is not None:
+                    current_code_lines.append(line)
                 continue
-            if stripped.startswith("FIX ") or stripped.startswith("CODE:"):
-                suggestions.append(stripped)
+            if stripped.upper().startswith("FIX "):
+                # Commit previous pair before starting a new one
+                if current_fix is not None:
+                    pairs.append(
+                        current_fix + "\nCODE:\n" +
+                        "\n".join(current_code_lines)
+                    )
+                current_fix = stripped
+                current_code_lines = []
+                in_code_section = False
+            elif stripped.startswith("CODE:") and current_fix is not None:
+                in_code_section = True
+                rest = stripped[5:].strip()
+                if rest:
+                    current_code_lines.append(rest)
+            elif in_code_section and current_fix is not None:
+                current_code_lines.append(line)  # preserve indentation
+
+        if current_fix is not None:
+            pairs.append(current_fix + "\nCODE:\n" +
+                         "\n".join(current_code_lines))
+
+        if pairs:
+            return pairs[:3]
+
         # Fall back to first 3 non-empty, non-preamble lines when Gemini
         # didn't follow the FIX/CODE format.
-        if not suggestions:
-            for line in lines:
-                stripped = line.strip()
-                if (
-                    stripped
-                    and not stripped.startswith(("```", "Here", "Below", "Sure",
-                                                 "Certainly", "Of course", "#"))
-                    and len(stripped) > 20
-                ):
-                    suggestions.append(stripped)
-                    if len(suggestions) >= 3:
-                        break
-        return suggestions[:6] if suggestions else self._derive_suggestions(component, signals)
+        fallback: list[str] = []
+        for line in lines:
+            stripped = line.strip()
+            if (
+                stripped
+                and not stripped.startswith(("```", "Here", "Below", "Sure",
+                                             "Certainly", "Of course", "#"))
+                and len(stripped) > 20
+            ):
+                fallback.append(stripped)
+                if len(fallback) >= 3:
+                    break
+        return fallback if fallback else self._derive_suggestions(component, signals)
 
     @staticmethod
     def _derive_suggestions(
@@ -705,9 +921,124 @@ class SelfImprovementEngine:
             "graph": "Harden",
             "scope_evaluator": "Tune",
             "refinement": "Adjust",
+            "n_stroke": "Optimise",
+            "supervisor": "Streamline",
+            "conversation": "Enhance",
+            "config": "Validate",
         }.get(component, "Apply")
 
         return [f"{action_prefix}: {s}" for s in signals[:3]]
+
+    @staticmethod
+    def _normalise_focus(optimization_focus: str) -> tuple[str, ...]:
+        tokens = [
+            _FOCUS_ALIASES.get(token.strip().lower(), token.strip().lower())
+            for token in optimization_focus.replace("/", ",").split(",")
+            if token.strip()
+        ]
+        if not tokens:
+            return ("balanced",)
+        deduped: list[str] = []
+        for token in tokens:
+            if token and token not in deduped:
+                deduped.append(token)
+        return tuple(deduped or ["balanced"])
+
+    def _focus_action_context(self, component: str) -> str:
+        focus_str = ", ".join(self._optimization_focus)
+        return (
+            f"Targeted self-audit for {component}. Optimisation focus: {focus_str}. "
+            "Bias JIT signals toward Python 3.12+, async architectures, deterministic "
+            "outputs, execution speed, and structural robustness."
+        )
+
+    @staticmethod
+    def _score_improvement_value(
+        component: str,
+        suggestions: list[str],
+        jit_signals: list[str],
+        confidence_delta: float,
+        tribunal_passed: bool,
+        optimization_focus: tuple[str, ...] = ("balanced",),
+    ) -> tuple[float, str]:
+        """Compute a 0.0-1.0 value score for applying this component's improvements.
+
+        Scoring model (additive, capped at 1.0):
+          +0.30  if component is in the critical-path tier (router/tribunal/n_stroke/executor)
+          +0.20  if ≥3 concrete suggestions were produced
+          +0.15  per 0.10 of JIT confidence_delta (max +0.30)
+          +0.10  if ≥3 JIT signals were collected
+          -0.20  if tribunal did NOT pass (security risk, apply with caution)
+
+        Returns (score, rationale: str).
+        """
+        _CRITICAL_PATH = frozenset(
+            {"router", "tribunal", "n_stroke", "executor", "jit_booster"})
+        _HIGH_IMPACT = frozenset(
+            {"graph", "scope_evaluator", "refinement", "supervisor"})
+
+        score = 0.0
+        reasons: list[str] = []
+
+        if component in _CRITICAL_PATH:
+            score += 0.30
+            reasons.append("critical-path component (+0.30)")
+        elif component in _HIGH_IMPACT:
+            score += 0.20
+            reasons.append("high-impact component (+0.20)")
+        else:
+            score += 0.10
+            reasons.append("supporting component (+0.10)")
+
+        if len(suggestions) >= 3:
+            score += 0.20
+            reasons.append(f"{len(suggestions)} concrete suggestions (+0.20)")
+        elif len(suggestions) >= 1:
+            score += 0.10
+            reasons.append(f"{len(suggestions)} suggestion(s) (+0.10)")
+
+        jit_bonus = min(max(confidence_delta / 0.10, 0.0) * 0.15, 0.30)
+        if jit_bonus > 0:
+            score += jit_bonus
+            reasons.append(
+                f"confidence delta {confidence_delta:+.2f} → JIT bonus +{jit_bonus:.2f}")
+
+        if len(jit_signals) >= 3:
+            score += 0.10
+            reasons.append(f"{len(jit_signals)} JIT signals (+0.10)")
+
+        if not tribunal_passed:
+            score -= 0.20
+            reasons.append("tribunal failed (-0.20, security caution)")
+
+        focus_set = set(optimization_focus)
+        if "balanced" not in focus_set:
+            if focus_set & {"efficiency", "speed"}:
+                if component in {"executor", "jit_booster", "n_stroke", "model_garden", "graph"}:
+                    score += 0.12
+                    reasons.append("focus bonus: speed/efficiency-critical component (+0.12)")
+            if "quality" in focus_set and component in {
+                "refinement",
+                "scope_evaluator",
+                "daemon",
+                "branch_executor",
+                "supervisor",
+            }:
+                score += 0.10
+                reasons.append("focus bonus: structural quality component (+0.10)")
+            if "accuracy" in focus_set and component in {
+                "router",
+                "conversation",
+                "mandate_executor",
+                "vector_store",
+                "tribunal",
+            }:
+                score += 0.10
+                reasons.append("focus bonus: deterministic accuracy component (+0.10)")
+
+        score = min(max(score, 0.0), 1.0)
+        rationale = f"focus={','.join(optimization_focus)}; " + "; ".join(reasons)
+        return round(score, 3), rationale
 
     @staticmethod
     def _top_recommendations(

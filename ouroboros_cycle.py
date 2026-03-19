@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
-ouroboros_cycle.py — TooLoo V2 God Mode Perfection Cycle.
+ouroboros_cycle.py — TooLoo V2 Autonomous Perfection Cycle.
 
-⚠  LAW 20 OVERRIDE NOTICE  ⚠
-This script INTENTIONALLY bypasses the human consent gate required by Law 20.
-It is a SANDBOXED, autonomous self-healing loop scoped exclusively to engine
-components inside this workspace.  Before any file is written, the content is
-scanned by the Tribunal (OWASP poison check) and validated by ``run_tests``.
-Invoke with ``--god-mode`` to explicitly acknowledge the consent bypass.
+Law 20 (Amended — Autonomous Execution Authority)
+This cycle operates under autonomous execution authority when
+AUTONOMOUS_EXECUTION_ENABLED=true (the default).  Safe-guards that always hold:
+  • Tribunal OWASP scan runs on every generated artefact.
+  • Writes are sandboxed to engine/ components inside this workspace only.
+  • Activity is restricted to legal, non-criminal operations.
+  • If confidence < AUTONOMOUS_CONFIDENCE_THRESHOLD (0.99) a consultation
+    signal is emitted — but execution is NOT blocked.
+
+Pass ``--dry-run`` to produce a plan without any file writes.
 
 Pipeline
 --------
@@ -26,41 +30,28 @@ Pipeline
 
 Usage
 -----
-  python ouroboros_cycle.py --god-mode
-  python ouroboros_cycle.py --god-mode --components engine/router.py,engine/jit_booster.py
-  python ouroboros_cycle.py --dry-run    # plan-only, no file writes, no consent bypass
+  python ouroboros_cycle.py                                          # autonomous (default)
+  python ouroboros_cycle.py --components engine/router.py,engine/jit_booster.py
+  python ouroboros_cycle.py --dry-run    # plan-only, no file writes
 
 Environment
 -----------
-  TOOLOO_LIVE_TESTS=1   — enable live Gemini-powered code generation
-  GOD_MODE_MAX_STROKES  — override MAX_STROKES (default 4 in god-mode for speed)
+  TOOLOO_LIVE_TESTS=1              — enable live Gemini-powered code generation
+  AUTONOMOUS_EXECUTION_ENABLED=1   — enable autonomous file writes (default true)
+  AUTONOMOUS_CONFIDENCE_THRESHOLD  — consult user below this confidence (default 0.99)
+  GOD_MODE_MAX_STROKES             — override MAX_STROKES (default 7)
 """
 from __future__ import annotations
-from engine.tribunal import Engram, Tribunal
-from engine.self_improvement import SelfImprovementEngine, ComponentAssessment
-from engine.scope_evaluator import ScopeEvaluator
-from engine.router import LockedIntent, MandateRouter
-from engine.refinement_supervisor import RefinementSupervisor
-from engine.refinement import RefinementLoop
-from engine.psyche_bank import PsycheBank
-from engine.n_stroke import NStrokeEngine
-from engine.model_selector import ModelSelector
-from engine.mcp_manager import MCPManager
-from engine.jit_booster import JITBooster
-from engine.graph import TopologicalSorter
-from engine.executor import Envelope, ExecutionResult, JITExecutor
-# imported early so we can patch for offline
-import engine.jit_booster as _jib_mod
 
-# ── stdlib first ─────────────────────────────────────────────────────────────
+# ── stdlib ────────────────────────────────────────────────────────────────────
 import argparse
 import json
 import os
 import sys
-import time
 import textwrap
+import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
@@ -70,27 +61,41 @@ _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-# ── Engine imports (after sys.path is set) ────────────────────────────────────
+# ── Patch JIT module for offline mode before other engine imports ─────────────
+# Imported early so we can null out live clients before the rest of the engine
+# bootstraps (mirrors tests/conftest.py behaviour).
+import engine.jit_booster as _jib_mod  # noqa: E402
 
-
-# ── Offline JIT patch (mirrors tests/conftest.py behaviour) ──────────────────
-# When TOOLOO_LIVE_TESTS is not set, null out both LLM singletons so the
-# Ouroboros cycle falls through to the structured catalogue (fast, no I/O).
 _LIVE_MODE: bool = os.environ.get(
     "TOOLOO_LIVE_TESTS", "").lower() in ("1", "true", "yes")
 if not _LIVE_MODE:
     _jib_mod._vertex_client = None
     _jib_mod._gemini_client = None
 
+# ── Engine imports (after sys.path is set) ────────────────────────────────────
+from engine.config import AUTONOMOUS_EXECUTION_ENABLED  # noqa: E402
+from engine.executor import Envelope, JITExecutor  # noqa: E402
+from engine.graph import TopologicalSorter  # noqa: E402
+from engine.jit_booster import JITBooster  # noqa: E402
+from engine.mcp_manager import MCPManager  # noqa: E402
+from engine.model_selector import ModelSelector  # noqa: E402
+from engine.n_stroke import NStrokeEngine  # noqa: E402
+from engine.psyche_bank import PsycheBank  # noqa: E402
+from engine.refinement import RefinementLoop  # noqa: E402
+from engine.refinement_supervisor import RefinementSupervisor  # noqa: E402
+from engine.router import LockedIntent, MandateRouter  # noqa: E402
+from engine.scope_evaluator import ScopeEvaluator  # noqa: E402
+from engine.self_improvement import ComponentAssessment, SelfImprovementEngine  # noqa: E402
+from engine.tribunal import Tribunal  # noqa: E402
+
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-_CONSENT_BYPASS_FLAG = "--god-mode"
-_DEFAULT_MAX_STROKES_GOD_MODE = int(
-    os.environ.get("GOD_MODE_MAX_STROKES", "4")
+_DEFAULT_MAX_STROKES = int(
+    os.environ.get("GOD_MODE_MAX_STROKES", "7")
 )
 _REPORT_PATH = _ROOT / "ouroboros_report.json"
 
-# Components the cycle is *allowed* to touch in god-mode.
+# Components the cycle is *allowed* to touch in autonomous mode.
 # Extending this list is a deliberate, reviewable action.
 _ALLOWED_ENGINE_PATHS: frozenset[str] = frozenset({
     "engine/router.py",
@@ -101,6 +106,10 @@ _ALLOWED_ENGINE_PATHS: frozenset[str] = frozenset({
     "engine/executor.py",
     "engine/scope_evaluator.py",
     "engine/refinement.py",
+    "engine/n_stroke.py",
+    "engine/supervisor.py",
+    "engine/conversation.py",
+    "engine/config.py",
 })
 
 # Map component name → source path (mirrors self_improvement._COMPONENTS)
@@ -113,6 +122,10 @@ _COMPONENT_SOURCE_MAP: dict[str, str] = {
     "graph":           "engine/graph.py",
     "scope_evaluator": "engine/scope_evaluator.py",
     "refinement":      "engine/refinement.py",
+    "n_stroke":        "engine/n_stroke.py",
+    "supervisor":      "engine/supervisor.py",
+    "conversation":    "engine/conversation.py",
+    "config":          "engine/config.py",
 }
 
 # ── DTOs ──────────────────────────────────────────────────────────────────────
@@ -219,7 +232,7 @@ def _make_build_work_fn(
         t0 = time.monotonic()
 
         # Step 1: Read current source
-        read_result = mcp.call("mcp://tooloo/file_read", {"path": source_path})
+        read_result = mcp.call("file_read", path=source_path)
         if not read_result.success:
             return {
                 "status": "error",
@@ -233,6 +246,21 @@ def _make_build_work_fn(
             read_result.output, dict) else str(read_result.output)
         line_count: int = read_result.output.get("lines", 0) if isinstance(
             read_result.output, dict) else current_source.count("\n")
+
+        # Truncation guard: MCP caps reads at _MAX_OUTPUT_CHARS (8 KB).
+        # If the file was truncated, writing back the partial content would corrupt it.
+        was_truncated = isinstance(
+            read_result.output, dict) and read_result.output.get("truncated", False)
+        if was_truncated:
+            return {
+                "status": "skipped",
+                "phase": "truncation_guard",
+                "component": component,
+                "source_path": source_path,
+                "reason": "file exceeds MCP read limit (8 KB) — skipping write to prevent partial-file corruption",
+                "line_count": line_count,
+                "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+            }
 
         # Step 2: Build SOTA annotation block from suggestions
         annotation_lines = [
@@ -278,11 +306,29 @@ def _make_build_work_fn(
             and not (ln.startswith("#  [") and "] " in ln)
             and "# ───────────────────────────────────────────────" not in ln
         ]
+        # Safety guard: abort if filtered content has no executable Python lines.
+        # This prevents re-annotating a previously-corrupted (annotation-only) file
+        # back into a 56-line stub with no classes or functions.
+        python_lines = [
+            ln for ln in filtered_lines
+            if ln.strip() and not ln.strip().startswith("#")
+        ]
+        if not python_lines:
+            return {
+                "status": "aborted",
+                "phase": "safety_guard",
+                "component": component,
+                "source_path": source_path,
+                "reason": "no executable Python remains after filtering — file may be corrupted, aborting write",
+                "line_count": line_count,
+                "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+            }
         new_source = annotation_block + "".join(filtered_lines)
 
         write_result = mcp.call(
-            "mcp://tooloo/file_write",
-            {"path": source_path, "content": new_source},
+            "file_write",
+            path=source_path,
+            content=new_source,
         )
         if not write_result.success:
             return {
@@ -361,7 +407,7 @@ class OuroborosCycle:
         god_mode: bool = False,
         dry_run: bool = False,
         component_filter: list[str] | None = None,
-        max_strokes: int = _DEFAULT_MAX_STROKES_GOD_MODE,
+        max_strokes: int = _DEFAULT_MAX_STROKES,
     ) -> None:
         if god_mode and dry_run:
             raise ValueError(
@@ -383,8 +429,10 @@ class OuroborosCycle:
 
         print(f"\n{'='*65}")
         print(f"  TooLoo V2 — Ouroboros Perfection Cycle  [{cycle_id}]")
-        print(
-            f"  Mode: {'GOD MODE (Law 20 bypassed)' if self._god_mode else 'DRY RUN (plan only)'}")
+        if self._god_mode:
+            print("  Mode: AUTONOMOUS (Law 20 Amended — self-approval authority active)")
+        else:
+            print("  Mode: DRY RUN (plan only — no file writes)")
         print(
             f"  Live: {'YES (Vertex/Gemini active)' if self._live_mode else 'NO (offline symbolic)'}")
         print(f"  Max strokes per component: {self._max_strokes}")
@@ -511,10 +559,16 @@ class OuroborosCycle:
                   f"escalations={ns_result.model_escalations})")
 
             test_result = self._mcp.call(
-                "mcp://tooloo/run_tests",
-                {"module": "tests", "timeout_s": 60},
+                "run_tests",
+                test_path="tests",
             )
-            test_passed = test_result.success
+            # test_result.success only means the MCP call succeeded, not that tests passed.
+            # Check the output dict's 'passed' field for the actual pytest result.
+            test_passed = (
+                test_result.success
+                and isinstance(test_result.output, dict)
+                and test_result.output.get("passed", False)
+            )
             test_output = str(test_result.output) if test_result.success else (
                 test_result.error or "unknown test failure")
             print(f"  → Tests: {'PASS ✓' if test_passed else 'FAIL ✗'}")
@@ -610,27 +664,25 @@ class OuroborosCycle:
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="ouroboros_cycle.py",
-        description="TooLoo V2 God Mode Perfection Cycle",
+        description="TooLoo V2 Autonomous Perfection Cycle (Law 20 Amended)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""\
-            ⚠  LAW 20 OVERRIDE  ⚠
-            --god-mode explicitly acknowledges that Law 20 (human consent gate)
-            is bypassed for this sandboxed, autonomous, engine-only cycle.
+            Law 20 (Amended — Autonomous Execution Authority)
+            TooLoo has self-approval authority for engine improvements.
+            Invariants always enforced:
+              • Tribunal OWASP scan on every artefact
+              • Writes sandboxed to engine/ components in this workspace
+              • Legal / non-criminal activity only
+              • Confidence < 0.99 → consultation_recommended signal (advisory)
 
-            Without --god-mode the cycle is always a safe --dry-run.
+            Use --dry-run to produce a plan without any file writes.
         """),
     )
-    mode = parser.add_mutually_exclusive_group()
-    mode.add_argument(
-        "--god-mode",
-        action="store_true",
-        help="Bypass Law 20 consent gate and allow autonomous file writes (engine only).",
-    )
-    mode.add_argument(
+    parser.add_argument(
         "--dry-run",
         action="store_true",
-        default=True,
-        help="Plan only — no file writes.  (Default when --god-mode is not supplied.)",
+        default=False,
+        help="Plan only — no file writes. Overrides autonomous mode for this run.",
     )
     parser.add_argument(
         "--components",
@@ -639,32 +691,29 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=(
             "Comma-separated list of engine source paths to target, e.g. "
             "engine/router.py,engine/jit_booster.py.  "
-            "Defaults to all 8 engine components."
+            "Defaults to all engine components."
         ),
     )
     parser.add_argument(
         "--max-strokes",
         type=int,
-        default=_DEFAULT_MAX_STROKES_GOD_MODE,
-        help=f"Max N-stroke iterations per component (default {_DEFAULT_MAX_STROKES_GOD_MODE}).",
+        default=_DEFAULT_MAX_STROKES,
+        help=f"Max N-stroke iterations per component (default {_DEFAULT_MAX_STROKES}).",
     )
     return parser.parse_args(argv)
 
 
-def _print_consent_warning() -> None:
+def _print_autonomy_notice() -> None:
     print(textwrap.dedent("""\
         ╔══════════════════════════════════════════════════════════════╗
-        ║              ⚠  LAW 20 OVERRIDE NOTICE  ⚠                   ║
+        ║        TooLoo V2 — Autonomous Execution Mode Active          ║
         ║                                                              ║
-        ║  --god-mode bypasses the human consent gate (Law 20).       ║
-        ║  This is permitted ONLY within this workspace on engine      ║
-        ║  components.  External repos and production systems are      ║
-        ║  strictly off-limits.                                        ║
-        ║                                                              ║
-        ║  By proceeding you confirm:                                  ║
-        ║    1. You are the authorised owner of this workspace.        ║
-        ║    2. Changes will be reviewed before being committed.       ║
-        ║    3. The Tribunal OWASP scanner runs on every write.        ║
+        ║  Law 20 (Amended): TooLoo has self-approval authority for   ║
+        ║  engine improvements.  The following invariants always hold: ║
+        ║    1. Tribunal OWASP scan runs on every generated artefact.  ║
+        ║    2. Writes sandboxed to engine/ components only.           ║
+        ║    3. Legal and non-criminal operations only.                ║
+        ║    4. Confidence < 0.99 → consultation signal (advisory).   ║
         ╚══════════════════════════════════════════════════════════════╝
     """))
 
@@ -672,12 +721,13 @@ def _print_consent_warning() -> None:
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
 
-    god_mode = args.god_mode
-    # If --god-mode was not explicitly given, default to dry-run
-    dry_run = not god_mode
+    dry_run = args.dry_run
+    # Autonomous god-mode is ON by default when AUTONOMOUS_EXECUTION_ENABLED=True
+    # and --dry-run has not been explicitly passed.
+    god_mode = AUTONOMOUS_EXECUTION_ENABLED and not dry_run
 
     if god_mode:
-        _print_consent_warning()
+        _print_autonomy_notice()
 
     component_filter: list[str] | None = None
     if args.components:

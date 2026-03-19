@@ -35,19 +35,29 @@ prior failure signal and (optionally) the healed work function.
 """
 from __future__ import annotations
 
+import re
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from pathlib import Path
+from typing import Any
 
+from engine.config import AUTONOMOUS_CONFIDENCE_THRESHOLD
 from engine.executor import Envelope, ExecutionResult, JITExecutor
 from engine.graph import TopologicalSorter
-from engine.jit_booster import JITBoostResult, JITBooster
+from engine.jit_booster import JITBooster, JITBoostResult
 from engine.mandate_executor import make_live_work_fn
 from engine.mcp_manager import MCPManager
+from engine.meta_architect import MetaArchitect
+from engine.model_garden import get_garden
 from engine.model_selector import ModelSelection, ModelSelector
 from engine.refinement import RefinementLoop, RefinementReport
-from engine.refinement_supervisor import HealingReport, NODE_FAIL_THRESHOLD, RefinementSupervisor
+from engine.refinement_supervisor import (
+    NODE_FAIL_THRESHOLD,
+    HealingReport,
+    RefinementSupervisor,
+)
 from engine.router import LockedIntent, MandateRouter, RouteResult, compute_buddy_line
 from engine.scope_evaluator import ScopeEvaluation, ScopeEvaluator
 from engine.tribunal import Engram, Tribunal, TribunalResult
@@ -56,7 +66,8 @@ from engine.tribunal import Engram, Tribunal, TribunalResult
 # Constants
 # ---------------------------------------------------------------------------
 
-MAX_STROKES: int = 7       # hard cap on N-stroke loop iterations
+# DEV MODE: max strokes raised 7→12 — give the loop more room to converge
+MAX_STROKES: int = 12       # hard cap on N-stroke loop iterations
 
 # Phase identifiers for the 3-phase pipeline
 PHASE_BLUEPRINT = "blueprint"    # Phase 1: AUDIT + DESIGN + UX_EVAL — plan only
@@ -70,6 +81,21 @@ _EXECUTE_ONLY_NODES: frozenset[str] = frozenset(
 
 # Mandatory discovery nodes injected at the front of every pipeline
 _MANDATORY_DISCOVERY: list[str] = ["audit_wave", "design_wave", "ux_eval"]
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _infer_workspace_file_target(mandate_text: str) -> str:
+    """Best-effort extraction of a workspace file path from conversational mandates."""
+    candidates = re.findall(
+        r"`([^`]+\.[\w]+)`|([\w./-]+\.[A-Za-z0-9]+)", mandate_text)
+    for backticked, plain in candidates:
+        raw = (backticked or plain).strip().lstrip("./")
+        if not raw:
+            continue
+        resolved = (_REPO_ROOT / raw).resolve()
+        if str(resolved).startswith(str(_REPO_ROOT)) and resolved.exists() and resolved.is_file():
+            return str(resolved.relative_to(_REPO_ROOT))
+    return ""
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +191,8 @@ class StrokeRecord:
     dry_run_passed: bool = True             # True in 1-phase / offline mode
     simulation_gate_failures: list[str] = field(default_factory=list)
     active_phase: str = PHASE_EXECUTE       # which phase this stroke represents
+    confidence_proof: dict[str, Any] = field(default_factory=dict)
+    divergence_metrics: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -185,6 +213,8 @@ class StrokeRecord:
             "dry_run_passed": self.dry_run_passed,
             "simulation_gate_failures": self.simulation_gate_failures,
             "active_phase": self.active_phase,
+            "confidence_proof": self.confidence_proof,
+            "divergence_metrics": self.divergence_metrics,
         }
 
 
@@ -281,6 +311,8 @@ class NStrokeEngine:
         self._mcp = mcp_manager
         self._model_selector = model_selector
         self._ref_supervisor = refinement_supervisor
+        self._meta_architect = MetaArchitect()
+        self._garden = get_garden()
         self._broadcast: Callable[[dict[str, Any]], None] = (
             broadcast_fn if broadcast_fn is not None else lambda _: None
         )
@@ -320,6 +352,24 @@ class NStrokeEngine:
             "confidence": locked_intent.confidence,
             "max_strokes": self._max_strokes,
         })
+
+        # ── Law 20 (Amended) — advisory consultation gate ─────────────────────
+        # Broadcast a consultation_recommended signal when confidence is below
+        # the autonomous threshold (default 0.99).  Execution is NEVER blocked —
+        # this is advisory only so the user can review if they are present.
+        if locked_intent.confidence < AUTONOMOUS_CONFIDENCE_THRESHOLD:
+            self._broadcast({
+                "type": "consultation_recommended",
+                "pipeline_id": pipeline_id,
+                "intent": locked_intent.intent,
+                "confidence": locked_intent.confidence,
+                "threshold": AUTONOMOUS_CONFIDENCE_THRESHOLD,
+                "reason": (
+                    f"Confidence {locked_intent.confidence:.2f} is below the "
+                    f"autonomous threshold {AUTONOMOUS_CONFIDENCE_THRESHOLD}. "
+                    "Proceeding autonomously — user review suggested."
+                ),
+            })
 
         for stroke_num in range(1, self._max_strokes + 1):
 
@@ -525,28 +575,50 @@ class NStrokeEngine:
             "boosted_confidence": preflight_jit.boosted_confidence,
         })
 
-        # ── Process 1 — Catalyst (DAG plan + scope + MCP inject) ─────────────
-        # Phase 1 Blueprint: mandatory AUDIT + DESIGN + UX_EVAL discovery nodes.
-        # IMPLEMENT nodes are forbidden until the Simulation Gate clears.
-        dag_node_names = [
-            *_MANDATORY_DISCOVERY,          # audit_wave, design_wave, ux_eval
-            "ingest", "analyse",            # deep analysis wave
-            "implement",                    # locked behind SimulationGate
-            "validate", "emit",             # post-execute checks
+        # ── Process 1 — Catalyst (Meta-Architect DAG + scope + MCP inject) ──
+        meta_plan = self._meta_architect.generate(route.mandate_text, intent)
+        base_spec = self._meta_architect.to_topology_spec(meta_plan)
+        dynamic_spec = [
+            (
+                f"{mandate_id}-{node_id}",
+                [f"{mandate_id}-{dep}" for dep in deps],
+            )
+            for node_id, deps in base_spec
         ]
-        dag_nodes = [f"{mandate_id}-{n}" for n in dag_node_names]
 
-        # 6-wave plan: discovery(×3) → ingest → (analyse) → implement → (validate‖emit)
-        waves: list[list[str]] = [
-            [dag_nodes[0]],                         # Wave 1: audit_wave
-            # Wave 2: design_wave ‖ ux_eval
-            [dag_nodes[1], dag_nodes[2]],
-            [dag_nodes[3]],                         # Wave 3: ingest
-            [dag_nodes[4]],                         # Wave 4: analyse (deep)
-            # Wave 5: implement (execute phase)
-            [dag_nodes[5]],
-            [dag_nodes[6], dag_nodes[7]],           # Wave 6: validate ‖ emit
-        ]
+        if meta_plan.confidence_proof.proof_confidence < AUTONOMOUS_CONFIDENCE_THRESHOLD:
+            self._broadcast({
+                "type": "consultation_recommended",
+                "pipeline_id": pipeline_id,
+                "stroke": stroke_num,
+                "confidence": meta_plan.confidence_proof.proof_confidence,
+                "threshold": AUTONOMOUS_CONFIDENCE_THRESHOLD,
+                "reason": (
+                    "Meta-Architect proof below autonomy threshold; "
+                    "using conservative fallback topology."
+                ),
+            })
+            dynamic_spec = self._fallback_topology_spec(mandate_id)
+
+        waves = self._sorter.sort(dynamic_spec)
+        dag_nodes = [node_id for node_id, _ in dynamic_spec]
+        node_specs: dict[str, dict[str, Any]] = {
+            f"{mandate_id}-{node.node_id}": {
+                "action_type": node.action_type,
+                "cognitive_profile": node.cognitive_profile,
+            }
+            for node in meta_plan.execution_graph
+        }
+        for node_id, _ in dynamic_spec:
+            if node_id not in node_specs:
+                suffix = node_id.rsplit("-", 1)[-1]
+                inferred_action = "validate" if suffix.startswith(
+                    "validate") else suffix
+                node_specs[node_id] = {
+                    "action_type": inferred_action,
+                    "cognitive_profile": None,
+                }
+
         scope = self._scope.evaluate(waves, intent)
 
         # Inject MCP tool manifest
@@ -558,10 +630,12 @@ class NStrokeEngine:
             "pipeline_id": pipeline_id,
             "stroke": stroke_num,
             "waves": waves,
+            "node_count": sum(len(wave) for wave in waves),
             "scope": scope.to_dict(),
             "mcp_tools": tool_names,
             "model": model_sel.model,
             "healing_applied": healing_report is not None,
+            "meta_architect": meta_plan.to_dict(),
         })
 
         # ── Mid-Flight Supervisor ─────────────────────────────────────────────
@@ -586,7 +660,16 @@ class NStrokeEngine:
 
         # ── Phase 1: Blueprint — discovery nodes only ─────────────────────────
         # Discovery nodes document understanding; no state-changing operations.
-        blueprint_node_ids = dag_nodes[:3]   # audit_wave, design_wave, ux_eval
+        blueprint_actions = {"deep_research",
+                             "audit_wave", "design_wave", "ux_eval"}
+        blueprint_node_ids = [
+            node_id
+            for node_id in dag_nodes
+            if (
+                node_specs.get(node_id, None)
+                and node_specs[node_id]["action_type"] in blueprint_actions
+            )
+        ]
         self._broadcast({
             "type": "blueprint_phase",
             "pipeline_id": pipeline_id,
@@ -595,8 +678,15 @@ class NStrokeEngine:
         })
 
         # ── Phase 2: Dry-Run — analyse + implement (staged, not committed) ────
-        # ingest, analyse, implement (held)
-        dry_run_node_ids = dag_nodes[3:6]
+        dry_run_actions = {"ingest", "analyse", "implement"}
+        dry_run_node_ids = [
+            node_id
+            for node_id in dag_nodes
+            if (
+                node_specs.get(node_id, None)
+                and node_specs[node_id]["action_type"] in dry_run_actions
+            )
+        ]
         self._broadcast({
             "type": "dry_run_phase",
             "pipeline_id": pipeline_id,
@@ -615,6 +705,26 @@ class NStrokeEngine:
                 jit_signals=preflight_jit.signals,
                 vertex_model_id=model_sel.vertex_model_id,
             )
+        inferred_file_path = _infer_workspace_file_target(
+            locked_intent.mandate_text)
+
+        node_model_map: dict[str, str] = {}
+        node_provider_map: dict[str, str] = {}
+        for node_id in dag_nodes:
+            spec_info = node_specs.get(node_id)
+            profile = spec_info.get("cognitive_profile") if spec_info else None
+            if profile is None:
+                node_model = model_sel.model
+            else:
+                node_model = self._garden.get_tier_model(
+                    tier=profile.minimum_tier,
+                    intent=intent,
+                    primary_need=profile.primary_need,
+                    lock_model=profile.lock_model,
+                )
+            node_model_map[node_id] = node_model
+            node_provider_map[node_id] = self._garden.source_for(node_model)
+
         envelopes = [
             Envelope(
                 mandate_id=node_id,
@@ -622,12 +732,16 @@ class NStrokeEngine:
                 domain="backend",
                 metadata={
                     "model": model_sel.model,
+                    "node_model": node_model_map.get(node_id, model_sel.model),
+                    "node_model_provider": node_provider_map.get(node_id, "vertex"),
                     "vertex_model_id": model_sel.vertex_model_id,
                     "model_tier": model_sel.tier,
                     "mcp_tools": tool_names,
                     "stroke": stroke_num,
                     "pipeline_id": pipeline_id,
                     "healing_applied": healing_report is not None,
+                    "file_path": inferred_file_path,
+                    "target": inferred_file_path,
                     # Node-level phase tagging for downstream handlers
                     "phase": (
                         PHASE_BLUEPRINT if node_id in blueprint_node_ids
@@ -639,9 +753,12 @@ class NStrokeEngine:
             for node_id in dag_nodes
         ]
 
-        execution_results = self._executor.fan_out(
+        dependency_map = {node_id: deps for node_id, deps in dynamic_spec}
+
+        execution_results = self._executor.fan_out_dag(
             effective_work_fn,
             envelopes,
+            dependency_map,
             max_workers=scope.recommended_workers,
         )
 
@@ -681,10 +798,21 @@ class NStrokeEngine:
             "nodes": [n for n in dag_nodes if n not in blueprint_node_ids + dry_run_node_ids],
         })
 
+        divergence_metrics = self._build_divergence_metrics(
+            execution_results=execution_results,
+            node_provider_map=node_provider_map,
+            node_specs=node_specs,
+        )
+
         # ── Satisfaction Gate (RefinementLoop) ────────────────────────────────
         refinement = self._refine.evaluate(
             execution_results, iteration=stroke_num)
         satisfied = refinement.verdict == "pass" and sim_passed
+
+        confidence_proof = dict(meta_plan.confidence_proof.to_dict())
+        confidence_proof["post_execution_divergence"] = divergence_metrics.get(
+            "divergence_score", 0.0)
+        confidence_proof["simulation_gate_passed"] = sim_passed
 
         return StrokeRecord(
             stroke=stroke_num,
@@ -704,7 +832,62 @@ class NStrokeEngine:
             dry_run_passed=sim_passed,
             simulation_gate_failures=sim_failures,
             active_phase=PHASE_EXECUTE,
+            confidence_proof=confidence_proof,
+            divergence_metrics=divergence_metrics,
         )
+
+    @staticmethod
+    def _fallback_topology_spec(mandate_id: str) -> list[tuple[str, list[str]]]:
+        """Conservative static topology used when dynamic proof is below threshold."""
+        return [
+            (f"{mandate_id}-audit_wave", []),
+            (f"{mandate_id}-design_wave", [f"{mandate_id}-audit_wave"]),
+            (f"{mandate_id}-ux_eval", [f"{mandate_id}-audit_wave"]),
+            (f"{mandate_id}-ingest",
+             [f"{mandate_id}-design_wave", f"{mandate_id}-ux_eval"]),
+            (f"{mandate_id}-analyse", [f"{mandate_id}-ingest"]),
+            (f"{mandate_id}-implement", [f"{mandate_id}-analyse"]),
+            (f"{mandate_id}-validate_primary", [f"{mandate_id}-implement"]),
+            (f"{mandate_id}-validate_divergent", [f"{mandate_id}-implement"]),
+            (f"{mandate_id}-emit",
+             [f"{mandate_id}-validate_primary", f"{mandate_id}-validate_divergent"]),
+        ]
+
+    @staticmethod
+    def _build_divergence_metrics(
+        execution_results: list[ExecutionResult],
+        node_provider_map: dict[str, str],
+        node_specs: dict[str, dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Compute validation-divergence coverage for redundancy/reinforcement."""
+        providers_used = {
+            node_provider_map.get(result.mandate_id, "unknown")
+            for result in execution_results
+            if result.success
+        }
+
+        validation_nodes = [
+            result
+            for result in execution_results
+            if node_specs.get(result.mandate_id, {}).get("action_type", "") == "validate"
+        ]
+        successful_validations = [r for r in validation_nodes if r.success]
+        validation_ratio = (
+            len(successful_validations) / len(validation_nodes)
+            if validation_nodes else 0.0
+        )
+
+        provider_divergence = 1.0 if len(providers_used) >= 2 else 0.6
+        divergence_score = min(
+            1.0, 0.5 * validation_ratio + 0.5 * provider_divergence)
+
+        return {
+            "providers_used": sorted(providers_used),
+            "provider_count": len(providers_used),
+            "validation_nodes": len(validation_nodes),
+            "validation_successes": len(successful_validations),
+            "divergence_score": round(divergence_score, 3),
+        }
 
     # ── Default work function ─────────────────────────────────────────────────
 

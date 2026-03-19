@@ -1,39 +1,49 @@
-"""
-engine/jit_booster.py — Just-In-Time SOTA confidence booster.
+"""Just-in-time SOTA confidence booster.
 
 Mandatory pre-execution step that fetches real-world, up-to-date signals
 relevant to the mandate intent and text, then uses those signals to:
 
-  1. Validate the routing decision with concrete external evidence.
-  2. Boost the confidence score proportionally to signal strength.
-  3. Surface the evidence to downstream response generation.
+1. Validate the routing decision with concrete external evidence.
+2. Boost the confidence score proportionally to signal strength.
+3. Surface the evidence to downstream response generation.
 
 Confidence boost formula:
-  boost_delta = min(len(signals) * BOOST_PER_SIGNAL, MAX_BOOST_DELTA)
-  boosted_confidence = min(original_confidence + boost_delta, 1.0)
+        boost_delta = min(len(signals) * BOOST_PER_SIGNAL, MAX_BOOST_DELTA)
+        boosted_confidence = min(original_confidence + boost_delta, 1.0)
 
-Signal sources (in priority order):
-  1. Gemini-2.0-flash  — live SOTA query (3–5 bullet signals)
-  2. Structured catalogue — intent-keyed signals, current as of 2026
+Signal sources, in priority order:
+1. Gemini-2.0-flash - live SOTA query (3-5 bullet signals)
+2. Structured catalogue - intent-keyed signals, current as of 2026
 
-All network I/O is fully isolated here. Zero side-effects on other engine modules.
+All network I/O is fully isolated here. Zero side effects on other engine modules.
 """
 from __future__ import annotations
 
+import json
 import re
+import threading
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
-from engine.config import GEMINI_API_KEY, VERTEX_DEFAULT_MODEL, _vertex_client as _vertex_client_cfg
+from engine.config import (
+    GEMINI_API_KEY,
+    MODEL_GARDEN_CACHE_TTL,
+    VERTEX_DEFAULT_MODEL,
+)
+from engine.config import (
+    _vertex_client as _vertex_client_cfg,
+)
+from engine.model_garden import get_garden
 from engine.router import RouteResult
-from engine.model_garden import get_garden, INTENT_TASK as _GARDEN_INTENT_TASK
 
-# ── Vertex AI client (primary — enterprise-grade Model Garden via unified SDK) ───────
+# ── Vertex AI client (primary - enterprise-grade Model Garden via unified SDK) ───────
 _vertex_client = _vertex_client_cfg
 
-# ── Gemini Direct client (secondary fallback — consumer API) ─────────────────────
+# ── Gemini Direct client (secondary fallback - consumer API) ─────────────────────
 _gemini_client = None
 if GEMINI_API_KEY:
     try:
@@ -45,9 +55,13 @@ if GEMINI_API_KEY:
 # ── Boost constants ───────────────────────────────────────────────────────────
 BOOST_PER_SIGNAL: float = 0.05   # each concrete signal adds 5 pp of confidence
 MAX_BOOST_DELTA: float = 0.25    # cap: maximum +25 pp regardless of signal count
+_JIT_CACHE_FILE = "psyche_bank/jit_cache.json"
+_JIT_CACHE_PATH = Path(__file__).resolve().parents[1] / _JIT_CACHE_FILE
+_STANDARD_INTENTS = ["BUILD", "DEBUG", "AUDIT",
+                     "DESIGN", "EXPLAIN", "IDEATE", "SPAWN_REPO"]
 
 # ── SOTA signal catalogue (structured fallback) ───────────────────────────────
-# Each entry: (signal_text, relevance_weight) — reflects 2026 SOTA landscape.
+# Each entry: (signal_text, relevance_weight) - reflects 2026 SOTA landscape.
 # Sorted by weight descending so the top signals are returned first.
 _CATALOGUE: dict[str, list[tuple[str, float]]] = {
     "BUILD": [
@@ -224,6 +238,32 @@ class JITBooster:
          "studio/static", "frontend", "/ui/", "index.html"}
     )
 
+    def __init__(self, live_cache_ttl_seconds: int | None = None) -> None:
+        self._live_cache_ttl_seconds = max(
+            1, live_cache_ttl_seconds or MODEL_GARDEN_CACHE_TTL)
+        self._live_cache: dict[str, tuple[list[str], str, float]] = {}
+        self._refreshing: set[str] = set()
+        self._cache_lock = threading.Lock()
+        self._background_thread: threading.Thread | None = None
+        self._background_stop = threading.Event()
+        self._load_jit_cache()
+
+    def start_background_refresh(self) -> None:
+        """Start a daemon thread that continuously refreshes generic intent cache entries."""
+        if self._background_thread and self._background_thread.is_alive():
+            return
+        self._background_stop.clear()
+        self._background_thread = threading.Thread(
+            target=self._background_refresh_loop,
+            daemon=True,
+            name="jit-background-refresh",
+        )
+        self._background_thread.start()
+
+    def stop_background_refresh(self) -> None:
+        """Signal the background refresh thread to stop."""
+        self._background_stop.set()
+
     def fetch(
         self,
         route: RouteResult,
@@ -332,8 +372,6 @@ class JITBooster:
             target_context: File path, module, or target description.
             vertex_model_id: Optional model override.
         """
-        model_id = vertex_model_id or VERTEX_DEFAULT_MODEL
-
         if _vertex_client is not None:
             try:
                 prompt = _JIT_MCP_GROUNDING_PROMPT.format(
@@ -342,7 +380,7 @@ class JITBooster:
                 resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
                     model=VERTEX_DEFAULT_MODEL, contents=prompt
                 )
-                bullets = _parse_bullets(resp.text)
+                bullets = _parse_bullets(resp.text or "")
                 if bullets:
                     return bullets
             except Exception:
@@ -356,7 +394,7 @@ class JITBooster:
                 resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
                     model=VERTEX_DEFAULT_MODEL, contents=prompt
                 )
-                bullets = _parse_bullets(resp.text)
+                bullets = _parse_bullets(resp.text or "")
                 if bullets:
                     return bullets
             except Exception:
@@ -421,38 +459,25 @@ class JITBooster:
         vertex_model_id: str | None = None,
         action_context: str | None = None,
     ) -> tuple[list[str], str]:
-        # Resolve model: prefer caller-specified, then garden's best for the intent
-        task_type = _GARDEN_INTENT_TASK.get(intent, "reasoning")
         garden = get_garden()
         model_id = vertex_model_id or garden.get_tier_model(1, intent)
+        cache_key = self._cache_key(intent, mandate_text, action_context)
+        cached = self._get_live_cache(cache_key)
+        if cached is not None:
+            return cached
+        generic_cached = self._get_live_cache(
+            self._cache_key(intent, "", None))
+        if generic_cached is not None:
+            return generic_cached
 
-        base = _JIT_FETCH_PROMPT.format(
-            intent=intent, mandate_text=mandate_text[:280])
-        prompt = base if not action_context else (
-            base + f" Node context: {action_context[:100]}"
+        self._refresh_live_async(
+            cache_key=cache_key,
+            intent=intent,
+            mandate_text=mandate_text,
+            node_type="",
+            action_context=action_context,
+            model_id=model_id,
         )
-
-        # 1. ModelGarden — dispatches to Google or Anthropic per capability
-        try:
-            text = garden.call(model_id, prompt)
-            bullets = _parse_bullets(text)
-            if bullets:
-                return bullets, garden.source_for(model_id)
-        except Exception:
-            pass
-
-        # 2. Gemini Direct — secondary fallback
-        if _gemini_client is not None:
-            try:
-                resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
-                    model=VERTEX_DEFAULT_MODEL, contents=prompt
-                )
-                bullets = _parse_bullets(resp.text)
-                if bullets:
-                    return bullets, "gemini"
-            except Exception:
-                pass
-
         return self._fetch_structured(intent), "structured"
 
     def _fetch_node_signals(
@@ -466,33 +491,134 @@ class JITBooster:
         """Fetch hyper-specific signals for a single DAG node via best available model."""
         garden = get_garden()
         model_id = vertex_model_id or garden.get_tier_model(2, intent)
-        prompt = _JIT_NODE_PROMPT.format(
-            node_type=node_type, intent=intent,
-            action_context=action_context[:300],
-        )
+        cache_key = self._cache_key(
+            intent, mandate_text, f"{node_type}:{action_context}")
+        cached = self._get_live_cache(cache_key)
+        if cached is not None:
+            return cached
 
-        # 1. ModelGarden — multi-provider dispatch
+        self._refresh_live_async(
+            cache_key=cache_key,
+            intent=intent,
+            mandate_text=mandate_text,
+            node_type=node_type,
+            action_context=action_context,
+            model_id=model_id,
+        )
+        return self._fetch_structured(intent), "structured"
+
+    def _cache_key(
+        self,
+        intent: str,
+        mandate_text: str,
+        action_context: str | None,
+    ) -> str:
+        mandate_key = " ".join(mandate_text.lower().split())[:160]
+        context_key = " ".join((action_context or "").lower().split())[:160]
+        return f"{intent}|{mandate_key}|{context_key}"
+
+    def _get_live_cache(self, cache_key: str) -> tuple[list[str], str] | None:
+        now = time.monotonic()
+        with self._cache_lock:
+            cached = self._live_cache.get(cache_key)
+            if cached is None:
+                return None
+            signals, source, expires_at = cached
+            if now <= expires_at:
+                return signals, source
+        return None
+
+    def _refresh_live_async(
+        self,
+        cache_key: str,
+        intent: str,
+        mandate_text: str,
+        node_type: str,
+        action_context: str | None,
+        model_id: str,
+    ) -> None:
+        with self._cache_lock:
+            if cache_key in self._refreshing:
+                return
+            self._refreshing.add(cache_key)
+
+        thread = threading.Thread(
+            target=self._refresh_live_entry,
+            kwargs={
+                "cache_key": cache_key,
+                "intent": intent,
+                "mandate_text": mandate_text,
+                "node_type": node_type,
+                "action_context": action_context,
+                "model_id": model_id,
+            },
+            daemon=True,
+        )
+        thread.start()
+
+    def _refresh_live_entry(
+        self,
+        cache_key: str,
+        intent: str,
+        mandate_text: str,
+        node_type: str,
+        action_context: str | None,
+        model_id: str,
+    ) -> None:
         try:
-            text = garden.call(model_id, prompt)
+            garden = get_garden()
+            if node_type:
+                prompt = _JIT_NODE_PROMPT.format(
+                    node_type=node_type,
+                    intent=intent,
+                    action_context=(action_context or "")[:300],
+                )
+            else:
+                base = _JIT_FETCH_PROMPT.format(
+                    intent=intent,
+                    mandate_text=mandate_text[:280],
+                )
+                prompt = base if not action_context else (
+                    base + f" Node context: {action_context[:100]}"
+                )
+
+            text = ""
+            source = ""
+            use_consensus = model_id == garden.get_tier_model(4, intent)
+            if use_consensus:
+                text, _ = garden.consensus(
+                    prompt,
+                    tier=4,
+                    intent=intent,
+                    accept_response=lambda candidate: bool(
+                        _parse_bullets(candidate)),
+                )
+                source = "consensus"
+            else:
+                text = garden.call(model_id, prompt)
+                source = garden.source_for(model_id)
+
             bullets = _parse_bullets(text)
+            if not bullets and _gemini_client is not None:
+                resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
+                    model=VERTEX_DEFAULT_MODEL,
+                    contents=prompt,
+                )
+                bullets = _parse_bullets(resp.text or "")
+                source = "gemini"
+
             if bullets:
-                return bullets, garden.source_for(model_id)
+                with self._cache_lock:
+                    self._live_cache[cache_key] = (
+                        bullets,
+                        source,
+                        time.monotonic() + self._live_cache_ttl_seconds,
+                    )
         except Exception:
             pass
-
-        # 2. Gemini Direct — secondary fallback
-        if _gemini_client is not None:
-            try:
-                resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
-                    model=VERTEX_DEFAULT_MODEL, contents=prompt
-                )
-                bullets = _parse_bullets(resp.text)
-                if bullets:
-                    return bullets, "gemini"
-            except Exception:
-                pass
-
-        return self._fetch_structured(intent), "structured"
+        finally:
+            with self._cache_lock:
+                self._refreshing.discard(cache_key)
 
     def _fetch_vertex(
         self,
@@ -509,7 +635,7 @@ class JITBooster:
         resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
             model=model_id, contents=prompt
         )
-        bullets = _parse_bullets(resp.text)
+        bullets = _parse_bullets(resp.text or "")
         if not bullets:
             raise ValueError("Vertex returned no parseable signals")
         return bullets
@@ -528,11 +654,85 @@ class JITBooster:
         resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
             model=VERTEX_DEFAULT_MODEL, contents=prompt
         )
-        bullets = _parse_bullets(resp.text)
+        bullets = _parse_bullets(resp.text or "")
         if not bullets:
             raise ValueError(
                 "Gemini returned no parseable signals — falling back to structured")
         return bullets
+
+    def _load_jit_cache(self) -> None:
+        """Warm in-memory generic-intent cache from disk if the snapshot is still fresh."""
+        if not _JIT_CACHE_PATH.exists():
+            return
+        try:
+            blob = json.loads(_JIT_CACHE_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            return
+
+        now = datetime.now(UTC)
+        entries = blob.get("signals", {}) if isinstance(blob, dict) else {}
+        for intent, payload in entries.items():
+            if not isinstance(payload, dict):
+                continue
+            fetched_at = payload.get("fetched_at", "")
+            try:
+                age_s = (now - datetime.fromisoformat(fetched_at)
+                         ).total_seconds()
+            except Exception:
+                continue
+            if age_s > 3600:
+                continue
+            signals = payload.get("signals", [])
+            if not isinstance(signals, list) or not signals:
+                continue
+            remaining_ttl = max(0.0, self._live_cache_ttl_seconds - age_s)
+            with self._cache_lock:
+                self._live_cache[self._cache_key(intent, "", None)] = (
+                    [str(sig) for sig in signals[:5]],
+                    str(payload.get("source", "background")),
+                    time.monotonic() + remaining_ttl,
+                )
+
+    def _background_refresh_loop(self) -> None:
+        """Continuously refresh a generic intent-level cache snapshot in the background."""
+        garden = get_garden()
+        while not self._background_stop.is_set():
+            snapshot: dict[str, dict[str, Any]] = {}
+            for intent in _STANDARD_INTENTS:
+                try:
+                    model_id = garden.get_tier_model(1, intent)
+                    prompt = _JIT_FETCH_PROMPT.format(
+                        intent=intent,
+                        mandate_text=f"background refresh for {intent.lower()} mandates",
+                    )
+                    text = garden.call(model_id, prompt)
+                    signals = _parse_bullets(text)
+                    if not signals:
+                        signals = self._fetch_structured(intent)
+                    cache_key = self._cache_key(intent, "", None)
+                    with self._cache_lock:
+                        self._live_cache[cache_key] = (
+                            signals,
+                            garden.source_for(model_id),
+                            time.monotonic() + self._live_cache_ttl_seconds,
+                        )
+                    snapshot[intent] = {
+                        "signals": signals,
+                        "source": garden.source_for(model_id),
+                        "fetched_at": datetime.now(UTC).isoformat(),
+                    }
+                except Exception:
+                    continue
+            if snapshot:
+                try:
+                    _JIT_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+                    _JIT_CACHE_PATH.write_text(
+                        json.dumps({"signals": snapshot}, indent=2),
+                        encoding="utf-8",
+                    )
+                except Exception:
+                    pass
+            self._background_stop.wait(3600)
 
     def _fetch_structured(self, intent: str) -> list[str]:
         # Fall back to UNKNOWN catalogue entry for unrecognised intents rather

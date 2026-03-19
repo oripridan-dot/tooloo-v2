@@ -1,14 +1,10 @@
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["engine*", "studio*"]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
 
 [project]
 name = "tooloo-v2"
-version = "2.0.0"
+version = "2.1.0"
 description = "TooLoo V2 — Pure DAG Cognitive OS. Self-building autonomous intelligence engine."
 requires-python = ">=3.12"
 dependencies = [
@@ -33,17 +29,28 @@ dev = [
 ]
 
 [project.scripts]
-tooloo-v2 = "studio.api:main"
+tooloo-studio = "studio.api:main"
+
+[tool.setuptools.packages.find]
+include = ["engine*", "studio*", "sandbox*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-asyncio_mode = "auto"
-timeout = 30
+# Exclude Playwright browser tests from the default run.
+# They require: chromium installed + a live TooLoo server on port 8099.
+# Run them explicitly with:
+#   pytest tests/test_playwright_ui.py --headed=false -v --timeout=60
+addopts = "-m 'not playwright'"
+markers = [
+    "playwright: marks tests as Playwright UI tests (deselect with -m 'not playwright')",
+]
 
 [tool.ruff]
-target-version = "py312"
 line-length = 100
+indent-width = 4
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
-ignore = ["E501", "B008", "RUF012"]
+select = ["E", "W", "F", "I", "UP"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"

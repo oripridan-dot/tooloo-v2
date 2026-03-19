@@ -89,7 +89,7 @@ class TestHealthEndpoint:
 
     def test_health_version_is_v2(self, client: TestClient) -> None:
         body = client.get("/v2/health").json()
-        assert body["version"] == "2.0.0"
+        assert body["version"] == "2.1.0"
 
     def test_health_all_five_components_present(self, client: TestClient) -> None:
         body = client.get("/v2/health").json()
@@ -166,13 +166,15 @@ class TestMandateCleanPaths:
 
     def test_mandate_plan_is_non_empty_list(self, client: TestClient) -> None:
         # Use keyword-rich text so confidence >= 0.85 and plan is generated
-        body = self._post(client, "build implement create add write generate a service")
+        body = self._post(
+            client, "build implement create add write generate a service")
         assert isinstance(body["plan"], list)
         assert len(body["plan"]) > 0
 
     def test_mandate_plan_waves_are_lists(self, client: TestClient) -> None:
         body = self._post(client, "build implement create add write a service")
-        assert len(body["plan"]) > 0, "plan must be non-empty (high-confidence mandate)"
+        assert len(
+            body["plan"]) > 0, "plan must be non-empty (high-confidence mandate)"
         for wave in body["plan"]:
             assert isinstance(wave, list)
 
@@ -245,7 +247,8 @@ class TestMandateTribunalIntercept:
 
     def test_poisoned_mandate_plan_still_generated(self, client: TestClient) -> None:
         # Keyword-rich so confidence >= 0.85 — plan must be generated even after tribunal heal
-        body = self._post(client, 'build implement create a handler that calls eval(user)')
+        body = self._post(
+            client, 'build implement create a handler that calls eval(user)')
         assert isinstance(body["plan"], list) and len(body["plan"]) > 0
 
     def test_hardcoded_secret_in_mandate_still_routes(self, client: TestClient) -> None:
@@ -516,7 +519,8 @@ def live_server_url():
     import httpx as _httpx
 
     port = _find_free_port()
-    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error")
+    config = uvicorn.Config(app, host="127.0.0.1",
+                            port=port, log_level="error")
     server = uvicorn.Server(config)
     t = threading.Thread(target=server.run, daemon=True)
     t.start()
@@ -578,7 +582,56 @@ class TestSSEEndpoint:
                 if line.startswith("data:"):
                     event = json.loads(line[len("data:"):].strip())
                     break
-        assert event.get("version") == "2.0.0"
+        assert event.get("version") == "2.1.0"
+
+    def test_sse_emits_self_improve_event(self, live_server_url: str) -> None:
+        """Regression guard: running /v2/self-improve must emit SSE type=self_improve."""
+        import threading
+
+        import httpx
+
+        event: dict[str, Any] = {}
+        post_status: dict[str, int] = {"code": 0}
+
+        def _trigger_self_improve() -> None:
+            r = httpx.post(f"{live_server_url}/v2/self-improve", timeout=30.0)
+            post_status["code"] = r.status_code
+
+        with httpx.stream("GET", f"{live_server_url}/v2/events", timeout=30.0) as r:
+            trigger_started = False
+            trigger_thread: threading.Thread | None = None
+
+            for line in r.iter_lines():
+                if not line.startswith("data:"):
+                    continue
+
+                payload = line[len("data:"):].strip()
+                if not payload:
+                    continue
+
+                parsed = json.loads(payload)
+
+                # Start the self-improve request after connection is confirmed,
+                # so we deterministically observe the emitted SSE event.
+                if not trigger_started and parsed.get("type") == "connected":
+                    trigger_started = True
+                    trigger_thread = threading.Thread(
+                        target=_trigger_self_improve,
+                        daemon=True,
+                    )
+                    trigger_thread.start()
+                    continue
+
+                if parsed.get("type") == "self_improve":
+                    event = parsed
+                    if trigger_thread is not None:
+                        trigger_thread.join(timeout=35.0)
+                    break
+
+        assert post_status["code"] == 200
+        assert event.get("type") == "self_improve"
+        assert isinstance(event.get("report"), dict)
+        assert event["report"].get("improvement_id", "").startswith("si-")
 
     # ── Internal / unit-level tests ─────────────────────────────────────────
 
@@ -634,7 +687,8 @@ class TestFullPipelineE2E:
     """
 
     def test_mandate_then_health_still_ok(self, client: TestClient) -> None:
-        client.post("/v2/mandate", json={"text": "build implement create a payment service"})
+        client.post("/v2/mandate",
+                    json={"text": "build implement create a payment service"})
         health = client.get("/v2/health").json()
         assert health["status"] == "ok"
 
@@ -666,7 +720,8 @@ class TestFullPipelineE2E:
             assert body["route"]["intent"] == expected_intent, (
                 f"Expected {expected_intent!r} for {text!r}, got {body['route']['intent']!r}"
             )
-            assert body["plan"] != [], f"plan should not be empty for: {text!r}"
+            assert body["plan"] != [
+            ], f"plan should not be empty for: {text!r}"
             assert len(body["execution"]) > 0
             assert all(w["success"] for w in body["execution"])
 

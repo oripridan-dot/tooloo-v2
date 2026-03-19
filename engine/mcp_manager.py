@@ -25,9 +25,11 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
-from dataclasses import dataclass, field
+import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 # ── Workspace root (one level up from this file) ──────────────────────────────
 _WORKSPACE_ROOT: Path = Path(__file__).resolve().parents[1]
@@ -36,7 +38,8 @@ _WORKSPACE_ROOT: Path = Path(__file__).resolve().parents[1]
 _MCP_PREFIX = "mcp://tooloo/"
 
 # ── Output size cap ───────────────────────────────────────────────────────────
-_MAX_OUTPUT_CHARS: int = 8_000
+# raised from 8 KB → 64 KB to handle large engine files
+_MAX_OUTPUT_CHARS: int = 64_000
 
 # ── Forbidden write extensions ────────────────────────────────────────────────
 _FORBIDDEN_WRITE_EXTS: frozenset[str] = frozenset(
@@ -222,18 +225,29 @@ def _tool_web_lookup(query: str, **_: Any) -> dict[str, Any]:
     }
 
 
-def _tool_run_tests(test_path: str, **_: Any) -> dict[str, Any]:
+def _tool_run_tests(
+    test_path: str = "",
+    module: str | None = None,
+    timeout: int | None = None,
+    **_: Any,
+) -> dict[str, Any]:
     """Run pytest on a test module inside tests/ and return verdict."""
+    if not test_path and module:
+        test_path = module
+    if not test_path:
+        raise ValueError("test_path is required.")
+
     resolved = _jail_path(test_path)
     tests_dir = (_WORKSPACE_ROOT / "tests").resolve()
     if not str(resolved).startswith(str(tests_dir)):
         raise ValueError("test_path must be inside the tests/ directory.")
 
     result = subprocess.run(
-        [sys.executable, "-m", "pytest", str(resolved), "--tb=short", "-q", "--timeout=30"],
+        [sys.executable, "-m", "pytest",
+            str(resolved), "--tb=short", "-q", "--timeout=30"],
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=timeout or 60,
         cwd=str(_WORKSPACE_ROOT),
     )
     output, truncated = _sanitise(result.stdout + result.stderr)
@@ -254,7 +268,8 @@ def _tool_read_error(error_text: str, **_: Any) -> dict[str, Any]:
     hint = ""
 
     for line in reversed(lines):
-        m = re.match(r"^(\w+(?:\.\w+)*Error|\w+Exception):\s*(.+)$", line.strip())
+        m = re.match(
+            r"^(\w+(?:\.\w+)*Error|\w+Exception):\s*(.+)$", line.strip())
         if m:
             error_type = m.group(1)
             message = m.group(2).strip()
@@ -291,6 +306,45 @@ def _tool_read_error(error_text: str, **_: Any) -> dict[str, Any]:
     }
 
 
+def _tool_spawn_process(
+    branch_type: str = "fork",
+    intent: str = "IDEATE",
+    mandate: str = "",
+    target: str = "",
+    parent_branch_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    type: str | None = None,
+    branch_id: str | None = None,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    """Emit a validated BranchSpec-compatible payload for dynamic branching."""
+    normalized_type = (type or branch_type or "fork").strip().lower()
+    if normalized_type not in {"fork", "clone", "share"}:
+        raise ValueError("branch_type must be one of: fork, clone, share")
+
+    mandate_text = str(kwargs.get("mandate_text") or mandate or "").strip()
+    if not mandate_text:
+        raise ValueError("mandate is required for spawn_process")
+
+    payload: dict[str, Any] = {
+        "branch_id": branch_id or f"spawn-{uuid.uuid4().hex[:8]}",
+        "branch_type": normalized_type,
+        "mandate_text": mandate_text,
+        "intent": str(intent or "IDEATE").upper(),
+        "target": str(target or kwargs.get("file_path") or ""),
+        "parent_branch_id": parent_branch_id,
+        "metadata": {
+            "autonomously_spawned": True,
+            "spawn_source": "mcp://tooloo/spawn_process",
+            **(metadata or {}),
+        },
+    }
+    return {
+        "spawned_branch": payload,
+        "message": f"Spawn request validated for {payload['intent']}:{payload['branch_type']}",
+    }
+
+
 # ── Tool registry ─────────────────────────────────────────────────────────────
 
 _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
@@ -309,8 +363,10 @@ _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
         name="file_write",
         description="Write text content to a workspace file (non-executable formats only).",
         parameters=[
-            {"name": "path", "type": "string", "description": "Workspace-relative file path"},
-            {"name": "content", "type": "string", "description": "UTF-8 text to write"},
+            {"name": "path", "type": "string",
+                "description": "Workspace-relative file path"},
+            {"name": "content", "type": "string",
+                "description": "UTF-8 text to write"},
         ],
     )),
     "code_analyze": (_tool_code_analyze, MCPToolSpec(
@@ -353,6 +409,23 @@ _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
             "description": "Traceback or error message string",
         }],
     )),
+    "spawn_process": (_tool_spawn_process, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}spawn_process",
+        name="spawn_process",
+        description="Emit a validated BranchSpec-compatible payload for dynamic branching.",
+        parameters=[
+            {"name": "branch_type", "type": "string",
+                "description": "fork | clone | share"},
+            {"name": "intent", "type": "string",
+                "description": "Child branch intent"},
+            {"name": "mandate", "type": "string",
+                "description": "Child branch mandate text"},
+            {"name": "target", "type": "string",
+                "description": "Optional file/service target"},
+            {"name": "parent_branch_id", "type": "string",
+                "description": "Optional parent branch id"},
+        ],
+    )),
 }
 
 
@@ -390,7 +463,7 @@ class MCPManager:
         try:
             output = handler(**kwargs)
             return MCPCallResult(uri=spec.uri, success=True, output=output)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             return MCPCallResult(
                 uri=spec.uri,
                 success=False,

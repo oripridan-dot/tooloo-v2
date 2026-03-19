@@ -1,3 +1,166 @@
+# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
+# Cycle: 2026-03-19T16:01:25.381037+00:00
+# Component: router  Source: engine/router.py
+# Improvement signals from JIT SOTA booster:
+#  [1] FIX 1: engine/router.py:30 — Expand _KEYWORDS with synonyms and more specific
+#     terms based on SOTA signals. CODE:     "BUILD": [         "build",
+#     "implement", "create", "add", "write", "generate", "scaffold",
+#     "initialise", "initialize", "setup", "set up", "wire", "integrate",
+#     "sync",         "synchronise", "synchronize", "deploy", "ship",
+#     "release", "update the", "provision", "configure",     ],     "DEBUG": [
+#     "fix", "bug", "error", "broken", "fail", "crash", "traceback",
+#     "exception",         "diagnose", "root cause", "investigate", "patch",
+#     "regression", "500", "404",         "not working", "issue", "problem",
+#     "debug", "troubleshoot", "monitor",     ],
+#  [2] FIX 2: engine/router.py:62 — Implement confidence-band boundaries for BUILD,
+#     DEBUG, AUDIT, DESIGN, EXPLAIN, IDEATE based on observed distribution of
+#     scores. CODE: def _score(text: str) -> dict[str, float]:     lowered =
+#     text.lower()     scores: dict[str, float] = {}     for intent, patterns
+#     in _KEYWORDS.items():         hits = sum(1 for p in patterns if
+#     re.search(p, lowered))         # Normalize score by the number of
+#     patterns for that intent         normalized_score = hits / len(patterns)
+#     if patterns else 0         scores[intent] = normalized_score      #
+#     Apply fixed confidence band boundaries (e.g., adjust these based on
+#     actual data)     for intent in ["BUILD", "DEBUG", "AUDIT", "DESIGN",
+#     "EXPLAIN", "IDEATE"]:         if scores.get(intent, 0) <
+#     CIRCUIT_BREAKER_THRESHOLD:             scores[intent] = 0.0  # Force low
+#     confidence if below threshold     return scores
+#  [3] FIX 3: engine/router.py:27 — Introduce active learning sampling strategy for
+#     misclassified examples to improve intent coverage. CODE: """
+#     engine/router.py — Mandate intent classification + circuit breaker.
+#     Standalone keyword scorer — no external dependencies beyond stdlib.
+#     Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN |
+#     IDEATE | SPAWN_REPO  Circuit breaker (Law 19):   - confidence
+#     <CIRCUIT_BREAKER_THRESHOLD  → fires breaker flag on that result   -
+#     CIRCUIT_BREAKER_MAX_FAILS consecutive failures → router trips (returns
+#     BLOCKED)   - Governor calls reset() to restore  Active Learning: Collect
+#     low-confidence or misclassified examples for targeted retraining. """
+#     from __future__ import annotations
+# ─────────────────────────────────────────────────────────────────
+#     terms based on SOTA signals. CODE:     "BUILD": [         "build",
+#     "implement", "create", "add", "write", "generate", "scaffold",
+#     "initialise", "initialize", "setup", "set up", "wire", "integrate",
+#     "sync",         "synchronise", "synchronize", "deploy", "ship",
+#     "release", "update the", "provision", "configure",     ],     "DEBUG": [
+#     "fix", "bug", "error", "broken", "fail", "crash", "traceback",
+#     "exception",         "diagnose", "root cause", "investigate", "patch",
+#     "regression", "500", "404",         "not working", "issue", "problem",
+#     "debug", "troubleshoot", "monitor",     ],
+#     DEBUG, AUDIT, DESIGN, EXPLAIN, IDEATE based on observed distribution of
+#     scores. CODE: def _score(text: str) -> dict[str, float]:     lowered =
+#     text.lower()     scores: dict[str, float] = {}     for intent, patterns
+#     in _KEYWORDS.items():         hits = sum(1 for p in patterns if
+#     re.search(p, lowered))         # Normalize score by the number of
+#     patterns for that intent         normalized_score = hits / len(patterns)
+#     if patterns else 0         scores[intent] = normalized_score      #
+#     Apply fixed confidence band boundaries (e.g., adjust these based on
+#     actual data)     for intent in ["BUILD", "DEBUG", "AUDIT", "DESIGN",
+#     "EXPLAIN", "IDEATE"]:         if scores.get(intent, 0) <
+#     CIRCUIT_BREAKER_THRESHOLD:             scores[intent] = 0.0  # Force low
+#     confidence if below threshold     return scores
+#     misclassified examples to improve intent coverage. CODE: """
+#     engine/router.py — Mandate intent classification + circuit breaker.
+#     Standalone keyword scorer — no external dependencies beyond stdlib.
+#     Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN |
+#     IDEATE | SPAWN_REPO  Circuit breaker (Law 19):   - confidence
+#     <CIRCUIT_BREAKER_THRESHOLD  → fires breaker flag on that result   -
+#     CIRCUIT_BREAKER_MAX_FAILS consecutive failures → router trips (returns
+#     BLOCKED)   - Governor calls reset() to restore  Active Learning: Collect
+#     low-confidence or misclassified examples for targeted retraining. """
+#     from __future__ import annotations
+#     terms based on SOTA signals. CODE:     "BUILD": [         "build",
+#     "implement", "create", "add", "write", "generate", "scaffold",
+#     "initialise", "initialize", "setup", "set up", "wire", "integrate",
+#     "sync",         "synchronise", "synchronize", "deploy", "ship",
+#     "release", "update the", "provision", "configure",     ],     "DEBUG": [
+#     "fix", "bug", "error", "broken", "fail", "crash", "traceback",
+#     "exception",         "diagnose", "root cause", "investigate", "patch",
+#     "regression", "500", "404",         "not working", "issue", "problem",
+#     "debug", "troubleshoot", "monitor",     ],
+#     DEBUG, AUDIT, DESIGN, EXPLAIN, IDEATE based on observed distribution of
+#     scores. CODE: def _score(text: str) -> dict[str, float]:     lowered =
+#     text.lower()     scores: dict[str, float] = {}     for intent, patterns
+#     in _KEYWORDS.items():         hits = sum(1 for p in patterns if
+#     re.search(p, lowered))         # Normalize score by the number of
+#     patterns for that intent         normalized_score = hits / len(patterns)
+#     if patterns else 0         scores[intent] = normalized_score      #
+#     Apply fixed confidence band boundaries (e.g., adjust these based on
+#     actual data)     for intent in ["BUILD", "DEBUG", "AUDIT", "DESIGN",
+#     "EXPLAIN", "IDEATE"]:         if scores.get(intent, 0) <
+#     CIRCUIT_BREAKER_THRESHOLD:             scores[intent] = 0.0  # Force low
+#     confidence if below threshold     return scores
+#     misclassified examples to improve intent coverage. CODE: """
+#     engine/router.py — Mandate intent classification + circuit breaker.
+#     Standalone keyword scorer — no external dependencies beyond stdlib.
+#     Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN |
+#     IDEATE | SPAWN_REPO  Circuit breaker (Law 19):   - confidence
+#     <CIRCUIT_BREAKER_THRESHOLD  → fires breaker flag on that result   -
+#     CIRCUIT_BREAKER_MAX_FAILS consecutive failures → router trips (returns
+#     BLOCKED)   - Governor calls reset() to restore  Active Learning: Collect
+#     low-confidence or misclassified examples for targeted retraining. """
+#     from __future__ import annotations
+#     terms based on SOTA signals. CODE:     "BUILD": [         "build",
+#     "implement", "create", "add", "write", "generate", "scaffold",
+#     "initialise", "initialize", "setup", "set up", "wire", "integrate",
+#     "sync",         "synchronise", "synchronize", "deploy", "ship",
+#     "release", "update the", "provision", "configure",     ],     "DEBUG": [
+#     "fix", "bug", "error", "broken", "fail", "crash", "traceback",
+#     "exception",         "diagnose", "root cause", "investigate", "patch",
+#     "regression", "500", "404",         "not working", "issue", "problem",
+#     "debug", "troubleshoot", "monitor",     ],
+#     DEBUG, AUDIT, DESIGN, EXPLAIN, IDEATE based on observed distribution of
+#     scores. CODE: def _score(text: str) -> dict[str, float]:     lowered =
+#     text.lower()     scores: dict[str, float] = {}     for intent, patterns
+#     in _KEYWORDS.items():         hits = sum(1 for p in patterns if
+#     re.search(p, lowered))         # Normalize score by the number of
+#     patterns for that intent         normalized_score = hits / len(patterns)
+#     if patterns else 0         scores[intent] = normalized_score      #
+#     Apply fixed confidence band boundaries (e.g., adjust these based on
+#     actual data)     for intent in ["BUILD", "DEBUG", "AUDIT", "DESIGN",
+#     "EXPLAIN", "IDEATE"]:         if scores.get(intent, 0) <
+#     CIRCUIT_BREAKER_THRESHOLD:             scores[intent] = 0.0  # Force low
+#     confidence if below threshold     return scores
+#     misclassified examples to improve intent coverage. CODE: """
+#     engine/router.py — Mandate intent classification + circuit breaker.
+#     Standalone keyword scorer — no external dependencies beyond stdlib.
+#     Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN |
+#     IDEATE | SPAWN_REPO  Circuit breaker (Law 19):   - confidence
+#     <CIRCUIT_BREAKER_THRESHOLD  → fires breaker flag on that result   -
+#     CIRCUIT_BREAKER_MAX_FAILS consecutive failures → router trips (returns
+#     BLOCKED)   - Governor calls reset() to restore  Active Learning: Collect
+#     low-confidence or misclassified examples for targeted retraining. """
+#     from __future__ import annotations
+#     terms based on SOTA signals. CODE:     "BUILD": [         "build",
+#     "implement", "create", "add", "write", "generate", "scaffold",
+#     "initialise", "initialize", "setup", "set up", "wire", "integrate",
+#     "sync",         "synchronise", "synchronize", "deploy", "ship",
+#     "release", "update the", "provision", "configure",     ],     "DEBUG": [
+#     "fix", "bug", "error", "broken", "fail", "crash", "traceback",
+#     "exception",         "diagnose", "root cause", "investigate", "patch",
+#     "regression", "500", "404",         "not working", "issue", "problem",
+#     "debug", "troubleshoot", "monitor",     ],
+#     DEBUG, AUDIT, DESIGN, EXPLAIN, IDEATE based on observed distribution of
+#     scores. CODE: def _score(text: str) -> dict[str, float]:     lowered =
+#     text.lower()     scores: dict[str, float] = {}     for intent, patterns
+#     in _KEYWORDS.items():         hits = sum(1 for p in patterns if
+#     re.search(p, lowered))         # Normalize score by the number of
+#     patterns for that intent         normalized_score = hits / len(patterns)
+#     if patterns else 0         scores[intent] = normalized_score      #
+#     Apply fixed confidence band boundaries (e.g., adjust these based on
+#     actual data)     for intent in ["BUILD", "DEBUG", "AUDIT", "DESIGN",
+#     "EXPLAIN", "IDEATE"]:         if scores.get(intent, 0) <
+#     CIRCUIT_BREAKER_THRESHOLD:             scores[intent] = 0.0  # Force low
+#     confidence if below threshold     return scores
+#     misclassified examples to improve intent coverage. CODE: """
+#     engine/router.py — Mandate intent classification + circuit breaker.
+#     Standalone keyword scorer — no external dependencies beyond stdlib.
+#     Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN |
+#     IDEATE | SPAWN_REPO  Circuit breaker (Law 19):   - confidence
+#     <CIRCUIT_BREAKER_THRESHOLD  → fires breaker flag on that result   -
+#     CIRCUIT_BREAKER_MAX_FAILS consecutive failures → router trips (returns
+#     BLOCKED)   - Governor calls reset() to restore  Active Learning: Collect
+#     low-confidence or misclassified examples for targeted retraining. """
+#     from __future__ import annotations
 """
 engine/router.py — Mandate intent classification + circuit breaker.
 
@@ -12,11 +175,15 @@ Circuit breaker (Law 19):
 from __future__ import annotations
 
 import re
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
 from engine.config import CIRCUIT_BREAKER_MAX_FAILS, CIRCUIT_BREAKER_THRESHOLD
+
+# Maximum number of low-confidence examples retained for active-learning reuse.
+_ACTIVE_LEARNING_MAXLEN: int = 200
 
 # ── Keyword catalogue ──────────────────────────────────────────────────────────
 
@@ -62,6 +229,11 @@ def _score(text: str) -> dict[str, float]:
         hits = sum(1 for p in patterns if re.search(p, lowered))
         scores[intent] = hits / len(patterns)
     return scores
+
+
+def _scaled_confidence(scores: dict[str, float], intent: str) -> float:
+    pattern_count = max(1, len(_KEYWORDS.get(intent, [])))
+    return min(1.0, scores[intent] * (8 * 20 / pattern_count))
 
 
 # ── DTOs ──────────────────────────────────────────────────────────────────────
@@ -120,11 +292,24 @@ def compute_buddy_line(intent: str, confidence: float) -> str:
 
 
 class MandateRouter:
-    """Standalone keyword-based mandate router with circuit breaker."""
+    """Standalone keyword-based mandate router with circuit breaker.
+
+    Active-Learning Sampler
+    -----------------------
+    Every routing result whose confidence falls below ``_HEDGE_THRESHOLD``
+    (or that fires the circuit breaker) is automatically appended to an
+    in-memory deque (``_low_conf_samples``, capped at
+    ``_ACTIVE_LEARNING_MAXLEN``).  Call ``get_low_confidence_samples()`` to
+    retrieve these examples for offline classifier retraining.
+    """
 
     def __init__(self) -> None:
         self._fail_count: int = 0
         self._tripped: bool = False
+        # Active-learning sample buffer: (mandate_text, routed_intent, confidence)
+        self._low_conf_samples: deque[tuple[str, str, float]] = deque(
+            maxlen=_ACTIVE_LEARNING_MAXLEN
+        )
 
     @property
     def is_tripped(self) -> bool:
@@ -144,6 +329,15 @@ class MandateRouter:
         if self._fail_count >= CIRCUIT_BREAKER_MAX_FAILS:
             self._tripped = True
 
+    def get_low_confidence_samples(self) -> list[tuple[str, str, float]]:
+        """Return buffered low-confidence routing examples for active-learning.
+
+        Each element is ``(mandate_text, routed_intent, confidence)``.
+        The buffer is a rolling window of the most recent
+        ``_ACTIVE_LEARNING_MAXLEN`` samples.
+        """
+        return list(self._low_conf_samples)
+
     def route(self, mandate_text: str) -> RouteResult:
         if self._tripped:
             return RouteResult(
@@ -160,13 +354,17 @@ class MandateRouter:
 
         scores = _score(text)
         best = max(scores, key=lambda k: scores[k])
-        confidence = min(1.0, scores[best] * 8)  # scale to 0–1
+        confidence = _scaled_confidence(scores, best)
 
         fired = confidence < CIRCUIT_BREAKER_THRESHOLD
         if fired:
             self._record_failure()
         else:
             self._fail_count = 0
+
+        # Active-learning: buffer low-confidence and CB-firing examples.
+        if fired or confidence < _HEDGE_THRESHOLD:
+            self._low_conf_samples.append((text, best, confidence))
 
         return self._make(best, confidence, mandate_text, fired)
 
@@ -193,7 +391,7 @@ class MandateRouter:
 
         scores = _score(text)
         best = max(scores, key=lambda k: scores[k])
-        confidence = min(1.0, scores[best] * 8)
+        confidence = _scaled_confidence(scores, best)
         # Never set circuit_open=True for chat — low confidence in conversation is
         # normal (greetings, short follow-ups).  The breaker counter is also untouched.
         return self._make(best, confidence, mandate_text, fired=False)
@@ -416,7 +614,7 @@ class ConversationalIntentDiscovery:
         # Score against accumulated context for richer signal.
         scores = _score(session.combined_text)
         best = max(scores, key=lambda k: scores[k])
-        raw_confidence = min(1.0, scores[best] * 8)
+        raw_confidence = _scaled_confidence(scores, best)
 
         # Each additional turn adds alignment evidence (capped at +0.24).
         turn_boost = min((session.turn_count - 1) * 0.08, 0.24)

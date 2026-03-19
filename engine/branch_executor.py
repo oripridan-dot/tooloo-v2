@@ -31,19 +31,19 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 from engine.executor import Envelope, ExecutionResult, JITExecutor
 from engine.graph import TopologicalSorter
 from engine.jit_booster import JITBooster, JITBoostResult
-from engine.psyche_bank import PsycheBank
+from engine.mandate_executor import make_live_work_fn
 from engine.refinement import RefinementLoop, RefinementReport
 from engine.router import MandateRouter, RouteResult, compute_buddy_line
 from engine.scope_evaluator import ScopeEvaluation, ScopeEvaluator
 from engine.tribunal import Engram, Tribunal, TribunalResult
-from engine.config import CIRCUIT_BREAKER_THRESHOLD
 
 # ── Branch type constants ─────────────────────────────────────────────────────
 BRANCH_FORK = "fork"    # independent parallel paths
@@ -164,7 +164,7 @@ class SharedBlackboard:
             self._events[branch_id] = event
         try:
             await asyncio.wait_for(event.wait(), timeout=timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return None
         async with self._lock:
             return self._results.get(branch_id)
@@ -221,7 +221,7 @@ class BranchExecutor:
         self._broadcast: Callable[[dict[str, Any]], None] = (
             broadcast_fn if broadcast_fn is not None else lambda _: None
         )
-        self._work_fn = work_fn or self._default_work_fn
+        self._work_fn = work_fn
         # Active branch registry for status queries
         self._active: dict[str, dict[str, Any]] = {}
 
@@ -246,6 +246,16 @@ class BranchExecutor:
         run_id = f"branch-run-{uuid.uuid4().hex[:8]}"
         t0 = time.monotonic()
         blackboard = SharedBlackboard()
+
+        # Prune completed entries to prevent unbounded growth on long-lived singletons.
+        # Keep only branches that are still pending/running (active work). Completed
+        # entries from prior runs are evicted here rather than accumulating forever.
+        if self._active:
+            self._active = {
+                bid: st
+                for bid, st in self._active.items()
+                if st.get("status") not in ("satisfied", "unsatisfied", "error")
+            }
 
         self._broadcast({
             "type": "branch_run_start",
@@ -275,7 +285,7 @@ class BranchExecutor:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         branch_results: list[BranchResult] = []
-        for spec, res in zip(specs, results):
+        for spec, res in zip(specs, results, strict=True):
             if isinstance(res, BranchResult):
                 branch_results.append(res)
                 self._active[spec.branch_id]["status"] = (
@@ -316,8 +326,6 @@ class BranchExecutor:
         timeout: float,
     ) -> BranchResult:
         """Execute a single branch pipeline asynchronously."""
-        t0 = time.monotonic()
-
         self._broadcast({
             "type": "branch_spawned",
             "branch_id": spec.branch_id,
@@ -363,11 +371,8 @@ class BranchExecutor:
             # Register SHARE specs with the blackboard pre-launch to prevent
             # a deadlock where the child waits for a parent that hasn't posted.
             for child in spawned_specs:
-                if child.branch_type == BRANCH_SHARE and child.parent_branch_id:
-                    # Ensure the parent result is already on the board
-                    if blackboard.get(child.parent_branch_id) is None:
-                        # Parent IS the current branch — it's already posted above
-                        pass  # blackboard.post was called just above; safe.
+                if child.branch_type == BRANCH_SHARE and child.parent_branch_id and blackboard.get(child.parent_branch_id) is None:
+                    pass  # parent is already posted above for current-branch mitosis
             # Register pending status for new specs
             for child in spawned_specs:
                 self._active[child.branch_id] = {
@@ -387,7 +392,7 @@ class BranchExecutor:
             ]
             child_results = await asyncio.gather(*child_tasks, return_exceptions=True)
             # Attach child results to the parent result for upstream visibility
-            for child_spec, child_res in zip(spawned_specs, child_results):
+            for child_spec, child_res in zip(spawned_specs, child_results, strict=True):
                 if isinstance(child_res, BranchResult):
                     self._active[child_spec.branch_id]["status"] = (
                         "satisfied" if child_res.satisfied else "unsatisfied"
@@ -473,9 +478,24 @@ class BranchExecutor:
             for nid in dag_nodes
         ]
 
+        dependency_map = {
+            dag_nodes[0]: [],
+            dag_nodes[1]: [dag_nodes[0]],
+            dag_nodes[2]: [dag_nodes[1]],
+            dag_nodes[3]: [dag_nodes[2]],
+        }
+
         # 7. Fan-out execution
-        exec_results = self._executor.fan_out(
-            self._work_fn, envelopes,
+        effective_work_fn = self._work_fn or make_live_work_fn(
+            mandate_text=spec.mandate_text,
+            intent=spec.intent,
+            jit_signals=jit.signals,
+        )
+
+        exec_results = self._executor.fan_out_dag(
+            effective_work_fn,
+            envelopes,
+            dependency_map,
             max_workers=scope.recommended_workers,
         )
 
@@ -549,11 +569,12 @@ class BranchExecutor:
 
     def _make_error_result(self, spec: BranchSpec, error: str) -> BranchResult:
         """Synthesise a failed BranchResult when the pipeline errors."""
-        from engine.refinement import RefinementReport
-        from engine.jit_booster import JITBoostResult
-        from engine.tribunal import TribunalResult
-        from engine.scope_evaluator import ScopeEvaluation
         import uuid as _uuid
+
+        from engine.jit_booster import JITBoostResult
+        from engine.scope_evaluator import ScopeEvaluation
+        from engine.tribunal import TribunalResult
+
         dummy_jit = JITBoostResult(
             jit_id=f"jit-err-{_uuid.uuid4().hex[:6]}",
             intent=spec.intent,
@@ -566,10 +587,10 @@ class BranchExecutor:
         dummy_tribunal = TribunalResult(
             slug=f"branch-{spec.branch_id}-err",
             passed=False,
-            poison_type="pipeline_error",
-            rule_triggered="PIPELINE_ERROR",
-            healed_body=None,
-            rule_captured=False,
+            poison_detected=False,
+            heal_applied=False,
+            vast_learn_triggered=False,
+            violations=["pipeline_error"],
         )
         dummy_scope = ScopeEvaluation(
             node_count=0, wave_count=0, max_wave_width=0,
@@ -578,11 +599,11 @@ class BranchExecutor:
             risk_surface=0, scope_summary="error — pipeline failed",
         )
         dummy_refine = RefinementReport(
-            total_units=0, succeeded=0, failed=0,
-            success_rate=0.0, verdict="fail",
-            brittle_nodes=[], failed_nodes=[spec.branch_id],
+            total=0, succeeded=0, failed=0,
+            success_rate=0.0, avg_latency_ms=0.0, p50_latency_ms=0.0, p90_latency_ms=0.0,
+            slow_nodes=[], failed_nodes=[spec.branch_id],
             recommendations=["Pipeline error — retry with corrected mandate"],
-            latency_ms=0.0,
+            rerun_advised=False, verdict="fail",
         )
         return BranchResult(
             branch_id=spec.branch_id,

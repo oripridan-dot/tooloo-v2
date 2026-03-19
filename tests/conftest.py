@@ -59,5 +59,7 @@ def offline_vertex():
         patch("engine.model_garden._google_client", None),
         patch("engine.model_garden._anthropic_client", None),
         patch("engine.model_garden._anthropic_available", False),
+        patch("engine.sota_ingestion._vertex_client", None),
+        patch("engine.sota_ingestion._gemini_client", None),
     ):
         yield

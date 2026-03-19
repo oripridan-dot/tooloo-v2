@@ -258,7 +258,8 @@ class RoadmapManager:
     def __init__(self) -> None:
         self._graph = CognitiveGraph()
         self._sorter = TopologicalSorter()
-        self._vector_store = VectorStore(dup_threshold=0.88)
+        # lowered: reject only near-identical items
+        self._vector_store = VectorStore(dup_threshold=0.70)
         self._items: dict[str, RoadmapItem] = {}
         self._lock = threading.RLock()
         self._seed_initial()

@@ -50,7 +50,7 @@ discoveries, or rules that can be immediately utilised by `JITBooster` or
 | **14 — Circuit Breaker** | `CIRCUIT_BREAKER_THRESHOLD = 0.85`. If confidence falls below this, hedge, clarify, or invoke `JITBooster` before proceeding. |
 | **17 — Stateless Processors** | All processing nodes and agents must be stateless to allow race-condition-free fan-out via `JITExecutor` / `ThreadPoolExecutor`. |
 | **19 — Epistemic Humility** | Before executing any action, pass a confidence gate. If unsure, invoke `JITBooster` to ground the action in 2026 SOTA signals. |
-| **20 — Dream-to-Deploy** | No phase transition (Draft → Execute) without explicit consent or mathematically locked confidence ≥ 0.90. |
+| **20 — Autonomous Execution Authority** | Execution proceeds autonomously when `AUTONOMOUS_EXECUTION_ENABLED=True` (the default). Three inviolable safety invariants always hold: (1) Tribunal OWASP scan on every artefact, (2) writes sandboxed to `engine/` components only, (3) legal/non-criminal operations only. A `consultation_recommended` SSE event is emitted (advisory, non-blocking) when confidence < `AUTONOMOUS_CONFIDENCE_THRESHOLD` (0.99). `--dry-run` remains the explicit opt-out. |
 
 ---
 

@@ -27,12 +27,13 @@ from __future__ import annotations
 
 import time
 import uuid
-from dataclasses import dataclass, field
-from typing import Any, Callable
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 from engine.executor import Envelope, ExecutionResult, JITExecutor
 from engine.graph import TopologicalSorter
-from engine.jit_booster import JITBoostResult, JITBooster
+from engine.jit_booster import JITBooster, JITBoostResult
 from engine.refinement import RefinementLoop, RefinementReport
 from engine.router import (
     LockedIntent,
@@ -310,6 +311,7 @@ class TwoStrokeEngine:
             "pipeline_id": pipeline_id,
             "iteration": iteration,
             "nodes": [n for wave in plan for n in wave],
+            "node_count": sum(len(wave) for wave in plan),
             "waves": plan,
             "scope": scope.to_dict(),
         })
@@ -346,19 +348,32 @@ class TwoStrokeEngine:
         # Execute the DAG — the physical materialisation of the plan.
         envelopes = [
             Envelope(
-                mandate_id=f"{mandate_id}-{i}",
+                mandate_id=node_id,
                 intent=intent,
                 domain="backend",
-                metadata={"wave": i, "nodes": wave, "iteration": iteration},
+                metadata={
+                    "wave": i,
+                    "nodes": wave,
+                    "iteration": iteration,
+                },
             )
             for i, wave in enumerate(plan)
+            for node_id in wave
         ]
 
-        def _work(env: Envelope) -> str:
-            return f"wave-{env.metadata['wave']}-iter{env.metadata['iteration']}-done"
+        dependency_map = {
+            node_id: deps
+            for node_id, deps in spec
+        }
 
-        exec_results = self._executor.fan_out(
-            _work, envelopes, max_workers=scope.recommended_workers
+        def _work(env: Envelope) -> str:
+            return f"node-{env.mandate_id}-iter{env.metadata['iteration']}-done"
+
+        exec_results = self._executor.fan_out_dag(
+            _work,
+            envelopes,
+            dependency_map,
+            max_workers=scope.recommended_workers,
         )
 
         self._broadcast({

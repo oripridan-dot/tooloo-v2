@@ -26,26 +26,27 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from engine.model_garden import get_tier_models_static
+from engine.model_garden import get_full_tier_models, get_garden
 
-# ── Compute tier → model map once at import time ──────────────────────────────
-# get_tier_models_static() uses only the static registry (no network, no API),
-# so it is fast, deterministic, and safe for module-level evaluation.
-# T1 = gemini-2.5-flash-lite  (fastest GA flash)
-# T2 = gemini-2.5-flash       (second fastest GA flash)
-# T3 = gemini-2.5-pro         (best stable pro, GA)   — or Claude if configured
-# T4 = gemini-3.1-pro-preview (strongest reasoning)   — or next-best provider
+# ── Compute tier → model map once at import time ──────────────────────────────────────────
+# get_full_tier_models() detects ALL active providers (Google + Anthropic +
+# Vertex MaaS: Meta Llama, Mistral AI) and returns the optimal 4-tier ladder.
+#
+# T1 = gemini-2.5-flash-lite   (fastest GA flash — always Google)
+# T2 = gemini-2.5-flash        (second fastest GA flash — always Google)
+# T3 = claude-3-7-sonnet       (best stable pro when Anthropic active; else Gemini 2.5 Pro)
+# T4 = claude-3-5-sonnet       (diversity pick; else next-best Gemini/Llama)
 
-_STATIC_TIERS: dict[int, str] = get_tier_models_static()
+_FULL_TIERS: dict[int, str] = get_full_tier_models()
 
-TIER_1_MODEL: str = _STATIC_TIERS[1]
-TIER_2_MODEL: str = _STATIC_TIERS[2]
-TIER_3_MODEL: str = _STATIC_TIERS[3]
-TIER_4_MODEL: str = _STATIC_TIERS[4]
+TIER_1_MODEL: str = _FULL_TIERS[1]
+TIER_2_MODEL: str = _FULL_TIERS[2]
+TIER_3_MODEL: str = _FULL_TIERS[3]
+TIER_4_MODEL: str = _FULL_TIERS[4]
 
-# Mirrors for internal use (mutable at runtime via garden)
-_TIER_MODELS: dict[int, str] = dict(_STATIC_TIERS)
-VERTEX_TIER_MAP: dict[int, str] = dict(_STATIC_TIERS)
+# _TIER_MODELS used for T1/T2 lookup (T3/T4 resolved live per intent via garden).
+_TIER_MODELS: dict[int, str] = dict(_FULL_TIERS)
+VERTEX_TIER_MAP: dict[int, str] = dict(_FULL_TIERS)
 
 # Intents that benefit from deeper reasoning from the very first stroke
 _DEEP_INTENTS: frozenset[str] = frozenset({"SPAWN_REPO", "DEBUG", "AUDIT"})
@@ -119,10 +120,13 @@ class ModelSelector:
             else self._compute_tier(stroke, intent, prior_verdict)
         )
 
-        # Use the pre-computed static tier map for deterministic, test-safe selection.
-        # The ModelGarden handles provider dispatch at *inference* time (jit_booster,
-        # conversation) — tier assignment stays Google-only and predictable.
-        model = _TIER_MODELS[tier]
+        # T1/T2: stable Google flash from the pre-computed map (always deterministic).
+        # T3/T4: live multi-provider selection via ModelGarden — intent-aware,
+        #        selects the best Anthropic/Vertex MaaS/Google model for the task.
+        if tier >= 3:
+            model = get_garden().get_tier_model(tier, intent)
+        else:
+            model = _TIER_MODELS[tier]
 
         rationale = self._rationale(tier, stroke, intent, prior_verdict, model)
         return ModelSelection(

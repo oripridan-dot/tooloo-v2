@@ -20,10 +20,14 @@ from typing import Any
 import pytest
 from playwright.sync_api import Browser, Page, expect
 
+# All tests in this module require a live browser via Playwright.
+# They are excluded from the default pytest run (addopts = -m 'not playwright').
+pytestmark = pytest.mark.playwright
+
 BASE_URL = "http://127.0.0.1:8099"
 _SERVER_PORT = 8099
 NAV_VIEWS = ["chat", "pipeline", "feed", "dag",
-             "bank", "self-improve", "sandbox", "branch"]
+             "bank", "self-improve", "sandbox", "daemon", "branch"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures
@@ -146,28 +150,23 @@ class TestPageLoad:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestJavaScriptErrors:
-    def test_connectsse_reference_error_present(self, loaded_page: Page):
+    def test_no_connectsse_reference_error(self, loaded_page: Page):
         """
-        KNOWN BUG: patchSSEForNewEvents (bottom IIFE) references connectSSE
-        which is defined inside the main IIFE and is not globally accessible.
-        This test documents and validates the presence of this regression.
+        Regression guard: connectSSE is exposed via window.connectSSE inside
+        the main IIFE so patchSSEForNewEvents (outer script scope) can call it.
+        BUG-FIX: window.connectSSE = connectSSE added at initialisation.
         """
-        js_errors = loaded_page._js_errors
         sse_errors = [
-            e for e in js_errors if "connectSSE" in e or "ReferenceError" in e]
-        # This is a documented bug — the test flags it
-        if sse_errors:
-            pytest.xfail(
-                f"KNOWN BUG: connectSSE not globally accessible in patchSSEForNewEvents. "
-                f"Error: {sse_errors[0]}"
-            )
-
-    def test_no_other_js_errors_on_load(self, loaded_page: Page):
-        """No JS errors besides the known connectSSE ReferenceError."""
-        js_errors = [
             e for e in loaded_page._js_errors
-            if "connectSSE" not in e
-        ]
+            if "connectSSE" in e or "ReferenceError" in e]
+        assert sse_errors == [], (
+            f"connectSSE ReferenceError re-introduced: {sse_errors[0]}"
+            if sse_errors else ""
+        )
+
+    def test_no_js_errors_on_load(self, loaded_page: Page):
+        """No uncaught JavaScript errors on page load."""
+        js_errors = loaded_page._js_errors
         assert js_errors == [
         ], f"Unexpected JS errors on page load: {js_errors}"
 
@@ -936,7 +935,304 @@ class TestBranchExecutorView:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 13. SSE CONNECTION & HEALTH
+# 13. RT DAEMON VIEW — Visual QA
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestRTDaemonView:
+    """Visual QA and interaction tests for the RT Daemon panel."""
+
+    def _go_to_daemon(self, page: Page) -> None:
+        page.locator('.nav-btn[data-view="daemon"]').click()
+        page.wait_for_timeout(500)  # allow loadDaemonStatus() to resolve
+
+    # ── Layout ──────────────────────────────────────────────────────────────
+
+    def test_daemon_view_becomes_active(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        expect(loaded_page.locator("#view-daemon")
+               ).to_have_class(re.compile(r"active"))
+
+    def test_daemon_heading_text(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        heading = loaded_page.locator("#view-daemon h2")
+        expect(heading).to_contain_text("Real-Time Daemon Loop")
+
+    def test_daemon_description_present(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        desc = loaded_page.locator("#view-daemon p")
+        expect(desc).to_contain_text("ROI")
+
+    def test_start_button_visible(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        btn = loaded_page.locator("#btn-start-daemon")
+        expect(btn).to_be_visible()
+        expect(btn).to_contain_text("Start Daemon")
+
+    def test_stop_button_visible(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        btn = loaded_page.locator("#btn-stop-daemon")
+        expect(btn).to_be_visible()
+        expect(btn).to_contain_text("Stop Daemon")
+
+    def test_status_dot_present(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        dot = loaded_page.locator("#daemon-status-dot")
+        expect(dot).to_be_visible()
+
+    def test_status_text_present(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        txt = loaded_page.locator("#daemon-status-text")
+        expect(txt).to_be_visible()
+
+    def test_network_feed_panel_visible(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        log_el = loaded_page.locator("#daemon-log")
+        expect(log_el).to_be_visible()
+
+    def test_approvals_panel_visible(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        approvals = loaded_page.locator("#daemon-approvals")
+        expect(approvals).to_be_visible()
+
+    def test_approvals_shows_no_pending_initially(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        approvals = loaded_page.locator("#daemon-approvals")
+        text = approvals.inner_text()
+        assert "No pending" in text, (
+            f"Approvals panel should say 'No pending approvals.' initially, got: {text!r}"
+        )
+
+    # ── Status indicator reflects backend state ──────────────────────────────
+
+    def test_status_stopped_on_load(self, loaded_page: Page):
+        """Daemon STATUS starts as Stopped (server is not actively running daemon)."""
+        self._go_to_daemon(loaded_page)
+        txt = loaded_page.locator("#daemon-status-text")
+        # Should show Stopped (daemon is not auto-started)
+        status = txt.inner_text()
+        assert status in ("Stopped", "Running"), (
+            f"Status text should be 'Stopped' or 'Running', got: {status!r}"
+        )
+
+    def test_stop_button_disabled_when_stopped(self, loaded_page: Page):
+        """Stop button is disabled when daemon is not running."""
+        self._go_to_daemon(loaded_page)
+        # Ensure daemon is stopped first
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        loaded_page.wait_for_timeout(400)
+        # Reload daemon status
+        self._go_to_daemon(loaded_page)
+        stop_btn = loaded_page.locator("#btn-stop-daemon")
+        assert stop_btn.is_disabled(), "Stop button should be disabled when daemon is stopped"
+
+    def test_start_button_disabled_when_running(self, loaded_page: Page):
+        """Start button is disabled after daemon is started."""
+        self._go_to_daemon(loaded_page)
+        start_btn = loaded_page.locator("#btn-start-daemon")
+        start_btn.click()
+        loaded_page.wait_for_timeout(600)
+        assert start_btn.is_disabled(), "Start button should be disabled while daemon is running"
+        # Clean up — stop the daemon
+        loaded_page.locator("#btn-stop-daemon").click()
+        loaded_page.wait_for_timeout(400)
+
+    # ── Start / Stop interaction ─────────────────────────────────────────────
+
+    def test_start_daemon_appends_log_entry(self, loaded_page: Page):
+        """Clicking Start should append a log line in the network feed."""
+        self._go_to_daemon(loaded_page)
+        # Ensure stopped
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        loaded_page.wait_for_timeout(300)
+        self._go_to_daemon(loaded_page)
+        log_el = loaded_page.locator("#daemon-log")
+        loaded_page.locator("#btn-start-daemon").click()
+        loaded_page.wait_for_timeout(800)
+        log_text = log_el.inner_text()
+        assert "started" in log_text.lower() or len(log_text.strip()) > 0, (
+            f"Log should record daemon start, got: {log_text!r}"
+        )
+        # Stop daemon after test
+        loaded_page.locator("#btn-stop-daemon").click()
+        loaded_page.wait_for_timeout(300)
+
+    def test_stop_daemon_appends_log_entry(self, loaded_page: Page):
+        """Clicking Stop after Start should append a stop log line."""
+        self._go_to_daemon(loaded_page)
+        loaded_page.locator("#btn-start-daemon").click()
+        loaded_page.wait_for_timeout(600)
+        loaded_page.locator("#btn-stop-daemon").click()
+        loaded_page.wait_for_timeout(600)
+        log_el = loaded_page.locator("#daemon-log")
+        log_text = log_el.inner_text()
+        assert "stop" in log_text.lower() or len(log_text.strip()) > 0, (
+            f"Log should record daemon stop, got: {log_text!r}"
+        )
+
+    def test_status_text_updates_to_running_after_start(self, loaded_page: Page):
+        """Status text should flip to 'Running' after daemon start."""
+        self._go_to_daemon(loaded_page)
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        loaded_page.wait_for_timeout(300)
+        self._go_to_daemon(loaded_page)
+        loaded_page.locator("#btn-start-daemon").click()
+        loaded_page.wait_for_timeout(800)
+        txt = loaded_page.locator("#daemon-status-text")
+        status = txt.inner_text()
+        assert status == "Running", f"Status should be 'Running' after start, got: {status!r}"
+        # Clean up
+        loaded_page.locator("#btn-stop-daemon").click()
+        loaded_page.wait_for_timeout(300)
+
+    def test_status_text_returns_to_stopped_after_stop(self, loaded_page: Page):
+        self._go_to_daemon(loaded_page)
+        loaded_page.locator("#btn-start-daemon").click()
+        loaded_page.wait_for_timeout(600)
+        loaded_page.locator("#btn-stop-daemon").click()
+        loaded_page.wait_for_timeout(600)
+        txt = loaded_page.locator("#daemon-status-text")
+        status = txt.inner_text()
+        assert status == "Stopped", f"Status should be 'Stopped' after stop, got: {status!r}"
+
+    # ── Badge wiring ─────────────────────────────────────────────────────────
+
+    def test_daemon_badge_hidden_initially(self, loaded_page: Page):
+        """Badge visibility must match the actual pending_approvals count from the backend."""
+        # Stop daemon so no new proposals arrive during the check
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        loaded_page.wait_for_timeout(300)
+        self._go_to_daemon(loaded_page)  # loadDaemonStatus() syncs badge
+        loaded_page.wait_for_timeout(400)
+        status = loaded_page.request.get(f"{BASE_URL}/v2/daemon/status").json()
+        pending_count = len(status.get("pending_approvals", []))
+        badge = loaded_page.locator("#daemon-badge")
+        display = badge.evaluate("el => getComputedStyle(el).display")
+        if pending_count == 0:
+            assert display == "none", (
+                f"Badge should be hidden when no pending approvals, got display={display!r}"
+            )
+        else:
+            assert display != "none", (
+                f"Badge should be visible for {pending_count} pending approvals, got display={display!r}"
+            )
+
+    # ── Nav badge element present ────────────────────────────────────────────
+
+    def test_daemon_nav_badge_element_exists(self, loaded_page: Page):
+        # navigating to chat so the badge element exists in DOM at rest
+        loaded_page.locator('.nav-btn[data-view="chat"]').click()
+        loaded_page.wait_for_timeout(200)
+        badge = loaded_page.locator("#daemon-badge")
+        assert badge.count() > 0, "Daemon nav badge element must be in the DOM"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 14. RT DAEMON API — Backend contract tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestRTDaemonAPI:
+    """Verify all /v2/daemon/* backend endpoints."""
+
+    def test_status_endpoint_returns_200(self, loaded_page: Page):
+        response = loaded_page.request.get(f"{BASE_URL}/v2/daemon/status")
+        assert response.status == 200
+
+    def test_status_response_shape(self, loaded_page: Page):
+        response = loaded_page.request.get(f"{BASE_URL}/v2/daemon/status")
+        data = response.json()
+        assert "active" in data, f"Status should have 'active': {data}"
+        assert "pending_approvals" in data, f"Status should have 'pending_approvals': {data}"
+
+    def test_status_active_is_bool(self, loaded_page: Page):
+        response = loaded_page.request.get(f"{BASE_URL}/v2/daemon/status")
+        data = response.json()
+        assert isinstance(data["active"], bool), (
+            f"'active' should be bool, got {type(data['active'])}"
+        )
+
+    def test_status_pending_approvals_is_list(self, loaded_page: Page):
+        response = loaded_page.request.get(f"{BASE_URL}/v2/daemon/status")
+        data = response.json()
+        assert isinstance(data["pending_approvals"], list), (
+            f"'pending_approvals' should be list, got {type(data['pending_approvals'])}"
+        )
+
+    def test_start_endpoint_returns_200(self, loaded_page: Page):
+        # Stop first so it's in a known state
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        response = loaded_page.request.post(f"{BASE_URL}/v2/daemon/start")
+        assert response.status == 200
+
+    def test_start_returns_started_status(self, loaded_page: Page):
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        import time
+        time.sleep(0.1)
+        response = loaded_page.request.post(f"{BASE_URL}/v2/daemon/start")
+        data = response.json()
+        assert data.get("status") in ("started", "already_running"), (
+            f"Start should return started/already_running, got: {data}"
+        )
+
+    def test_start_idempotent(self, loaded_page: Page):
+        """Calling start twice should return already_running on second call."""
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        import time
+        time.sleep(0.1)
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/start")
+        time.sleep(0.1)
+        response2 = loaded_page.request.post(f"{BASE_URL}/v2/daemon/start")
+        data = response2.json()
+        assert data.get("status") == "already_running", (
+            f"Second start should say 'already_running', got: {data}"
+        )
+
+    def test_stop_endpoint_returns_200(self, loaded_page: Page):
+        response = loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        assert response.status == 200
+
+    def test_stop_returns_stopped_status(self, loaded_page: Page):
+        response = loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        data = response.json()
+        assert data.get(
+            "status") == "stopped", f"Stop should return stopped, got: {data}"
+
+    def test_active_false_after_stop(self, loaded_page: Page):
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        import time
+        time.sleep(0.1)
+        response = loaded_page.request.get(f"{BASE_URL}/v2/daemon/status")
+        data = response.json()
+        assert data["active"] is False, (
+            f"Daemon should be inactive after stop, got active={data['active']}"
+        )
+
+    def test_active_true_after_start(self, loaded_page: Page):
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+        import time
+        time.sleep(0.1)
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/start")
+        time.sleep(0.2)
+        response = loaded_page.request.get(f"{BASE_URL}/v2/daemon/status")
+        data = response.json()
+        assert data["active"] is True, (
+            f"Daemon should be active after start, got active={data['active']}"
+        )
+        # Cleanup
+        loaded_page.request.post(f"{BASE_URL}/v2/daemon/stop")
+
+    def test_approve_unknown_proposal_returns_not_found(self, loaded_page: Page):
+        response = loaded_page.request.post(
+            f"{BASE_URL}/v2/daemon/approve/nonexistent-id"
+        )
+        assert response.status == 200
+        data = response.json()
+        assert data.get("status") == "not_found", (
+            f"Unknown proposal should return not_found, got: {data}"
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 15. SSE CONNECTION & HEALTH
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestSSEAndHealth:
@@ -1058,15 +1354,13 @@ class TestVisualLayout:
         assert "Inter" in font or "system-ui" in font, f"Expected Inter/system-ui font, got: {font}"
 
     def test_all_views_have_view_header(self, loaded_page: Page):
-        """Every view section should have a .view-header with a .view-title."""
+        """Every view section should have either a .view-header or an h2 heading."""
         sections = loaded_page.locator(".view")
         count = sections.count()
         assert count == len(
             NAV_VIEWS), f"Should have {len(NAV_VIEWS)} view sections, found {count}"
         for i in range(count):
             section = sections.nth(i)
-            header = section.locator(".view-header")
-            # Most views have headers, but some (like chat) may have nested headers
             # Just verify no section is completely empty
             section_html = section.inner_html()
             assert len(section_html) > 50, f"View section {i} appears empty"

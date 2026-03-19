@@ -710,6 +710,157 @@
             gap: 8px;
         }
 
+        /* ── Knowledge Bank styles ─────────────────────────────────────── */
+        .kb-tab {
+            padding: 5px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all .15s;
+        }
+
+        .kb-tab:hover {
+            background: var(--surface-alt);
+            color: var(--text);
+        }
+
+        .kb-tab.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .kb-entry-card {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: border-color .15s;
+        }
+
+        .kb-entry-card:hover {
+            border-color: var(--cyan);
+        }
+
+        .kb-entry-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .kb-entry-body {
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--muted);
+        }
+
+        .kb-entry-meta {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .kb-tag {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background: var(--surface-alt);
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+
+        .kb-sota-badge {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-weight: 700;
+            background: oklch(0.4 0.15 200);
+            color: var(--cyan);
+        }
+
+        .kb-weight-bar {
+            height: 3px;
+            border-radius: 2px;
+            background: var(--border);
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .kb-weight-fill {
+            height: 100%;
+            background: var(--cyan);
+            transition: width .3s ease;
+        }
+
+        /* ── System Map styles ────────────────────────────────────────── */
+        .sysmap-card {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all .2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sysmap-card:hover {
+            border-color: var(--cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px oklch(0 0 0 / 0.3);
+        }
+
+        .sysmap-icon {
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        .sysmap-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .sysmap-desc {
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--muted);
+        }
+
+        .sysmap-badge {
+            font-size: 10px;
+            font-family: var(--mono);
+            color: var(--cyan);
+            margin-top: 4px;
+        }
+
+        /* ── Buddy quick-action buttons ──────────────────────────────── */
+        .buddy-quick-btn {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface-alt);
+            color: var(--text);
+            cursor: pointer;
+            transition: all .15s;
+            font-weight: 600;
+        }
+
+        .buddy-quick-btn:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
         .feed-event {
             background: var(--surface-card);
             border: 1px solid var(--border);
@@ -1801,6 +1952,11 @@
                 <span class="icon">🧬</span> PsycheBank
                 <span class="nav-badge" id="bank-badge" style="display:none">0</span>
             </button>
+            <button class="nav-btn" data-view="knowledge">
+                <span class="icon">🧠</span> Knowledge Banks
+                <span class="nav-badge" id="knowledge-badge" style="display:none">0</span>
+            </button>
+            <button class="nav-btn" data-view="system-map"><span class="icon">🗺</span> System Map</button>
             <button class="nav-btn" data-view="self-improve"><span class="icon">🔁</span> Self-Improve</button>
             <button class="nav-btn" data-view="sandbox">
                 <span class="icon">🧪</span> Sandbox Lab
@@ -1845,11 +2001,25 @@
                             <div class="msg-row">
                                 <div class="msg-avatar">🤖</div>
                                 <div class="bubble">
-                                    Hey! I'm <strong>Buddy</strong> — your TooLoo V2 build host.<br>
-                                    Tell me what you need: <em>build a feature, fix a bug, audit a module, explore
-                                        ideas…</em><br>
-                                    I remember our conversation, plan each response as a DAG, and intercept anything
-                                    unsafe.
+                                    I'm <strong>Buddy</strong> — your AI, design, and code expert.<br>
+                                    I bridge the gap between human intent and AI capability using confirmed 2026 SOTA
+                                    knowledge across <strong>Design · Code · AI · Human-AI Bridge</strong> domains.<br>
+                                    Ask me anything: <em>build features, debug issues, explain concepts, design systems,
+                                        explore AI architectures…</em><br>
+                                    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+                                        <button class="buddy-quick-btn"
+                                            onclick="sendQuick('What SOTA design patterns should I use for this chat UI?')">🎨
+                                            SOTA Design</button>
+                                        <button class="buddy-quick-btn"
+                                            onclick="sendQuick('What are the most critical AI safety practices for 2026?')">🛡
+                                            AI Safety</button>
+                                        <button class="buddy-quick-btn"
+                                            onclick="sendQuick('How do I bridge the human-AI communication gap in my product?')">🌉
+                                            Bridge Gap</button>
+                                        <button class="buddy-quick-btn"
+                                            onclick="sendQuick('What SOTA code architecture should I use for a FastAPI service?')">⚙
+                                            Code SOTA</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2007,6 +2177,164 @@
                 </div>
             </section>
 
+            <!-- KNOWLEDGE BANKS ────────────────────────────────────────────── -->
+            <section class="view" id="view-knowledge" style="display:flex;flex-direction:column;overflow:hidden">
+                <div class="view-header" style="flex-shrink:0">
+                    <div>
+                        <div class="view-title">🧠 Knowledge Banks</div>
+                        <div class="view-sub">SOTA knowledge foundation — Design · Code · AI · Human-AI Bridge</div>
+                    </div>
+                    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+                        <button class="btn-sm" id="kb-ingest-btn" style="background:var(--primary);color:#fff">⚡ Run
+                            SOTA Ingestion</button>
+                        <button class="btn-sm" id="kb-refresh-btn">↻ Refresh</button>
+                    </div>
+                </div>
+                <!-- Bank selector tabs -->
+                <div id="kb-tabs"
+                    style="display:flex;gap:4px;padding:8px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+                    <button class="kb-tab active" data-bank="design">🎨 Design</button>
+                    <button class="kb-tab" data-bank="code">⚙ Code</button>
+                    <button class="kb-tab" data-bank="ai">🤖 AI</button>
+                    <button class="kb-tab" data-bank="bridge">🌉 Bridge</button>
+                    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+                        <input id="kb-search" type="text" placeholder="Search knowledge…"
+                            style="background:var(--surface-alt);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--text);width:200px">
+                    </div>
+                </div>
+                <!-- Ingestion status bar -->
+                <div id="kb-ingest-status"
+                    style="display:none;padding:8px 16px;font-size:12px;background:var(--surface-alt);border-bottom:1px solid var(--border);flex-shrink:0;color:var(--cyan)">
+                    ⚡ Ingestion running…
+                </div>
+                <!-- Bank content grid -->
+                <div id="kb-body"
+                    style="flex:1;overflow-y:auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-content:start">
+                    <div
+                        style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;height:120px;color:var(--muted)">
+                        <span>Select a bank and click ↻ Refresh to load entries.</span>
+                    </div>
+                </div>
+                <!-- Bank health summary footer -->
+                <div id="kb-footer"
+                    style="flex-shrink:0;padding:8px 16px;border-top:1px solid var(--border);display:flex;gap:16px;font-size:11px;color:var(--muted)">
+                    <span id="kb-stat-total">— entries</span>
+                    <span id="kb-stat-design">Design: —</span>
+                    <span id="kb-stat-code">Code: —</span>
+                    <span id="kb-stat-ai">AI: —</span>
+                    <span id="kb-stat-bridge">Bridge: —</span>
+                </div>
+            </section>
+
+            <!-- SYSTEM MAP ─────────────────────────────────────────────────── -->
+            <section class="view" id="view-system-map" style="display:flex;flex-direction:column;overflow:hidden">
+                <div class="view-header" style="flex-shrink:0">
+                    <div>
+                        <div class="view-title">🗺 System Map</div>
+                        <div class="view-sub">TooLoo V2 architecture — shortcuts to every subsystem</div>
+                    </div>
+                </div>
+                <div
+                    style="flex:1;overflow-y:auto;padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;align-content:start">
+                    <!-- Pipeline -->
+                    <div class="sysmap-card" onclick="switchView('pipeline')">
+                        <div class="sysmap-icon">⚡</div>
+                        <div class="sysmap-title">N-Stroke Pipeline</div>
+                        <div class="sysmap-desc">7-stroke mandate execution engine. Router → JIT → Tribunal → Scope →
+                            Execute → Refine → Heal</div>
+                        <div class="sysmap-badge">engine/n_stroke.py</div>
+                    </div>
+                    <!-- Buddy Chat -->
+                    <div class="sysmap-card" onclick="switchView('chat')">
+                        <div class="sysmap-icon">💬</div>
+                        <div class="sysmap-title">Buddy Chat</div>
+                        <div class="sysmap-desc">Conversational AI with SOTA knowledge injection. Bridge bank · JIT
+                            boost · Multi-turn sessions</div>
+                        <div class="sysmap-badge">engine/conversation.py</div>
+                    </div>
+                    <!-- Knowledge Banks -->
+                    <div class="sysmap-card" onclick="switchView('knowledge')">
+                        <div class="sysmap-icon">🧠</div>
+                        <div class="sysmap-title">Knowledge Banks</div>
+                        <div class="sysmap-desc">Design · Code · AI · Bridge. SOTA-seeded, Gemini-enriched,
+                            Tribunal-guarded knowledge foundation</div>
+                        <div class="sysmap-badge">engine/knowledge_banks/</div>
+                    </div>
+                    <!-- SOTA Ingestion -->
+                    <div class="sysmap-card" onclick="runSOTAIngestion()">
+                        <div class="sysmap-icon">📡</div>
+                        <div class="sysmap-title">SOTA Ingestion</div>
+                        <div class="sysmap-desc">Autonomous knowledge enrichment. 24 targets × 5 signals = 120 SOTA data
+                            points per run via Gemini</div>
+                        <div class="sysmap-badge">engine/sota_ingestion.py</div>
+                    </div>
+                    <!-- JIT Booster -->
+                    <div class="sysmap-card" onclick="switchView('feed')">
+                        <div class="sysmap-icon">🚀</div>
+                        <div class="sysmap-title">JIT Booster</div>
+                        <div class="sysmap-desc">Every mandate gets real-time SOTA signals from Gemini + Knowledge Banks
+                            before execution</div>
+                        <div class="sysmap-badge">engine/jit_booster.py</div>
+                    </div>
+                    <!-- Tribunal -->
+                    <div class="sysmap-card" onclick="switchView('feed')">
+                        <div class="sysmap-icon">🛡</div>
+                        <div class="sysmap-title">Tribunal (OWASP)</div>
+                        <div class="sysmap-desc">Security scanner on every DAG node. Poison detection → tombstone →
+                            PsycheBank capture</div>
+                        <div class="sysmap-badge">engine/tribunal.py</div>
+                    </div>
+                    <!-- DAG Engine -->
+                    <div class="sysmap-card" onclick="switchView('dag')">
+                        <div class="sysmap-icon">🕸</div>
+                        <div class="sysmap-title">DAG Engine</div>
+                        <div class="sysmap-desc">Pure directed acyclic graph with cycle detection. Topological waves for
+                            parallel execution</div>
+                        <div class="sysmap-badge">engine/graph.py</div>
+                    </div>
+                    <!-- PsycheBank -->
+                    <div class="sysmap-card" onclick="switchView('bank')">
+                        <div class="sysmap-icon">🧬</div>
+                        <div class="sysmap-title">PsycheBank</div>
+                        <div class="sysmap-desc">Thread-safe .cog.json rule store. Captures OWASP violations with TTL
+                            and deduplication</div>
+                        <div class="sysmap-badge">engine/psyche_bank.py</div>
+                    </div>
+                    <!-- Self-Improve -->
+                    <div class="sysmap-card" onclick="switchView('self-improve')">
+                        <div class="sysmap-icon">🔁</div>
+                        <div class="sysmap-title">Self-Improvement</div>
+                        <div class="sysmap-desc">8 components × 3 waves. Each engine module audits itself through the
+                            full pipeline</div>
+                        <div class="sysmap-badge">engine/self_improvement.py</div>
+                    </div>
+                    <!-- Sandbox -->
+                    <div class="sysmap-card" onclick="switchView('sandbox')">
+                        <div class="sysmap-icon">🧪</div>
+                        <div class="sysmap-title">Sandbox Lab</div>
+                        <div class="sysmap-desc">25-parallel roadmap sandbox. Graph + vector backed. 9-dimension quality
+                            scoring</div>
+                        <div class="sysmap-badge">engine/sandbox.py</div>
+                    </div>
+                    <!-- RT Daemon -->
+                    <div class="sysmap-card" onclick="switchView('daemon')">
+                        <div class="sysmap-icon">🛸</div>
+                        <div class="sysmap-title">RT Daemon</div>
+                        <div class="sysmap-desc">Background autonomous improvement loop. Human-in-the-loop approval gate
+                        </div>
+                        <div class="sysmap-badge">engine/daemon.py</div>
+                    </div>
+                    <!-- Branch Exec -->
+                    <div class="sysmap-card" onclick="switchView('branch')">
+                        <div class="sysmap-icon">🌿</div>
+                        <div class="sysmap-title">Branch Executor</div>
+                        <div class="sysmap-desc">Clone · Fork · Share branch strategies for parallel mandate execution
+                            paths</div>
+                        <div class="sysmap-badge">engine/branch_executor.py</div>
+                    </div>
+                </div>
+            </section>
+
             <!-- SELF-IMPROVE -->
             <section class="view" id="view-self-improve">
                 <div class="view-header">
@@ -2120,6 +2448,48 @@
                         </div>
                     </div>
                     <div id="sandbox-list" style="display:flex;flex-direction:column;gap:10px"></div>
+                </div>
+            </section>
+
+
+            <!-- DAEMON VIEW -->
+            <section class="view" id="view-daemon" style="padding:24px;overflow-y:auto">
+                <h2 style="font-size:24px;font-weight:600;margin-bottom:8px">🛸 Real-Time Daemon Loop</h2>
+                <p style="color:var(--muted);margin-bottom:16px">Background optimization. Tooloo continuously measures
+                    ROI/Risk, automatically absorbing verified improvements and forwarding risky ones to you for manual
+                    approval.</p>
+
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">
+                    <button id="btn-start-daemon" class="btn" style="background:var(--primary);color:var(--bg)">▶ Start
+                        Daemon</button>
+                    <button id="btn-stop-daemon" class="btn">⏸ Stop Daemon</button>
+                    <div style="display:flex;align-items:center;gap:6px;margin-left:8px">
+                        <div id="daemon-status-dot"
+                            style="width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0">
+                        </div>
+                        <span id="daemon-status-text" style="font-size:13px;color:var(--muted)">Stopped</span>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:24px;min-height:500px">
+                    <div
+                        style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;">
+                        <h3 style="margin-bottom:12px;display:flex;align-items:center;gap:8px">
+                            <div class="pulse" style="background:var(--primary)"></div> Network Feed
+                        </h3>
+                        <div id="daemon-log"
+                            style="flex:1;font-family:var(--mono);font-size:12px;color:var(--muted);overflow-y:auto;background:var(--bg);padding:12px;border-radius:4px;border:1px solid var(--border)">
+                        </div>
+                    </div>
+
+                    <div
+                        style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;">
+                        <h3 style="margin-bottom:12px;color:var(--warn)">⚠️ Action Required</h3>
+                        <div id="daemon-approvals"
+                            style="display:flex;flex-direction:column;gap:12px;flex:1;overflow-y:auto;padding-right:8px;">
+                            <div style="font-size:12px;color:var(--muted)">No pending approvals.</div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -2338,9 +2708,11 @@
                 navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === id));
                 if (id === 'dag') loadDag();
                 if (id === 'bank') loadBank();
+                if (id === 'knowledge') { if (window._kbLoad) window._kbLoad(); }
                 if (id === 'self-improve') resetSIIdle();
                 if (id === 'sandbox') loadSandboxes();
                 if (id === 'branch') loadBranches();
+                if (id === 'daemon') loadDaemonStatus();
                 if (id === 'pipeline') {
                     // Kick-start anchor idle pulse (GSAP must be loaded)
                     if (typeof _startIdlePulse !== 'undefined') _startIdlePulse();
@@ -2367,6 +2739,41 @@
 
             let feedCount = 0;
             let _sseDelay = 2000;
+            let _sseFrameHandle = 0;
+            const _sseEventQueue = [];
+
+            function flushSSEQueue() {
+                _sseFrameHandle = 0;
+                if (!_sseEventQueue.length) return;
+                const batch = _sseEventQueue.splice(0, _sseEventQueue.length);
+                const feedEvents = [];
+                let shouldReloadRoadmap = false;
+
+                batch.forEach(ev => {
+                    if (ev.type !== 'heartbeat' && ev.type !== 'connected') feedEvents.push(ev);
+                    if (ev.type === 'sandbox' && ev.report) addSandboxCard(ev.report);
+                    if (ev.type === 'roadmap_run') shouldReloadRoadmap = true;
+                    if (typeof _handlePipelineSSE !== 'undefined') _handlePipelineSSE(ev);
+                    if (typeof window._handleBranchAndGateSSE !== 'undefined') window._handleBranchAndGateSSE(ev);
+                    if (typeof window.handleDaemonSSE !== 'undefined') window.handleDaemonSSE(ev);
+                    if (typeof window.patchSSEForKB !== 'undefined') window.patchSSEForKB(ev);
+                });
+
+                if (feedEvents.length) pushFeedBatch(feedEvents);
+                if (shouldReloadRoadmap) loadRoadmap();
+
+                if (_sseEventQueue.length) {
+                    _sseFrameHandle = requestAnimationFrame(flushSSEQueue);
+                }
+            }
+
+            function enqueueSSE(ev) {
+                _sseEventQueue.push(ev);
+                if (!_sseFrameHandle) {
+                    _sseFrameHandle = requestAnimationFrame(flushSSEQueue);
+                }
+            }
+
             function connectSSE() {
                 const dot = document.getElementById('conn-dot');
                 const statusEl = document.getElementById('agent-status');
@@ -2387,11 +2794,7 @@
                 es.onmessage = (e) => {
                     try {
                         const ev = JSON.parse(e.data);
-                        if (ev.type !== 'heartbeat' && ev.type !== 'connected') pushFeed(ev);
-                        if (ev.type === 'sandbox' && ev.report) addSandboxCard(ev.report);
-                        if (ev.type === 'roadmap_run') { loadRoadmap(); }
-                        if (typeof _handlePipelineSSE !== 'undefined') _handlePipelineSSE(ev);
-                        if (typeof window._handleBranchAndGateSSE !== 'undefined') window._handleBranchAndGateSSE(ev);
+                        enqueueSSE(ev);
                     } catch { }
                 };
             }
@@ -2403,94 +2806,145 @@
             const feedBadge = document.getElementById('feed-badge');
 
             function pushFeed(ev) {
+                pushFeedBatch([ev]);
+            }
+
+            function pushFeedBatch(events) {
+                if (!events || !events.length) return;
                 feedEmpty.style.display = 'none';
-                feedCount++;
                 const active = document.querySelector('.view.active')?.id;
-                if (active !== 'view-feed') { feedBadge.style.display = ''; feedBadge.textContent = feedCount; }
-                
-        // DAEMON JS
-        const daemonLog = document.getElementById('daemon-log');
-        const daemonApprovals = document.getElementById('daemon-approvals');
-        
-        function addDaemonLog(msg) {
-            const div = document.createElement('div');
-            div.style.marginBottom = '4px';
-            div.innerHTML = `<span style="color:var(--fg)">${new Date().toLocaleTimeString()}</span> - ${esc(msg)}`;
-            daemonLog.appendChild(div);
-            daemonLog.scrollTop = daemonLog.scrollHeight;
-        }
-
-        document.getElementById('btn-start-daemon').addEventListener('click', async () => {
-            await fetch('/v2/daemon/start', {method: 'POST'});
-            addDaemonLog("Triggered daemon start.");
-        });
-        document.getElementById('btn-stop-daemon').addEventListener('click', async () => {
-            await fetch('/v2/daemon/stop', {method: 'POST'});
-            addDaemonLog("Triggered daemon stop.");
-        });
-
-        function handleDaemonSSE(ev) {
-            if (ev.type === 'daemon_rt') {
-                addDaemonLog(ev.msg);
-            } else if (ev.type === 'daemon_status') {
-                addDaemonLog("STATUS CHANGED: " + ev.status);
-            } else if (ev.type === 'daemon_approval_needed') {
-                const p = ev.proposal;
-                
-                if (daemonApprovals.innerHTML.includes('No pending')) {
-                    daemonApprovals.innerHTML = '';
+                const typeMap = { route: '', tribunal: 'tribunal', plan: 'plan', execution: 'execution', scope: 'scope', refinement: 'refinement', conversation: 'plan', sandbox: 'plan', roadmap_run: 'execution' };
+                const frag = document.createDocumentFragment();
+                events.forEach(ev => {
+                    feedCount++;
+                    const cls = typeMap[ev.type] || '';
+                    const card = document.createElement('div');
+                    card.className = 'feed-event ' + cls;
+                    card.innerHTML =
+                        '<div class="feed-event-header">' +
+                        '<span class="feed-type-badge ' + cls + '">' + ev.type.toUpperCase() + '</span>' +
+                        '<span class="feed-mid">' + esc(ev.mandate_id || '') + '</span>' +
+                        '<span class="feed-ts">' + new Date().toLocaleTimeString() + '</span>' +
+                        '</div>' +
+                        '<div class="feed-body-text">' + esc(summary(ev)) + '</div>';
+                    frag.appendChild(card);
+                });
+                feedBody.prepend(frag);
+                if (active !== 'view-feed') {
+                    feedBadge.style.display = '';
+                    feedBadge.textContent = feedCount;
                 }
-                
+            }
+
+            // ── DAEMON JS ──────────────────────────────────────────────
+            const daemonLog = document.getElementById('daemon-log');
+            const daemonApprovals = document.getElementById('daemon-approvals');
+            const daemonStatusDot = document.getElementById('daemon-status-dot');
+            const daemonStatusText = document.getElementById('daemon-status-text');
+
+            function setDaemonStatus(running) {
+                if (daemonStatusDot) {
+                    daemonStatusDot.style.background = running ? 'var(--success)' : 'var(--muted)';
+                }
+                if (daemonStatusText) {
+                    daemonStatusText.textContent = running ? 'Running' : 'Stopped';
+                    daemonStatusText.style.color = running ? 'var(--success)' : 'var(--muted)';
+                }
+                const startBtn = document.getElementById('btn-start-daemon');
+                const stopBtn = document.getElementById('btn-stop-daemon');
+                if (startBtn) startBtn.disabled = running;
+                if (stopBtn) stopBtn.disabled = !running;
+            }
+
+            function addDaemonLog(msg) {
                 const div = document.createElement('div');
-                div.style.border = '1px solid var(--border)';
-                div.style.padding = '12px';
-                div.style.borderRadius = '6px';
-                div.style.background = 'var(--bg)';
+                div.style.marginBottom = '4px';
+                div.innerHTML = `<span style="color:var(--muted)">${new Date().toLocaleTimeString()}</span> <span style="color:var(--text)">${esc(msg)}</span>`;
+                daemonLog.appendChild(div);
+                daemonLog.scrollTop = daemonLog.scrollHeight;
+            }
+
+            async function loadDaemonStatus() {
+                try {
+                    const d = await (await fetch('/v2/daemon/status')).json();
+                    setDaemonStatus(d.active);
+                    if (d.pending_approvals && d.pending_approvals.length) {
+                        daemonApprovals.innerHTML = '';
+                        d.pending_approvals.forEach(p => renderApprovalCard(p));
+                        const b = document.getElementById('daemon-badge');
+                        b.style.display = 'flex';
+                        b.textContent = d.pending_approvals.length;
+                    }
+                } catch { }
+            }
+
+            function renderApprovalCard(p) {
+                if (daemonApprovals.querySelector('.no-pending')) daemonApprovals.innerHTML = '';
+                const div = document.createElement('div');
+                div.dataset.proposalId = p.id;
+                div.style.cssText = 'border:1px solid var(--border);padding:12px;border-radius:6px;background:var(--bg)';
                 div.innerHTML = `
                     <div style="display:flex;justify-content:space-between;margin-bottom:8px">
                         <strong>${esc(p.component)}</strong>
-                        <span style="font-family:var(--mono);font-size:10px;background:var(--warn-dim);color:var(--warn);padding:2px 6px;border-radius:4px">Risk: ${p.risk}</span>
+                        <span style="font-family:var(--mono);font-size:10px;background:var(--warn-dim,rgba(255,180,0,0.15));color:var(--warn,#f59e0b);padding:2px 6px;border-radius:4px">Risk: ${esc(p.risk)}</span>
                     </div>
                     <div style="font-size:13px;color:var(--muted);margin-bottom:12px">${esc(p.suggestion)}</div>
-                    <button class="btn-sm" style="background:var(--success);color:var(--bg)" onclick="approveDaemon('${p.id}', this)">✓ Approve Execution</button>
-                    <button class="btn-sm" onclick="this.parentElement.remove()">✗ Reject</button>
+                    <button class="btn-sm" style="background:var(--success,#22c55e);color:var(--bg)" onclick="window.approveDaemon('${esc(p.id)}', this)">✓ Approve</button>
+                    <button class="btn-sm" onclick="this.closest('[data-proposal-id]').remove();_daemonBadgeSync()">✗ Reject</button>
                 `;
                 daemonApprovals.appendChild(div);
-                
-                // badge
-                const b = document.getElementById('daemon-badge');
-                b.style.display = 'flex';
-                b.textContent = daemonApprovals.children.length;
             }
-        }
-        
-        window.approveDaemon = async (pid, btn) => {
-            btn.textContent = 'Approving...';
-            btn.disabled = true;
-            await fetch('/v2/daemon/approve/' + pid, {method: 'POST'});
-            btn.parentElement.remove();
-            const b = document.getElementById('daemon-badge');
-            if (daemonApprovals.children.length === 0) {
-                b.style.display = 'none';
-                daemonApprovals.innerHTML = '<div style="font-size:12px;color:var(--muted)">No pending approvals.</div>';
-            } else {
-                b.textContent = daemonApprovals.children.length;
-            }
-        };
 
-        const typeMap = { route: '', tribunal: 'tribunal', plan: 'plan', execution: 'execution', scope: 'scope', refinement: 'refinement', conversation: 'plan', sandbox: 'plan', roadmap_run: 'execution' };
-                const cls = typeMap[ev.type] || '';
-                const card = document.createElement('div');
-                card.className = 'feed-event ' + cls;
-                card.innerHTML =
-                    '<div class="feed-event-header">' +
-                    '<span class="feed-type-badge ' + cls + '">' + ev.type.toUpperCase() + '</span>' +
-                    '<span class="feed-mid">' + esc(ev.mandate_id || '') + '</span>' +
-                    '<span class="feed-ts">' + new Date().toLocaleTimeString() + '</span>' +
-                    '</div>' +
-                    '<div class="feed-body-text">' + esc(summary(ev)) + '</div>';
-                feedBody.prepend(card);
-            }
+            window._daemonBadgeSync = function () {
+                const b = document.getElementById('daemon-badge');
+                const count = daemonApprovals.querySelectorAll('[data-proposal-id]').length;
+                if (count === 0) {
+                    b.style.display = 'none';
+                    daemonApprovals.innerHTML = '<div class="no-pending" style="font-size:12px;color:var(--muted)">No pending approvals.</div>';
+                } else {
+                    b.style.display = 'flex';
+                    b.textContent = count;
+                }
+            };
+
+            window.approveDaemon = async (pid, btn) => {
+                btn.textContent = 'Approving…';
+                btn.disabled = true;
+                try {
+                    await fetch('/v2/daemon/approve/' + pid, { method: 'POST' });
+                } catch { }
+                btn.closest('[data-proposal-id]').remove();
+                window._daemonBadgeSync();
+            };
+
+            window.handleDaemonSSE = function (ev) {
+                if (ev.type === 'daemon_rt') {
+                    addDaemonLog(ev.msg);
+                } else if (ev.type === 'daemon_status') {
+                    const running = ev.status === 'started';
+                    setDaemonStatus(running);
+                    addDaemonLog('STATUS: ' + ev.status);
+                } else if (ev.type === 'daemon_approval_needed') {
+                    renderApprovalCard(ev.proposal);
+                    const b = document.getElementById('daemon-badge');
+                    b.style.display = 'flex';
+                    b.textContent = daemonApprovals.querySelectorAll('[data-proposal-id]').length;
+                }
+            };
+
+            document.getElementById('btn-start-daemon').addEventListener('click', async () => {
+                const res = await fetch('/v2/daemon/start', { method: 'POST' });
+                const d = await res.json();
+                addDaemonLog('▶ ' + d.status);
+                if (d.status === 'started') setDaemonStatus(true);
+            });
+            document.getElementById('btn-stop-daemon').addEventListener('click', async () => {
+                const res = await fetch('/v2/daemon/stop', { method: 'POST' });
+                const d = await res.json();
+                addDaemonLog('⏸ ' + d.status);
+                setDaemonStatus(false);
+            });
+            // ── END DAEMON JS ──────────────────────────────────────────
 
             function summary(ev) {
                 if (ev.type === 'route') {
@@ -2941,13 +3395,21 @@
                     intentEl.style.color = 'var(--cyan)';
                 }
                 // Pulse buddy canvas anchor on response
+                _pulseBuddyAnchor('#58E1FF');
+            }
+
+            function _pulseBuddyAnchor(color) {
                 const core = document.getElementById('buddyAnchorCore');
-                if (core && typeof gsap !== 'undefined') {
-                    gsap.to(core, {
-                        attr: { r: 15 }, duration: 0.2, yoyo: true, repeat: 1,
-                        ease: 'power2.out', transformOrigin: '380 240'
-                    });
-                }
+                const mid = document.getElementById('buddyAnchorRingMid');
+                if (!core || typeof gsap === 'undefined') return;
+                gsap.to(core, { duration: 0.25, attr: { r: 15, stroke: color || 'var(--cyan)' }, yoyo: true, repeat: 1, ease: 'power2.out' });
+                if (mid) gsap.to(mid, { duration: 0.5, attr: { opacity: 0.72 }, yoyo: true, repeat: 1, ease: 'sine.inOut' });
+            }
+
+            function _startBuddyIdlePulse() {
+                const outer = document.getElementById('buddyAnchorRingOuter');
+                if (!outer || typeof gsap === 'undefined') return;
+                gsap.to(outer, { duration: 2.5, attr: { opacity: 0.34 }, yoyo: true, repeat: -1, ease: 'sine.inOut' });
             }
 
             // ── _animateMitosis (GSAP branch split on buddyCanvas) ──────────────
@@ -3139,6 +3601,165 @@
                     '<div style="font-size:18px;font-weight:700;color:var(--primary)">' + v + '</div>' +
                     '<div style="font-size:10px;color:var(--muted)">' + l + '</div></div>';
             }
+
+            // ╔══════════════════════════════════════════════════════════════════════╗
+            // ║  KNOWLEDGE BANKS JS                                                   ║
+            // ╚══════════════════════════════════════════════════════════════════════╝
+            (function () {
+                let _activeKBBank = 'design';
+
+                function renderKBEntry(entry) {
+                    const weight = Math.round((entry.relevance_weight || 0) * 100);
+                    const sotaCls = entry.sota_level === 'sota_2026' ? 'kb-sota-badge' : '';
+                    const tags = (entry.tags || []).slice(0, 4).map(t => '<span class="kb-tag">' + esc(t) + '</span>').join('');
+                    return '<div class="kb-entry-card">' +
+                        '<div class="kb-entry-title">' + esc(entry.title) + '</div>' +
+                        '<div class="kb-entry-body">' + esc(entry.body) + '</div>' +
+                        '<div class="kb-entry-meta">' + tags +
+                        (sotaCls ? '<span class="' + sotaCls + '">' + esc(entry.sota_level) + '</span>' : '') +
+                        '</div>' +
+                        '<div class="kb-weight-bar"><div class="kb-weight-fill" style="width:' + weight + '%"></div></div>' +
+                        '</div>';
+                }
+
+                async function loadKBBank(bankId) {
+                    _activeKBBank = bankId || _activeKBBank;
+                    const body = document.getElementById('kb-body');
+                    const search = (document.getElementById('kb-search')?.value || '').toLowerCase();
+                    if (!body) return;
+                    body.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:20px">Loading…</div>';
+                    try {
+                        const d = await (await fetch('/v2/knowledge/' + _activeKBBank)).json();
+                        let entries = (d.entries || []);
+                        if (search) entries = entries.filter(e =>
+                            (e.title + e.body + (e.tags || []).join(' ')).toLowerCase().includes(search)
+                        );
+                        if (!entries.length) { body.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:20px">No entries found.</div>'; return; }
+                        body.innerHTML = entries.map(renderKBEntry).join('');
+                        updateKBStats();
+                    } catch (e) {
+                        body.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:20px">Error: ' + esc(e.message) + '</div>';
+                    }
+                }
+
+                async function updateKBStats() {
+                    try {
+                        const d = await (await fetch('/v2/knowledge/health')).json();
+                        const banks = d.banks || {};
+                        const total = Object.values(banks).reduce((s, b) => s + (b.entry_count || 0), 0);
+                        const el = id => document.getElementById(id);
+                        if (el('kb-stat-total')) el('kb-stat-total').textContent = total + ' entries';
+                        ['design', 'code', 'ai', 'bridge'].forEach(b => {
+                            if (el('kb-stat-' + b)) el('kb-stat-' + b).textContent = (banks[b]?.entry_count || 0);
+                        });
+                    } catch { }
+                }
+
+                async function runSOTAIngestion() {
+                    const status = document.getElementById('kb-ingest-status');
+                    if (!status) return;
+                    status.style.display = 'block';
+                    status.style.color = 'var(--cyan)';
+                    status.textContent = '⚡ SOTA ingestion running… (Gemini → structured fallback)';
+                    try {
+                        const r = await fetch('/v2/knowledge/ingest/full', { method: 'POST' });
+                        const data = await r.json();
+                        status.style.color = 'var(--green, #2ed573)';
+                        status.textContent = '✅ Done — ' + (data.entries_added || 0) + ' added · ' +
+                            (data.entries_skipped_duplicate || 0) + ' dupes · source: ' + esc(data.source || 'n/a');
+                        loadKBBank(_activeKBBank);
+                    } catch (e) {
+                        status.style.color = '#ff4757';
+                        status.textContent = '❌ Ingestion error: ' + esc(e.message);
+                    }
+                }
+
+                // Tab switching
+                const kbTabs = document.querySelectorAll('.kb-tab');
+                kbTabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        kbTabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        loadKBBank(tab.dataset.bank);
+                    });
+                });
+
+                // Search
+                const kbSearch = document.getElementById('kb-search');
+                if (kbSearch) {
+                    let _searchTimer;
+                    kbSearch.addEventListener('input', () => {
+                        clearTimeout(_searchTimer);
+                        _searchTimer = setTimeout(() => loadKBBank(_activeKBBank), 300);
+                    });
+                }
+
+                // Refresh & ingest buttons
+                const kbRefreshBtn = document.getElementById('kb-refresh-btn');
+                if (kbRefreshBtn) kbRefreshBtn.addEventListener('click', () => loadKBBank(_activeKBBank));
+                const kbIngestBtn = document.getElementById('kb-ingest-btn');
+                if (kbIngestBtn) kbIngestBtn.addEventListener('click', runSOTAIngestion);
+
+                // Load KB when view becomes active
+                const origShowView = window._origShowView;
+                // Patch showView to also trigger KB load
+                window._kbLoad = () => { loadKBBank(_activeKBBank); updateKBStats(); };
+
+                // Expose for system-map ingestion card
+                window.runSOTAIngestion = runSOTAIngestion;
+
+                // SSE handler patch for KB events
+                const _origConnectSSE = window.connectSSE;
+                window.patchSSEForKB = function (ev) {
+                    if (ev.type === 'sota_ingestion_complete' || ev.type === 'knowledge_ingested') {
+                        updateKBStats();
+                        if (document.getElementById('view-knowledge')?.classList.contains('active')) {
+                            loadKBBank(_activeKBBank);
+                        }
+                    }
+                };
+            })();
+
+            // sendQuick — populates chat input and fires send
+            window.sendQuick = function (text) {
+                const inp = document.getElementById('msg-input');
+                const btn = document.getElementById('send-btn');
+                if (!inp || !btn) return;
+                inp.value = text;
+                inp.dispatchEvent(new Event('input'));
+                btn.click();
+                // Switch to chat view
+                const navBtns2 = document.querySelectorAll('.nav-btn[data-view]');
+                const views2 = document.querySelectorAll('.view');
+                views2.forEach(v => v.classList.toggle('active', v.id === 'view-chat'));
+                navBtns2.forEach(b => b.classList.toggle('active', b.dataset.view === 'chat'));
+            };
+
+            // switchView global helper (for sysmap-cards that call it before IIFE wrapper)
+            window.switchView = function (id) {
+                const navBtns3 = document.querySelectorAll('.nav-btn[data-view]');
+                const views3 = document.querySelectorAll('.view');
+                views3.forEach(v => v.classList.toggle('active', v.id === 'view-' + id));
+                navBtns3.forEach(b => b.classList.toggle('active', b.dataset.view === id));
+                if (id === 'dag') loadDag();
+                if (id === 'bank') loadBank();
+                if (id === 'knowledge') { if (window._kbLoad) window._kbLoad(); }
+                if (id === 'self-improve') resetSIIdle();
+                if (id === 'sandbox') loadSandboxes();
+                if (id === 'branch') loadBranches();
+                if (id === 'daemon') loadDaemonStatus();
+            };
+
+            // Patch SSE to call KB handler
+            const _origSSEMsg = EventSource.prototype;
+            // The KB patch is hooked via the SSE onmessage at line ~2711 (patchSSEForNewEvents)
+            // extending the existing patchSSEForNewEvents pattern:
+            (function patchSSEForKBEvents() {
+                const origOnMsg = window._sseMessageHandler;
+                window._sseKBHandler = function (ev) {
+                    if (window.patchSSEForKB) window.patchSSEForKB(ev);
+                };
+            })();
 
             connectSSE(); refreshBreaker(); loadHealth();
 
@@ -3573,6 +4194,7 @@
 
             // ── Start idle pulse on anchor ─────────────────────────────────────────
             _startIdlePulse();
+            _startBuddyIdlePulse();
         })();
 
         // ── Sandbox Lab ───────────────────────────────────────────────────────────
@@ -3886,7 +4508,6 @@
         // SSE: handle simulation_gate and branch events
         const _origOnmessage = document.querySelector.bind(document);
         (function patchSSEForNewEvents() {
-            const _origConnect = connectSSE;
             // Patch by hooking into es.onmessage — we augment the pushFeed call
             // by registering a secondary handler via the existing pipeline hook mechanism.
             // This is simpler: we check event type in the SSE handler added above.

@@ -23,15 +23,17 @@ All tests are offline (no LLM / network).
 """
 from __future__ import annotations
 
+from collections.abc import Generator
+
 import pytest
 from fastapi.testclient import TestClient
 
-import studio.api as api_module
 from engine.self_improvement import (
     SelfImprovementEngine,
     SelfImprovementReport,
     _COMPONENTS,
 )
+import studio.api as api_module
 from studio.api import app
 
 
@@ -39,13 +41,13 @@ from studio.api import app
 
 
 @pytest.fixture(scope="module")
-def client() -> TestClient:
+def client() -> Generator[TestClient, None, None]:
     with TestClient(app, raise_server_exceptions=True) as c:
         yield c
 
 
 @pytest.fixture(autouse=True)
-def reset_router_state() -> None:
+def reset_router_state() -> Generator[None, None, None]:
     api_module._router.reset()
     yield
     api_module._router.reset()
@@ -69,11 +71,11 @@ def report(engine: SelfImprovementEngine) -> SelfImprovementReport:
 
 class TestComponentManifest:
     def test_eight_components_defined(self) -> None:
-        assert len(_COMPONENTS) == 8
+        assert len(_COMPONENTS) == 17
 
     def test_all_waves_covered(self) -> None:
         waves = {c["wave"] for c in _COMPONENTS}
-        assert waves == {1, 2, 3}
+        assert waves == {1, 2, 3, 4, 5, 6}
 
     def test_wave_1_has_three_components(self) -> None:
         assert sum(1 for c in _COMPONENTS if c["wave"] == 1) == 3
@@ -83,6 +85,22 @@ class TestComponentManifest:
 
     def test_wave_3_has_two_components(self) -> None:
         assert sum(1 for c in _COMPONENTS if c["wave"] == 3) == 2
+
+    def test_wave_4_has_two_components(self) -> None:
+        assert sum(1 for c in _COMPONENTS if c["wave"] == 4) == 2
+
+    def test_wave_5_has_two_components(self) -> None:
+        assert sum(1 for c in _COMPONENTS if c["wave"] == 5) == 2
+
+    def test_wave_6_has_five_components(self) -> None:
+        assert sum(1 for c in _COMPONENTS if c["wave"] == 6) == 5
+
+    def test_wave_6_components_listed(self) -> None:
+        wave6_names = {c["component"] for c in _COMPONENTS if c["wave"] == 6}
+        assert wave6_names == {
+            "branch_executor", "mandate_executor", "model_garden",
+            "vector_store", "daemon"
+        }
 
     def test_all_components_have_required_keys(self) -> None:
         for c in _COMPONENTS:
@@ -129,16 +147,16 @@ class TestSelfImprovementReportShape:
         assert report.ts  # ISO-8601 string
 
     def test_components_assessed_equals_eight(self, report: SelfImprovementReport) -> None:
-        assert report.components_assessed == 8
+        assert report.components_assessed == 17
 
     def test_waves_executed_equals_three(self, report: SelfImprovementReport) -> None:
-        assert report.waves_executed == 3
+        assert report.waves_executed == 6
 
     def test_total_signals_is_non_negative(self, report: SelfImprovementReport) -> None:
         assert report.total_signals >= 0
 
     def test_assessments_length_equals_eight(self, report: SelfImprovementReport) -> None:
-        assert len(report.assessments) == 8
+        assert len(report.assessments) == 17
 
     def test_refinement_verdict_valid(self, report: SelfImprovementReport) -> None:
         assert report.refinement_verdict in ("pass", "warn", "fail")
@@ -182,7 +200,8 @@ class TestComponentAssessments:
     def test_boosted_confidence_gte_original(self, report: SelfImprovementReport) -> None:
         for a in report.assessments:
             assert a.boosted_confidence >= a.original_confidence, (
-                f"{a.component}: boosted ({a.boosted_confidence}) < original ({a.original_confidence})"
+                f"{a.component}: boosted ({a.boosted_confidence}) "
+                f"< original ({a.original_confidence})"
             )
 
     def test_boosted_confidence_capped_at_one(self, report: SelfImprovementReport) -> None:
@@ -203,6 +222,12 @@ class TestComponentAssessments:
     def test_scope_summary_non_empty(self, report: SelfImprovementReport) -> None:
         for a in report.assessments:
             assert a.scope_summary, f"{a.component} has empty scope_summary"
+
+    def test_execution_latency_ms_positive(self, report: SelfImprovementReport) -> None:
+        for a in report.assessments:
+            assert a.execution_latency_ms >= 0.0, (
+                f"{a.component} has invalid execution_latency_ms={a.execution_latency_ms}"
+            )
 
     def test_suggestions_list_non_empty(self, report: SelfImprovementReport) -> None:
         for a in report.assessments:
@@ -233,7 +258,8 @@ class TestOfflineSignals:
         # Offline (conftest patches _gemini_client=None) — all sources must be "structured"
         for a in report.assessments:
             assert a.jit_source == "structured", (
-                f"{a.component} jit_source should be 'structured' in offline mode, got {a.jit_source}"
+                f"{a.component} jit_source should be 'structured' in offline mode, "
+                f"got {a.jit_source}"
             )
 
     def test_total_signals_equals_sum_of_per_component_signals(
@@ -247,6 +273,16 @@ class TestOfflineSignals:
     ) -> None:
         for a in report.assessments:
             assert len(a.jit_signals) >= 1, f"{a.component} has no JIT signals"
+
+
+class TestFocusedSelfImprovement:
+    def test_engine_accepts_targeted_focus(self) -> None:
+        focused = SelfImprovementEngine(
+            optimization_focus="efficiency,quality,accuracy,speed"
+        )
+        report = focused.run()
+        assert report.components_assessed == 17
+        assert all("focus=" in a.value_rationale for a in report.assessments)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -275,12 +311,12 @@ class TestSelfImproveEndpoint:
     def test_assessments_count_equals_eight(self, client: TestClient) -> None:
         r = client.post("/v2/self-improve")
         si = r.json()["self_improvement"]
-        assert si["components_assessed"] == 8
-        assert len(si["assessments"]) == 8
+        assert si["components_assessed"] == 17
+        assert len(si["assessments"]) == 17
 
     def test_waves_executed_equals_three(self, client: TestClient) -> None:
         r = client.post("/v2/self-improve")
-        assert r.json()["self_improvement"]["waves_executed"] == 3
+        assert r.json()["self_improvement"]["waves_executed"] == 6
 
     def test_refinement_verdict_present(self, client: TestClient) -> None:
         r = client.post("/v2/self-improve")

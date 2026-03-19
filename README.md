@@ -1,62 +1,191 @@
 # TooLoo V2 — Pure DAG Cognitive OS
 
-> **Seed repository.** TooLoo builds itself from this minimal foundation.
+**Version 2.1** · `feature/autonomous-self-improvement`
+
+TooLoo V2 is a self-building autonomous intelligence engine. Every request flows
+through a deterministic Directed Acyclic Graph (DAG) of cognitive processes — scoped,
+executed, and refined without human intervention. The system monitors its own code,
+generates improvement prescriptions via live LLM analysis, and applies them autonomously.
+
+---
 
 ## Architecture
 
 ```
-Mandate text
-  → MandateRouter      (intent classification + circuit breaker + hedge buddy_line)
-  → JITBooster         (SOTA signal fetch → confidence boost, mandatory)
-  → Tribunal           (OWASP poison detection → heal → PsycheBank capture)
-  → TopologicalSorter  (DAG wave planning — cycle-rejecting)
-  → JITExecutor        (parallel fan-out via ThreadPoolExecutor)
-  → Governor Dashboard (FastAPI + SSE live events)
+Mandate (natural language)
+       │
+       ▼
+ MandateRouter ─── circuit breaker (0.85) ─── JITBooster (SOTA signals)
+       │
+       ▼
+ NStrokeEngine   ←─ MetaArchitect (dynamic DAG topology)
+       │                 │
+  Wave 1 ─ Wave 2 ─ ... Wave N   (topological order, parallel within wave)
+       │
+       ▼
+  JITExecutor (ThreadPoolExecutor fan-out, stateless nodes)
+       │
+       ▼
+  Tribunal (OWASP poison scan on every artefact)
+       │
+       ▼
+  RefinementLoop → RefinementSupervisor (autonomous healing on 3 failures)
 ```
 
-## Laws in Force
+### Engine Components (17 · 6 waves)
 
-| Law | Rule |
-|-----|------|
-| 6   | Version pinned at `0.1.0` — only TooLoo bumps versions |
-| 9   | All credentials from `.env` — never hardcoded |
-| 14  | Circuit breaker at 0.85 confidence threshold |
-| 17  | Stateless processors — no shared mutable state |
-| 19  | Epistemic humility — confidence gate before every action |
-| 20  | Consent gate at every phase transition |
+| Wave | Component | Role |
+|------|-----------|------|
+| 1 | `config` | Single source of truth — loads from `.env` |
+| 1 | `psyche_bank` | Thread-safe `.cog.json` rule store |
+| 2 | `graph` | CognitiveGraph — DAG acyclicity enforcement |
+| 2 | `tribunal` | OWASP poison scanner (12 patterns) |
+| 2 | `router` | Intent classification + circuit breaker + active-learning sampling |
+| 3 | `jit_booster` | Mandatory SOTA signal fetcher (Gemini-2.5-flash) |
+| 3 | `executor` | Parallel fan-out (honours `max_workers`) |
+| 3 | `scope_evaluator` | Pre-execution wave-plan analysis |
+| 4 | `refinement` | Post-execution evaluation loop |
+| 4 | `supervisor` | Two-stroke sub-pipeline |
+| 4 | `vector_store` | In-process TF-IDF cosine-similarity store |
+| 5 | `n_stroke` | Primary execution loop (up to 7 strokes) |
+| 5 | `conversation` | Conversational intent discovery |
+| 5 | `refinement_supervisor` | Autonomous healing |
+| 6 | `branch_executor` | FORK/CLONE/SHARE async branch pipeline |
+| 6 | `mandate_executor` | LLM-powered DAG node work-function factory |
+| 6 | `model_garden` | 4-tier multi-provider model selector + consensus |
+| 6 | `daemon` | Background ROI-scoring + autonomous proposal daemon |
 
-## Quickstart
+### Supporting Modules
+
+| Module | Role |
+|--------|------|
+| `engine/meta_architect.py` | Dynamic DAG synthesis with confidence proofs |
+| `engine/model_selector.py` | Dynamic model escalation (4-tier) |
+| `engine/mcp_manager.py` | MCP tool injection (7 built-in tools) |
+| `engine/roadmap.py` | Graph-backed Roadmap Manager with semantic dedup |
+| `engine/sandbox.py` | Mirror Sandbox Orchestrator (9-stage isolated evaluation) |
+| `engine/engram_visual.py` | Visual Engram Generator → multi-layer SVG frontend |
+| `engine/sota_ingestion.py` | SOTA Knowledge Ingestion Engine (Gemini-powered) |
+| `engine/knowledge_banks/` | Four-bank SOTA knowledge system (Design/Code/AI/Bridge) |
+| `engine/healing_guards.py` | Healing prescription guards |
+| `engine/validator_16d.py` | 16-dimension output validator |
+| `engine/local_slm_client.py` | Local SLM (Ollama) dispatch client |
+
+---
+
+## Core Laws (always enforced)
+
+| # | Law | Rule |
+|---|-----|------|
+| 9 | No Hardcoded Credentials | All config loads via `engine/config.py` from `.env` |
+| 14 | Circuit Breaker | Threshold `0.85` — hedge or invoke JITBooster below it |
+| 17 | Stateless Processors | All nodes stateless for race-condition-free fan-out |
+| 19 | Epistemic Humility | Confidence gate before every action; JITBooster for grounding |
+| 20 | Autonomous Execution Authority | Proceeds when `AUTONOMOUS_EXECUTION_ENABLED=True` (default); three invariants: (1) OWASP scan every artefact, (2) writes sandboxed to `engine/`, (3) legal ops only. Advisory `consultation_recommended` SSE when confidence < 0.99. |
+
+---
+
+## Quick Start
 
 ```bash
-cp .env.example .env
-# fill in GEMINI_API_KEY and GITHUB_TOKEN
-
+# Install
 pip install -e ".[dev]"
-tooloo-v2                    # start Governor Dashboard on :8002
+
+# Configure (copy template and fill in GCP / Anthropic keys)
+cp .env.example .env
+
+# Run the Governor Studio
+python3 -m studio.api
+# → opens http://localhost:8002
+
+# Run the offline test suite (~4 s)
+pytest tests/ --ignore=tests/test_ingestion.py
+
+# Run self-improvement cycles (offline mode)
+python3 run_cycles.py --cycles 3
+
+# Run self-improvement cycles (live Vertex AI)
+TOOLOO_LIVE_TESTS=1 python3 run_cycles.py --cycles 3
+
+# Ouroboros autonomous cycle
+python3 ouroboros_cycle.py --dry-run --components engine/router.py,engine/tribunal.py
+
+# Training camp (4-phase autonomous gauntlet)
+python3 training_camp.py --phase all --dry-run
 ```
 
-## Tests
+---
+
+## How to Run Tests
 
 ```bash
-pytest tests/ -v             # all offline, < 100ms
+# Standard offline suite (584 passed, ~4 s)
+pytest tests/ --ignore=tests/test_ingestion.py
+
+# Playwright UI tests (requires live server + Chromium)
+pytest tests/test_playwright_ui.py --headed=false -v --timeout=60
+
+# Include ingestion microservice tests (requires opentelemetry + backing services)
+pytest tests/test_ingestion.py
 ```
 
-## Structure
+Expected output (offline): **584 passed**, 1 warning, ~4 s
+
+---
+
+## Project Layout
 
 ```
-engine/
-  config.py        — single source of truth for all env vars
-  graph.py         — CognitiveGraph + TopologicalSorter + CausalProvenanceTracker
-  router.py        — MandateRouter + circuit breaker
-  tribunal.py      — OWASP tribunal + heal + PsycheBank capture
-  psyche_bank.py   — .cog.json rule store
-  executor.py      — JIT fan-out (threading)
-studio/
-  api.py           — FastAPI Governor Dashboard
-  static/
-    index.html     — dark professional UI
-psyche_bank/
-  forbidden_patterns.cog.json  — 5 pre-seeded OWASP rules
-tests/
-  test_v2.py       — proof harness (3 dimensions, all offline)
+engine/           ← Core cognitive DAG components (17 engine modules)
+  knowledge_banks/  ← Four-bank SOTA knowledge system
+studio/           ← FastAPI Governor Dashboard + SSE event bus
+  static/           ← Single-page UI (index.html + assets)
+tests/            ← 584-test offline suite
+sandbox/          ← Escape-room test fixture (planted bugs for training)
+psyche_bank/      ← Persistent cognitive rule store (.cog.json)
+plans/            ← Architecture diagrams
+adr/              ← Architecture Decision Records
+docs/             ← Extended architecture documentation
 ```
+
+---
+
+## Self-Improvement System
+
+TooLoo V2 includes a recursive self-improvement loop:
+
+1. **Assessment** — `SelfImprovementEngine` reads each engine component source (3 000-char window) and calls Gemini-2.5-flash for structured `FIX N: file:line — desc\nCODE:\n<snippet>` suggestions.
+2. **Tribunal gate** — every suggestion passes `Tribunal.evaluate()` before absorption.
+3. **Absorption** — `BackgroundDaemon` queues approved FIX blocks; high-risk components (`tribunal`, `psyche_bank`, `router`) require explicit approval.
+4. **Regression gate** — `SelfImprovementEngine._run_regression_gate()` runs the test suite after each application, rolling back on failure.
+5. **Ouroboros** — `ouroboros_cycle.py` runs the full loop end-to-end; `run_cycles.py` batches N cycles with telemetry.
+
+---
+
+## Security
+
+- All secrets and paths load exclusively from `.env` (Law 9).
+- OWASP Tribunal scans every generated artefact (12 patterns incl. BOLA/IDOR, SSRF, SQLi, XSS).
+- Path-traversal guard on all MCP file-access tools.
+- No `eval()` / `exec()` / dynamic imports in logic bodies.
+- GCP service-account key files are gitignored (blocks `*.sa-key.json`, `too-loo-zi8g7e-*.json`).
+
+---
+
+## Configuration (`.env`)
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `GCP_PROJECT_ID` | — | Vertex AI project |
+| `GCP_REGION` | `us-central1` | Vertex AI region |
+| `GOOGLE_APPLICATION_CREDENTIALS` | — | Path to SA key JSON |
+| `VERTEX_DEFAULT_MODEL` | `gemini-2.5-flash` | Primary Gemini model |
+| `ANTHROPIC_VERTEX_REGION` | `us-east5` | Claude on Vertex region |
+| `STUDIO_PORT` | `8002` | Governor Dashboard port |
+| `CIRCUIT_BREAKER_THRESHOLD` | `0.85` | Router circuit breaker |
+| `AUTONOMOUS_EXECUTION_ENABLED` | `true` | Enable autonomous execution |
+| `AUTONOMOUS_CONFIDENCE_THRESHOLD` | `0.99` | Confidence gate for advisory |
+| `LOCAL_SLM_ENDPOINT` | `http://127.0.0.1:11434/api/generate` | Ollama endpoint |
+| `LOCAL_SLM_MODEL` | `local/llama-3.2-3b-instruct` | Tier-0 local model |
+
+See `.env.example` for the full list.

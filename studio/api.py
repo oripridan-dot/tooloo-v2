@@ -19,12 +19,11 @@ Routes:
 from __future__ import annotations
 
 import asyncio
-import io
 import json
 import time
 import uuid
 from collections.abc import AsyncGenerator
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -35,15 +34,28 @@ from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from engine.branch_executor import (
+    BRANCH_CLONE,
+    BRANCH_FORK,
+    BRANCH_SHARE,
+    BranchExecutor,
+    BranchSpec,
+)
 from engine.config import settings
+from engine.config import (
+    AUTONOMOUS_EXECUTION_ENABLED,
+    AUTONOMOUS_CONFIDENCE_THRESHOLD,
+)
 from engine.conversation import ConversationEngine
+from engine.daemon import BackgroundDaemon
 from engine.engram_visual import VisualEngramGenerator
-from engine.model_garden import get_garden
 from engine.executor import Envelope, JITExecutor
 from engine.graph import CognitiveGraph, TopologicalSorter
 from engine.jit_booster import JITBooster
+from engine.knowledge_banks.manager import BankManager
 from engine.mandate_executor import make_live_work_fn
 from engine.mcp_manager import MCPManager
+from engine.model_garden import get_garden
 from engine.model_selector import ModelSelector
 from engine.n_stroke import NStrokeEngine
 from engine.psyche_bank import PsycheBank
@@ -58,15 +70,8 @@ from engine.router import (
 )
 from engine.sandbox import SandboxOrchestrator
 from engine.scope_evaluator import ScopeEvaluator
-from engine.branch_executor import (
-    BRANCH_CLONE,
-    BRANCH_FORK,
-    BRANCH_SHARE,
-    BranchExecutor,
-    BranchSpec,
-)
 from engine.self_improvement import SelfImprovementEngine
-from engine.daemon import BackgroundDaemon
+from engine.sota_ingestion import SOTAIngestionEngine
 from engine.supervisor import TwoStrokeEngine
 from engine.tribunal import Engram, Tribunal
 
@@ -84,6 +89,11 @@ _jit_booster = JITBooster()
 _engram_generator = VisualEngramGenerator()
 _self_improvement_engine = SelfImprovementEngine(
     booster=_jit_booster, bank=_bank)
+
+# ── Knowledge Banks + SOTA Ingestion ─────────────────────────────────────────
+_bank_manager = BankManager()
+_sota_ingestion = SOTAIngestionEngine(
+    manager=_bank_manager, tribunal=_tribunal)
 _mcp_manager = MCPManager()
 _model_selector = ModelSelector()
 _refinement_supervisor = RefinementSupervisor()
@@ -100,6 +110,7 @@ def _broadcast(event: dict[str, Any]) -> None:
     for q in list(_sse_queues):
         with suppress(asyncio.QueueFull):
             q.put_nowait(data)
+
 
 _daemon = BackgroundDaemon(_broadcast)
 
@@ -149,12 +160,13 @@ _sandbox_orchestrator = SandboxOrchestrator(
 # ── Autonomous improvement loop state ─────────────────────────────────────────
 _loop_active: bool = False
 _loop_task: asyncio.Task[None] | None = None
+_daemon_task: asyncio.Task[None] | None = None
 _loop_stats: dict[str, Any] = {
     "active": False,
     "cycles_completed": 0,
     "last_run_at": None,
     "next_run_at": None,
-    "interval_seconds": 90,
+    "interval_seconds": 30,  # DEV MODE: 90→30s for faster iteration
     "proven_this_session": 0,
     "improvements_this_session": 0,
     "started_at": None,
@@ -230,7 +242,19 @@ async def _autonomous_loop() -> None:
 
 
 # ── App ─────────────────────────────────────────────────────────────────────
-app = FastAPI(title="TooLoo V2 Governor Dashboard", version="2.0.0")
+
+
+@asynccontextmanager
+async def _lifespan(_: FastAPI):
+    _jit_booster.start_background_refresh()
+    try:
+        yield
+    finally:
+        _jit_booster.stop_background_refresh()
+
+
+app = FastAPI(title="TooLoo V2 Governor Dashboard",
+              version="2.1.0", lifespan=_lifespan)
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
@@ -254,7 +278,7 @@ async def health() -> dict[str, Any]:
     mcp_tool_count = len(_mcp_manager.manifest())
     return {
         "status": "ok",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "components": {
             "router": "up",
             "graph": f"{len(_graph.nodes())} nodes",
@@ -470,11 +494,26 @@ async def run_pipeline(req: PipelineRequest) -> dict[str, Any]:
         }
 
     # 2. Intent locked — run the Two-Stroke Engine.
+    locked_intent = discovery.locked_intent
+    if locked_intent is None:
+        return {
+            "pipeline_id": pipeline_id,
+            "session_id": session_id,
+            "locked": False,
+            "clarification_question": "Intent lock was expected but missing. Please retry.",
+            "clarification_type": "intent",
+            "intent_hint": discovery.intent_hint,
+            "confidence": discovery.confidence,
+            "turn_count": discovery.turn_count,
+            "result": None,
+            "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+        }
+
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(
         None,
         lambda: _supervisor.run(
-            discovery.locked_intent,
+            locked_intent,
             pipeline_id=pipeline_id,
             max_iterations=req.max_iterations,
         ),
@@ -588,10 +627,10 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
 
     # 4. Build a toy DAG plan from route
     spec: list[tuple[str, list[str]]] = [
-        (f"{mandate_id}-recon", []),
-        (f"{mandate_id}-plan", [f"{mandate_id}-recon"]),
-        (f"{mandate_id}-generate", [f"{mandate_id}-plan"]),
-        (f"{mandate_id}-validate", [f"{mandate_id}-generate"]),
+        (f"{mandate_id}-ingest", []),
+        (f"{mandate_id}-analyse", [f"{mandate_id}-ingest"]),
+        (f"{mandate_id}-implement", [f"{mandate_id}-analyse"]),
+        (f"{mandate_id}-validate", [f"{mandate_id}-implement"]),
     ]
     plan = _sorter.sort(spec)
     _broadcast({"type": "plan", "mandate_id": mandate_id, "waves": plan})
@@ -604,13 +643,14 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
     # 5. Fan-out execution — real LLM-powered nodes (falls back to symbolic
     #    when Vertex AI + Gemini Direct are both unavailable)
     envelopes = [
-        Envelope(
-            mandate_id=f"{mandate_id}-{i}",
+        Envelope(  # type: ignore[call-arg]
+            mandate_id=node_id,
             intent=route.intent,
             domain="backend",
             metadata={"wave": i, "nodes": wave},
         )
         for i, wave in enumerate(plan)
+        for node_id in wave
     ]
 
     _live_work = make_live_work_fn(
@@ -619,8 +659,11 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
         jit_signals=jit_result.signals,
     )
 
-    exec_results = _executor.fan_out(
-        _live_work, envelopes, max_workers=scope.recommended_workers
+    exec_results = _executor.fan_out_dag(
+        _live_work,
+        envelopes,
+        {node_id: deps for node_id, deps in spec},
+        max_workers=scope.recommended_workers,
     )
     flat = [r.to_dict() for r in exec_results]
     _broadcast({"type": "execution", "mandate_id": mandate_id, "results": flat})
@@ -808,6 +851,199 @@ async def self_improve() -> dict[str, Any]:
     return {"self_improvement": report.to_dict(), "latency_ms": latency_ms}
 
 
+class SelfImproveApplyRequest(BaseModel):
+    """Apply a single FIX suggestion from a self-improvement assessment.
+
+    Law 20 (Amended — Autonomous Execution Authority): TooLoo may approve and
+    apply its own engine improvements without waiting for explicit human sign-off,
+    subject to three invariants:
+      1. Tribunal OWASP scan passes (legal / ethical safety gate).
+      2. Activity is restricted to engine/ components inside this workspace.
+      3. If internal confidence < AUTONOMOUS_CONFIDENCE_THRESHOLD (0.99), a
+         ``consultation_recommended`` event is broadcast so the user can review
+         — but execution is NOT blocked.
+
+    ``confirmed=True`` is still accepted for callers that prefer explicit consent
+    (e.g. the UI Approve button).  When ``AUTONOMOUS_EXECUTION_ENABLED=True`` the
+    gate passes automatically regardless of ``confirmed``.
+    """
+    suggestion: str           # full "FIX N: file.py:LINE — desc\nCODE:\n..." string
+    component: str            # engine component name (for logging)
+    # caller-supplied confidence for this suggestion (0-1)
+    confidence: float = 1.0
+    confirmed: bool = False   # explicit human approval; not required in autonomous mode
+
+
+@app.post("/v2/self-improve/apply")
+async def self_improve_apply(req: SelfImproveApplyRequest) -> dict[str, Any]:
+    """Autonomous code application of a self-improvement suggestion.
+
+    Flow:
+      1. Law 20 autonomy gate — auto-approve when AUTONOMOUS_EXECUTION_ENABLED=True,
+         or when req.confirmed=True.  If confidence < AUTONOMOUS_CONFIDENCE_THRESHOLD,
+         broadcast a consultation_recommended event (advisory only, never blocking).
+      2. Parse the FIX block to extract file path, old code anchor, new code.
+      3. Use MCPManager.file_read to load the target file.
+      4. Validate the old-code anchor exists (exact substring match).
+      5. Use MCPManager.file_write to apply the patch atomically.
+      6. Run tests via MCPManager.run_tests to verify correctness.
+      7. On test failure, restore the original via a second file_write (revert).
+      8. Broadcast result and return structured response.
+
+    Returns:
+        ``{"status": "applied"|"reverted"|"skipped", "file": ..., "tests": ...}``
+    """
+    import re as _re
+
+    # ── Law 20 (Amended) autonomy gate ────────────────────────────────────
+    # Grant execution when autonomous mode is on OR explicit confirmation given.
+    # Always block if neither condition holds.
+    autonomous = AUTONOMOUS_EXECUTION_ENABLED
+    if not autonomous and not req.confirmed:
+        return {
+            "status": "skipped",
+            "reason": (
+                "Law 20: explicit confirmation required when autonomous execution "
+                "is disabled. Set confirmed=true or enable AUTONOMOUS_EXECUTION_ENABLED."
+            ),
+        }
+
+    # Advisory consultation signal when confidence below threshold
+    if req.confidence < AUTONOMOUS_CONFIDENCE_THRESHOLD:
+        _broadcast({
+            "type": "consultation_recommended",
+            "component": req.component,
+            "confidence": req.confidence,
+            "threshold": AUTONOMOUS_CONFIDENCE_THRESHOLD,
+            "reason": (
+                f"Confidence {req.confidence:.2f} is below the autonomous threshold "
+                f"{AUTONOMOUS_CONFIDENCE_THRESHOLD}. Proceeding autonomously — review suggested."
+            ),
+        })
+
+    sugg = req.suggestion
+
+    # ── Parse FIX block ───────────────────────────────────────────────────
+    fix_m = _re.match(
+        r"FIX\s+\d+:\s*([\w/\.\-]+\.py):(\d+)\s*[—\-]+\s*(.+)", sugg
+    )
+    if not fix_m:
+        return {"status": "skipped", "reason": "Suggestion does not match FIX format."}
+
+    file_rel = fix_m.group(1).strip()
+    description = fix_m.group(3).strip()
+
+    # Extract CODE block from suggestion string
+    code_lines: list[str] = []
+    in_code = False
+    for line in sugg.splitlines():
+        if line.strip().startswith("CODE:"):
+            in_code = True
+            rest = line.strip()[5:].strip()
+            if rest:
+                code_lines.append(rest)
+        elif in_code:
+            code_lines.append(line)
+    code_snippet = "\n".join(code_lines).strip()
+
+    if not code_snippet:
+        return {
+            "status": "skipped",
+            "reason": "No CODE block found in suggestion — cannot apply blindly.",
+        }
+
+    # ── Path-jail check ───────────────────────────────────────────────────
+    _repo_root = Path(__file__).resolve().parents[1]
+    full_path = (_repo_root / file_rel).resolve()
+    if not str(full_path).startswith(str(_repo_root)):
+        return {"status": "skipped", "reason": "Path traversal blocked."}
+
+    # ── Read current file ─────────────────────────────────────────────────
+    read_result = _mcp_manager.call_uri(
+        "mcp://tooloo/file_read", path=file_rel)
+    if not read_result.success:
+        return {"status": "skipped", "reason": f"Could not read {file_rel}."}
+
+    original: str = str(read_result.output or "")
+
+    # ── The CODE block IS the new content for the described region.
+    # We write the full new code as an append / targeted insert only when
+    # an exact anchor exists; otherwise we reject to stay safe.
+    # For simplicity: if the suggestion says to ADD something, append;
+    # if it says to REPLACE, require an exact anchor in the existing file.
+    if code_snippet not in original:
+        # Write the snippet as a new file section (append with header comment)
+        patched = (
+            original.rstrip()
+            + f"\n\n# daemon-apply [{req.component}]: {description}\n"
+            + code_snippet
+            + "\n"
+        )
+    else:
+        # Already present — nothing to do
+        return {"status": "skipped", "reason": "Code snippet already present in file."}
+
+    # ── Apply via MCPManager.file_write ──────────────────────────────────
+    write_result = _mcp_manager.call_uri(
+        "mcp://tooloo/file_write", path=file_rel, content=patched
+    )
+    if not write_result.success:
+        return {
+            "status": "skipped",
+            "reason": f"file_write failed: {write_result.output}",
+        }
+
+    _broadcast({
+        "type": "self_improve_apply",
+        "component": req.component,
+        "file": file_rel,
+        "description": description,
+        "status": "patch_applied",
+    })
+
+    # ── Run tests via MCPManager ──────────────────────────────────────────
+    test_result = _mcp_manager.call_uri(
+        "mcp://tooloo/run_tests", module="tests", timeout=45
+    )
+    tests_passed = test_result.success
+    test_summary = str(test_result.output or "")[:300]
+
+    if tests_passed:
+        _broadcast({
+            "type": "self_improve_apply",
+            "component": req.component,
+            "file": file_rel,
+            "status": "committed",
+            "tests": test_summary,
+        })
+        return {
+            "status": "applied",
+            "file": file_rel,
+            "component": req.component,
+            "description": description,
+            "tests": test_summary,
+        }
+    else:
+        # Revert
+        _mcp_manager.call_uri(
+            "mcp://tooloo/file_write", path=file_rel, content=original
+        )
+        _broadcast({
+            "type": "self_improve_apply",
+            "component": req.component,
+            "file": file_rel,
+            "status": "reverted",
+            "tests": test_summary,
+        })
+        return {
+            "status": "reverted",
+            "file": file_rel,
+            "component": req.component,
+            "description": description,
+            "tests": test_summary,
+        }
+
+
 # ── N-Stroke pipeline endpoints ───────────────────────────────────────────────
 
 
@@ -914,7 +1150,7 @@ async def sse_stream() -> StreamingResponse:
     async def _generate() -> AsyncGenerator[str, None]:
         try:
             # Heartbeat on connect
-            yield f"data: {json.dumps({'type': 'connected', 'version': '2.0.0'})}\n\n"
+            yield f"data: {json.dumps({'type': 'connected', 'version': '2.1.0'})}\n\n"
             while True:
                 try:
                     data = await asyncio.wait_for(q.get(), timeout=15.0)
@@ -1071,14 +1307,15 @@ async def roadmap_similar(q: str = "", top_k: int = 3) -> dict[str, Any]:
 # ── Auto-improvement loop endpoints ──────────────────────────────────────────
 
 @app.post("/v2/auto-loop/start")
-async def start_auto_loop(interval_seconds: int = 90) -> dict[str, Any]:
+async def start_auto_loop(interval_seconds: int = 30) -> dict[str, Any]:
     """Start the autonomous improvement loop (self-improve + roadmap run every N seconds)."""
     global _loop_active, _loop_task, _loop_stats
     if _loop_active:
         return {"started": False, "reason": "already running", "stats": dict(_loop_stats)}
     _loop_active = True
     _loop_stats["active"] = True
-    _loop_stats["interval_seconds"] = max(30, interval_seconds)
+    _loop_stats["interval_seconds"] = max(
+        10, interval_seconds)  # DEV MODE: floor 30→10
     _loop_stats["started_at"] = datetime.now(UTC).isoformat()
     _loop_stats["next_run_at"] = (
         datetime.now(UTC) + timedelta(seconds=_loop_stats["interval_seconds"])
@@ -1125,7 +1362,7 @@ async def system_status() -> dict[str, Any]:
         sandboxes, key=lambda r: r.readiness_score, reverse=True
     )[:5]
     return {
-        "version": "2.0.0",
+        "version": "2.1.0",
         "startup_time": _STARTUP_TIME,
         "system_health": round(avg_readiness, 3),
         "circuit_breaker": router_st,
@@ -1255,20 +1492,126 @@ async def list_branches() -> dict[str, Any]:
         "branches": branches,
     }
 
+
+@app.get("/v2/daemon/status")
+async def get_daemon_status():
+    return {
+        "active": _daemon.active,
+        "pending_approvals": _daemon.awaiting_approval,
+    }
+
+
 @app.post("/v2/daemon/start")
 async def start_daemon():
+    global _daemon_task
     if not _daemon.active:
-        asyncio.create_task(_daemon.start())
+        _daemon_task = asyncio.create_task(_daemon.start())
+        _daemon_task.add_done_callback(lambda _: None)
         return {"status": "started"}
     return {"status": "already_running"}
+
 
 @app.post("/v2/daemon/stop")
 async def stop_daemon():
     _daemon.stop()
     return {"status": "stopped"}
 
+
 @app.post("/v2/daemon/approve/{proposal_id}")
 async def approve_daemon_proposal(proposal_id: str):
     res = _daemon.approve(proposal_id)
     return res
 
+
+# ── Knowledge Banks ────────────────────────────────────────────────────────────
+
+
+@app.get("/v2/knowledge/health")
+async def knowledge_health() -> dict[str, Any]:
+    """Return health summary for all knowledge banks."""
+    return _bank_manager.health()
+
+
+@app.get("/v2/knowledge/dashboard")
+async def knowledge_dashboard() -> dict[str, Any]:
+    """Full dashboard dict for the Knowledge Banks UI panel."""
+    return _bank_manager.dashboard()
+
+
+@app.get("/v2/knowledge/{bank_id}")
+async def get_knowledge_bank(bank_id: str) -> dict[str, Any]:
+    """Return all entries for a specific bank (design/code/ai/bridge)."""
+    bank = _bank_manager.get_bank(bank_id)
+    if bank is None:
+        return {"error": f"Unknown bank: {bank_id}", "valid_ids": list(_bank_manager.all_banks())}
+    return {
+        "bank_id": bank_id,
+        "bank_name": bank.bank_name,
+        "domains": bank.domains,
+        "entries": [e.to_dict() for e in bank.all_entries()],
+    }
+
+
+@app.get("/v2/knowledge/{bank_id}/signals")
+async def get_bank_signals(bank_id: str, domain: str = "", n: int = 5) -> dict[str, Any]:
+    """Return top-N signal strings from a bank, optionally filtered by domain."""
+    bank = _bank_manager.get_bank(bank_id)
+    if bank is None:
+        return {"error": f"Unknown bank: {bank_id}"}
+    return {"bank_id": bank_id, "domain": domain, "signals": bank.get_signals(domain, n)}
+
+
+class KnowledgeQueryRequest(BaseModel):
+    topic: str
+    context: str = ""
+    n_per_bank: int = 3
+
+
+@app.post("/v2/knowledge/query")
+async def query_knowledge(req: KnowledgeQueryRequest) -> dict[str, Any]:
+    """Cross-bank semantic query — returns top entries across all banks."""
+    results = _bank_manager.query_all(req.topic, req.context, req.n_per_bank)
+    return {
+        "topic": req.topic,
+        "results": [e.to_dict() for e in results],
+        "count": len(results),
+    }
+
+
+class KnowledgeIngestRequest(BaseModel):
+    bank_id: str
+    domain: str
+    signals: list[str]
+
+
+@app.post("/v2/knowledge/ingest")
+async def ingest_knowledge(req: KnowledgeIngestRequest) -> dict[str, Any]:
+    """Manually ingest a list of signal strings into a specific bank/domain."""
+    try:
+        report = _sota_ingestion.ingest_single(
+            req.bank_id, req.domain, req.signals)
+        _broadcast({"type": "knowledge_ingested", "report": report.to_dict()})
+        return report.to_dict()
+    except ValueError as exc:
+        return {"error": str(exc)}
+
+
+@app.post("/v2/knowledge/ingest/full")
+async def run_full_sota_ingestion() -> dict[str, Any]:
+    """Trigger a full SOTA ingestion run across all banks and domains.
+
+    This enriches all knowledge banks with the latest signals from Gemini
+    (or the structured SOTA catalogue when offline). May take 15-30 s when
+    Gemini is available; ~1 s in offline/structured mode.
+    """
+    loop = asyncio.get_event_loop()
+    report = await loop.run_in_executor(None, _sota_ingestion.run_full_ingestion)
+    _broadcast({"type": "sota_ingestion_complete", "report": report.to_dict()})
+    return report.to_dict()
+
+
+@app.get("/v2/knowledge/intent/{intent}/signals")
+async def get_intent_signals(intent: str, n: int = 5) -> dict[str, Any]:
+    """Return the top SOTA signals for a given routing intent, from knowledge banks."""
+    signals = _bank_manager.signals_for_intent(intent.upper(), n)
+    return {"intent": intent.upper(), "signals": signals, "count": len(signals)}

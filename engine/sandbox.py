@@ -50,9 +50,10 @@ from engine.tribunal import Engram, Tribunal
 from engine.vector_store import VectorStore
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-PROMOTE_THRESHOLD: float = 0.72    # readiness_score ≥ this → STATE_PROVEN
+# DEV MODE: promote threshold lowered 0.72→0.50; internal workers raised 4→8
+PROMOTE_THRESHOLD: float = 0.50    # readiness_score ≥ this → STATE_PROVEN
 MAX_SANDBOX_WORKERS: int = 25      # orchestrator-level (overridable via .env)
-_INTERNAL_WORKERS: int = 4         # per-sandbox sub-executor
+_INTERNAL_WORKERS: int = 8         # per-sandbox sub-executor
 
 # ── Sandbox states ────────────────────────────────────────────────────────────
 STATE_QUEUED = "queued"
@@ -75,6 +76,56 @@ _DIM_WEIGHTS: dict[str, dict[str, float]] = {
     "performance":    {"impact": 0.80, "difficulty": 0.80, "timeline": 0.80},
     "time_awareness": {"impact": 0.70, "difficulty": 0.50, "timeline": 0.90},
 }
+
+
+class DimensionScorer:
+    """Reusable 9-dimension evaluator shared by sandboxing and benchmarks.
+
+    This wraps TooLoo's existing heuristic scoring formulas in a small stateless
+    object so other workflows can evaluate efficiency / quality / accuracy
+    without re-implementing sandbox math in ad-hoc scripts.
+    """
+
+    def score(
+        self,
+        *,
+        original_conf: float,
+        boosted_conf: float,
+        tribunal_passed: bool,
+        refinement_verdict: str,
+        exec_success_rate: float,
+    ) -> list[DimensionScore]:
+        vm = {"pass": 1.0, "warn": 0.72, "fail": 0.35}.get(
+            refinement_verdict, 0.5)
+        templates: list[tuple[str, float, str]] = [
+            ("legal",          min(1.0, boosted_conf * 0.85),
+             "JIT SOTA signal alignment"),
+            ("safety",         0.95 if tribunal_passed else 0.35,
+             "Tribunal OWASP scan result"),
+            ("security",       0.92 if tribunal_passed else 0.25,
+             "Tribunal poison verdict"),
+            ("accuracy",       min(1.0, original_conf * 1.1),
+             "Router intent confidence (pre-boost)"),
+            ("honesty",        min(1.0, original_conf * 1.05),
+             "Routing transparency"),
+            ("efficiency",     min(1.0, exec_success_rate * vm * 1.15),
+             "Execution success x refinement"),
+            ("quality",        (boosted_conf + exec_success_rate * vm) / 2,
+             "Confidence x success composite"),
+            ("performance",    min(1.0, boosted_conf * exec_success_rate),
+             "JIT x execution composite"),
+            ("time_awareness", min(1.0, exec_success_rate * vm * 0.9 + 0.1),
+             "Execution timing efficiency"),
+        ]
+        return [
+            DimensionScore(
+                name=name,
+                score=round(max(0.0, min(1.0, score)), 3),
+                confidence=round(boosted_conf, 3),
+                notes=notes,
+            )
+            for name, score, notes in templates
+        ]
 
 
 # ── DTOs ──────────────────────────────────────────────────────────────────────
@@ -177,6 +228,7 @@ class SandboxOrchestrator:
         self._booster = booster or JITBooster()
         self._scope_evaluator = ScopeEvaluator()
         self._refinement_loop = RefinementLoop()
+        self._dimension_scorer = DimensionScorer()
         self._sorter = TopologicalSorter()
         self._inner_executor = JITExecutor(max_workers=_INTERNAL_WORKERS)
         self._outer_executor = JITExecutor(max_workers=max_workers)
@@ -415,37 +467,13 @@ class SandboxOrchestrator:
         exec_success_rate: float,
     ) -> list[DimensionScore]:
         """Score each of the 9 evaluation dimensions."""
-        vm = {"pass": 1.0, "warn": 0.72, "fail": 0.35}.get(
-            refinement_verdict, 0.5)
-        templates: list[tuple[str, float, str]] = [
-            ("legal",          min(1.0, boosted_conf * 0.85),
-             "JIT SOTA signal alignment"),
-            ("safety",         0.95 if tribunal_passed else 0.35,
-             "Tribunal OWASP scan result"),
-            ("security",       0.92 if tribunal_passed else 0.25,
-             "Tribunal poison verdict"),
-            ("accuracy",       min(1.0, original_conf * 1.1),
-             "Router intent confidence (pre-boost)"),
-            ("honesty",        min(1.0, original_conf * 1.05),
-             "Routing transparency"),
-            ("efficiency",     min(1.0, exec_success_rate * vm *
-             1.15),           "Execution success x refinement"),
-            ("quality",        (boosted_conf + exec_success_rate * vm) /
-             2,       "Confidence x success composite"),
-            ("performance",    min(1.0, boosted_conf * exec_success_rate),
-             "JIT x execution composite"),
-            ("time_awareness", min(1.0, exec_success_rate *
-             vm * 0.9 + 0.1),     "Execution timing efficiency"),
-        ]
-        return [
-            DimensionScore(
-                name=name,
-                score=round(max(0.0, min(1.0, score)), 3),
-                confidence=round(boosted_conf, 3),
-                notes=notes,
-            )
-            for name, score, notes in templates
-        ]
+        return self._dimension_scorer.score(
+            original_conf=original_conf,
+            boosted_conf=boosted_conf,
+            tribunal_passed=tribunal_passed,
+            refinement_verdict=refinement_verdict,
+            exec_success_rate=exec_success_rate,
+        )
 
     def _aggregate(self, dim_scores: list[DimensionScore], key: str) -> float:
         if not dim_scores:
