@@ -6,6 +6,7 @@ from engine.jit_designer import (
     JITDesigner,
     DesignDirective,
     ThoughtCard,
+    UIComponent,
     analyze_partial_prompt,
     _extract_emphasis_words,
     _confidence_tier,
@@ -333,3 +334,100 @@ class TestAnalyzePartialPrompt:
         r = analyze_partial_prompt("audit the security of the API endpoints")
         valid = {"nodding", "thinking", "listening", "confused_tilt"}
         assert r["visual_indicator"] in valid
+
+
+# ── UIComponent ──────────────────────────────────────────────────────────────
+
+class TestUIComponent:
+    def test_to_dict_has_required_keys(self):
+        comp = UIComponent(
+            component_type="prose",
+            content={"text": "Hello"},
+            style_directives={"theme": "hig-blue", "elevation": 1},
+        )
+        d = comp.to_dict()
+        assert set(d.keys()) == {"component_type", "content", "style_directives"}
+
+    def test_to_dict_round_trip(self):
+        comp = UIComponent(
+            component_type="timeline_step",
+            content={"index": 3, "label": "Deploy", "body": "Push to prod"},
+            style_directives={"theme": "hig-green", "elevation": 1, "intent": "BUILD"},
+        )
+        d = comp.to_dict()
+        assert d["component_type"] == "timeline_step"
+        assert d["content"]["index"] == 3
+        assert d["style_directives"]["theme"] == "hig-green"
+
+    def test_insight_chip_content(self):
+        comp = UIComponent(
+            component_type="insight_chip",
+            content={"key": "Auth", "value": "JWT RS256"},
+            style_directives={"theme": "material-dark", "elevation": 1},
+        )
+        assert comp.to_dict()["content"]["key"] == "Auth"
+        assert comp.to_dict()["content"]["value"] == "JWT RS256"
+
+
+# ── parse_response_blocks ─────────────────────────────────────────────────────
+
+class TestParseResponseBlocks:
+    @pytest.fixture
+    def designer(self):
+        return JITDesigner()
+
+    def test_pure_prose_returns_empty_list(self, designer):
+        text = "Sure! I'd be happy to help you with that."
+        result = designer.parse_response_blocks(text)
+        assert result == []
+
+    def test_numbered_list_produces_timeline_steps(self, designer):
+        text = "Steps:\n1. Install dependencies\n2. Configure environment\n3. Run migrations"
+        result = designer.parse_response_blocks(text)
+        types = [c.component_type for c in result]
+        assert "timeline_step" in types
+        steps = [c for c in result if c.component_type == "timeline_step"]
+        assert len(steps) == 3
+        assert steps[0].content["index"] == 1
+        assert steps[1].content["index"] == 2
+
+    def test_bullet_bold_kv_produces_insight_chips(self, designer):
+        text = "Config:\n- **Host**: localhost\n- **Port**: 5432\n- **DB**: mydb"
+        result = designer.parse_response_blocks(text)
+        chips = [c for c in result if c.component_type == "insight_chip"]
+        assert len(chips) == 3
+        assert chips[0].content["key"] == "Host"
+        assert chips[0].content["value"] == "localhost"
+
+    def test_code_fence_produces_code_block(self, designer):
+        text = "Example:\n```python\ndef foo():\n    return 42\n```"
+        result = designer.parse_response_blocks(text)
+        codes = [c for c in result if c.component_type == "code_block"]
+        assert len(codes) == 1
+        assert codes[0].content["language"] == "python"
+        assert "def foo" in codes[0].content["code"]
+
+    def test_markdown_table_produces_glass_table(self, designer):
+        text = "| Name | Role |\n|------|------|\n| Alice | Lead |\n| Bob | Dev |"
+        result = designer.parse_response_blocks(text)
+        tables = [c for c in result if c.component_type == "glass_table"]
+        assert len(tables) == 1
+        assert tables[0].content["headers"] == ["Name", "Role"]
+        assert len(tables[0].content["rows"]) == 2
+
+    def test_has_structured_flag_set_correctly(self, designer):
+        numbered = "1. Step A\n2. Step B"
+        assert designer.parse_response_blocks(numbered) != []
+        prose_only = "This is just a sentence."
+        assert designer.parse_response_blocks(prose_only) == []
+
+    def test_style_directives_reflect_palette_key(self, designer):
+        text = "1. Build it\n2. Ship it"
+        result = designer.parse_response_blocks(text, palette_key="system_purple")
+        assert result[0].style_directives["theme"] == "hig-purple"
+
+    def test_unknown_palette_key_falls_back_to_material_dark(self, designer):
+        text = "- Foo: bar"
+        result = designer.parse_response_blocks(text, palette_key="unknown_key")
+        assert result[0].style_directives["theme"] == "material-dark"
+
