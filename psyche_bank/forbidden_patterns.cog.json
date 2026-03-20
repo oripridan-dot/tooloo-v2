@@ -801,6 +801,15 @@
       "category": "security",
       "source": "tribunal",
       "expires_at": ""
+    },
+    {
+      "id": "tribunal-auto-bola-unfiltered-query-001",
+      "description": "Auto-captured by Tribunal during heal: bola-unfiltered-query",
+      "pattern": "bola-unfiltered-query",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": ""
     }
   ]
 }

@@ -1,3 +1,14 @@
+# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
+# Cycle: 2026-03-20T20:02:28.288326+00:00
+# Component: conversation  Source: engine/conversation.py
+# Improvement signals from JIT SOTA booster:
+#  [1] Enhance engine/conversation.py: OWASP Top 10 2025 edition promotes Broken
+#     Object-Level Authorisation to the #1 priority
+#  [2] Enhance engine/conversation.py: OSS supply-chain audits (Sigstore + Rekor
+#     transparency log) are required in regulated environments
+#  [3] Enhance engine/conversation.py: CSPM tools (Wiz, Orca, Prisma Cloud) provide
+#     real-time cloud posture scoring in 2026
+# ─────────────────────────────────────────────────────────────────
 """
 engine/conversation.py — Conversational Buddy process engine.
 
@@ -44,6 +55,7 @@ from engine.model_garden import get_garden
 
 if TYPE_CHECKING:
     from engine.jit_booster import JITBoostResult
+    from engine.buddy_memory import BuddyMemoryStore, BuddyMemoryEntry
 
 # ── Vertex AI client (primary — enterprise-grade Model Garden via unified SDK) ───────
 _vertex_client = _vertex_client_cfg
@@ -602,20 +614,34 @@ class ConversationEngine:
       4. Generate response (Gemini-2.0-flash -> keyword fallback)
       5. Surface follow-up suggestion chips
       6. Store turn pair (user + buddy) in session
-      7. Return ConversationResult
+      7. Auto-save session summary to BuddyMemoryStore when ≥ 3 user turns
+      8. Return ConversationResult
 
     Confidence tiers (keyword-fallback path):
       < CLARIFICATION_THRESHOLD  → ask a targeted clarifying question
       < MEDIUM_CONFIDENCE_THRESHOLD → proceed with best-guess intent, hedge audibly
       >= MEDIUM_CONFIDENCE_THRESHOLD → confident response, no hedge
+
+    Persistent memory:
+      When a ``BuddyMemoryStore`` is provided (recommended for production), Buddy
+      recalls relevant past sessions across server restarts.  The raw turn text is
+      NEVER stored verbatim — only compact summaries so no poisoned content can be
+      replayed unfiltered (Tribunal invariant).
     """
 
+    # Confidence tier boundaries (SOTA 2026-03-20, aligned with circuit breaker 0.9)
+    # 0.00–0.30: LOW   — requires clarification before proceeding
+    # 0.30–0.65: MED   — hedge response, invite correction
+    # 0.65–1.00: HIGH  — direct, assured response
     _CLARIFICATION_THRESHOLD = 0.30   # below this + no prior context -> ask
     # below this -> state the guess, invite correction
     _MEDIUM_CONFIDENCE_THRESHOLD = 0.65
+    # Minimum user turns before a session is worth auto-saving to memory
+    _MEMORY_SAVE_THRESHOLD = 3
 
-    def __init__(self) -> None:
+    def __init__(self, memory_store: "BuddyMemoryStore | None" = None) -> None:
         self._sessions: dict[str, ConversationSession] = {}
+        self._memory: "BuddyMemoryStore | None" = memory_store
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
@@ -633,6 +659,9 @@ class ConversationEngine:
         tone = _TONE.get(route.intent, "neutral")
         emotional_state = _detect_emotional_state(text)
 
+        # Retrieve relevant past-session context from persistent memory
+        memory_context = self._load_memory_context(text)
+
         # Store user turn before planning (provides context)
         session.add_turn(ConversationTurn(
             turn_id=turn_id,
@@ -647,7 +676,9 @@ class ConversationEngine:
 
         plan = self._plan(route, session)
         response_text, model_used = self._generate_response(
-            route, session, plan, jit_result=jit_result, emotional_state=emotional_state)
+            route, session, plan, jit_result=jit_result,
+            emotional_state=emotional_state, memory_context=memory_context,
+        )
         suggestions = _FOLLOWUPS.get(route.intent, [])
 
         # Parse visual artifacts and VLT patches from the model response
@@ -667,6 +698,11 @@ class ConversationEngine:
             tone=tone,
             emotional_state="neutral",
         ))
+
+        # Auto-save session to persistent memory once it's substantive
+        user_turn_count = sum(1 for t in session.turns if t.role == "user")
+        if self._memory is not None and user_turn_count >= self._MEMORY_SAVE_THRESHOLD:
+            self._memory.save_session(session)
 
         return ConversationResult(
             session_id=session_id,
@@ -692,10 +728,29 @@ class ConversationEngine:
         return [t.to_dict() for t in session.turns] if session else []
 
     def clear_session(self, session_id: str) -> bool:
-        if session_id in self._sessions:
-            del self._sessions[session_id]
-            return True
-        return False
+        """Clear an in-process session, saving to memory first if possible."""
+        session = self._sessions.get(session_id)
+        if session is None:
+            return False
+        if self._memory is not None:
+            self._memory.save_session(session)
+        del self._sessions[session_id]
+        return True
+
+    def save_session_to_memory(self, session_id: str) -> "BuddyMemoryEntry | None":
+        """Explicitly persist the named session to memory. Returns the entry or None."""
+        if self._memory is None:
+            return None
+        session = self._sessions.get(session_id)
+        if session is None:
+            return None
+        return self._memory.save_session(session)
+
+    def recent_memory(self, limit: int = 5) -> list["BuddyMemoryEntry"]:
+        """Return the *limit* most recently saved memory entries."""
+        if self._memory is None:
+            return []
+        return self._memory.recent(limit=limit)
 
     # ── Planning ───────────────────────────────────────────────────────────────
 
@@ -753,6 +808,79 @@ class ConversationEngine:
             and route.intent != "BLOCKED"
         )
 
+    # ── Memory helpers ─────────────────────────────────────────────────────────
+
+    def _load_memory_context(self, text: str) -> str:
+        """Return a first-person narrative past-session block for the given user text.
+
+        Falls back to the structured bullet format when ``recall_narrative`` is
+        unavailable for any reason.  Returns "" when no memory store is
+        configured or no relevant entries exist.
+        """
+        if self._memory is None:
+            return ""
+        # Prefer narrative (in-character, seamless continuity)
+        try:
+            narrative = self._memory.recall_narrative(text, limit=2)
+            if narrative:
+                return narrative
+        except AttributeError:
+            pass  # backwards-compat: store may not have recall_narrative yet
+        # Fallback: structured bullets
+        entries = self._memory.find_relevant(text, limit=3)
+        if not entries:
+            return ""
+        lines = ["What we've worked on before:"]
+        for e in entries:
+            topics = ", ".join(e.key_topics) or "general"
+            lines.append(f"- {e.summary} (topics: {topics})")
+        return "\n".join(lines)
+
+    # ── Dynamic persona ────────────────────────────────────────────────────────
+
+    def _build_dynamic_persona_context(
+        self,
+        emotional_state: str,
+        jit_result: "JITBoostResult | None",
+    ) -> str:
+        """Build an advisory-style instruction block tuned to the user's emotional
+        state *and* the top JIT SOTA signals for this turn.
+
+        Rather than listing SOTA signals verbatim, this crafts a targeted
+        directive that nudges the model's rhetorical style — grounding advice in
+        the most actionable signal, shaped by how the user is feeling right now.
+
+        E.g. a frustrated user debugging auth → "Lead with step-by-step clarity
+        and reassurance around: JWT validation best practice 2026..."
+        """
+        if not jit_result or not jit_result.signals:
+            return ""
+        top_signals = jit_result.signals[:2]
+        signals_str = "; ".join(top_signals)
+        style_map: dict[str, str] = {
+            "frustrated": (
+                "Lead with step-by-step clarity and reassurance. "
+                f"Ground your answer in these proven signals: {signals_str}."
+            ),
+            "excited": (
+                "Match the energy — be bold and forward-looking. "
+                f"Lead with the most cutting-edge aspect of: {signals_str}."
+            ),
+            "uncertain": (
+                "Anchor your answer in proven patterns. Start simple, "
+                f"building confidence around: {signals_str}."
+            ),
+            "grateful": (
+                "Build momentum from the win. Offer the highest-value next step "
+                f"related to: {signals_str}."
+            ),
+        }
+        directive = style_map.get(
+            emotional_state,
+            f"Be direct and efficient. Ground your answer in: {signals_str}.",
+        )
+        return f"Advisory style for this turn: {directive}"
+
     # ── Response generation ───────────────────────────────────────────────────
 
     def _generate_response(
@@ -763,11 +891,13 @@ class ConversationEngine:
         jit_result: JITBoostResult | None = None,
         vertex_model_id: str | None = None,
         emotional_state: str = "neutral",
+        memory_context: str = "",
     ) -> tuple[str, str]:
         """Return (response_text, model_used_label).
 
         Priority: Vertex AI (Model Garden) → Gemini Direct → keyword fallback.
         Prepends an empathy opener when emotional state is non-neutral.
+        Includes persistent memory context when available.
         """
         if plan.needs_clarification:
             return plan.clarification_question, "clarification"
@@ -778,7 +908,8 @@ class ConversationEngine:
         garden = get_garden()
         try:
             text = garden.call(model_id, self._build_prompt(
-                route, session, jit_result, emotional_state=emotional_state))
+                route, session, jit_result, emotional_state=emotional_state,
+                memory_context=memory_context))
             return text, garden.source_for(model_id)
         except Exception:
             pass  # fall through to Gemini Direct
@@ -787,7 +918,8 @@ class ConversationEngine:
         if _gemini_client is not None:
             try:
                 return self._call_gemini(
-                    route, session, jit_result, emotional_state=emotional_state
+                    route, session, jit_result, emotional_state=emotional_state,
+                    memory_context=memory_context,
                 ), VERTEX_DEFAULT_MODEL
             except Exception:
                 pass  # fall through to keyword fallback
@@ -846,16 +978,36 @@ class ConversationEngine:
         session: ConversationSession,
         jit_result: JITBoostResult | None = None,
         emotional_state: str = "neutral",
+        memory_context: str = "",
     ) -> str:
-        """Assemble the full prompt string from session context + JIT signals."""
+        """Assemble the full prompt string from session context + JIT signals.
+
+        Layer order (later layers override earlier ones for the model):
+          system_prompt → memory_context → recent_context → emotional_note
+          → dynamic_persona (state-aware JIT advisory) → jit_catalogue
+          → intent + user_text
+        """
         context = _build_context_block(session)
         context_section = f"\n\nRecent conversation:\n{context}" if context else ""
+
+        # Persistent memory from previous server sessions (first-person narrative)
+        memory_section = f"\n\n{memory_context}" if memory_context else ""
 
         # Include emotional state so the LLM can respond appropriately
         emotional_note = ""
         if emotional_state != "neutral":
-            emotional_note = f"\n\nUser's current emotional state: {emotional_state}. Acknowledge this naturally before answering."
+            emotional_note = (
+                f"\n\nUser's current emotional state: {emotional_state}. "
+                "Acknowledge this naturally before answering."
+            )
 
+        # Dynamic persona: state-aware advisory directive from JIT signals
+        persona_directive = self._build_dynamic_persona_context(
+            emotional_state, jit_result
+        )
+        persona_section = f"\n\n{persona_directive}" if persona_directive else ""
+
+        # Full SOTA signal catalogue (supporting detail, after the directive)
         jit_section = ""
         if jit_result and jit_result.signals:
             jit_section = (
@@ -864,7 +1016,8 @@ class ConversationEngine:
                 + "\n".join(f"- {s}" for s in jit_result.signals)
             )
         return (
-            f"{_SYSTEM_PROMPT}{context_section}{emotional_note}{jit_section}\n\n"
+            f"{_SYSTEM_PROMPT}{memory_section}{context_section}{emotional_note}"
+            f"{persona_section}{jit_section}\n\n"
             f"Intent: {route.intent} (confidence {route.confidence:.0%})\n"
             f"User: {route.mandate_text}"
         )
@@ -891,9 +1044,11 @@ class ConversationEngine:
         session: ConversationSession,
         jit_result: JITBoostResult | None = None,
         emotional_state: str = "neutral",
+        memory_context: str = "",
     ) -> str:
         prompt = self._build_prompt(
-            route, session, jit_result, emotional_state=emotional_state)
+            route, session, jit_result, emotional_state=emotional_state,
+            memory_context=memory_context)
         resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
             model=VERTEX_DEFAULT_MODEL, contents=prompt)
         return resp.text.strip()

@@ -1,3 +1,14 @@
+# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
+# Cycle: 2026-03-20T20:01:34.848321+00:00
+# Component: refinement  Source: engine/refinement.py
+# Improvement signals from JIT SOTA booster:
+#  [1] Adjust engine/refinement.py: DORA metrics (deploy frequency, lead time, MTTR,
+#     CFR) anchor engineering strategy discussions
+#  [2] Adjust engine/refinement.py: Two-pizza team + async RFC process
+#     (Notion/Linear) is the standard ideation workflow
+#  [3] Adjust engine/refinement.py: Feature flags (OpenFeature standard) decouple
+#     deployment from release, enabling hypothesis testing
+# ─────────────────────────────────────────────────────────────────
 """
 engine/refinement.py — Post-execution evaluate-and-refine loop.
 
@@ -27,7 +38,8 @@ class RefinementReport:
     failed: int
     success_rate: float          # 0.0 – 1.0
     avg_latency_ms: float
-    p50_latency_ms: float        # median latency
+    p50_latency_ms: float        # median latency (alias: median_latency_ms)
+    median_latency_ms: float     # explicit median alias for DORA-aligned reporting
     p90_latency_ms: float
     slow_nodes: list[str]        # mandate_ids above SLOW_THRESHOLD_MS
     failed_nodes: list[str]      # mandate_ids that raised exceptions
@@ -44,6 +56,7 @@ class RefinementReport:
             "success_rate": round(self.success_rate, 3),
             "avg_latency_ms": round(self.avg_latency_ms, 2),
             "p50_latency_ms": round(self.p50_latency_ms, 2),
+            "median_latency_ms": round(self.median_latency_ms, 2),
             "p90_latency_ms": round(self.p90_latency_ms, 2),
             "slow_nodes": self.slow_nodes,
             "failed_nodes": self.failed_nodes,
@@ -97,7 +110,8 @@ class RefinementLoop:
         if not results:
             return RefinementReport(
                 total=0, succeeded=0, failed=0,
-                success_rate=1.0, avg_latency_ms=0.0, p50_latency_ms=0.0, p90_latency_ms=0.0,
+                success_rate=1.0, avg_latency_ms=0.0, p50_latency_ms=0.0,
+                median_latency_ms=0.0, p90_latency_ms=0.0,
                 slow_nodes=[], failed_nodes=[],
                 recommendations=["No nodes executed — nothing to refine."],
                 rerun_advised=False, verdict="pass", iterations=iteration,
@@ -172,6 +186,7 @@ class RefinementLoop:
             success_rate=success_rate,
             avg_latency_ms=avg_latency_ms,
             p50_latency_ms=p50_latency_ms,
+            median_latency_ms=p50_latency_ms,  # DORA-aligned alias
             p90_latency_ms=p90_latency_ms,
             slow_nodes=slow_nodes,
             failed_nodes=failed_nodes,

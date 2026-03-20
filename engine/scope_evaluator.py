@@ -1,3 +1,14 @@
+# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
+# Cycle: 2026-03-20T20:01:12.538797+00:00
+# Component: scope_evaluator  Source: engine/scope_evaluator.py
+# Improvement signals from JIT SOTA booster:
+#  [1] Tune engine/scope_evaluator.py: DORA metrics (deploy frequency, lead time,
+#     MTTR, CFR) anchor engineering strategy discussions
+#  [2] Tune engine/scope_evaluator.py: Two-pizza team + async RFC process
+#     (Notion/Linear) is the standard ideation workflow
+#  [3] Tune engine/scope_evaluator.py: Feature flags (OpenFeature standard) decouple
+#     deployment from release, enabling hypothesis testing
+# ─────────────────────────────────────────────────────────────────
 """
 engine/scope_evaluator.py — Pre-execution action scope evaluation.
 
@@ -57,7 +68,9 @@ class ScopeEvaluator:
     """
 
     # Intents with elevated probability of tribunal intercepts
-    _HIGH_RISK_INTENTS: frozenset[str] = frozenset({"BUILD", "DEBUG", "AUDIT"})
+    # SECURITY and PATCH added per OWASP 2025 supply-chain-risk signals
+    _HIGH_RISK_INTENTS: frozenset[str] = frozenset(
+        {"BUILD", "DEBUG", "AUDIT", "SECURITY", "PATCH"})
 
     # Node suffixes that are forbidden in Wave 1 or 2 — must come later
     _LATE_PHASE_NODES: frozenset[str] = frozenset(

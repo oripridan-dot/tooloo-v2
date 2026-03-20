@@ -57,6 +57,7 @@ from engine.config import (
 from engine.config import (
     _vertex_client as _google_client,  # patchable in tests
 )
+from engine.local_slm_client import LocalSLMClient, LocalSLMConfig
 
 
 # ── Cognitive Profile (Four Pillars Support) ──────────────────────────────────
@@ -720,30 +721,18 @@ class ModelGarden:
 
     @staticmethod
     def _call_local_slm(model_id: str, prompt: str, max_tokens: int) -> str:
-        payload = {
-            "model": model_id.removeprefix("local/"),
-            "prompt": prompt,
-            "stream": False,
-            "options": {"num_predict": max_tokens},
-        }
-        req = urlrequest.Request(
-            LOCAL_SLM_ENDPOINT,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-            method="POST",
+        cfg = LocalSLMConfig(
+            name="ollama",
+            endpoint=LOCAL_SLM_ENDPOINT.rsplit("/api/generate", 1)[0]
+            if "/api/generate" in LOCAL_SLM_ENDPOINT
+            else LOCAL_SLM_ENDPOINT,
+            model_name=model_id.removeprefix("local/"),
+            max_tokens=max_tokens,
+            temperature=0.1,
+            timeout_sec=20,
         )
-        try:
-            with urlrequest.urlopen(req, timeout=20) as resp:
-                body = json.loads(resp.read().decode("utf-8"))
-        except (URLError, HTTPError, TimeoutError, json.JSONDecodeError) as exc:
-            raise RuntimeError(
-                f"Local SLM call failed for {model_id}: {exc}") from exc
-
-        text = str(body.get("response", "")).strip()
-        if not text:
-            raise RuntimeError(
-                f"Local SLM returned empty response for {model_id}")
-        return text
+        client = LocalSLMClient(cfg)
+        return client.generate(prompt, max_tokens=max_tokens)
 
     def estimate_cost_usd(
         self, model_id: str, input_tokens: int, output_tokens: int

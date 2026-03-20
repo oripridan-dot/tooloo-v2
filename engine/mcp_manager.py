@@ -22,6 +22,7 @@ Security:
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -38,8 +39,8 @@ _WORKSPACE_ROOT: Path = Path(__file__).resolve().parents[1]
 _MCP_PREFIX = "mcp://tooloo/"
 
 # ── Output size cap ───────────────────────────────────────────────────────────
-# raised from 8 KB → 64 KB to handle large engine files
-_MAX_OUTPUT_CHARS: int = 64_000
+# raised from 8 KB → 64 KB → 128 KB to handle large engine files (e.g. router.py ~66 KB)
+_MAX_OUTPUT_CHARS: int = 131_072
 
 # ── Forbidden write extensions ────────────────────────────────────────────────
 _FORBIDDEN_WRITE_EXTS: frozenset[str] = frozenset(
@@ -339,9 +340,21 @@ def _tool_run_tests(
     test_path: str = "",
     module: str | None = None,
     timeout: int | None = None,
+    extra_args: list[str] | None = None,
+    env_overrides: dict[str, str] | None = None,
     **_: Any,
 ) -> dict[str, Any]:
-    """Run pytest on a test module inside tests/ and return verdict."""
+    """Run pytest on a test module inside tests/ and return verdict.
+
+    Args:
+        test_path:      Path inside tests/ to run (e.g. ``tests`` or ``tests/test_foo.py``).
+        module:         Alias for test_path (legacy callers).
+        timeout:        Outer subprocess timeout in seconds (default 180).
+        extra_args:     Additional pytest flags, e.g. ``["--ignore=tests/test_ingestion.py"]``.
+                        Each entry is appended verbatim after the test-path argument.
+        env_overrides:  Dict of env var overrides for the subprocess.
+                        Use ``{"TOOLOO_LIVE_TESTS": "0"}`` to force offline mode.
+    """
     if not test_path and module:
         test_path = module
     if not test_path:
@@ -352,13 +365,18 @@ def _tool_run_tests(
     if not str(resolved).startswith(str(tests_dir)):
         raise ValueError("test_path must be inside the tests/ directory.")
 
+    cmd = [sys.executable, "-m", "pytest",
+           str(resolved), "--tb=short", "-q", "--timeout=30"]
+    if extra_args:
+        cmd.extend(extra_args)
+    run_env = {**os.environ, **(env_overrides or {})}
     result = subprocess.run(
-        [sys.executable, "-m", "pytest",
-            str(resolved), "--tb=short", "-q", "--timeout=30"],
+        cmd,
         capture_output=True,
         text=True,
-        timeout=timeout or 60,
+        timeout=timeout or 180,
         cwd=str(_WORKSPACE_ROOT),
+        env=run_env,
     )
     output, truncated = _sanitise(result.stdout + result.stderr)
     return {
@@ -526,6 +544,76 @@ def _tool_patch_apply(
     }
 
 
+def _tool_run_tests_isolated(
+    file_path: str,
+    patch_search: str,
+    patch_replace: str,
+    test_path: str,
+    timeout: int | None = None,
+    **_: Any,
+) -> dict[str, Any]:
+    """Speculatively patch a source file, run targeted tests, then always revert.
+
+    Enables ghost branches to validate code changes with zero blast radius:
+    the original file is atomically restored in a ``finally`` block even if
+    the test subprocess crashes or times out.  Tests are scoped to a single
+    test file (not the full 900+ suite) for fast, targeted feedback.
+
+    This is the sandbox crucible pattern: each speculative ghost branch can call
+    this tool to race its patch against others — only the winning patch
+    (first to pass tests) is promoted to the main trunk.
+
+    Args:
+        file_path:     Workspace-relative path to the source file to patch.
+        patch_search:  Exact string to replace (verbatim match, ≤ 30 lines).
+        patch_replace: Replacement string (the proposed fix).
+        test_path:     Workspace-relative test path (must be inside tests/).
+        timeout:       Subprocess timeout in seconds (default 60).
+
+    Security: path-traversal guarded on both paths; test path jailed to tests/.
+    """
+    # ── Security: jail both paths ─────────────────────────────────────────
+    resolved_src = _jail_path(file_path)
+    resolved_test = _jail_path(test_path)
+    tests_dir = (_WORKSPACE_ROOT / "tests").resolve()
+    if not str(resolved_test).startswith(str(tests_dir)):
+        raise ValueError("test_path must be inside the tests/ directory.")
+
+    # ── Apply patch to real file (subprocess will import the patched version)
+    original = resolved_src.read_text(encoding="utf-8", errors="replace")
+    if patch_search not in original:
+        raise ValueError(
+            f"patch_search not found verbatim in '{file_path}'. "
+            "Verify the exact text before using run_tests_isolated."
+        )
+    patched = original.replace(patch_search, patch_replace, 1)
+    resolved_src.write_text(patched, encoding="utf-8")
+
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pytest",
+             str(resolved_test), "--tb=short", "-q", "--timeout=30"],
+            capture_output=True,
+            text=True,
+            timeout=timeout or 60,
+            cwd=str(_WORKSPACE_ROOT),
+        )
+        output, truncated = _sanitise(result.stdout + result.stderr)
+        return {
+            "file_path": str(resolved_src.relative_to(_WORKSPACE_ROOT)),
+            "test_path": str(resolved_test.relative_to(_WORKSPACE_ROOT)),
+            "passed": result.returncode == 0,
+            "returncode": result.returncode,
+            "output": output,
+            "truncated": truncated,
+            "patch_applied": True,
+            "isolated": True,
+        }
+    finally:
+        # ── Always revert — zero blast radius guarantee ────────────────────
+        resolved_src.write_text(original, encoding="utf-8")
+
+
 def _tool_render_screenshot(
     file_path: str,
     viewport_width: int = 1280,
@@ -658,6 +746,27 @@ _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
             "type": "string",
             "description": "Path inside the tests/ directory",
         }],
+    )),
+    "run_tests_isolated": (_tool_run_tests_isolated, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}run_tests_isolated",
+        name="run_tests_isolated",
+        description=(
+            "Sandbox crucible: patch a source file, run targeted tests, then atomically "
+            "revert the file.  Enables ghost branches to race speculative patches with "
+            "zero blast radius — the original is always restored in a finally block."
+        ),
+        parameters=[
+            {"name": "file_path", "type": "string",
+                "description": "Workspace-relative source file to patch"},
+            {"name": "patch_search", "type": "string",
+                "description": "Exact verbatim string to replace (≤30 lines)"},
+            {"name": "patch_replace", "type": "string",
+                "description": "Replacement string (the proposed fix)"},
+            {"name": "test_path", "type": "string",
+                "description": "Test file path inside tests/ to run after patching"},
+            {"name": "timeout", "type": "integer",
+                "description": "Subprocess timeout in seconds (default 60)"},
+        ],
     )),
     "read_error": (_tool_read_error, MCPToolSpec(
         uri=f"{_MCP_PREFIX}read_error",

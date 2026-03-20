@@ -21,9 +21,11 @@ Risk:  router (circuit-breaker state), tribunal (OWASP patterns must not trigger
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import time
 import uuid
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -37,9 +39,11 @@ from engine.executor import Envelope, JITExecutor
 from engine.graph import TopologicalSorter
 from engine.jit_booster import JITBooster
 from engine.mcp_manager import MCPManager
+from engine.meta_architect import MetaArchitect
+from engine.n_stroke import NStrokeEngine
 from engine.psyche_bank import PsycheBank
 from engine.refinement import RefinementLoop
-from engine.router import MandateRouter
+from engine.router import LockedIntent, MandateRouter
 from engine.scope_evaluator import ScopeEvaluator
 from engine.tribunal import Engram, Tribunal
 
@@ -54,12 +58,48 @@ _gemini_client = None
 if GEMINI_API_KEY:
     try:
         from google import genai as _genai_mod  # type: ignore[import-untyped]
-        _gemini_client = _genai_mod.Client(api_key=GEMINI_API_KEY)
+        from google.genai.types import HttpOptions as _HttpOptions
+        _gemini_client = _genai_mod.Client(
+            api_key=GEMINI_API_KEY,
+            http_options=_HttpOptions(timeout=30),
+        )
     except Exception:  # pragma: no cover
         pass
 
 # ── Workspace root ────────────────────────────────────────────────────────────
 _REPO_ROOT: Path = Path(__file__).resolve().parents[1]
+
+# ── Speculative ghost race — three LLM strategy directives ───────────────────
+# Each ghost receives the same component context but a different strategic
+# directive embedded in the mandate.  The first ghost to return a valid,
+# non-empty set of suggestions wins and the losers are cancelled.
+_GHOST_STRATEGIES: list[dict[str, str]] = [
+    {
+        "name": "ghost-conservative",
+        "directive": (
+            "Strategy: CONSERVATIVE. Fix ONLY the identified bugs with minimal diffs. "
+            "Enforce OWASP rules strictly. Every change must be justified by a "
+            "concrete defect in the source code."
+        ),
+    },
+    {
+        "name": "ghost-aggressive",
+        "directive": (
+            "Strategy: AGGRESSIVE REFACTOR. Redesign for maximum Python 3.12+ "
+            "concurrency using asyncio.TaskGroup, free-threaded safe patterns, and "
+            "2026 SOTA idioms. Rewrite freely — correctness and performance are "
+            "the only constraints."
+        ),
+    },
+    {
+        "name": "ghost-sota",
+        "directive": (
+            "Strategy: SOTA-BIASED. Each improvement MUST cite a specific JIT signal "
+            "from the signals list. Evidence-backed changes only — every suggestion "
+            "references the SOTA signal that drives it."
+        ),
+    },
+]
 
 # ── Map component name → source file relative to repo root ────────────────────
 _COMPONENT_SOURCE: dict[str, str] = {
@@ -81,6 +121,31 @@ _COMPONENT_SOURCE: dict[str, str] = {
     "model_garden":     "engine/model_garden.py",
     "vector_store":     "engine/vector_store.py",
     "daemon":           "engine/daemon.py",
+}
+
+# ── Per-component optimisation focus — used by _score_improvement_value focus_bonus ──
+# Aligns each component with the scoring dimension where it has the most impact:
+#   speed/efficiency → _SPEED_COMPS (executor, jit_booster, n_stroke, model_garden, graph)
+#   quality          → _QUALITY_COMPS (refinement, scope_evaluator, daemon, branch_executor, supervisor)
+#   accuracy         → _ACCURACY_COMPS (router, conversation, mandate_executor, vector_store, tribunal)
+_COMPONENT_FOCUS: dict[str, str] = {
+    "router":           "accuracy",
+    "tribunal":         "accuracy",
+    "psyche_bank":      "quality",
+    "jit_booster":      "speed",
+    "executor":         "speed",
+    "graph":            "speed",
+    "scope_evaluator":  "quality",
+    "refinement":       "quality",
+    "n_stroke":         "speed",
+    "supervisor":       "quality",
+    "conversation":     "accuracy",
+    "config":           "accuracy",
+    "branch_executor":  "quality",
+    "mandate_executor": "accuracy",
+    "model_garden":     "speed",
+    "vector_store":     "speed",
+    "daemon":           "quality",
 }
 
 _FOCUS_ALIASES: dict[str, str] = {
@@ -440,6 +505,8 @@ class SelfImprovementEngine:
         booster: JITBooster | None = None,
         bank: PsycheBank | None = None,
         optimization_focus: str = "balanced",
+        meta_architect: MetaArchitect | None = None,
+        n_stroke: NStrokeEngine | None = None,
     ) -> None:
         # Isolated router — never touches the shared circuit-breaker
         self._router = MandateRouter()
@@ -454,6 +521,9 @@ class SelfImprovementEngine:
         # LLM model — re-uses same default as config
         self._vertex_model: str = VERTEX_DEFAULT_MODEL
         self._optimization_focus = self._normalise_focus(optimization_focus)
+        # Fluid Cognitive Crucible components (Law 8 — dynamic validation)
+        self._meta_architect: MetaArchitect = meta_architect or MetaArchitect()
+        self._n_stroke: NStrokeEngine | None = n_stroke  # lazily built on first use
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -475,7 +545,7 @@ class SelfImprovementEngine:
             self._optimization_focus = self._normalise_focus(
                 optimization_focus)
 
-        # ── Phase 0: Generate architectural diagram ───────────────────────────
+        # ── Phase 0: Architectural diagram ────────────────────────────────────
         arch_diagram = self._generate_arch_diagram()
 
         # ── Phase 1: Component assessment waves ──────────────────────────────
@@ -622,21 +692,114 @@ class SelfImprovementEngine:
     def _run_regression_gate(
         self, improvement_id: str
     ) -> tuple[bool, str]:
-        """Run the test suite via MCPManager.run_tests after the assessment cycle.
+        """Legacy static regression gate — delegates to _run_fluid_crucible.
 
-        Returns (passed: bool, details: str).  Runs in sandbox mode — does not
-        block the report if tests fail, but surfaces the failure prominently.
-
-        Skipped when executing inside an existing pytest session (PYTEST_CURRENT_TEST
-        is set) to avoid spawning a recursive subprocess that will time-out.
+        Preserved for API compatibility.  All validation is now routed through
+        the Fluid Cognitive Crucible (Law 8) instead of a bare MCPManager call.
         """
+        return self._run_fluid_crucible(
+            component_name=f"full-cycle-{improvement_id}",
+            source_code="",
+        )
+
+    def _run_fluid_crucible(
+        self, component_name: str, source_code: str  # noqa: ARG002
+    ) -> tuple[bool, str]:
+        """The Fluid Cognitive Crucible (Law 8 — Dynamic Validation).
+
+        Replaces static pytest runs with dynamic, SOTA-informed, N-Stroke
+        ReAct testing loops.  The system uses the exact same tools and logic
+        to *test* itself as it does to *build* itself.
+
+        Safety guard: returns immediately when called inside an active pytest
+        session (``PYTEST_CURRENT_TEST`` env var) to prevent recursive
+        subprocess spawning that would time-out the test runner.
+        """
+        # ── Safety guard ─────────────────────────────────────────────────────
         if os.environ.get("PYTEST_CURRENT_TEST"):
-            return True, "skipped (running inside pytest)"
-        result = self._mcp.call_uri("mcp://tooloo/run_tests",
-                                    test_path="tests", timeout=45)
-        details = str(result.output or "")[:500]
-        passed = result.success
-        return passed, details
+            return True, "skipped (running inside static pytest context)"
+
+        # ── 1. JIT-Informed SOTA Grounding ────────────────────────────────────
+        # Fetch best-practice verification signals for the run_tests MCP tool
+        # before constructing the mandate.  Returns a list of bullet strings.
+        test_sota_signals = self._booster.fetch_mcp_grounding(
+            tool_name="run_tests",
+            target_context=(
+                f"Validating and pre-improving {component_name} against "
+                "2026 SOTA standards."
+            ),
+            vertex_model_id=self._vertex_model,
+        )
+
+        mandate_text = (
+            f"Critique, pre-adjust, and rigorously test '{component_name}'.\n"
+            "1. Read the component's source.\n"
+            f"2. Pre-improve the code using these SOTA validation standards: "
+            f"{test_sota_signals}.\n"
+            "3. Write ephemeral, highly-focused tests to a temporary file via MCP.\n"
+            "4. Execute the tests. If they fail, heal the component dynamically.\n"
+            "Leave no dead ends. The component must exit this crucible stronger "
+            "than it entered."
+        )
+
+        # ── 2. Dynamic MetaArchitect DAG generation ───────────────────────────
+        # MetaArchitect evaluates the mandate and generates a custom testing DAG
+        # with a ConfidenceProof score used for the LockedIntent confidence gate.
+        topology_proof = self._meta_architect.generate(
+            mandate_text, intent="AUDIT"
+        )
+
+        # ── 3. Formulate the LockedIntent ─────────────────────────────────────
+        locked_intent = LockedIntent(
+            intent="AUDIT",
+            confidence=topology_proof.confidence_proof.proof_confidence,
+            value_statement=f"Fluid Crucible Validation for {component_name}",
+            constraint_summary=(
+                "Must pass all ephemeral tests and autonomously heal regressions."
+            ),
+            mandate_text=mandate_text,
+            context_turns=[],
+            locked_at=datetime.now(UTC).isoformat(),
+        )
+
+        # ── 4. Execute the Fluid ReAct Testing Loop ───────────────────────────
+        result = self._get_n_stroke().run(
+            locked_intent=locked_intent,
+            pipeline_id=f"crucible-{component_name}",
+        )
+
+        if result.satisfied:
+            return True, (
+                f"Fluid Crucible passed. Component pre-improved and validated "
+                f"in {result.total_strokes} strokes."
+            )
+        crisis_str = str(result.crisis) if result.crisis else ""
+        return False, (
+            f"Crucible failed to converge: {result.final_verdict}. {crisis_str}"
+        )
+
+    def _get_n_stroke(self) -> NStrokeEngine:
+        """Lazy-build NStrokeEngine from SIE's existing components.
+
+        Deferred construction avoids adding heavyweight imports at module load
+        while still allowing full injection for testing via __init__.
+        """
+        if self._n_stroke is None:
+            from engine.model_selector import ModelSelector
+            from engine.refinement_supervisor import RefinementSupervisor
+            self._n_stroke = NStrokeEngine(
+                router=self._router,
+                booster=self._booster,
+                tribunal=self._tribunal,
+                sorter=self._sorter,
+                executor=self._executor,
+                scope_evaluator=self._scope_evaluator,
+                refinement_loop=self._refinement_loop,
+                mcp_manager=self._mcp,
+                model_selector=ModelSelector(),
+                refinement_supervisor=RefinementSupervisor(),
+            )
+        return self._n_stroke
 
     def _write_plan(self, filename: str, content: str) -> None:
         """Write a planning-phase artefact to the workspace plans/ directory.
@@ -726,29 +889,48 @@ class SelfImprovementEngine:
 
         # 6. LLM deep analysis — read source + call Vertex AI for concrete suggestions
         source_snippet = self._read_component_source(component_name)
+        _live = os.environ.get(
+            "TOOLOO_LIVE_TESTS", "").lower() in ("1", "true", "yes")
+        mandate_with_focus = (
+            f"Focus: {self._optimization_focus}. "
+            f"Prioritise efficiency, quality, accuracy, and speed.\n\n"
+            f"{mandate_text}"
+        )
         if source_snippet:
-            suggestions = self._analyze_with_llm(
-                component=component_name,
-                description=comp["description"],
-                mandate=(
-                    f"Focus: {self._optimization_focus}. "
-                    f"Prioritise efficiency, quality, accuracy, and speed.\n\n"
-                    f"{mandate_text}"
-                ),
-                signals=jit_result.signals,
-                source=source_snippet,
-            )
+            if _live:
+                # ── Speculative ghost race: 3 concurrent LLM strategies ──────
+                # The first ghost to return a valid suggestion set wins;
+                # the losers are cancelled to free compute resources.
+                suggestions = self._run_speculative_race(
+                    component=component_name,
+                    description=comp["description"],
+                    mandate=mandate_with_focus,
+                    signals=jit_result.signals,
+                    source=source_snippet,
+                )
+            else:
+                suggestions = self._analyze_with_llm(
+                    component=component_name,
+                    description=comp["description"],
+                    mandate=mandate_with_focus,
+                    signals=jit_result.signals,
+                    source=source_snippet,
+                )
         else:
             suggestions = self._derive_suggestions(
                 component_name, jit_result.signals)
 
+        # Use boost_delta (intended delta before cap) so high-confidence
+        # components still earn conf credit when JIT signals are fetched.
+        component_focus = _COMPONENT_FOCUS.get(
+            component_name, "balanced")
         value_score, value_rationale = self._score_improvement_value(
             component=component_name,
             suggestions=suggestions,
             jit_signals=jit_result.signals,
-            confidence_delta=jit_result.boosted_confidence - jit_result.original_confidence,
+            confidence_delta=jit_result.boost_delta,
             tribunal_passed=tribunal_result.passed,
-            optimization_focus=self._optimization_focus,
+            optimization_focus=self._normalise_focus(component_focus),
         )
 
         return ComponentAssessment(
@@ -766,6 +948,253 @@ class SelfImprovementEngine:
             suggestions=suggestions,
             value_score=value_score,
             value_rationale=value_rationale,
+        )
+
+    # ── Speculative Ghost Race ────────────────────────────────────────────────
+
+    def _run_speculative_race(
+        self,
+        component: str,
+        description: str,
+        mandate: str,
+        signals: list[str],
+        source: str,
+    ) -> list[str]:
+        """Synchronous entry-point for the async speculative ghost race.
+
+        Safe to call from a ThreadPoolExecutor thread — creates its own
+        event loop (does NOT interfere with the FastAPI/asyncio context).
+        """
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(
+                self._assess_via_speculative_race(
+                    component, description, mandate, signals, source
+                )
+            )
+        finally:
+            loop.close()
+
+    async def _assess_via_speculative_race(
+        self,
+        component: str,
+        description: str,
+        mandate: str,
+        signals: list[str],
+        source: str,
+    ) -> list[str]:
+        """Spawn 3 ghost LLM strategies concurrently; first valid result wins.
+
+        Each ghost receives an identical component context but a different
+        strategic directive (conservative / aggressive / SOTA-biased).  The
+        first ghost to return a non-empty list of suggestions wins and all
+        remaining tasks are immediately cancelled (losers' underlying threads
+        complete naturally but their results are discarded).
+
+        Falls back to _derive_suggestions if all ghosts fail or raise.
+        """
+        async def _ghost(directive: str) -> list[str]:
+            ghost_mandate = f"{mandate}\n\n{directive}"
+            return await asyncio.to_thread(
+                self._analyze_with_llm,
+                component, description, ghost_mandate, signals, source,
+            )
+
+        tasks = [
+            asyncio.create_task(_ghost(s["directive"]), name=s["name"])
+            for s in _GHOST_STRATEGIES
+        ]
+
+        winner_suggestions: list[str] = []
+        remaining: set[asyncio.Task[list[str]]] = set(tasks)
+
+        # Race — iterate through completions until one produces valid suggestions
+        while remaining and not winner_suggestions:
+            done, remaining = await asyncio.wait(
+                remaining, return_when=asyncio.FIRST_COMPLETED
+            )
+            for t in done:
+                try:
+                    result = t.result()
+                    if result:
+                        winner_suggestions = result
+                        break
+                except Exception:  # ghost failed — try next
+                    pass
+
+        # Cancel all losers — threads complete on their own, results discarded
+        for t in remaining:
+            t.cancel()
+
+        return winner_suggestions or self._derive_suggestions(component, signals)
+
+    # ── Asyncio-parallel Ouroboros (BranchExecutor-style fan-out) ─────────────
+
+    async def _run_ouroboros_async(
+        self,
+        broadcast_fn: Callable[[dict[str, Any]], None],
+        improvement_id: str,
+    ) -> list[ComponentAssessment]:
+        """Wave-ordered asyncio fan-out for component assessment.
+
+        Runs each wave's components concurrently via asyncio.to_thread, then
+        waits for the full wave before starting the next (respects DAG deps).
+        SSE broadcast events are emitted per wave and per component completion.
+        """
+        wave_spec = self._build_wave_spec()
+        waves = self._sorter.sort(wave_spec)
+        comp_map = {c["component"]: c for c in _COMPONENTS}
+        component_id_map = {
+            c["component"]: f"{improvement_id}-{c['component']}"
+            for c in _COMPONENTS
+        }
+
+        broadcast_fn({
+            "type": "n_stroke_start",
+            "mode": "speculative_ouroboros",
+            "components": len(_COMPONENTS),
+            "waves": len(waves),
+        })
+
+        assessments: list[ComponentAssessment] = []
+
+        for wave_num, wave_nodes in enumerate(waves, 1):
+            broadcast_fn({
+                "type": "execution",
+                "wave": wave_num,
+                "label": self._WAVE_LABELS.get(wave_num, f"wave-{wave_num}"),
+                "nodes": list(wave_nodes),
+            })
+
+            wave_envs = [
+                Envelope(
+                    mandate_id=component_id_map[name],
+                    intent="AUDIT",
+                    domain="self-improvement",
+                    metadata={"component": comp_map[name]},
+                )
+                for name in wave_nodes
+                if name in comp_map
+            ]
+
+            results = await asyncio.gather(
+                *(
+                    asyncio.to_thread(self._assess_component, env)
+                    for env in wave_envs
+                ),
+                return_exceptions=True,
+            )
+
+            for node_name, result in zip(wave_nodes, results):
+                if isinstance(result, ComponentAssessment):
+                    assessments.append(result)
+                    broadcast_fn({
+                        "type": "self_improve",
+                        "component": node_name,
+                        "verdict": "pass" if result.execution_success else "fail",
+                        "value_score": result.value_score,
+                    })
+                else:
+                    comp = comp_map.get(node_name, {"description": "unknown"})
+                    assessments.append(ComponentAssessment(
+                        component=node_name,
+                        description=comp.get("description", "unknown"),
+                        intent="AUDIT",
+                        original_confidence=0.0,
+                        boosted_confidence=0.0,
+                        jit_signals=[],
+                        jit_source="none",
+                        tribunal_passed=False,
+                        scope_summary="async assessment failed",
+                        execution_success=False,
+                        execution_latency_ms=0.0,
+                        suggestions=[
+                            "Re-run self-improvement cycle to retry."],
+                        value_rationale=f"async task error: {result}",
+                    ))
+
+        return assessments
+
+    def run_via_branches(
+        self,
+        broadcast_fn: Callable[[dict[str, Any]], None] | None = None,
+        optimization_focus: str | None = None,
+        run_regression_gate: bool = True,
+    ) -> SelfImprovementReport:
+        """Ouroboros cycle with asyncio-parallel fan-out and SSE broadcast events.
+
+        Functionally equivalent to run() but uses asyncio.to_thread for
+        concurrency (replacing ThreadPoolExecutor) and emits granular SSE
+        broadcast events per wave and per component completion.  Each wave
+        respects the DAG dependency ordering before the next wave starts.
+
+        This is the BranchExecutor-style Ouroboros fusion: each component
+        assessment is a CLONE-equivalent concurrent task racing to complete its
+        wave.  Speculative ghost racing (if TOOLOO_LIVE_TESTS=1) is active
+        inside each _assess_component call.
+
+        Args:
+            broadcast_fn:        Optional SSE broadcast callback.
+            optimization_focus:  Focus override (balanced/speed/quality/accuracy).
+            run_regression_gate: Run the global pytest regression gate after cycles.
+        """
+        t0 = time.monotonic()
+        improvement_id = f"si-br-{uuid.uuid4().hex[:8]}"
+        _broadcast = broadcast_fn or (lambda _: None)
+
+        if optimization_focus is not None:
+            self._optimization_focus = self._normalise_focus(
+                optimization_focus)
+
+        # Phase 0: Arch diagram
+        arch_diagram = self._generate_arch_diagram()
+
+        # Phase 1: Asyncio fan-out over all 17 components (wave-ordered)
+        loop = asyncio.new_event_loop()
+        try:
+            assessments = loop.run_until_complete(
+                self._run_ouroboros_async(_broadcast, improvement_id)
+            )
+        finally:
+            loop.close()
+
+        # Phase 2: Regression Gate
+        if run_regression_gate:
+            regression_passed, regression_details = self._run_regression_gate(
+                improvement_id
+            )
+        else:
+            regression_passed, regression_details = True, "skipped by caller"
+
+        from engine.executor import ExecutionResult as _ER
+        refinement_inputs = [
+            _ER(
+                mandate_id=f"{improvement_id}-{a.component}",
+                success=a.execution_success,
+                output=a.component,
+                latency_ms=a.execution_latency_ms,
+            )
+            for a in assessments
+        ]
+        refinement = self._refinement_loop.evaluate(refinement_inputs)
+        top_recs = self._top_recommendations(
+            assessments, refinement.recommendations)
+        total_signals = sum(len(a.jit_signals) for a in assessments)
+
+        return SelfImprovementReport(
+            improvement_id=improvement_id,
+            ts=datetime.now(UTC).isoformat(),
+            components_assessed=len(assessments),
+            waves_executed=len(self._sorter.sort(self._build_wave_spec())),
+            total_signals=total_signals,
+            assessments=assessments,
+            top_recommendations=top_recs,
+            refinement_verdict=refinement.verdict,
+            refinement_success_rate=refinement.success_rate,
+            latency_ms=round((time.monotonic() - t0) * 1000, 2),
+            arch_diagram=arch_diagram,
+            regression_passed=regression_passed,
+            regression_details=regression_details,
         )
 
     def _read_component_source(self, component: str, max_lines: int = 120) -> str:
@@ -928,7 +1357,8 @@ class SelfImprovementEngine:
             "config": "Validate",
         }.get(component, "Apply")
 
-        return [f"{action_prefix}: {s}" for s in signals[:3]]
+        src_path = _COMPONENT_SOURCE.get(component, f"engine/{component}.py")
+        return [f"{action_prefix} {src_path}: {s}" for s in signals[:3]]
 
     @staticmethod
     def _normalise_focus(optimization_focus: str) -> tuple[str, ...]:

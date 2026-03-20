@@ -122,7 +122,7 @@ class TestMCPManager:
 
     EXPECTED_TOOLS = {
         "file_read", "file_write", "code_analyze",
-        "web_lookup", "run_tests", "read_error", "spawn_process",
+        "web_lookup", "run_tests", "run_tests_isolated", "read_error", "spawn_process",
         "patch_apply", "render_screenshot",
     }
 
@@ -456,7 +456,7 @@ class TestNStrokeHappyPath:
         assert s.stroke == 1
         assert s.satisfied
         # 9 MCP tools (added patch_apply + render_screenshot)
-        assert len(s.mcp_tools_injected) == 9
+        assert len(s.mcp_tools_injected) == 10
         assert s.healing_report is None
 
     def test_first_stroke_uses_tier_1_model_for_build(self) -> None:
@@ -494,7 +494,7 @@ class TestNStrokeHappyPath:
         assert logged_envs, "No envelopes were passed to work_fn"
         for env in logged_envs:
             assert "mcp_tools" in env.metadata
-            assert len(env.metadata["mcp_tools"]) == 9
+            assert len(env.metadata["mcp_tools"]) == 10
 
     def test_no_model_escalation_on_happy_path(self) -> None:
         engine = _make_engine()
@@ -997,14 +997,14 @@ class TestNStrokeHTTPEndpoints:
     def test_health_mcp_manager_shows_tool_count(self, client: TestClient) -> None:
         resp = client.get("/v2/health")
         mcp_status = resp.json()["components"]["mcp_manager"]
-        assert "9 tools" in mcp_status
+        assert "10 tools" in mcp_status
 
     def test_mcp_tools_endpoint_returns_manifest(self, client: TestClient) -> None:
         resp = client.get("/v2/mcp/tools")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["tool_count"] == 9
-        assert len(data["tools"]) == 9
+        assert data["tool_count"] == 10
+        assert len(data["tools"]) == 10
 
     def test_mcp_tools_spec_shape(self, client: TestClient) -> None:
         resp = client.get("/v2/mcp/tools")
@@ -1067,7 +1067,7 @@ class TestNStrokeHTTPEndpoints:
         })
         result = resp.json()["result"]
         stroke = result["strokes"][0]
-        assert len(stroke["mcp_tools_injected"]) == 9
+        assert len(stroke["mcp_tools_injected"]) == 10
 
     def test_n_stroke_satisfied_on_good_mandate(self, client: TestClient) -> None:
         resp = client.post("/v2/n-stroke", json={

@@ -1,3 +1,14 @@
+# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
+# Cycle: 2026-03-20T19:59:47.187168+00:00
+# Component: psyche_bank  Source: engine/psyche_bank.py
+# Improvement signals from JIT SOTA booster:
+#  [1] Enforce engine/psyche_bank.py: OWASP Top 10 2025 edition promotes Broken
+#     Object-Level Authorisation to the #1 priority
+#  [2] Enforce engine/psyche_bank.py: OSS supply-chain audits (Sigstore + Rekor
+#     transparency log) are required in regulated environments
+#  [3] Enforce engine/psyche_bank.py: CSPM tools (Wiz, Orca, Prisma Cloud) provide
+#     real-time cloud posture scoring in 2026
+# ─────────────────────────────────────────────────────────────────
 """
 engine/psyche_bank.py — lightweight .cog.json rule store.
 
@@ -66,7 +77,14 @@ class PsycheBank:
             ttl_seconds: Optional TTL in seconds.  When provided the rule
                          receives an ``expires_at`` timestamp (now + TTL).
                          Omit or pass None for rules that should never expire.
+
+        Raises:
+            ValueError: if rule.id or rule.category are empty strings.
         """
+        if not isinstance(rule.id, str) or not rule.id.strip():
+            raise ValueError("CogRule.id must be a non-empty string")
+        if not isinstance(rule.category, str) or not rule.category.strip():
+            raise ValueError("CogRule.category must be a non-empty string")
         with self._lock:
             ids = {r.id for r in self._store.rules}
             if rule.id in ids:

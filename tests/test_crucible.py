@@ -222,9 +222,9 @@ class TestCrucibleRound1_Tribunal:
     # ── Pattern count constant ─────────────────────────────────────────────
 
     def test_exactly_twelve_poison_patterns(self):
-        """Must have 12 OWASP-aligned patterns (10 original + BOLA + SSRF)."""
-        assert len(_POISON) == 12, (
-            f"Expected 12 patterns, found {len(_POISON)}: {[n for n, _ in _POISON]}"
+        """Must have 16 OWASP-aligned patterns (13 original + supply-chain-tls-bypass + supply-chain-unpinned-install + bola-unfiltered-query already counted)."""
+        assert len(_POISON) == 16, (
+            f"Expected 16 patterns, found {len(_POISON)}: {[n for n, _ in _POISON]}"
         )
 
 
@@ -562,12 +562,12 @@ class TestCrucibleRound3_E2ECrucibleProof:
 
     # ── MCP manifest ──────────────────────────────────────────────────────
 
-    def test_mcp_manifest_has_nine_tools(self):
-        """MCP registry must contain exactly 9 tools after patch_apply + render_screenshot."""
+    def test_mcp_manifest_has_ten_tools(self):
+        """MCP registry must contain exactly 10 tools after run_tests_isolated added."""
         mcp = MCPManager()
         tools = mcp.manifest()
-        assert len(tools) == 9, (
-            f"Expected 9 tools, got {len(tools)}: {[t.name for t in tools]}"
+        assert len(tools) == 10, (
+            f"Expected 10 tools, got {len(tools)}: {[t.name for t in tools]}"
         )
 
     def test_mcp_manifest_contains_required_tools(self):

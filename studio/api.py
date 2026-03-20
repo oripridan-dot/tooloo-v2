@@ -51,6 +51,7 @@ from engine.config import (
     get_workspace_roots,
 )
 from engine.conversation import ConversationEngine
+from engine.buddy_memory import BuddyMemoryStore
 from engine.daemon import BackgroundDaemon
 from engine.engram_visual import VisualEngramGenerator
 from engine.executor import Envelope, JITExecutor
@@ -80,6 +81,7 @@ from engine.supervisor import TwoStrokeEngine
 from engine.tribunal import Engram, Tribunal
 from engine.validator_16d import Validator16D
 from engine.async_fluid_executor import AsyncFluidExecutor
+from engine.jit_designer import JITDesigner, analyze_partial_prompt
 
 # ── Singletons ────────────────────────────────────────────────────────────────
 _router = MandateRouter()
@@ -90,7 +92,8 @@ _executor = JITExecutor()
 _sorter = TopologicalSorter()
 _scope_evaluator = ScopeEvaluator()
 _refinement_loop = RefinementLoop()
-_conversation_engine = ConversationEngine()
+_buddy_memory = BuddyMemoryStore()
+_conversation_engine = ConversationEngine(memory_store=_buddy_memory)
 _jit_booster = JITBooster()
 _engram_generator = VisualEngramGenerator()
 _self_improvement_engine = SelfImprovementEngine(
@@ -106,6 +109,7 @@ _refinement_supervisor = RefinementSupervisor()
 _intent_discovery = ConversationalIntentDiscovery()
 _validator_16d = Validator16D()
 _async_fluid_executor = AsyncFluidExecutor()
+_jit_designer = JITDesigner()
 _STATIC = Path(__file__).parent / "static"
 _STARTUP_TIME: str = datetime.now(UTC).isoformat()
 
@@ -146,6 +150,7 @@ _n_stroke_engine = NStrokeEngine(
     model_selector=_model_selector,
     refinement_supervisor=_refinement_supervisor,
     broadcast_fn=_broadcast,
+    async_fluid_executor=_async_fluid_executor,
 )
 _branch_executor = BranchExecutor(
     router=_router,
@@ -255,9 +260,22 @@ async def _autonomous_loop() -> None:
 @asynccontextmanager
 async def _lifespan(_: FastAPI):
     _jit_booster.start_background_refresh()
+
+    async def _purge_psychebank_loop() -> None:
+        """Hourly background task: evict TTL-expired PsycheBank rules."""
+        while True:
+            await asyncio.sleep(3600)
+            removed = _bank.purge_expired()
+            if removed:
+                _broadcast({"type": "psychebank_purge", "removed": removed})
+
+    purge_task = asyncio.create_task(_purge_psychebank_loop())
     try:
         yield
     finally:
+        purge_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await purge_task
         _jit_booster.stop_background_refresh()
 
 
@@ -281,9 +299,17 @@ async def serve_index() -> HTMLResponse:
     return HTMLResponse(content=html)
 
 
+@app.get("/demo", response_class=HTMLResponse, include_in_schema=False)
+async def serve_buddy_demo() -> HTMLResponse:
+    """Standalone SOTA real-time Buddy demo — DAG visualization + EQ chat."""
+    html = (_STATIC / "buddy_demo.html").read_text(encoding="utf-8")
+    return HTMLResponse(content=html)
+
+
 @app.get("/v2/health")
 async def health() -> dict[str, Any]:
     mcp_tool_count = len(_mcp_manager.manifest())
+    dora = _executor.dora_metrics().to_dict()
     return {
         "status": "ok",
         "version": "2.1.0",
@@ -306,7 +332,9 @@ async def health() -> dict[str, Any]:
             "model_garden": get_garden().to_status(),
             "validator_16d": "up",
             "async_fluid_executor": "up",
+            "buddy_memory": f"{_buddy_memory.entry_count()} entries",
         },
+        "dora": dora,
     }
 
 
@@ -340,6 +368,10 @@ class BuddyChatRequest(BaseModel):
     text: str
     session_id: str = ""
     depth_level: int = 1  # 1=Chat/Explore, 2=JIT Validation (deeper signals)
+
+
+class BuddyListenRequest(BaseModel):
+    text: str = Field(default="", max_length=2000)
 
 
 class PipelineRequest(BaseModel):
@@ -425,15 +457,37 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
         req.text, route, session_id, jit_result=jit_result
     )
 
-    # 6. SSE broadcast
+    # 6. JIT Designer — compute visual rendering directive
+    memory_recalled = bool(_buddy_memory.find_relevant(req.text, limit=1))
+    design_directive = _jit_designer.evaluate(
+        intent=route.intent,
+        emotional_state=conv_result.emotional_state,
+        confidence=route.confidence,
+        response_text=conv_result.response_text,
+        memory_recalled=memory_recalled,
+        jit_signal_count=len(jit_result.signals) if jit_result.signals else 0,
+    )
+
+    # 7. SSE broadcast — includes emotional_state so the demo DAG can update EQ ring
     _broadcast({
         "type": "buddy_chat_fast",
         "mandate_id": mandate_id,
         "session_id": session_id,
         "intent": route.intent,
         "confidence": route.confidence,
+        "emotional_state": conv_result.emotional_state,
+        "tribunal_passed": tribunal_result.passed,
         "jit_boost": jit_result.to_dict(),
+        "design_directive": design_directive.to_dict(),
     })
+    # Broadcast each thought card as a separate SSE event for storybook rendering
+    for card in design_directive.thought_cards:
+        _broadcast({
+            "type": "thought",
+            "mandate_id": mandate_id,
+            "session_id": session_id,
+            "card": card.to_dict(),
+        })
     # Broadcast any VLT patches emitted by Buddy (spatial 3D mutations)
     for patch in conv_result.vlt_patches:
         _broadcast(patch.to_dict())
@@ -453,8 +507,56 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
         "depth_level": req.depth_level,
         "visual_artifacts": [a.to_dict() for a in conv_result.visual_artifacts],
         "vlt_patches": [p.to_dict() for p in conv_result.vlt_patches],
+        "design_directive": design_directive.to_dict(),
         "latency_ms": round((time.monotonic() - t0) * 1000, 2),
     }
+
+
+# ── Buddy Active Listener endpoint ──────────────────────────────────────────
+
+
+@app.post("/v2/buddy/listen")
+async def buddy_listen(req: BuddyListenRequest) -> dict[str, Any]:
+    """Ultra-low-latency active listener for real-time typing feedback.
+
+    Analyzes a partial user prompt with pure heuristics (no LLM calls) and
+    returns comprehension signals to drive the Active Listener UI:
+      - comprehension_level : clear | vague | complex | listening
+      - visual_indicator    : nodding | thinking | listening | confused_tilt
+      - prompt_suggestions  : 1-2 actionable tips to tighten the prompt
+      - detected_intent     : best-guess intent (or "")
+      - word_count          : int
+    """
+    result = analyze_partial_prompt(req.text)
+    return result
+
+
+# ── Buddy Memory endpoints ────────────────────────────────────────────────────
+
+
+@app.get("/v2/buddy/memory")
+async def get_buddy_memory(limit: int = 10) -> dict[str, Any]:
+    """Return the *limit* most recently saved conversation memory entries."""
+    limit = max(1, min(limit, 50))
+    entries = _buddy_memory.recent(limit=limit)
+    return {
+        "count": len(entries),
+        "total_stored": _buddy_memory.entry_count(),
+        "entries": [e.to_dict() for e in entries],
+    }
+
+
+@app.post("/v2/buddy/memory/save/{session_id}")
+async def save_buddy_memory(session_id: str) -> dict[str, Any]:
+    """Explicitly persist the named in-progress session to BuddyMemoryStore."""
+    entry = _conversation_engine.save_session_to_memory(session_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found or had fewer than 2 user turns.",
+        )
+    _broadcast({"type": "buddy_memory_saved", "session_id": session_id})
+    return {"saved": True, "session_id": session_id, "entry": entry.to_dict()}
 
 
 # ── Intent Discovery endpoint ─────────────────────────────────────────────────
@@ -1201,6 +1303,7 @@ async def run_n_stroke(req: NStrokeRequest) -> dict[str, Any]:
             refinement_supervisor=_refinement_supervisor,
             broadcast_fn=_broadcast,
             max_strokes=req.max_strokes,
+            async_fluid_executor=_async_fluid_executor,
         )
 
     result = await loop.run_in_executor(
@@ -1213,6 +1316,134 @@ async def run_n_stroke(req: NStrokeRequest) -> dict[str, Any]:
         "session_id": session_id,
         "result": result.to_dict(),
         "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+    }
+
+
+@app.post("/v2/n-stroke/async")
+async def run_n_stroke_async(req: NStrokeRequest) -> dict[str, Any]:
+    """N-Stroke Autonomous Cognitive Loop — async fluid execution variant.
+
+    Identical to POST /v2/n-stroke but uses AsyncFluidExecutor.fan_out_dag_async()
+    for Process 2 execution.  Each DAG node fires the instant its individual
+    dependencies resolve, eliminating wave-level stalls.
+
+    Expected latency improvement: 25-40% on DAGs with 6+ nodes and non-trivial
+    dependency fan-out structures (diamond shapes, multiple parallel branches).
+
+    Response includes ``"execution_mode": "async_fluid"`` in execution SSE events.
+    """
+    t0 = time.monotonic()
+    pipeline_id = f"ns-async-{uuid.uuid4().hex[:8]}"
+    session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
+
+    locked = LockedIntent(
+        intent=req.intent,
+        confidence=req.confidence,
+        value_statement=req.value_statement,
+        constraint_summary=req.constraint_summary,
+        mandate_text=req.mandate_text,
+        context_turns=[],
+        locked_at=datetime.now(UTC).isoformat(),
+    )
+
+    engine = _n_stroke_engine
+    if req.max_strokes != 7:
+        from engine.n_stroke import NStrokeEngine as _NSE
+        engine = _NSE(
+            router=_router,
+            booster=_jit_booster,
+            tribunal=_tribunal,
+            sorter=_sorter,
+            executor=_executor,
+            scope_evaluator=_scope_evaluator,
+            refinement_loop=_refinement_loop,
+            mcp_manager=_mcp_manager,
+            model_selector=_model_selector,
+            refinement_supervisor=_refinement_supervisor,
+            broadcast_fn=_broadcast,
+            max_strokes=req.max_strokes,
+            async_fluid_executor=_async_fluid_executor,
+        )
+
+    result = await engine.run_async(locked, pipeline_id=pipeline_id)
+
+    return {
+        "pipeline_id": pipeline_id,
+        "session_id": session_id,
+        "result": result.to_dict(),
+        "execution_mode": "async_fluid",
+        "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+    }
+
+
+@app.get("/v2/n-stroke/benchmark")
+async def n_stroke_benchmark() -> dict[str, Any]:
+    """Run one sync stroke and one async stroke on a fixed short mandate.
+
+    Returns timing comparison so clients can decide which execution path is
+    faster for their deployment.  Both strokes use max_strokes=1 to keep
+    the benchmark short.
+    """
+    import time as _time
+    _mandate = "benchmark build create implement generate"
+    _locked = LockedIntent(
+        intent="BUILD",
+        confidence=0.95,
+        value_statement=_mandate,
+        constraint_summary="benchmark only",
+        mandate_text=_mandate,
+        context_turns=[],
+        locked_at=datetime.now(UTC).isoformat(),
+    )
+
+    # --- sync stroke ---
+    _engine_sync = NStrokeEngine(
+        router=_router,
+        booster=_jit_booster,
+        tribunal=_tribunal,
+        sorter=_sorter,
+        executor=_executor,
+        scope_evaluator=_scope_evaluator,
+        refinement_loop=_refinement_loop,
+        mcp_manager=_mcp_manager,
+        model_selector=_model_selector,
+        refinement_supervisor=_refinement_supervisor,
+        broadcast_fn=_broadcast,
+        max_strokes=1,
+    )
+    _t_sync = _time.monotonic()
+    _res_sync = _engine_sync.run(_locked, pipeline_id="bench-sync")
+    sync_ms = round((_time.monotonic() - _t_sync) * 1000, 2)
+
+    # --- async stroke ---
+    _engine_async = NStrokeEngine(
+        router=_router,
+        booster=_jit_booster,
+        tribunal=_tribunal,
+        sorter=_sorter,
+        executor=_executor,
+        scope_evaluator=_scope_evaluator,
+        refinement_loop=_refinement_loop,
+        mcp_manager=_mcp_manager,
+        model_selector=_model_selector,
+        refinement_supervisor=_refinement_supervisor,
+        broadcast_fn=_broadcast,
+        max_strokes=1,
+        async_fluid_executor=_async_fluid_executor,
+    )
+    _t_async = _time.monotonic()
+    _res_async = await _engine_async.run_async(_locked, pipeline_id="bench-async")
+    async_ms = round((_time.monotonic() - _t_async) * 1000, 2)
+
+    delta_ms = round(sync_ms - async_ms, 2)
+    faster = "async_fluid" if async_ms < sync_ms else "sync"
+    return {
+        "sync_ms": sync_ms,
+        "async_ms": async_ms,
+        "delta_ms": delta_ms,
+        "faster": faster,
+        "sync_verdict": _res_sync.final_verdict,
+        "async_verdict": _res_async.final_verdict,
     }
 
 

@@ -13,8 +13,8 @@
     rel="stylesheet" />
   <!-- GSAP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <!-- Three.js r165 — WebGL spatial engine -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script>
+  <!-- Three.js r128 — WebGL spatial engine (served locally for Codespace compatibility) -->
+  <script src="/static/three.min.js"></script>
   <!-- ONNX Runtime Web — on-device inference via WebNN (GPU) with WASM fallback -->
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
   <!-- Mermaid — diagram rendering -->
@@ -547,6 +547,7 @@
       gap: 6px;
       margin-top: 8px;
     }
+
     .suggestion-chip {
       font-size: 11px;
       padding: 4px 10px;
@@ -558,8 +559,9 @@
       transition: background 0.15s, border-color 0.15s;
       font-family: var(--sans);
     }
+
     .suggestion-chip:hover {
-      background: rgba(0,229,255,0.08);
+      background: rgba(0, 229, 255, 0.08);
       border-color: var(--cyan);
       color: var(--cyan);
     }
@@ -1161,6 +1163,12 @@
       color: var(--text);
     }
 
+    /* Async-fluid execution events get a teal left border accent */
+    .ev.async-fluid {
+      border-left: 3px solid #00ffe0;
+      padding-left: 6px;
+    }
+
     .ev-m {
       color: var(--text-muted);
       overflow: hidden;
@@ -1228,7 +1236,9 @@
         <span id="model-chip" class="chip chip-blue">Gemini 2.5 Flash</span>
         <span id="breaker-chip" class="chip chip-green">CB:CLOSED</span>
         <span id="conn-chip" class="chip chip-green">● LIVE</span>
-        <button id="ops-toggle" class="chip chip-blue" style="cursor:pointer;border:none;padding:3px 10px;font-size:9px;font-weight:700;letter-spacing:0.07em;" aria-label="Open Operations Panel">⚙ OPS</button>
+        <button id="ops-toggle" class="chip chip-blue"
+          style="cursor:pointer;border:none;padding:3px 10px;font-size:9px;font-weight:700;letter-spacing:0.07em;"
+          aria-label="Open Operations Panel">⚙ OPS</button>
       </div>
     </header>
 
@@ -1277,7 +1287,8 @@
             but actually work through problems with you. Tell me what you're working on
             and we'll figure it out together.
             <br /><br />
-            <em style="color:var(--muted);font-size:12px">Switch to <strong>Pipeline</strong> depth to trigger full build/debug execution.</em>
+            <em style="color:var(--muted);font-size:12px">Switch to <strong>Pipeline</strong> depth to trigger full
+              build/debug execution.</em>
           </div>
         </div>
       </div>
@@ -1450,105 +1461,173 @@
   <div id="ops-panel" role="dialog" aria-modal="true" aria-label="Operations Panel"
     style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(8,8,16,0.92);backdrop-filter:blur(6px);flex-direction:column;">
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);">
+    <div
+      style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);">
       <div style="font-size:12px;font-weight:700;letter-spacing:0.1em;color:var(--text)">⚙ OPERATIONS PANEL</div>
       <button id="ops-close" aria-label="Close Operations Panel"
         style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:4px 8px;">✕</button>
     </div>
     <!-- Tab Bar -->
-    <div id="ops-tabs" style="display:flex;gap:4px;padding:8px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
-      <button class="ops-tab" data-tab="router" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:var(--accent);color:var(--bg);border:none;border-radius:3px;cursor:pointer;">ROUTER</button>
-      <button class="ops-tab" data-tab="psychebank" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">PSYCHEBANK</button>
-      <button class="ops-tab" data-tab="self-improve" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">SELF-IMPROVE</button>
-      <button class="ops-tab" data-tab="daemon" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">DAEMON</button>
-      <button class="ops-tab" data-tab="knowledge" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">KNOWLEDGE</button>
-      <button class="ops-tab" data-tab="roadmap" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">ROADMAP</button>
-      <button class="ops-tab" data-tab="sandbox" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">SANDBOX</button>
-      <button class="ops-tab" data-tab="branch" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">BRANCH</button>
-      <button class="ops-tab" data-tab="autoloop" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">AUTO-LOOP</button>
-      <button class="ops-tab" data-tab="engram" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">ENGRAM</button>
-      <button class="ops-tab" data-tab="mcp" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">MCP</button>
-      <button class="ops-tab" data-tab="status" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">STATUS</button>
-      <button class="ops-tab" data-tab="vlt" style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">VLT</button>
+    <div id="ops-tabs"
+      style="display:flex;gap:4px;padding:8px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+      <button class="ops-tab" data-tab="router"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:var(--accent);color:var(--bg);border:none;border-radius:3px;cursor:pointer;">ROUTER</button>
+      <button class="ops-tab" data-tab="psychebank"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">PSYCHEBANK</button>
+      <button class="ops-tab" data-tab="self-improve"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">SELF-IMPROVE</button>
+      <button class="ops-tab" data-tab="daemon"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">DAEMON</button>
+      <button class="ops-tab" data-tab="knowledge"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">KNOWLEDGE</button>
+      <button class="ops-tab" data-tab="roadmap"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">ROADMAP</button>
+      <button class="ops-tab" data-tab="sandbox"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">SANDBOX</button>
+      <button class="ops-tab" data-tab="branch"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">BRANCH</button>
+      <button class="ops-tab" data-tab="autoloop"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">AUTO-LOOP</button>
+      <button class="ops-tab" data-tab="engram"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">ENGRAM</button>
+      <button class="ops-tab" data-tab="mcp"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">MCP</button>
+      <button class="ops-tab" data-tab="status"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">STATUS</button>
+      <button class="ops-tab" data-tab="vlt"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">VLT</button>
+      <button class="ops-tab" data-tab="memory"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">MEMORY</button>
     </div>
     <!-- Tab Content -->
     <div id="ops-content" style="flex:1;overflow-y:auto;padding:20px;font-size:13px;color:var(--text);">
 
       <!-- ROUTER STATUS -->
       <div id="ops-tab-router" class="ops-tab-pane">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">ROUTER / CIRCUIT BREAKER</h3>
-        <div id="ops-router-status" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:12px;font-family:var(--mono);font-size:12px;">Loading…</div>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">ROUTER
+          / CIRCUIT BREAKER</h3>
+        <div id="ops-router-status"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:12px;font-family:var(--mono);font-size:12px;">
+          Loading…</div>
         <div style="display:flex;gap:8px;">
-          <button id="ops-router-reset-btn" style="padding:6px 16px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">Reset Breaker</button>
-          <button id="ops-router-refresh-btn" style="padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ Refresh</button>
+          <button id="ops-router-reset-btn"
+            style="padding:6px 16px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">Reset
+            Breaker</button>
+          <button id="ops-router-refresh-btn"
+            style="padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            Refresh</button>
         </div>
       </div>
 
       <!-- PSYCHEBANK -->
       <div id="ops-tab-psychebank" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">PSYCHEBANK — OWASP RULES</h3>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">
+          PSYCHEBANK — OWASP RULES</h3>
         <div id="ops-psychebank-list" style="display:flex;flex-direction:column;gap:8px;">Loading…</div>
-        <button id="ops-psychebank-refresh-btn" style="margin-top:12px;padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ Refresh Rules</button>
+        <button id="ops-psychebank-refresh-btn"
+          style="margin-top:12px;padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+          Refresh Rules</button>
       </div>
 
       <!-- SELF-IMPROVE -->
       <div id="ops-tab-self-improve" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">SELF-IMPROVEMENT ENGINE</h3>
-        <button id="ops-si-run-btn" style="padding:8px 20px;font-size:12px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">▶ Run Cycle</button>
-        <div id="ops-si-output" style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;min-height:80px;"></div>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">
+          SELF-IMPROVEMENT ENGINE</h3>
+        <button id="ops-si-run-btn"
+          style="padding:8px 20px;font-size:12px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">▶
+          Run Cycle</button>
+        <div id="ops-si-output"
+          style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;min-height:80px;">
+        </div>
         <h4 style="font-size:10px;font-weight:700;color:var(--text-muted);margin:16px 0 8px;">APPLY SINGLE FIX</h4>
         <div style="display:flex;gap:8px;">
-          <input id="ops-si-apply-input" placeholder="Paste suggestion text to apply…" style="flex:1;padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);" />
-          <button id="ops-si-apply-btn" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Apply Fix</button>
+          <input id="ops-si-apply-input" placeholder="Paste suggestion text to apply…"
+            style="flex:1;padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);" />
+          <button id="ops-si-apply-btn"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Apply
+            Fix</button>
         </div>
-        <div id="ops-si-apply-output" style="margin-top:8px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;"></div>
+        <div id="ops-si-apply-output"
+          style="margin-top:8px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;"></div>
       </div>
 
       <!-- DAEMON -->
       <div id="ops-tab-daemon" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">BACKGROUND DAEMON</h3>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">
+          BACKGROUND DAEMON</h3>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button id="ops-daemon-start" style="padding:6px 16px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">▶ Start</button>
-          <button id="ops-daemon-stop" style="padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">⏸ Stop</button>
-          <button id="ops-daemon-refresh" style="padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ Status</button>
+          <button id="ops-daemon-start"
+            style="padding:6px 16px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">▶
+            Start</button>
+          <button id="ops-daemon-stop"
+            style="padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">⏸
+            Stop</button>
+          <button id="ops-daemon-refresh"
+            style="padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            Status</button>
         </div>
-        <div id="ops-daemon-status" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;margin-bottom:10px;">Loading…</div>
+        <div id="ops-daemon-status"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;margin-bottom:10px;">
+          Loading…</div>
         <h4 style="font-size:10px;font-weight:700;color:var(--text-muted);margin:10px 0 6px;">PENDING APPROVALS</h4>
-        <div id="ops-daemon-approvals" style="display:flex;flex-direction:column;gap:8px;"><span style="font-size:12px;color:var(--text-muted)">No pending approvals.</span></div>
+        <div id="ops-daemon-approvals" style="display:flex;flex-direction:column;gap:8px;"><span
+            style="font-size:12px;color:var(--text-muted)">No pending approvals.</span></div>
       </div>
 
       <!-- KNOWLEDGE BANKS -->
       <div id="ops-tab-knowledge" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">KNOWLEDGE BANKS</h3>
-        <div id="ops-kb-health" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px;font-size:12px;">Loading…</div>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">
+          KNOWLEDGE BANKS</h3>
+        <div id="ops-kb-health"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px;font-size:12px;">
+          Loading…</div>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button id="ops-kb-refresh" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ Refresh</button>
-          <button id="ops-kb-ingest" style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">⚡ Full Re-Ingest</button>
+          <button id="ops-kb-refresh"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            Refresh</button>
+          <button id="ops-kb-ingest"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">⚡
+            Full Re-Ingest</button>
         </div>
         <div id="ops-kb-list" style="display:flex;flex-direction:column;gap:6px;"></div>
         <h4 style="font-size:10px;font-weight:700;color:var(--text-muted);margin:16px 0 8px;">QUERY KNOWLEDGE</h4>
         <div style="display:flex;gap:8px;">
-          <input id="ops-kb-query-input" placeholder="Enter topic to query…" style="flex:1;padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);" />
-          <button id="ops-kb-query-btn" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Query</button>
+          <input id="ops-kb-query-input" placeholder="Enter topic to query…"
+            style="flex:1;padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);" />
+          <button id="ops-kb-query-btn"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Query</button>
         </div>
-        <div id="ops-kb-query-result" style="margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;display:none;"></div>
+        <div id="ops-kb-query-result"
+          style="margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;display:none;">
+        </div>
       </div>
 
       <!-- ROADMAP -->
       <div id="ops-tab-roadmap" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">ROADMAP</h3>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">ROADMAP
+        </h3>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button id="ops-roadmap-refresh" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ Refresh</button>
-          <button id="ops-roadmap-run" style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">▶ Run All</button>
+          <button id="ops-roadmap-refresh"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            Refresh</button>
+          <button id="ops-roadmap-run"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">▶
+            Run All</button>
         </div>
         <div id="ops-roadmap-list" style="display:flex;flex-direction:column;gap:8px;">Loading…</div>
         <h4 style="font-size:10px;font-weight:700;color:var(--text-muted);margin:16px 0 8px;">ADD ITEM</h4>
         <div style="display:flex;flex-direction:column;gap:6px;">
-          <input id="ops-roadmap-item-title" placeholder="Title…" style="padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);" />
-          <input id="ops-roadmap-item-desc" placeholder="Description / mandate…" style="padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);" />
+          <input id="ops-roadmap-item-title" placeholder="Title…"
+            style="padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);" />
+          <input id="ops-roadmap-item-desc" placeholder="Description / mandate…"
+            style="padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);" />
           <div style="display:flex;gap:8px;">
-            <button id="ops-roadmap-add-btn" style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">+ Add Item</button>
-            <button id="ops-roadmap-similar-btn" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">≈ Check Similar</button>
+            <button id="ops-roadmap-add-btn"
+              style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">+
+              Add Item</button>
+            <button id="ops-roadmap-similar-btn"
+              style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">≈
+              Check Similar</button>
           </div>
           <div id="ops-roadmap-add-result" style="font-size:11px;font-family:var(--mono);white-space:pre-wrap;"></div>
         </div>
@@ -1556,84 +1635,166 @@
 
       <!-- SANDBOX -->
       <div id="ops-tab-sandbox" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">SANDBOXES</h3>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">
+          SANDBOXES</h3>
         <h4 style="font-size:10px;font-weight:700;color:var(--text-muted);margin:0 0 8px;">SPAWN NEW SANDBOX</h4>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <input id="ops-sandbox-mandate" placeholder="Feature mandate for sandbox…" style="flex:1;padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);" />
-          <button id="ops-sandbox-spawn" style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">⊕ Spawn</button>
+          <input id="ops-sandbox-mandate" placeholder="Feature mandate for sandbox…"
+            style="flex:1;padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);" />
+          <button id="ops-sandbox-spawn"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">⊕
+            Spawn</button>
         </div>
-        <div id="ops-sandbox-spawn-result" style="margin-bottom:12px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;"></div>
+        <div id="ops-sandbox-spawn-result"
+          style="margin-bottom:12px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;"></div>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button id="ops-sandbox-refresh" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ List</button>
+          <button id="ops-sandbox-refresh"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            List</button>
         </div>
-        <div id="ops-sandbox-list" style="display:flex;flex-direction:column;gap:8px;">Click List to load sandboxes…</div>
+        <div id="ops-sandbox-list" style="display:flex;flex-direction:column;gap:8px;">Click List to load sandboxes…
+        </div>
       </div>
 
       <!-- BRANCH -->
       <div id="ops-tab-branch" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">BRANCH EXECUTOR</h3>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">BRANCH
+          EXECUTOR</h3>
         <h4 style="font-size:10px;font-weight:700;color:var(--text-muted);margin:0 0 8px;">CREATE BRANCH</h4>
         <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <select id="ops-branch-type" style="padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);">
+          <select id="ops-branch-type"
+            style="padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);">
             <option value="fork">FORK</option>
             <option value="clone">CLONE</option>
             <option value="share">SHARE</option>
           </select>
-          <input id="ops-branch-mandate" placeholder="Mandate text…" style="flex:1;padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);" />
-          <button id="ops-branch-create" style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">⊕ Create</button>
+          <input id="ops-branch-mandate" placeholder="Mandate text…"
+            style="flex:1;padding:6px 10px;font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);" />
+          <button id="ops-branch-create"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">⊕
+            Create</button>
         </div>
-        <div id="ops-branch-create-result" style="margin-bottom:12px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;"></div>
-        <button id="ops-branch-refresh" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ List Branches</button>
-        <div id="ops-branch-list" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">Click List to load branches…</div>
+        <div id="ops-branch-create-result"
+          style="margin-bottom:12px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;"></div>
+        <button id="ops-branch-refresh"
+          style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+          List Branches</button>
+        <div id="ops-branch-list" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">Click List to load
+          branches…</div>
       </div>
 
       <!-- AUTO-LOOP -->
       <div id="ops-tab-autoloop" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">AUTONOMOUS LOOP</h3>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">
+          AUTONOMOUS LOOP</h3>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button id="ops-al-start" style="padding:6px 16px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">▶ Start</button>
-          <button id="ops-al-stop" style="padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">⏸ Stop</button>
-          <button id="ops-al-status" style="padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ Status</button>
+          <button id="ops-al-start"
+            style="padding:6px 16px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">▶
+            Start</button>
+          <button id="ops-al-stop"
+            style="padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">⏸
+            Stop</button>
+          <button id="ops-al-status"
+            style="padding:6px 16px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            Status</button>
         </div>
-        <div id="ops-al-output" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;min-height:60px;"></div>
+        <div id="ops-al-output"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;min-height:60px;">
+        </div>
       </div>
 
       <!-- ENGRAM -->
       <div id="ops-tab-engram" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">VISUAL ENGRAM</h3>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">VISUAL
+          ENGRAM</h3>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button id="ops-engram-refresh" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ Current State</button>
-          <button id="ops-engram-generate" style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">⚡ Generate</button>
+          <button id="ops-engram-refresh"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            Current State</button>
+          <button id="ops-engram-generate"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">⚡
+            Generate</button>
         </div>
-        <div id="ops-engram-output" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;min-height:80px;">Click Current State to load engram…</div>
+        <div id="ops-engram-output"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;min-height:80px;">
+          Click Current State to load engram…</div>
       </div>
 
       <!-- MCP TOOLS -->
       <div id="ops-tab-mcp" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">MCP TOOL MANIFEST</h3>
-        <button id="ops-mcp-refresh" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ Load Tools</button>
-        <div id="ops-mcp-list" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">Click Load Tools to view the MCP manifest…</div>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">MCP
+          TOOL MANIFEST</h3>
+        <button id="ops-mcp-refresh"
+          style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+          Load Tools</button>
+        <div id="ops-mcp-list" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">Click Load Tools to
+          view the MCP manifest…</div>
       </div>
 
       <!-- SYSTEM STATUS -->
       <div id="ops-tab-status" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">SYSTEM STATUS</h3>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button id="ops-status-refresh" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ Full Status</button>
-          <button id="ops-status-async" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Async-Exec Status</button>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">SYSTEM
+          STATUS</h3>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button id="ops-status-refresh"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            Full Status</button>
+          <button id="ops-status-async"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Async-Exec
+            Status</button>
+          <button id="ops-status-async-toggle" data-async="0"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:#00ffe0;border:1px solid #00ffe0;border-radius:4px;cursor:pointer;"
+            title="Toggle N-Stroke between sync and async-fluid execution paths">&#x26A1; Async N-Stroke: OFF</button>
+          <button id="ops-run-benchmark"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;"
+            title="Run sync vs async benchmark and compare latency">&#x23F1; Benchmark</button>
         </div>
-        <div id="ops-status-output" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;min-height:80px;">Click Full Status to load…</div>
+        <!-- Async N-Stroke direct run panel -->
+        <div style="margin-bottom:10px;">
+          <textarea id="ops-async-mandate-input" placeholder="Enter mandate for async N-Stroke run…"
+            style="width:100%;box-sizing:border-box;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:8px;font-family:var(--mono);font-size:11px;resize:vertical;min-height:48px;"></textarea>
+          <button id="ops-run-async-nstroke"
+            style="margin-top:6px;padding:6px 16px;font-size:11px;font-weight:700;background:#00ffe0;color:#0a0a0f;border:none;border-radius:4px;cursor:pointer;">
+            &#x26A1; Run Async N-Stroke
+          </button>
+        </div>
+        <div id="ops-status-output"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;min-height:80px;">
+          Click Full Status to load…</div>
       </div>
 
       <!-- VLT -->
       <div id="ops-tab-vlt" class="ops-tab-pane" style="display:none;">
-        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">VISUAL LAYOUT TREE</h3>
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">VISUAL
+          LAYOUT TREE</h3>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button id="ops-vlt-demo" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻ Load Demo</button>
-          <button id="ops-vlt-audit" style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">Audit Demo VLT</button>
-          <button id="ops-vlt-render" style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Render</button>
+          <button id="ops-vlt-demo"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            Load Demo</button>
+          <button id="ops-vlt-audit"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--accent);color:var(--bg);border:none;border-radius:4px;cursor:pointer;">Audit
+            Demo VLT</button>
+          <button id="ops-vlt-render"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Render</button>
         </div>
-        <div id="ops-vlt-output" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;min-height:80px;">Click Load Demo to view VLT tree…</div>
+        <div id="ops-vlt-output"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;white-space:pre-wrap;min-height:80px;">
+          Click Load Demo to view VLT tree…</div>
+      </div>
+
+      <!-- MEMORY -->
+      <div id="ops-tab-memory" class="ops-tab-pane" style="display:none;">
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">BUDDY
+          PERSISTENT MEMORY</h3>
+        <p style="font-size:11px;color:var(--text-muted);margin:0 0 12px;">Past conversation sessions saved across
+          server restarts. Buddy uses these to recall context in new chats.</p>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button id="ops-memory-refresh-btn"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            Refresh</button>
+        </div>
+        <div id="ops-memory-stats" style="font-size:11px;color:var(--text-muted);margin-bottom:10px;"></div>
+        <div id="ops-memory-list" style="display:flex;flex-direction:column;gap:8px;">Loading…</div>
       </div>
 
     </div><!-- /#ops-content -->
@@ -1969,14 +2130,25 @@
       roadmap_promote: 'refinement',
       daemon_status: 'route', daemon_rt: 'execution',
       daemon_approval_needed: 'healing_triggered',
+      // Buddy memory / PsycheBank events
+      buddy_memory_saved: 'jit_boost', psychebank_purge: 'refinement',
+      // Self-improve apply
+      self_improve_apply: 'execution',
+      // Swarm events
+      swarm_reconciliation: 'healing_triggered', swarm_synthesis: 'jit_boost',
+      // VLT push
+      vlt_push: 'vlt_patch',
+      // Sandbox orchestrator progress events
+      sandbox: 'execution',
     };
 
-    function addEventLine(type, msg) {
+    function addEventLine(type, msg, extra) {
       const feed = document.getElementById('event-feed');
       if (!feed) return;
       const cls = SSE_CLASSES[type] || '';
       const row = document.createElement('div');
       row.className = 'ev';
+      if (extra && extra.execution_mode === 'async_fluid') row.classList.add('async-fluid');
       row.innerHTML = `
     <span class="ev-t">${fmtTime()}</span>
     <span class="ev-k ${esc(cls)}">${esc(type)}</span>
@@ -1988,7 +2160,7 @@
 
     function handleSSE(ev) {
       const t = ev.type || '';
-      addEventLine(t, ev.message || ev.buddy_line || ev.text || '');
+      addEventLine(t, ev.message || ev.buddy_line || ev.text || '', ev);
 
       switch (t) {
         case 'route':
@@ -2322,10 +2494,10 @@
       const suggestions = ev.suggestions || [];
       const chipsHtml = suggestions.length
         ? '<div class="suggestion-chips">' +
-            suggestions.map(s =>
-              `<button class="suggestion-chip" onclick="document.getElementById('msg-input').value=this.textContent;document.getElementById('msg-input').dispatchEvent(new Event('input'));">${esc(s)}</button>`
-            ).join('') +
-          '</div>'
+        suggestions.map(s =>
+          `<button class="suggestion-chip" onclick="document.getElementById('msg-input').value=this.textContent;document.getElementById('msg-input').dispatchEvent(new Event('input'));">${esc(s)}</button>`
+        ).join('') +
+        '</div>'
         : '';
 
       g.innerHTML = `<div class="msg-meta">Buddy</div><div class="bubble buddy" style="${emotionStyle}">${_md(text)}</div>${chipsHtml}${jitBadge}`;
@@ -2870,7 +3042,7 @@
         }
 
         function getBackend() { return _backend; }
-        function isReady()    { return _ready; }
+        function isReady() { return _ready; }
 
         return { init, run, getBackend, isReady };
       })();
@@ -2984,15 +3156,15 @@
             el.innerHTML = rules.length === 0
               ? '<span style="color:var(--text-muted);font-size:12px">No rules found.</span>'
               : rules.map(r =>
-                  '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
-                  '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">' +
-                  '<span style="font-size:10px;font-weight:700;color:var(--accent);">' + esc(r.id) + '</span>' +
-                  '<span style="font-size:10px;color:var(--text-muted);">' + esc(r.category) + '</span>' +
-                  '<span style="font-size:10px;color:var(--text-muted);">' + esc(r.enforcement) + '</span>' +
-                  '</div>' +
-                  '<div style="font-size:12px;color:var(--text);">' + esc(r.description) + '</div>' +
-                  '</div>'
-                ).join('');
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">' +
+                '<span style="font-size:10px;font-weight:700;color:var(--accent);">' + esc(r.id) + '</span>' +
+                '<span style="font-size:10px;color:var(--text-muted);">' + esc(r.category) + '</span>' +
+                '<span style="font-size:10px;color:var(--text-muted);">' + esc(r.enforcement) + '</span>' +
+                '</div>' +
+                '<div style="font-size:12px;color:var(--text);">' + esc(r.description) + '</div>' +
+                '</div>'
+              ).join('');
           } catch (e) {
             const el = document.getElementById('ops-psychebank-list');
             if (el) el.textContent = 'Error: ' + e.message;
@@ -3019,7 +3191,7 @@
                 '</div></div>'
               ).join('');
             }
-          } catch(e) {
+          } catch (e) {
             const el = document.getElementById('ops-daemon-status');
             if (el) el.textContent = 'Error: ' + e.message;
           }
@@ -3042,7 +3214,7 @@
                 '</div>'
               ).join('');
             }
-          } catch(e) {
+          } catch (e) {
             const el = document.getElementById('ops-kb-health');
             if (el) el.textContent = 'Error: ' + e.message;
           }
@@ -3056,15 +3228,15 @@
             el.innerHTML = items.length === 0
               ? '<span style="font-size:12px;color:var(--text-muted)">No roadmap items yet.</span>'
               : items.map(it =>
-                  '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
-                  '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-                  '<strong>' + esc(it.title || it.mandate_text?.slice(0,60) || it.id) + '</strong>' +
-                  '<div style="display:flex;gap:6px;align-items:center;">' +
-                  '<span style="font-size:10px;color:var(--text-muted);">' + esc(it.status || '') + '</span>' +
-                  (it.status !== 'promoted' ? '<button onclick="fetch(\'/v2/roadmap/\'+' + JSON.stringify(it.id || '') + '+\'/promote\',{method:\'POST\'}).then(()=>OpsPanel.loaders.roadmap())" style="padding:2px 8px;font-size:10px;font-weight:700;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:3px;cursor:pointer;">Promote</button>' : '') +
-                  '</div></div></div>'
-                ).join('');
-          } catch(e) {
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                '<strong>' + esc(it.title || it.mandate_text?.slice(0, 60) || it.id) + '</strong>' +
+                '<div style="display:flex;gap:6px;align-items:center;">' +
+                '<span style="font-size:10px;color:var(--text-muted);">' + esc(it.status || '') + '</span>' +
+                (it.status !== 'promoted' ? '<button onclick="fetch(\'/v2/roadmap/\'+' + JSON.stringify(it.id || '') + '+\'/promote\',{method:\'POST\'}).then(()=>OpsPanel.loaders.roadmap())" style="padding:2px 8px;font-size:10px;font-weight:700;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:3px;cursor:pointer;">Promote</button>' : '') +
+                '</div></div></div>'
+              ).join('');
+          } catch (e) {
             const el = document.getElementById('ops-roadmap-list');
             if (el) el.textContent = 'Error: ' + e.message;
           }
@@ -3078,12 +3250,12 @@
             el.innerHTML = sandboxes.length === 0
               ? '<span style="font-size:12px;color:var(--text-muted)">No sandboxes spawned yet.</span>'
               : sandboxes.map(s =>
-                  '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
-                  '<strong>' + esc(s.sandbox_id || s.id) + '</strong>' +
-                  '<span style="font-size:11px;color:var(--text-muted);margin-left:10px;">' + esc(s.status || '') + '</span>' +
-                  '</div>'
-                ).join('');
-          } catch(e) {
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
+                '<strong>' + esc(s.sandbox_id || s.id) + '</strong>' +
+                '<span style="font-size:11px;color:var(--text-muted);margin-left:10px;">' + esc(s.status || '') + '</span>' +
+                '</div>'
+              ).join('');
+          } catch (e) {
             const el = document.getElementById('ops-sandbox-list');
             if (el) el.textContent = 'Error: ' + e.message;
           }
@@ -3097,12 +3269,12 @@
             el.innerHTML = branches.length === 0
               ? '<span style="font-size:12px;color:var(--text-muted)">No branch results yet.</span>'
               : branches.map(b =>
-                  '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
-                  '<strong>' + esc(b.branch_id || b.id) + '</strong>' +
-                  '<span style="font-size:11px;color:var(--text-muted);margin-left:10px;">' + esc(b.type || '') + '</span>' +
-                  '</div>'
-                ).join('');
-          } catch(e) {
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
+                '<strong>' + esc(b.branch_id || b.id) + '</strong>' +
+                '<span style="font-size:11px;color:var(--text-muted);margin-left:10px;">' + esc(b.type || '') + '</span>' +
+                '</div>'
+              ).join('');
+          } catch (e) {
             const el = document.getElementById('ops-branch-list');
             if (el) el.textContent = 'Error: ' + e.message;
           }
@@ -3112,7 +3284,7 @@
             const d = await (await fetch('/v2/auto-loop/status')).json();
             const el = document.getElementById('ops-al-output');
             if (el) el.textContent = JSON.stringify(d, null, 2);
-          } catch(e) {
+          } catch (e) {
             const el = document.getElementById('ops-al-output');
             if (el) el.textContent = 'Error: ' + e.message;
           }
@@ -3122,7 +3294,7 @@
             const d = await (await fetch('/v2/engram/current')).json();
             const el = document.getElementById('ops-engram-output');
             if (el) el.textContent = JSON.stringify(d, null, 2);
-          } catch(e) {
+          } catch (e) {
             const el = document.getElementById('ops-engram-output');
             if (el) el.textContent = 'Error: ' + e.message;
           }
@@ -3136,15 +3308,15 @@
             el.innerHTML = tools.length === 0
               ? '<span style="font-size:12px;color:var(--text-muted)">No tools registered.</span>'
               : tools.map(t =>
-                  '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
-                  '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">' +
-                  '<span style="font-size:10px;font-weight:700;color:var(--accent);">' + esc(t.name || t.uri) + '</span>' +
-                  '<span style="font-size:10px;color:var(--text-muted);font-family:var(--mono);">' + esc(t.uri) + '</span>' +
-                  '</div>' +
-                  '<div style="font-size:11px;color:var(--text);">' + esc(t.description || '') + '</div>' +
-                  '</div>'
-                ).join('');
-          } catch(e) {
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">' +
+                '<span style="font-size:10px;font-weight:700;color:var(--accent);">' + esc(t.name || t.uri) + '</span>' +
+                '<span style="font-size:10px;color:var(--text-muted);font-family:var(--mono);">' + esc(t.uri) + '</span>' +
+                '</div>' +
+                '<div style="font-size:11px;color:var(--text);">' + esc(t.description || '') + '</div>' +
+                '</div>'
+              ).join('');
+          } catch (e) {
             const el = document.getElementById('ops-mcp-list');
             if (el) el.textContent = 'Error: ' + e.message;
           }
@@ -3154,7 +3326,7 @@
             const d = await (await fetch('/v2/status')).json();
             const el = document.getElementById('ops-status-output');
             if (el) el.textContent = JSON.stringify(d, null, 2);
-          } catch(e) {
+          } catch (e) {
             const el = document.getElementById('ops-status-output');
             if (el) el.textContent = 'Error: ' + e.message;
           }
@@ -3164,9 +3336,37 @@
             const d = await (await fetch('/v2/vlt/demo')).json();
             const el = document.getElementById('ops-vlt-output');
             if (el) el.textContent = JSON.stringify(d, null, 2);
-          } catch(e) {
+          } catch (e) {
             const el = document.getElementById('ops-vlt-output');
             if (el) el.textContent = 'Error: ' + e.message;
+          }
+        },
+        memory: async () => {
+          try {
+            const d = await (await fetch('/v2/buddy/memory?limit=20')).json();
+            const statsEl = document.getElementById('ops-memory-stats');
+            if (statsEl) statsEl.textContent = `${d.count} shown · ${d.total_stored} total stored`;
+            const listEl = document.getElementById('ops-memory-list');
+            if (!listEl) return;
+            if (!d.entries || d.entries.length === 0) {
+              listEl.innerHTML = '<span style="color:var(--text-muted);font-size:12px">No memories saved yet. Chats with 3+ turns are auto-saved.</span>';
+              return;
+            }
+            listEl.innerHTML = d.entries.map(e =>
+              '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">' +
+              '<span style="font-size:10px;font-weight:700;color:var(--accent);">' + esc(e.session_id) + '</span>' +
+              '<span style="font-size:10px;color:var(--text-muted);">' + esc(new Date(e.last_turn_at).toLocaleString()) + '</span>' +
+              '<span style="font-size:10px;color:var(--text-muted);">' + esc(e.turn_count) + ' turns</span>' +
+              '</div>' +
+              '<div style="font-size:12px;color:var(--text);margin-bottom:4px;">' + esc(e.summary) + '</div>' +
+              (e.key_topics.length ? '<div style="font-size:10px;color:var(--text-muted);">Topics: ' + esc(e.key_topics.join(', ')) + '</div>' : '') +
+              (e.emotional_arc.length ? '<div style="font-size:10px;color:var(--text-muted);">Emotional arc: ' + esc(e.emotional_arc.join(' → ')) + '</div>' : '') +
+              '</div>'
+            ).join('');
+          } catch (e) {
+            const listEl = document.getElementById('ops-memory-list');
+            if (listEl) listEl.textContent = 'Error: ' + e.message;
           }
         },
       };
@@ -3185,6 +3385,7 @@
       });
       document.getElementById('ops-router-refresh-btn').addEventListener('click', () => { loaders.router(); _refreshRouterStatus(); });
       document.getElementById('ops-psychebank-refresh-btn').addEventListener('click', () => { loaders.psychebank(); _refreshPsychebankCount(); });
+      document.getElementById('ops-memory-refresh-btn').addEventListener('click', () => loaders.memory());
 
       document.getElementById('ops-si-run-btn').addEventListener('click', async () => {
         const el = document.getElementById('ops-si-output');
@@ -3192,7 +3393,7 @@
         try {
           const d = await (await fetch('/v2/self-improve', { method: 'POST' })).json();
           if (el) el.textContent = JSON.stringify(d, null, 2);
-        } catch(e) { if (el) el.textContent = 'Error: ' + e.message; }
+        } catch (e) { if (el) el.textContent = 'Error: ' + e.message; }
       });
 
       document.getElementById('ops-daemon-start').addEventListener('click', async () => {
@@ -3242,7 +3443,7 @@
         try {
           await fetch('/v2/engram/generate', { method: 'POST' });
           loaders.engram();
-        } catch(e) { spawnNotif('Engram error: ' + e.message, 'warn', 3000); }
+        } catch (e) { spawnNotif('Engram error: ' + e.message, 'warn', 3000); }
       });
 
       /* ── New: MCP ── */
@@ -3254,10 +3455,76 @@
         try {
           const d = await (await fetch('/v2/async-exec/status')).json();
           const el = document.getElementById('ops-status-output');
-          if (el) el.textContent = JSON.stringify(d, null, 2);
-        } catch(e) {
+          const asyncReady = d && (d.async_fluid_executor === 'up' || d.status === 'up');
+          const badge = asyncReady
+            ? '\u2705 ASYNC N-STROKE: READY\n\n'
+            : '\u26a0\ufe0f ASYNC N-STROKE: executor not live (fallback to sync)\n\n';
+          if (el) el.textContent = badge + JSON.stringify(d, null, 2);
+        } catch (e) {
           const el = document.getElementById('ops-status-output');
           if (el) el.textContent = 'Error: ' + e.message;
+        }
+      });
+      document.getElementById('ops-status-async-toggle').addEventListener('click', function () {
+        const on = this.dataset.async === '1';
+        this.dataset.async = on ? '0' : '1';
+        this.textContent = '\u26a1 Async N-Stroke: ' + (on ? 'OFF' : 'ON');
+        this.style.background = on ? 'transparent' : '#00ffe040';
+        // Store toggle state globally so sendMsg() can pick it up
+        window._nStrokeAsync = !on;
+        spawnNotif('N-Stroke async mode: ' + (on ? 'OFF (sync)' : 'ON (async_fluid)'), 'info', 2000);
+      });
+
+      document.getElementById('ops-run-async-nstroke').addEventListener('click', async () => {
+        const mandate = document.getElementById('ops-async-mandate-input').value.trim();
+        if (!mandate) { spawnNotif('Enter a mandate first', 'warn', 2000); return; }
+        const el = document.getElementById('ops-status-output');
+        if (el) el.textContent = '⚡ Running async N-Stroke…';
+        try {
+          const res = await fetch('/v2/n-stroke/async', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              intent: 'BUILD',
+              confidence: 0.95,
+              value_statement: mandate,
+              mandate_text: mandate,
+              max_strokes: 2,
+            }),
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const d = await res.json();
+          const summary = [
+            'execution_mode : ' + (d.execution_mode || d.result?.execution_mode || '?'),
+            'final_verdict  : ' + (d.result?.final_verdict || '?'),
+            'total_strokes  : ' + (d.result?.total_strokes ?? '?'),
+            'latency_ms     : ' + (d.latency_ms ?? '?') + ' ms',
+            '',
+            JSON.stringify(d, null, 2),
+          ].join('\n');
+          if (el) el.textContent = summary;
+        } catch (e) {
+          if (el) el.textContent = 'Error: ' + e.message;
+        }
+      });
+
+      document.getElementById('ops-run-benchmark').addEventListener('click', async () => {
+        const el = document.getElementById('ops-status-output');
+        if (el) el.textContent = '⏱ Running benchmark…';
+        try {
+          const d = await (await fetch('/v2/n-stroke/benchmark')).json();
+          const out = [
+            '⏱ SYNC vs ASYNC BENCHMARK',
+            'sync_ms      : ' + d.sync_ms,
+            'async_ms     : ' + d.async_ms,
+            'delta_ms     : ' + d.delta_ms,
+            'faster       : ' + d.faster,
+            '',
+            JSON.stringify(d, null, 2),
+          ].join('\n');
+          if (el) el.textContent = out;
+        } catch (e) {
+          if (el) el.textContent = 'Benchmark error: ' + e.message;
         }
       });
 
@@ -3272,7 +3539,7 @@
           })).json();
           const el = document.getElementById('ops-vlt-output');
           if (el) el.textContent = JSON.stringify(d, null, 2);
-        } catch(e) {
+        } catch (e) {
           const el = document.getElementById('ops-vlt-output');
           if (el) el.textContent = 'Error: ' + e.message;
         }
@@ -3287,7 +3554,7 @@
           const el = document.getElementById('ops-vlt-output');
           if (el) el.textContent = JSON.stringify(d, null, 2);
           spawnNotif('VLT rendered.', 'info', 1800);
-        } catch(e) {
+        } catch (e) {
           const el = document.getElementById('ops-vlt-output');
           if (el) el.textContent = 'Error: ' + e.message;
         }
@@ -3305,7 +3572,7 @@
             body: JSON.stringify({ suggestion: input.value.trim() }),
           })).json();
           if (out) out.textContent = JSON.stringify(d, null, 2);
-        } catch(e) { if (out) out.textContent = 'Error: ' + e.message; }
+        } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
       });
 
       /* ── New: Knowledge Query ── */
@@ -3320,7 +3587,7 @@
             body: JSON.stringify({ topic: input.value.trim(), top_k: 5 }),
           })).json();
           if (result) result.textContent = JSON.stringify(d, null, 2);
-        } catch(e) { if (result) result.textContent = 'Error: ' + e.message; }
+        } catch (e) { if (result) result.textContent = 'Error: ' + e.message; }
       });
 
       /* ── New: Roadmap Add Item + Similar ── */
@@ -3337,7 +3604,7 @@
           })).json();
           if (out) out.textContent = JSON.stringify(d, null, 2);
           if (d.accepted) { title.value = ''; if (desc) desc.value = ''; loaders.roadmap(); }
-        } catch(e) { if (out) out.textContent = 'Error: ' + e.message; }
+        } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
       });
       document.getElementById('ops-roadmap-similar-btn').addEventListener('click', async () => {
         const title = document.getElementById('ops-roadmap-item-title');
@@ -3346,7 +3613,7 @@
         try {
           const d = await (await fetch('/v2/roadmap/similar?q=' + encodeURIComponent(title.value.trim()) + '&top_k=3')).json();
           if (out) out.textContent = JSON.stringify(d, null, 2);
-        } catch(e) { if (out) out.textContent = 'Error: ' + e.message; }
+        } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
       });
 
       /* ── New: Sandbox Spawn ── */
@@ -3363,7 +3630,7 @@
           if (out) out.textContent = JSON.stringify(d, null, 2);
           input.value = '';
           loaders.sandbox();
-        } catch(e) { if (out) out.textContent = 'Error: ' + e.message; }
+        } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
       });
 
       /* ── New: Branch Create ── */
@@ -3381,7 +3648,7 @@
           if (out) out.textContent = JSON.stringify(d, null, 2);
           mandate.value = '';
           loaders.branch();
-        } catch(e) { if (out) out.textContent = 'Error: ' + e.message; }
+        } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
       });
 
       /* Escape key closes panel */

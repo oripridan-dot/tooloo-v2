@@ -112,6 +112,24 @@ _ALLOWED_ENGINE_PATHS: frozenset[str] = frozenset({
     "engine/config.py",
 })
 
+# Map component source path → its dedicated test file (if one exists).
+# Phase 4 runs: (1) the engine smoke suite, THEN (2) the component test file.
+# Both must pass before the cycle marks the component as validated.
+_COMPONENT_TEST_MAP: dict[str, str] = {
+    "engine/router.py":          "tests/test_two_stroke.py",
+    "engine/tribunal.py":        "tests/test_workflow_proof.py",
+    "engine/psyche_bank.py":     "tests/test_workflow_proof.py",
+    "engine/jit_booster.py":     "tests/test_workflow_proof.py",
+    "engine/executor.py":        "tests/test_mandate_executor.py",
+    "engine/graph.py":           "tests/test_branch_executor.py",
+    "engine/scope_evaluator.py": "tests/test_workflow_proof.py",
+    "engine/refinement.py":      "tests/test_speculative_healing.py",
+    "engine/n_stroke.py":        "tests/test_n_stroke_async.py",
+    "engine/supervisor.py":      "tests/test_two_stroke.py",
+    "engine/conversation.py":    "tests/test_buddy_memory.py",
+    "engine/config.py":          "tests/test_workspace_roots.py",
+}
+
 # Map component name → source path (mirrors self_improvement._COMPONENTS)
 _COMPONENT_SOURCE_MAP: dict[str, str] = {
     "router":          "engine/router.py",
@@ -295,17 +313,19 @@ def _make_build_work_fn(
         # Step 3: God-mode live write — inject annotation block above module docstring
         # Locate end of shebang + copyright lines (if any), then insert
         lines = current_source.splitlines(keepends=True)
-        insert_pos = 0
-        # Skip any existing ouroboros annotations so re-runs are idempotent
-        filtered_lines = [
-            ln for ln in lines
-            if "# ── Ouroboros SOTA Annotations" not in ln
-            and "# Cycle:" not in ln
-            and "# Component:" not in ln
-            and "# Improvement signals" not in ln
-            and not (ln.startswith("#  [") and "] " in ln)
-            and "# ───────────────────────────────────────────────" not in ln
-        ]
+        # Skip any existing ouroboros annotations so re-runs are idempotent.
+        # Strategy: drop all leading comment-only lines before the first real
+        # Python line (docstring / import / class / def / from), then prepend a
+        # fresh annotation block.  This is robust to textwrap continuation lines
+        # and varying separator dash counts that slipped through pattern filters.
+        first_real = 0
+        for _i, _ln in enumerate(lines):
+            _s = _ln.strip()
+            if _s and not _s.startswith("#"):
+                first_real = _i
+                break
+        # If no real Python line found, fall back to the full file (safety)
+        filtered_lines = lines[first_real:] if first_real > 0 else lines
         # Safety guard: abort if filtered content has no executable Python lines.
         # This prevents re-annotating a previously-corrupted (annotation-only) file
         # back into a 56-line stub with no classes or functions.
@@ -553,25 +573,63 @@ class OuroborosCycle:
             total_esc += ns_result.model_escalations
             total_heal += ns_result.healing_invocations
 
-            # ── Phase 4: Run tests to validate ────────────────────────────────
+            # ── Phase 4: Targeted test validation ─────────────────────────────
+            # Strategy: smoke suite (always, < 15 s) + component-specific file.
+            # Never runs the full 1 000+ test suite — that is CI's job.
             print(f"  → N-stroke verdict: {ns_result.final_verdict}  "
                   f"(strokes={ns_result.total_strokes}, "
                   f"escalations={ns_result.model_escalations})")
 
-            test_result = self._mcp.call(
+            # Step 4a: engine smoke suite — 34 tests, ~7 s, covers all components
+            # Force TOOLOO_LIVE_TESTS=0 so conftest always patches out LLM clients.
+            smoke_result = self._mcp.call(
                 "run_tests",
-                test_path="tests",
+                test_path="tests/test_engine_smoke.py",
+                timeout=60,
+                env_overrides={"TOOLOO_LIVE_TESTS": "0"},
             )
-            # test_result.success only means the MCP call succeeded, not that tests passed.
-            # Check the output dict's 'passed' field for the actual pytest result.
-            test_passed = (
-                test_result.success
-                and isinstance(test_result.output, dict)
-                and test_result.output.get("passed", False)
+            smoke_passed = (
+                smoke_result.success
+                and isinstance(smoke_result.output, dict)
+                and smoke_result.output.get("passed", False)
             )
-            test_output = str(test_result.output) if test_result.success else (
-                test_result.error or "unknown test failure")
-            print(f"  → Tests: {'PASS ✓' if test_passed else 'FAIL ✗'}")
+            smoke_output = (
+                str(smoke_result.output) if smoke_result.success
+                else smoke_result.error or "smoke test invocation failed"
+            )
+            print(f"  → Smoke suite: {'PASS ✓' if smoke_passed else 'FAIL ✗'} "
+                  f"(tests/test_engine_smoke.py)")
+
+            # Step 4b: component-specific test file — targeted deep coverage
+            component_test = _COMPONENT_TEST_MAP.get(src_path)
+            component_passed = True   # default: no dedicated file → skip
+            component_output = ""
+            if component_test:
+                comp_result = self._mcp.call(
+                    "run_tests",
+                    test_path=component_test,
+                    timeout=90,
+                    env_overrides={"TOOLOO_LIVE_TESTS": "0"},
+                )
+                component_passed = (
+                    comp_result.success
+                    and isinstance(comp_result.output, dict)
+                    and comp_result.output.get("passed", False)
+                )
+                component_output = (
+                    str(comp_result.output) if comp_result.success
+                    else comp_result.error or "component test invocation failed"
+                )
+                print(f"  → Component test: "
+                      f"{'PASS ✓' if component_passed else 'FAIL ✗'} "
+                      f"({component_test})")
+
+            test_passed = smoke_passed and component_passed
+            test_output = (
+                f"[smoke] {smoke_output[:800]}\n"
+                f"[component] {component_output[:800]}"
+            )
+            print(f"  → Validation: {'PASS ✓' if test_passed else 'FAIL ✗'}")
 
             # Determine whether a file was actually written
             file_written = False

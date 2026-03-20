@@ -156,13 +156,15 @@ class VectorStore:
     IDF is smoothed: idf(t) = log((N+1) / (df(t)+1)) + 1
     """
 
-    def __init__(self, dup_threshold: float = 0.92) -> None:
+    def __init__(self, dup_threshold: float | None = None) -> None:
+        from engine.config import settings as _cfg
         self._docs: dict[str, VectorDoc] = {}
         # term → IDF weight (recomputed on insert/remove)
         self._idf: dict[str, float] = {}
         self._df: dict[str, int] = {}       # term → document frequency count
         self._lock = threading.RLock()
-        self.dup_threshold = dup_threshold
+        # Prefer explicit kwarg; fall back to NEAR_DUPLICATE_THRESHOLD from .env
+        self.dup_threshold = dup_threshold if dup_threshold is not None else _cfg.near_duplicate_threshold
 
     # ── IDF management ────────────────────────────────────────────────────────
 

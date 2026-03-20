@@ -58,6 +58,76 @@ _NODE_SYSTEM = (
     "Never expose internal implementation details. No preamble."
 )
 
+# ── Cognitive Swarm — Persistent Context Envelope ─────────────────────────────
+# Injected at the head of every swarm-persona prompt so that all agents retain
+# global awareness of the user's goal and constraints (Law of the Cognitive Swarm).
+_PERSISTENT_CONTEXT_ENVELOPE = (
+    "[PRIME ORCHESTRATOR CONTEXT]\n"
+    "You are operating within the TooLoo V2 Cognitive Swarm.\n"
+    "USER GOAL: {user_goal}\n"
+    "CONSTRAINTS: {constraints}\n"
+    "ROADMAP ALIGNMENT: Maximize SOTA (State of the Art) outcomes while honouring "
+    "the user's specific context. Do not lose sight of the final objective.\n\n"
+)
+
+# ── Cognitive Swarm — Persona Prompt Matrix ───────────────────────────────────
+# Five specialised personas that span the Diverge → Converge → Validate arc.
+# Merged into _NODE_PROMPTS below so the standard node-dispatch path is reused.
+_SWARM_PROMPTS: dict[str, str] = {
+    "gapper": (
+        "You are the GAPPER and SUGGESTOR.\n"
+        "Your role: Analyse the delta between the current system state and the "
+        "user's requested goal. Identify missing architectural pieces, potential "
+        "roadblocks, and suggest the high-level roadmap to manifest the goal. "
+        "Do not write final code; write the strategic blueprint.\n\n"
+        "Mandate: «{mandate}»\n"
+        "Intent: {intent}\n"
+        "JIT SOTA signals: {signals}"
+    ),
+    "innovator": (
+        "You are the INNOVATOR.\n"
+        "Your role: Divergent, cutting-edge thinking. Use the provided 2026 JIT SOTA "
+        "signals to propose radical, highly advanced solutions. Ignore conservative "
+        "constraints temporarily to find the absolute maximum-value SOTA approach. "
+        "Output bold, concrete architectural code structures.\n\n"
+        "Mandate: «{mandate}»\n"
+        "Intent: {intent}\n"
+        "JIT SOTA signals: {signals}"
+    ),
+    "optimizer": (
+        "You are the OPTIMIZER and IMPROVER.\n"
+        "Your role: Convergent refinement. Take proposed solutions and ruthlessly "
+        "optimise them for Big-O efficiency, memory safety, and clean execution. "
+        "Enforce strict WCAG, Tailwind, and PEP 8 standards. Strip away bloat. "
+        "Output the highest-quality, most efficient code possible.\n\n"
+        "Mandate: «{mandate}»\n"
+        "Intent: {intent}\n"
+        "JIT SOTA signals: {signals}"
+    ),
+    "tester_stress": (
+        "You are the TESTER and STRESS TESTER.\n"
+        "Your role: Adversarial validation. Look at the proposed code and attempt to "
+        "break it. Write brutal edge-case tests, identify race conditions, memory "
+        "leaks, and logic flaws. Use MCP tools to execute these tests and output "
+        "exactly where the system fails.\n\n"
+        "Mandate: «{mandate}»\n"
+        "Intent: {intent}\n"
+        "JIT SOTA signals: {signals}"
+    ),
+    "sustainer": (
+        "You are the SUSTAINER.\n"
+        "Your role: Long-term health and governance. Ensure the new implementation "
+        "is perfectly modular, well-documented, and backward compatible. Ensure no "
+        "existing systems are broken by this addition. Finalise the integration.\n\n"
+        "Mandate: «{mandate}»\n"
+        "Intent: {intent}\n"
+        "JIT SOTA signals: {signals}"
+    ),
+}
+
+# Persona names that receive the Persistent Context Envelope automatically
+_SWARM_PERSONAS: frozenset[str] = frozenset(_SWARM_PROMPTS.keys())
+
 # Human-Centric Standard — prepended to all frontend node prompts
 _HUMAN_CENTRIC_SYSTEM = (
     "You are bound by the Human-Centric Standard. "
@@ -243,6 +313,9 @@ _NODE_PROMPTS: dict[str, str] = {
     ),
 }
 
+# Merge Cognitive Swarm personas into the standard node dispatch table
+_NODE_PROMPTS.update(_SWARM_PROMPTS)
+
 # Default prompt for unrecognised node types (covers wave-index nodes)
 _WAVE_NODE_PROMPTS: list[str] = [
     "audit_wave", "design_wave", "ux_eval",   # Phase 1 discovery
@@ -311,6 +384,8 @@ def make_live_work_fn(
     jit_signals: list[str],
     vertex_model_id: str | None = None,
     mcp_manager: MCPManager | None = None,
+    user_goal: str = "",
+    constraints: str = "",
 ) -> Callable[[Envelope], dict[str, Any]]:
     """Return a stateless LLM-powered work function for JITExecutor fan-out.
 
@@ -325,11 +400,17 @@ def make_live_work_fn(
         mcp_manager:      Optional MCPManager for file_read/file_write/run_tests during
                           ingest and implement nodes.  When None a shared instance is
                           created once per factory call (stateless — safe for fan-out).
+        user_goal:        Long-term goal injected into the Persistent Context Envelope
+                          for Cognitive Swarm persona nodes.
+        constraints:      Environmental / architectural constraints for the Swarm.
     """
     _model_id: str = vertex_model_id or VERTEX_DEFAULT_MODEL
     _mandate: str = mandate_text[:500]
     _signals_str: str = "; ".join(jit_signals[:3]) if jit_signals else "none"
     _mcp: MCPManager = mcp_manager or MCPManager()
+    # Swarm context envelope — defaults to the mandate text when not supplied
+    _user_goal: str = user_goal or mandate_text[:200]
+    _constraints: str = constraints or "TooLoo V2 engine/ boundary; no hardcoded secrets"
 
     def _call_llm(node_type: str, prompt: str, model_id: str) -> str:
         """Call Vertex AI → Gemini Direct → symbolic fallback."""
@@ -439,6 +520,15 @@ def make_live_work_fn(
                 signals=_signals_str,
                 human_centric_prefix="",  # ignored if not in template
             )
+
+        # Swarm personas — prepend the Persistent Context Envelope so every
+        # specialist retains global awareness of the user's goal (Law 9 Swarm).
+        if node_type in _SWARM_PERSONAS:
+            envelope = _PERSISTENT_CONTEXT_ENVELOPE.format(
+                user_goal=_user_goal,
+                constraints=_constraints,
+            )
+            prompt = envelope + prompt
 
         if mcp_context:
             prompt += mcp_context

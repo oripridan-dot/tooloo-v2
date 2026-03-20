@@ -1,3 +1,14 @@
+# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
+# Cycle: 2026-03-20T20:00:29.746044+00:00
+# Component: executor  Source: engine/executor.py
+# Improvement signals from JIT SOTA booster:
+#  [1] Instrument engine/executor.py: DORA metrics (deploy frequency, lead time,
+#     MTTR, CFR) anchor engineering strategy discussions
+#  [2] Instrument engine/executor.py: Two-pizza team + async RFC process
+#     (Notion/Linear) is the standard ideation workflow
+#  [3] Instrument engine/executor.py: Feature flags (OpenFeature standard) decouple
+#     deployment from release, enabling hypothesis testing
+# ─────────────────────────────────────────────────────────────────
 """
 engine/executor.py — JIT fan-out via pure threading.
 
@@ -12,6 +23,32 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from engine.config import settings
+
+
+@dataclass
+class DoraMetrics:
+    """DORA-aligned engineering metrics for TooLoo mandate execution.
+
+    Maps standard DORA four-key metrics to the executor context:
+    - ``throughput``      ≈ Deployment Frequency  (mandates completed)
+    - ``lead_time_ms``   ≈ Lead Time for Changes  (p50 execution latency)
+    - ``change_failure_rate`` ≈ Change Failure Rate (failed_nodes / total_nodes)
+    - ``mttr_ms``        ≈ MTTR (mean latency of *failed* nodes, proxy for time
+                          until a retry/heal cycle can begin)
+    """
+
+    throughput: int
+    lead_time_ms: float | None
+    change_failure_rate: float
+    mttr_ms: float | None
+
+    def to_dict(self) -> dict:
+        return {
+            "throughput": self.throughput,
+            "lead_time_ms": round(self.lead_time_ms, 2) if self.lead_time_ms is not None else None,
+            "change_failure_rate": round(self.change_failure_rate, 4),
+            "mttr_ms": round(self.mttr_ms, 2) if self.mttr_ms is not None else None,
+        }
 
 
 @dataclass
@@ -50,6 +87,9 @@ class JITExecutor:
     def __init__(self, max_workers: int | None = None) -> None:
         self._max_workers = max_workers or settings.executor_max_workers
         self._latency_histogram: list[float] = []
+        self._failed_latencies: list[float] = []  # DORA: MTTR proxy
+        self._total_nodes: int = 0                 # DORA: throughput / CFR
+        self._failed_nodes: int = 0                # DORA: change_failure_rate
         self._hist_lock = threading.Lock()
 
     def fan_out(
@@ -78,9 +118,10 @@ class JITExecutor:
                 result = fut.result()
                 results[mid] = result
 
-        # Preserve input ordering and record latencies in histogram
+        # Preserve input ordering and record latencies + DORA counters
         ordered = [results[e.mandate_id] for e in envelopes]
         self._record_latencies(r.latency_ms for r in ordered)
+        self._record_results(ordered)
         return ordered
 
     def fan_out_dag(
@@ -180,6 +221,7 @@ class JITExecutor:
 
         ordered = [results[node_id] for node_id in ordered_ids]
         self._record_latencies(r.latency_ms for r in ordered)
+        self._record_results(ordered)
         return ordered
 
     def latency_p50(self) -> float | None:
@@ -194,10 +236,33 @@ class JITExecutor:
         """Return the p99 latency in ms across all completed tasks."""
         return self._latency_percentile(0.99)
 
+    def dora_metrics(self) -> DoraMetrics:
+        """Return DORA-aligned engineering metrics computed from execution history."""
+        with self._hist_lock:
+            total = self._total_nodes
+            failed = self._failed_nodes
+            cfr = (failed / total) if total > 0 else 0.0
+            lead_time = self._latency_percentile_unsafe(
+                self._latency_histogram, 0.50)
+            mttr = (
+                sum(self._failed_latencies) / len(self._failed_latencies)
+                if self._failed_latencies
+                else None
+            )
+        return DoraMetrics(
+            throughput=total,
+            lead_time_ms=lead_time,
+            change_failure_rate=cfr,
+            mttr_ms=mttr,
+        )
+
     def reset_histogram(self) -> None:
-        """Clear the accumulated latency histogram."""
+        """Clear the accumulated latency histogram and DORA counters."""
         with self._hist_lock:
             self._latency_histogram.clear()
+            self._failed_latencies.clear()
+            self._total_nodes = 0
+            self._failed_nodes = 0
 
     def _latency_percentile(self, percentile: float) -> float | None:
         with self._hist_lock:
@@ -213,6 +278,24 @@ class JITExecutor:
             overflow = len(self._latency_histogram) - self._MAX_HIST_ENTRIES
             if overflow > 0:
                 del self._latency_histogram[:overflow]
+
+    def _record_results(self, results: list[ExecutionResult]) -> None:
+        """Update DORA counters from a completed fan-out batch."""
+        with self._hist_lock:
+            self._total_nodes += len(results)
+            for r in results:
+                if not r.success:
+                    self._failed_nodes += 1
+                    self._failed_latencies.append(r.latency_ms)
+
+    @staticmethod
+    def _latency_percentile_unsafe(hist: list[float], percentile: float) -> float | None:
+        """Compute percentile from an already-locked histogram list."""
+        if not hist:
+            return None
+        sorted_hist = sorted(hist)
+        idx = max(0, int(len(sorted_hist) * percentile) - 1)
+        return sorted_hist[idx]
 
     @staticmethod
     def _run(

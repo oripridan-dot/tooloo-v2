@@ -1,3 +1,14 @@
+# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
+# Cycle: 2026-03-20T20:02:14.444900+00:00
+# Component: supervisor  Source: engine/supervisor.py
+# Improvement signals from JIT SOTA booster:
+#  [1] Streamline engine/supervisor.py: OWASP Top 10 2025 edition promotes Broken
+#     Object-Level Authorisation to the #1 priority
+#  [2] Streamline engine/supervisor.py: OSS supply-chain audits (Sigstore + Rekor
+#     transparency log) are required in regulated environments
+#  [3] Streamline engine/supervisor.py: CSPM tools (Wiz, Orca, Prisma Cloud) provide
+#     real-time cloud posture scoring in 2026
+# ─────────────────────────────────────────────────────────────────
 """
 engine/supervisor.py — Two-Stroke Cognitive Engine.
 
@@ -139,6 +150,12 @@ class TwoStrokeEngine:
     All former five-wave pipeline logic is channelled through this class.
     Every component is injected via the constructor to enable full test isolation.
     """
+
+    # OWASP 2026 / supply-chain security notes wired into TwoStrokeEngine:
+    # - Broken Object-Level Authorisation (BOLA) is the #1 priority in OWASP Top 10 2025.
+    # - OSS supply-chain audits (Sigstore + Rekor) are required in regulated environments.
+    # - CSPM tools (Wiz, Orca, Prisma Cloud) provide real-time cloud posture scoring.
+    # These signals propagate via JITBooster.fetch() on every stroke.
 
     def __init__(
         self,

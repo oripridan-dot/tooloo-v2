@@ -34,9 +34,17 @@ import re
 import time
 import uuid
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable
 
 from engine.executor import Envelope
+from engine.healing_guards import (
+    ConvergenceGuard,
+    ConvergenceMetrics,
+    HealingGateResult,
+    ReversibilityGuard,
+    check_healing_gates,
+)
 
 # DEV MODE: fail threshold raised 3→6 — allow more retries before healing kicks in
 NODE_FAIL_THRESHOLD: int = 6   # failures before healing is triggered
@@ -109,6 +117,10 @@ class HealingReport:
 class RefinementSupervisor:
     """Autonomous healing for persistently-failing DAG nodes.
 
+    Integrates ConvergenceGuard (failure trajectory tracking) and
+    ReversibilityGuard (atomic rollback capability) from healing_guards.py
+    to prevent infinite loops and non-reversible mutations.
+
     Usage::
 
         supervisor = RefinementSupervisor()
@@ -123,6 +135,41 @@ class RefinementSupervisor:
         if report.healed_work_fn:
             # Use healed_work_fn in next stroke's JITExecutor.fan_out()
     """
+
+    def __init__(self, workspace_root: Path | None = None) -> None:
+        self._convergence_guard = ConvergenceGuard()
+        wr = workspace_root or Path.cwd()
+        self._reversibility_guard = ReversibilityGuard(wr)
+
+    def check_convergence(self, failure_count: int) -> ConvergenceMetrics:
+        """Check whether the healing loop is converging. Delegate to guard."""
+        return self._convergence_guard.check(failure_count)
+
+    def reset_convergence(self) -> None:
+        """Reset convergence tracking for a new mandate/node."""
+        self._convergence_guard.reset()
+
+    def pre_heal_gate(
+        self,
+        failure_count: int,
+        snapshot_id: str,
+        affected_files: list[str] | None = None,
+    ) -> HealingGateResult:
+        """Run convergence + reversibility gates before executing a heal.
+
+        If *affected_files* is provided and no snapshot exists yet, one is
+        created automatically so the reversibility guard has data to check.
+        """
+        if affected_files and snapshot_id not in self._reversibility_guard.snapshots:
+            self._reversibility_guard.snapshot_before_stroke(
+                snapshot_id, affected_files,
+            )
+        return check_healing_gates(
+            self._convergence_guard,
+            self._reversibility_guard,
+            failure_count,
+            snapshot_id,
+        )
 
     def heal(
         self,
@@ -312,19 +359,19 @@ class SpeculativeHealingResult:
 class SpeculativeHealingEngine:
     """Parallel micro-mitosis healing for persistently-failing DAG nodes.
 
-    Instead of sequential: fail → fix → fail → fix …
+    Instead of sequential: fail -> fix -> fail -> fix ...
     this engine spawns N_SPECULATIVE_BRANCHES BRANCH_CLONE micro-variant ghosts
     concurrently.  Each ghost is instructed to emit only a surgical
-    ``patch_apply`` call (≤10 lines).  The first ghost to succeed "wins";
+    ``patch_apply`` call(<=10 lines).  The first ghost to succeed "wins";
     the winning patch is manifested into the main trunk and the losers are
     discarded.
 
     Model routing strategy:
-      Ghost A (conservative): Tier 1 flash — fast conservative AST-level fix.
-      Ghost B (rewrite):      Tier 1 flash — concise logic-level rewrite.
-      Ghost C (jit_library):  Tier 0 local-SLM — library/framework specific fix.
+      Ghost A(conservative): Tier 1 flash -- fast conservative AST-level fix.
+      Ghost B(rewrite):      Tier 1 flash -- concise logic-level rewrite.
+      Ghost C(jit_library):  Tier 0 local-SLM -- library/framework specific fix.
 
-    Usage::
+    Usage: :
 
         engine = SpeculativeHealingEngine(mcp=mcp_manager)
         result = await engine.speculate(

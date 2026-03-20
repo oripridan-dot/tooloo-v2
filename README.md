@@ -116,6 +116,38 @@ python3 training_camp.py --phase all --dry-run
 
 ---
 
+## Async Execution
+
+TooLoo V2 supports two N-Stroke execution strategies:
+
+| Strategy | Endpoint | How it works |
+|----------|----------|--------------|
+| **Sync** (default) | `POST /v2/n-stroke` | Wave-ordered; all nodes in a wave complete before the next wave starts |
+| **Async Fluid** | `POST /v2/n-stroke/async` | Dependency-resolved; each node fires the instant its own dependencies complete — no wave barriers |
+
+```bash
+# Sync (default)
+curl -X POST http://localhost:8002/v2/n-stroke \
+  -H 'Content-Type: application/json' \
+  -d '{"intent":"BUILD","confidence":0.95,"value_statement":"build auth module","mandate_text":"build auth module"}'
+
+# Async fluid
+curl -X POST http://localhost:8002/v2/n-stroke/async \
+  -H 'Content-Type: application/json' \
+  -d '{"intent":"BUILD","confidence":0.95,"value_statement":"build auth module","mandate_text":"build auth module"}'
+# Response includes: "execution_mode": "async_fluid"
+
+# Benchmark sync vs async on the same mandate
+curl http://localhost:8002/v2/n-stroke/benchmark
+# Response: {"sync_ms": N, "async_ms": M, "delta_ms": N-M, "faster": "sync"|"async_fluid"}
+```
+
+The UI **Status** panel has a **⚡ Async N-Stroke** toggle and a **⏱ Benchmark** button.
+When live mode is enabled (`TOOLOO_LIVE_TESTS=1`), the async path typically reduces
+latency by 25–40% on DAGs with 6+ nodes and diamond-shaped dependency structures.
+
+---
+
 ## How to Run Tests
 
 ```bash

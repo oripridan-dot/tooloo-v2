@@ -39,6 +39,13 @@ class BackgroundDaemon:
     async def start(self):
         self.active = True
         self._broadcast({"type": "daemon_status", "status": "started"})
+        # Law 17: isolate daemon loop as a managed asyncio task so the
+        # FastAPI lifespan is not blocked and cancellation is clean.
+        self._daemon_task = asyncio.create_task(self._run_daemon_loop())
+        await self._daemon_task
+
+    async def _run_daemon_loop(self) -> None:
+        """Isolated daemon loop — can be cancelled without affecting the event loop."""
         while self.active:
             await self._cycle()
             await asyncio.sleep(60)

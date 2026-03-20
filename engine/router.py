@@ -1,166 +1,14 @@
 # ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
-# Cycle: 2026-03-19T16:01:25.381037+00:00
+# Cycle: 2026-03-20T19:59:11.115618+00:00
 # Component: router  Source: engine/router.py
 # Improvement signals from JIT SOTA booster:
-#  [1] FIX 1: engine/router.py:30 — Expand _KEYWORDS with synonyms and more specific
-#     terms based on SOTA signals. CODE:     "BUILD": [         "build",
-#     "implement", "create", "add", "write", "generate", "scaffold",
-#     "initialise", "initialize", "setup", "set up", "wire", "integrate",
-#     "sync",         "synchronise", "synchronize", "deploy", "ship",
-#     "release", "update the", "provision", "configure",     ],     "DEBUG": [
-#     "fix", "bug", "error", "broken", "fail", "crash", "traceback",
-#     "exception",         "diagnose", "root cause", "investigate", "patch",
-#     "regression", "500", "404",         "not working", "issue", "problem",
-#     "debug", "troubleshoot", "monitor",     ],
-#  [2] FIX 2: engine/router.py:62 — Implement confidence-band boundaries for BUILD,
-#     DEBUG, AUDIT, DESIGN, EXPLAIN, IDEATE based on observed distribution of
-#     scores. CODE: def _score(text: str) -> dict[str, float]:     lowered =
-#     text.lower()     scores: dict[str, float] = {}     for intent, patterns
-#     in _KEYWORDS.items():         hits = sum(1 for p in patterns if
-#     re.search(p, lowered))         # Normalize score by the number of
-#     patterns for that intent         normalized_score = hits / len(patterns)
-#     if patterns else 0         scores[intent] = normalized_score      #
-#     Apply fixed confidence band boundaries (e.g., adjust these based on
-#     actual data)     for intent in ["BUILD", "DEBUG", "AUDIT", "DESIGN",
-#     "EXPLAIN", "IDEATE"]:         if scores.get(intent, 0) <
-#     CIRCUIT_BREAKER_THRESHOLD:             scores[intent] = 0.0  # Force low
-#     confidence if below threshold     return scores
-#  [3] FIX 3: engine/router.py:27 — Introduce active learning sampling strategy for
-#     misclassified examples to improve intent coverage. CODE: """
-#     engine/router.py — Mandate intent classification + circuit breaker.
-#     Standalone keyword scorer — no external dependencies beyond stdlib.
-#     Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN |
-#     IDEATE | SPAWN_REPO  Circuit breaker (Law 19):   - confidence
-#     <CIRCUIT_BREAKER_THRESHOLD  → fires breaker flag on that result   -
-#     CIRCUIT_BREAKER_MAX_FAILS consecutive failures → router trips (returns
-#     BLOCKED)   - Governor calls reset() to restore  Active Learning: Collect
-#     low-confidence or misclassified examples for targeted retraining. """
-#     from __future__ import annotations
+#  [1] Calibrate engine/router.py: OWASP Top 10 2025 edition promotes Broken Object-
+#     Level Authorisation to the #1 priority
+#  [2] Calibrate engine/router.py: OSS supply-chain audits (Sigstore + Rekor
+#     transparency log) are required in regulated environments
+#  [3] Calibrate engine/router.py: CSPM tools (Wiz, Orca, Prisma Cloud) provide real-
+#     time cloud posture scoring in 2026
 # ─────────────────────────────────────────────────────────────────
-#     terms based on SOTA signals. CODE:     "BUILD": [         "build",
-#     "implement", "create", "add", "write", "generate", "scaffold",
-#     "initialise", "initialize", "setup", "set up", "wire", "integrate",
-#     "sync",         "synchronise", "synchronize", "deploy", "ship",
-#     "release", "update the", "provision", "configure",     ],     "DEBUG": [
-#     "fix", "bug", "error", "broken", "fail", "crash", "traceback",
-#     "exception",         "diagnose", "root cause", "investigate", "patch",
-#     "regression", "500", "404",         "not working", "issue", "problem",
-#     "debug", "troubleshoot", "monitor",     ],
-#     DEBUG, AUDIT, DESIGN, EXPLAIN, IDEATE based on observed distribution of
-#     scores. CODE: def _score(text: str) -> dict[str, float]:     lowered =
-#     text.lower()     scores: dict[str, float] = {}     for intent, patterns
-#     in _KEYWORDS.items():         hits = sum(1 for p in patterns if
-#     re.search(p, lowered))         # Normalize score by the number of
-#     patterns for that intent         normalized_score = hits / len(patterns)
-#     if patterns else 0         scores[intent] = normalized_score      #
-#     Apply fixed confidence band boundaries (e.g., adjust these based on
-#     actual data)     for intent in ["BUILD", "DEBUG", "AUDIT", "DESIGN",
-#     "EXPLAIN", "IDEATE"]:         if scores.get(intent, 0) <
-#     CIRCUIT_BREAKER_THRESHOLD:             scores[intent] = 0.0  # Force low
-#     confidence if below threshold     return scores
-#     misclassified examples to improve intent coverage. CODE: """
-#     engine/router.py — Mandate intent classification + circuit breaker.
-#     Standalone keyword scorer — no external dependencies beyond stdlib.
-#     Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN |
-#     IDEATE | SPAWN_REPO  Circuit breaker (Law 19):   - confidence
-#     <CIRCUIT_BREAKER_THRESHOLD  → fires breaker flag on that result   -
-#     CIRCUIT_BREAKER_MAX_FAILS consecutive failures → router trips (returns
-#     BLOCKED)   - Governor calls reset() to restore  Active Learning: Collect
-#     low-confidence or misclassified examples for targeted retraining. """
-#     from __future__ import annotations
-#     terms based on SOTA signals. CODE:     "BUILD": [         "build",
-#     "implement", "create", "add", "write", "generate", "scaffold",
-#     "initialise", "initialize", "setup", "set up", "wire", "integrate",
-#     "sync",         "synchronise", "synchronize", "deploy", "ship",
-#     "release", "update the", "provision", "configure",     ],     "DEBUG": [
-#     "fix", "bug", "error", "broken", "fail", "crash", "traceback",
-#     "exception",         "diagnose", "root cause", "investigate", "patch",
-#     "regression", "500", "404",         "not working", "issue", "problem",
-#     "debug", "troubleshoot", "monitor",     ],
-#     DEBUG, AUDIT, DESIGN, EXPLAIN, IDEATE based on observed distribution of
-#     scores. CODE: def _score(text: str) -> dict[str, float]:     lowered =
-#     text.lower()     scores: dict[str, float] = {}     for intent, patterns
-#     in _KEYWORDS.items():         hits = sum(1 for p in patterns if
-#     re.search(p, lowered))         # Normalize score by the number of
-#     patterns for that intent         normalized_score = hits / len(patterns)
-#     if patterns else 0         scores[intent] = normalized_score      #
-#     Apply fixed confidence band boundaries (e.g., adjust these based on
-#     actual data)     for intent in ["BUILD", "DEBUG", "AUDIT", "DESIGN",
-#     "EXPLAIN", "IDEATE"]:         if scores.get(intent, 0) <
-#     CIRCUIT_BREAKER_THRESHOLD:             scores[intent] = 0.0  # Force low
-#     confidence if below threshold     return scores
-#     misclassified examples to improve intent coverage. CODE: """
-#     engine/router.py — Mandate intent classification + circuit breaker.
-#     Standalone keyword scorer — no external dependencies beyond stdlib.
-#     Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN |
-#     IDEATE | SPAWN_REPO  Circuit breaker (Law 19):   - confidence
-#     <CIRCUIT_BREAKER_THRESHOLD  → fires breaker flag on that result   -
-#     CIRCUIT_BREAKER_MAX_FAILS consecutive failures → router trips (returns
-#     BLOCKED)   - Governor calls reset() to restore  Active Learning: Collect
-#     low-confidence or misclassified examples for targeted retraining. """
-#     from __future__ import annotations
-#     terms based on SOTA signals. CODE:     "BUILD": [         "build",
-#     "implement", "create", "add", "write", "generate", "scaffold",
-#     "initialise", "initialize", "setup", "set up", "wire", "integrate",
-#     "sync",         "synchronise", "synchronize", "deploy", "ship",
-#     "release", "update the", "provision", "configure",     ],     "DEBUG": [
-#     "fix", "bug", "error", "broken", "fail", "crash", "traceback",
-#     "exception",         "diagnose", "root cause", "investigate", "patch",
-#     "regression", "500", "404",         "not working", "issue", "problem",
-#     "debug", "troubleshoot", "monitor",     ],
-#     DEBUG, AUDIT, DESIGN, EXPLAIN, IDEATE based on observed distribution of
-#     scores. CODE: def _score(text: str) -> dict[str, float]:     lowered =
-#     text.lower()     scores: dict[str, float] = {}     for intent, patterns
-#     in _KEYWORDS.items():         hits = sum(1 for p in patterns if
-#     re.search(p, lowered))         # Normalize score by the number of
-#     patterns for that intent         normalized_score = hits / len(patterns)
-#     if patterns else 0         scores[intent] = normalized_score      #
-#     Apply fixed confidence band boundaries (e.g., adjust these based on
-#     actual data)     for intent in ["BUILD", "DEBUG", "AUDIT", "DESIGN",
-#     "EXPLAIN", "IDEATE"]:         if scores.get(intent, 0) <
-#     CIRCUIT_BREAKER_THRESHOLD:             scores[intent] = 0.0  # Force low
-#     confidence if below threshold     return scores
-#     misclassified examples to improve intent coverage. CODE: """
-#     engine/router.py — Mandate intent classification + circuit breaker.
-#     Standalone keyword scorer — no external dependencies beyond stdlib.
-#     Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN |
-#     IDEATE | SPAWN_REPO  Circuit breaker (Law 19):   - confidence
-#     <CIRCUIT_BREAKER_THRESHOLD  → fires breaker flag on that result   -
-#     CIRCUIT_BREAKER_MAX_FAILS consecutive failures → router trips (returns
-#     BLOCKED)   - Governor calls reset() to restore  Active Learning: Collect
-#     low-confidence or misclassified examples for targeted retraining. """
-#     from __future__ import annotations
-#     terms based on SOTA signals. CODE:     "BUILD": [         "build",
-#     "implement", "create", "add", "write", "generate", "scaffold",
-#     "initialise", "initialize", "setup", "set up", "wire", "integrate",
-#     "sync",         "synchronise", "synchronize", "deploy", "ship",
-#     "release", "update the", "provision", "configure",     ],     "DEBUG": [
-#     "fix", "bug", "error", "broken", "fail", "crash", "traceback",
-#     "exception",         "diagnose", "root cause", "investigate", "patch",
-#     "regression", "500", "404",         "not working", "issue", "problem",
-#     "debug", "troubleshoot", "monitor",     ],
-#     DEBUG, AUDIT, DESIGN, EXPLAIN, IDEATE based on observed distribution of
-#     scores. CODE: def _score(text: str) -> dict[str, float]:     lowered =
-#     text.lower()     scores: dict[str, float] = {}     for intent, patterns
-#     in _KEYWORDS.items():         hits = sum(1 for p in patterns if
-#     re.search(p, lowered))         # Normalize score by the number of
-#     patterns for that intent         normalized_score = hits / len(patterns)
-#     if patterns else 0         scores[intent] = normalized_score      #
-#     Apply fixed confidence band boundaries (e.g., adjust these based on
-#     actual data)     for intent in ["BUILD", "DEBUG", "AUDIT", "DESIGN",
-#     "EXPLAIN", "IDEATE"]:         if scores.get(intent, 0) <
-#     CIRCUIT_BREAKER_THRESHOLD:             scores[intent] = 0.0  # Force low
-#     confidence if below threshold     return scores
-#     misclassified examples to improve intent coverage. CODE: """
-#     engine/router.py — Mandate intent classification + circuit breaker.
-#     Standalone keyword scorer — no external dependencies beyond stdlib.
-#     Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN |
-#     IDEATE | SPAWN_REPO  Circuit breaker (Law 19):   - confidence
-#     <CIRCUIT_BREAKER_THRESHOLD  → fires breaker flag on that result   -
-#     CIRCUIT_BREAKER_MAX_FAILS consecutive failures → router trips (returns
-#     BLOCKED)   - Governor calls reset() to restore  Active Learning: Collect
-#     low-confidence or misclassified examples for targeted retraining. """
-#     from __future__ import annotations
 """
 engine/router.py — Mandate intent classification + circuit breaker.
 
@@ -212,6 +60,14 @@ _INTENT_PROTOTYPES: dict[str, list[str]] = {
         "validate and verify the system",
         "scan for outdated libraries or licenses",
         "generate a status or health report",
+        # OWASP Top 10 2025 / CSPM / supply-chain additions (SOTA 2026-03-20)
+        "owasp broken object level authorisation bola",
+        "supply chain audit sigstore rekor transparency",
+        "cspm cloud posture wiz orca prisma cloud",
+        "software composition analysis snyk grype",
+        "slsa provenance attestation",
+        "broken access control authorisation",
+        "data breach credential exposure",
     ],
     "DESIGN": [
         "design a user interface layout",
@@ -350,6 +206,13 @@ _KEYWORDS: dict[str, list[str]] = {
         "audit", "scan", "review", "check", "validate", "verify", "report",
         "status", "health", "stale", "outdated", "licence", "license", "security",
         "dependency", "cost", "telemetry",
+        # OWASP 2025 A01 — BOLA / IDOR keywords (elevated to #1 priority)
+        "bola", "idor", "broken object", "broken access", "authoris", "authoriz",
+        "access control", "ownership", "privilege escalation", "object level",
+        # Supply-chain audit (OWASP 2025 / SLSA provenance)
+        "supply chain", "sigstore", "slsa", "sbom", "provenance",
+        # Cloud posture (CSPM)
+        "cspm", "posture", "misconfigur",
     ],
     "DESIGN": [
         "design", "redesign", "layout", "mockup", r"\bui\b", r"\bux\b", "wireframe",
@@ -380,8 +243,11 @@ def _score(text: str) -> dict[str, float]:
 
 
 def _scaled_confidence(scores: dict[str, float], intent: str) -> float:
+    # Anti-dilution formula: per-hit contribution stays constant at 8/20 = 0.4
+    # regardless of how many keywords are in the catalogue (JIT bank rule_2).
+    # Old formula (8*20/n) penalised large catalogues; this one does not.
     pattern_count = max(1, len(_KEYWORDS.get(intent, [])))
-    return min(1.0, scores[intent] * (8 * 20 / pattern_count))
+    return min(1.0, scores[intent] * 8 * max(1.0, pattern_count / 20))
 
 
 # ── DTOs ──────────────────────────────────────────────────────────────────────

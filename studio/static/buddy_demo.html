@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  TooLoo V2 — Buddy: Agentic Glass-Box Chat
+  Design: Apple HIG 2026 · Liquid Glass · AI-Human Era
+  Features: Active Listener · Thought Storybook · EQ Avatar · JIT Designer
+  Security: esc() on all innerHTML · no eval() · same-origin only
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buddy · TooLoo V2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+:root {
+  --bg:          #08080f;
+  --bg-1:        rgba(255,255,255,0.04);
+  --bg-2:        rgba(255,255,255,0.07);
+  --bg-3:        rgba(255,255,255,0.11);
+  --bg-hover:    rgba(255,255,255,0.06);
+  --border:      rgba(255,255,255,0.09);
+  --border-hi:   rgba(255,255,255,0.18);
+  --text-pri:    rgba(255,255,255,0.92);
+  --text-sec:    rgba(255,255,255,0.54);
+  --text-ter:    rgba(255,255,255,0.28);
+  --sys-blue:    #0A84FF;
+  --sys-purple:  #BF5AF2;
+  --sys-green:   #32D74B;
+  --sys-orange:  #FF9F0A;
+  --sys-red:     #FF453A;
+  --sys-teal:    #5AC8FA;
+  --sys-indigo:  #5E5CE6;
+  --accent:      var(--sys-blue);
+  --accent-glow: rgba(10,132,255,0.25);
+  --accent-dim:  rgba(10,132,255,0.10);
+  --eq-n:  rgba(255,255,255,0.22);
+  --eq-fr: var(--sys-red);
+  --eq-ex: var(--sys-green);
+  --eq-un: var(--sys-orange);
+  --eq-gr: var(--sys-teal);
+  --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-xl: 24px;
+  --blur: 22px; --blur-sm: 12px;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  --ease-spring: cubic-bezier(0.34,1.56,0.64,1);
+  --ease-smooth: cubic-bezier(0.16,1,0.3,1);
+  --ease-out:    cubic-bezier(0.25,1,0.5,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text-pri);font-family:var(--font);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 80% 60% at 65% 20%,rgba(10,132,255,0.06),transparent),radial-gradient(ellipse 50% 40% at 20% 80%,rgba(191,90,242,0.05),transparent);opacity:1}
+
+/* ── App ── */
+.app{position:relative;z-index:1;display:grid;grid-template-columns:340px 1fr;height:100vh;overflow:hidden}
+.glass{background:var(--bg-1);backdrop-filter:blur(var(--blur)) saturate(180%);-webkit-backdrop-filter:blur(var(--blur)) saturate(180%);border:1px solid var(--border)}
+
+/* ══ LEFT PANEL ══ */
+.left-panel{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden}
+
+.panel-header{flex:0 0 auto;padding:18px 18px 12px;border-bottom:1px solid var(--border)}
+.ph-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.ph-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-ter)}
+
+/* SSE dot */
+.sse-dot{width:7px;height:7px;border-radius:50%;background:var(--text-ter);transition:background .4s,box-shadow .4s;flex-shrink:0}
+.sse-dot.live{background:var(--sys-green);box-shadow:0 0 0 3px rgba(50,215,75,.22);animation:pulseDot 2s ease infinite}
+.sse-dot.proc{background:var(--sys-orange);box-shadow:0 0 0 3px rgba(255,159,10,.22)}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 3px rgba(50,215,75,.22)}50%{box-shadow:0 0 0 6px rgba(50,215,75,.08)}}
+.sse-lbl{font-size:12px;color:var(--text-sec)}
+
+/* Storybook */
+.sb-wrap{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:7px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.sb-empty{padding:28px 12px;text-align:center;color:var(--text-ter);font-size:13px;line-height:1.75;user-select:none}
+.sb-empty-icon{font-size:30px;display:block;margin-bottom:8px;opacity:.45}
+
+/* Thought card */
+.tc{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-radius:var(--r-md);background:var(--bg-1);border:1px solid var(--border);animation:tcEnter .3s var(--ease-out) both;opacity:0}
+@keyframes tcEnter{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.tc.active{border-color:var(--accent);background:var(--accent-dim);box-shadow:0 0 0 1px var(--accent-glow) inset}
+.tc.done{border-color:rgba(50,215,75,.16);background:rgba(50,215,75,.04)}
+.tc-icon{font-size:17px;line-height:1;flex-shrink:0;margin-top:1px}
+.tc-body{flex:1;min-width:0}
+.tc-title{font-size:12.5px;font-weight:600;color:var(--text-pri);margin-bottom:2px;line-height:1.3}
+.tc-detail{font-size:11px;color:var(--text-sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.tc-dot{width:6px;height:6px;border-radius:50%;background:var(--text-ter);flex-shrink:0;margin-top:4px;transition:background .3s}
+.tc.active .tc-dot{background:var(--accent);animation:pulseDot 1.4s ease infinite}
+.tc.done  .tc-dot{background:var(--sys-green)}
+
+/* Event log */
+.el-section{flex:0 0 auto;max-height:130px;overflow:hidden;display:flex;flex-direction:column;border-top:1px solid var(--border)}
+.el-header{padding:7px 14px 3px;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-ter);flex-shrink:0}
+#event-log{flex:1;overflow-y:auto;padding:0 10px 6px;display:flex;flex-direction:column-reverse;gap:2px;scrollbar-width:none}
+.el-row{display:flex;gap:5px;align-items:center;font-size:10.5px;font-family:var(--font-mono);color:var(--text-ter);line-height:1.4;overflow:hidden}
+.el-type{font-weight:500;white-space:nowrap;flex-shrink:0}
+.el-body{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-sec)}
+.el-time{white-space:nowrap;flex-shrink:0}
+
+/* ══ RIGHT PANEL ══ */
+.chat-panel{display:flex;flex-direction:column;overflow:hidden}
+
+/* Header */
+.chat-header{flex:0 0 auto;display:flex;align-items:center;gap:13px;padding:14px 22px;border-bottom:1px solid var(--border);background:rgba(8,8,15,.6);backdrop-filter:blur(var(--blur-sm));-webkit-backdrop-filter:blur(var(--blur-sm));position:relative;z-index:10}
+
+/* EQ Avatar */
+.av-wrap{position:relative;width:44px;height:44px;flex-shrink:0}
+.av-ring{position:absolute;inset:-3px;border-radius:50%;border:2.5px solid var(--eq-n);transition:border-color .55s var(--ease-smooth),box-shadow .55s var(--ease-smooth)}
+.av-ring[data-eq=frustrated]{border-color:var(--eq-fr);box-shadow:0 0 14px rgba(255,69,58,.28)}
+.av-ring[data-eq=excited]{border-color:var(--eq-ex);box-shadow:0 0 14px rgba(50,215,75,.28);animation:eqEx 2s ease infinite}
+.av-ring[data-eq=uncertain]{border-color:var(--eq-un);box-shadow:0 0 14px rgba(255,159,10,.25)}
+.av-ring[data-eq=grateful]{border-color:var(--eq-gr);box-shadow:0 0 14px rgba(90,200,250,.25)}
+@keyframes eqEx{0%,100%{box-shadow:0 0 14px rgba(50,215,75,.28)}50%{box-shadow:0 0 24px rgba(50,215,75,.5)}}
+.av-face{width:100%;height:100%;border-radius:50%;background:conic-gradient(from 180deg,var(--sys-purple) 0%,var(--sys-blue) 38%,var(--sys-teal) 70%,var(--sys-purple) 100%);display:flex;align-items:center;justify-content:center;font-size:19px;user-select:none;position:relative;overflow:hidden}
+.av-face::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,transparent 55%);border-radius:50%}
+.av-face[data-state=thinking] span{animation:faceThink 1.8s ease-in-out infinite}
+@keyframes faceThink{0%,100%{transform:rotate(0)}30%{transform:rotate(-6deg)}70%{transform:rotate(6deg)}}
+
+.ch-info{flex:1;min-width:0}
+.ch-name{font-size:17px;font-weight:700;letter-spacing:-.4px;color:var(--text-pri)}
+.ch-eq{font-size:12px;color:var(--text-sec);transition:color .4s}
+.ch-eq[data-eq=frustrated]{color:var(--eq-fr)}
+.ch-eq[data-eq=excited]{color:var(--eq-ex)}
+.ch-eq[data-eq=uncertain]{color:var(--eq-un)}
+.ch-eq[data-eq=grateful]{color:var(--eq-gr)}
+
+.header-pills{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;letter-spacing:.3px;white-space:nowrap;transition:background .3s,color .3s}
+.pill-jit{background:rgba(191,90,242,.10);border:1px solid rgba(191,90,242,.20);color:#d8b4fe}
+.pill-intent{background:rgba(10,132,255,.08);border:1px solid rgba(10,132,255,.18);color:var(--sys-blue);font-family:var(--font-mono);letter-spacing:.7px}
+
+/* Messages */
+.messages{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:13px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.msg{display:flex;flex-direction:column;max-width:76%;animation:msgIn .28s var(--ease-out) both}
+@keyframes msgIn{from{opacity:0;transform:translateY(9px) scale(.98)}to{opacity:1;transform:none}}
+.msg.user{align-self:flex-end;align-items:flex-end}
+.msg.buddy{align-self:flex-start;align-items:flex-start}
+.msg-bub{padding:11px 15px;border-radius:var(--r-lg);font-size:14.5px;line-height:1.68;white-space:pre-wrap;word-break:break-word;position:relative}
+.msg.user .msg-bub{background:linear-gradient(135deg,var(--sys-blue) 0%,var(--sys-indigo) 100%);color:#fff;border-bottom-right-radius:5px;box-shadow:0 3px 16px rgba(10,132,255,.22)}
+.msg.buddy .msg-bub{background:var(--bg-2);border:1px solid var(--border);color:var(--text-pri);border-bottom-left-radius:5px;box-shadow:0 2px 10px rgba(0,0,0,.28)}
+.msg.buddy.loading .msg-bub{color:var(--text-ter);min-width:50px}
+.emphasis{background:linear-gradient(90deg,rgba(10,132,255,.15),rgba(94,92,230,.10));border-radius:3px;padding:0 2px;color:var(--sys-teal);font-weight:500}
+
+/* Typing dots */
+.typing-dots{display:flex;gap:4px;align-items:center;padding:2px 0}
+.typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--text-ter);animation:typeDot 1.3s ease-in-out infinite}
+.typing-dots span:nth-child(2){animation-delay:.17s}
+.typing-dots span:nth-child(3){animation-delay:.34s}
+@keyframes typeDot{0%,80%,100%{transform:translateY(0);opacity:.3}40%{transform:translateY(-5px);opacity:1}}
+
+.msg-meta{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:var(--text-ter)}
+.msg-eq{padding:1px 7px;border-radius:100px;font-weight:600;font-size:10px;letter-spacing:.4px;text-transform:uppercase}
+.msg-eq.frustrated{background:rgba(255,69,58,.12);color:#ff9f98}
+.msg-eq.excited{background:rgba(50,215,75,.10);color:#86efac}
+.msg-eq.uncertain{background:rgba(255,159,10,.10);color:#fcd34d}
+.msg-eq.grateful{background:rgba(90,200,250,.10);color:#67e8f9}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.chip{padding:5px 12px;border-radius:100px;font-size:12.5px;font-weight:500;color:var(--sys-blue);background:rgba(10,132,255,.07);border:1px solid rgba(10,132,255,.18);cursor:pointer;transition:background .2s,transform .15s var(--ease-spring);user-select:none}
+.chip:hover{background:rgba(10,132,255,.14);transform:scale(1.03)}
+.chip:active{transform:scale(.97)}
+
+/* ══ INPUT ══ */
+.input-section{flex:0 0 auto;padding:0 18px 18px}
+
+/* Active listener */
+.listen-bar{height:27px;display:flex;align-items:center;gap:7px;padding:0 3px;margin-bottom:5px;overflow:hidden;transition:opacity .3s}
+.listen-bar.hidden{opacity:0;pointer-events:none}
+.li-icon{font-size:14px;flex-shrink:0;transition:transform .4s var(--ease-spring)}
+.li-icon.nodding{animation:nod .6s ease 0s 2}
+.li-icon.thinking{animation:think 1.8s ease-in-out infinite}
+.li-icon.confused_tilt{animation:ctilt 1.2s ease-in-out infinite}
+@keyframes nod{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes think{0%,100%{transform:rotate(0)}50%{transform:rotate(10deg)}}
+@keyframes ctilt{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+.li-status{font-size:12.5px;color:var(--text-sec);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .3s}
+.li-status.clear{color:var(--sys-green)}
+.li-status.vague{color:var(--sys-orange)}
+.li-status.complex{color:var(--sys-purple)}
+.li-intent{padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600;letter-spacing:.6px;background:rgba(10,132,255,.08);border:1px solid rgba(10,132,255,.17);color:var(--sys-blue);font-family:var(--font-mono);flex-shrink:0;transition:opacity .25s}
+.li-intent.hidden{opacity:0;pointer-events:none}
+
+/* Ghost chips */
+.ghost-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px;transition:opacity .25s}
+.ghost-row.hidden{opacity:0;pointer-events:none;height:0;margin:0;overflow:hidden}
+.ghost-chip{padding:4px 10px;border-radius:100px;font-size:11.5px;color:var(--text-sec);background:var(--bg-1);border:1px dashed var(--border-hi);cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+.ghost-chip:hover{background:var(--bg-2);border-color:var(--accent);color:var(--text-pri)}
+
+/* Input box */
+.input-row{display:flex;gap:9px;align-items:flex-end;position:relative}
+.input-aura{position:absolute;inset:-2px;border-radius:calc(var(--r-lg) + 2px);pointer-events:none;opacity:0;transition:opacity .4s,background .4s}
+.input-aura.clear{opacity:1;background:radial-gradient(ellipse at bottom,rgba(50,215,75,.07),transparent 70%)}
+.input-aura.vague{opacity:1;background:radial-gradient(ellipse at bottom,rgba(255,159,10,.07),transparent 70%)}
+.input-aura.complex{opacity:1;background:radial-gradient(ellipse at bottom,rgba(191,90,242,.07),transparent 70%)}
+
+textarea#chat-input{flex:1;min-height:44px;max-height:120px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-lg);color:var(--text-pri);font-size:14.5px;font-family:var(--font);line-height:1.6;padding:11px 15px;outline:none;resize:none;overflow-y:auto;transition:border-color .22s,box-shadow .22s;scrollbar-width:none}
+textarea#chat-input::placeholder{color:var(--text-ter)}
+textarea#chat-input:focus{border-color:var(--sys-blue);box-shadow:0 0 0 3px rgba(10,132,255,.12)}
+textarea#chat-input.bc-clear{border-color:rgba(50,215,75,.38)}
+textarea#chat-input.bc-vague{border-color:rgba(255,159,10,.38)}
+textarea#chat-input.bc-complex{border-color:rgba(191,90,242,.38)}
+
+#send-btn{flex-shrink:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-md);background:var(--sys-blue);color:#fff;border:none;cursor:pointer;font-size:17px;transition:background .2s,transform .15s var(--ease-spring),box-shadow .2s;box-shadow:0 3px 12px rgba(10,132,255,.28)}
+#send-btn:hover{background:#1d9bff;box-shadow:0 4px 18px rgba(10,132,255,.42);transform:scale(1.06)}
+#send-btn:active{transform:scale(.95)}
+#send-btn:disabled{opacity:.38;cursor:not-allowed;transform:none;box-shadow:none}
+
+.char-ctr{position:absolute;right:58px;bottom:9px;font-size:10.5px;color:var(--text-ter);pointer-events:none;font-family:var(--font-mono);transition:color .3s}
+.char-ctr.warn{color:var(--sys-orange)}
+.char-ctr.max{color:var(--sys-red)}
+
+/* Depth + session row */
+.depth-row{display:flex;align-items:center;gap:7px;margin-top:7px;padding:0 2px}
+.depth-lbl{font-size:11px;color:var(--text-ter)}
+.depth-tog{display:flex;border-radius:100px;border:1px solid var(--border);background:var(--bg-1);overflow:hidden}
+.depth-btn{padding:3px 10px;font-size:11px;font-weight:500;font-family:var(--font);color:var(--text-ter);background:transparent;border:none;cursor:pointer;transition:background .2s,color .2s}
+.depth-btn.active{background:rgba(10,132,255,.14);color:var(--sys-blue)}
+.session-lbl{margin-left:auto;font-size:10px;font-family:var(--font-mono);color:var(--text-ter);letter-spacing:.3px}
+
+/* Toast */
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(16,16,24,.97);border:1px solid rgba(255,255,255,.10);color:#ff9f98;padding:9px 18px;border-radius:var(--r-md);font-size:13px;z-index:9999;pointer-events:none;transition:transform .32s var(--ease-spring),opacity .32s;opacity:0;backdrop-filter:blur(12px);max-width:90vw;text-align:center}
+#toast.vis{transform:translateX(-50%) translateY(0);opacity:1}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══ LEFT: THOUGHT STORYBOOK ══ -->
+  <div class="left-panel glass">
+    <div class="panel-header">
+      <div class="ph-row">
+        <span class="sse-dot" id="sse-dot"></span>
+        <span class="sse-lbl" id="sse-lbl">Connecting…</span>
+      </div>
+      <div class="ph-label">Thought Storybook</div>
+    </div>
+
+    <div class="sb-wrap" id="storybook">
+      <div class="sb-empty" id="sb-empty">
+        <span class="sb-empty-icon">🧠</span>
+        Send a message and watch<br>Buddy's reasoning unfold here.
+      </div>
+    </div>
+
+    <div class="el-section">
+      <div class="el-header">Live Events</div>
+      <div id="event-log" role="log" aria-live="polite" aria-label="Live SSE event log"></div>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT: CHAT ══ -->
+  <div class="chat-panel">
+
+    <header class="chat-header">
+      <div class="av-wrap">
+        <div class="av-ring" id="av-ring" data-eq="neutral"></div>
+        <div class="av-face" id="av-face" data-state="idle">
+          <span id="av-emoji" aria-hidden="true">🤖</span>
+        </div>
+      </div>
+      <div class="ch-info">
+        <div class="ch-name">Buddy</div>
+        <div class="ch-eq" id="ch-eq" data-eq="neutral">Ready · What's on your mind?</div>
+      </div>
+      <div class="header-pills">
+        <div class="pill pill-jit" id="jit-pill">JIT ✦ —</div>
+        <div class="pill pill-intent" id="intent-pill">—</div>
+      </div>
+    </header>
+
+    <div class="messages" id="messages" role="log" aria-label="Chat messages" aria-live="polite">
+      <div class="msg buddy" id="msg-welcome">
+        <div class="msg-bub">
+          Hey, I'm <strong>Buddy</strong> — TooLoo's cognitive partner. 👋<br><br>
+          Ask me to <em>explain</em>, <em>design</em>, <em>audit</em>, or <em>ideate</em> almost anything.
+          Watch the <strong>Thought Storybook</strong> on the left as I work through it — live.
+        </div>
+      </div>
+    </div>
+
+    <div class="input-section">
+      <div class="listen-bar hidden" id="listen-bar">
+        <span class="li-icon" id="li-icon">👂</span>
+        <span class="li-status" id="li-status">Listening…</span>
+        <span class="li-intent hidden" id="li-intent"></span>
+      </div>
+
+      <div class="ghost-row hidden" id="ghost-row"></div>
+
+      <div class="input-row">
+        <div class="input-aura" id="input-aura"></div>
+        <label for="chat-input" class="sr-only">Message Buddy</label>
+        <textarea id="chat-input" placeholder="Ask Buddy anything…" maxlength="2000" rows="1" autocomplete="off" spellcheck="true"></textarea>
+        <button id="send-btn" type="button" aria-label="Send message">
+          <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true">
+            <path d="M8.5 2v13M8.5 2L4 6.5M8.5 2l4.5 4.5" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="char-ctr hidden" id="char-ctr" aria-hidden="true"></span>
+      </div>
+
+      <div class="depth-row">
+        <span class="depth-lbl">Depth:</span>
+        <div class="depth-tog" role="group" aria-label="Response depth">
+          <button class="depth-btn active" data-depth="1">Chat</button>
+          <button class="depth-btn" data-depth="2">Deep</button>
+        </div>
+        <span class="session-lbl" id="session-lbl"></span>
+      </div>
+    </div>
+
+  </div><!-- /chat-panel -->
+</div><!-- /app -->
+
+<div id="toast" role="alert" aria-live="assertive"></div>
+
+<script>
+'use strict';
+
+/* ── Security: esc() wraps ALL untrusted strings going into innerHTML ── */
+function esc(s){const d=document.createElement('div');d.textContent=String(s??'');return d.innerHTML}
+
+/* ── DOM ── */
+const $=id=>document.getElementById(id);
+const $msg=$('messages'),$sb=$('storybook'),$sbE=$('sb-empty'),$el=$('event-log');
+const $inp=$('chat-input'),$send=$('send-btn'),$avR=$('av-ring'),$avF=$('av-face'),$avEm=$('av-emoji');
+const $chEq=$('ch-eq'),$jit=$('jit-pill'),$intent=$('intent-pill');
+const $sseDot=$('sse-dot'),$sseLbl=$('sse-lbl');
+const $lbar=$('listen-bar'),$liIcon=$('li-icon'),$liStat=$('li-status'),$liInt=$('li-intent');
+const $ghost=$('ghost-row'),$aura=$('input-aura'),$charC=$('char-ctr');
+const $sesLbl=$('session-lbl'),$toast=$('toast');
+
+/* ── State ── */
+let _proc=false,_depth=1,_session='',_ltimer=null,_toastT=null,_activeCards=[];
+const DEBOUNCE=340,MAX_LOG=45,SESSION_KEY='tlv2_buddy_sid';
+
+/* ── Session persistence ── */
+function loadSession(){try{const s=localStorage.getItem(SESSION_KEY);if(s&&s.startsWith('s-')){_session=s;$sesLbl.textContent=s.slice(0,14)+'…'}}catch{}}
+function saveSession(id){_session=id;try{localStorage.setItem(SESSION_KEY,id);$sesLbl.textContent=id.slice(0,14)+'…'}catch{}}
+loadSession();
+
+/* ── EQ ── */
+const EQ={
+  neutral:   {emoji:'🤖',label:"Ready · What's on your mind?",st:'idle'},
+  frustrated:{emoji:'😤',label:'I hear you — empathy mode',st:'idle'},
+  excited:   {emoji:'🚀',label:"Let's go — full send!",st:'idle'},
+  uncertain: {emoji:'🤔',label:"Step-by-step — we'll work it out",st:'thinking'},
+  grateful:  {emoji:'😊',label:'Happy to help — building on this',st:'idle'},
+};
+function setEQ(state){
+  const m=EQ[state]||EQ.neutral;
+  $avR.dataset.eq=state;$chEq.dataset.eq=state;
+  $chEq.textContent=m.label;$avEm.textContent=m.emoji;$avF.dataset.state=m.st;
+}
+function setThinking(on){
+  if(on){$avEm.textContent='💭';$avF.dataset.state='thinking'}
+  else{const m=EQ[$avR.dataset.eq||'neutral']||EQ.neutral;$avEm.textContent=m.emoji;$avF.dataset.state=m.st}
+}
+
+/* ── Storybook ── */
+const TC_BG={
+  eq:'rgba(90,200,250,.08)',memory:'rgba(191,90,242,.08)',jit:'rgba(10,132,255,.08)',
+  tribunal:'rgba(255,159,10,.08)',scope:'rgba(94,92,230,.08)',execute:'rgba(50,215,75,.08)',
+  design:'rgba(255,69,58,.08)',route:'rgba(10,132,255,.08)',refine:'rgba(50,215,75,.08)',
+};
+function clearSB(){$sb.querySelectorAll('.tc').forEach(c=>c.remove());$sbE.style.display='block';_activeCards=[]}
+function addTC(card,delay=0){
+  if($sbE.style.display!=='none')$sbE.style.display='none';
+  const el=document.createElement('div');
+  el.className='tc '+(card.status||'pending');
+  el.dataset.phase=card.phase;
+  el.style.animationDelay=delay+'ms';
+  if(TC_BG[card.phase])el.style.background=TC_BG[card.phase];
+  el.innerHTML=`<span class="tc-icon">${esc(card.icon||'•')}</span><div class="tc-body"><div class="tc-title">${esc(card.title)}</div><div class="tc-detail">${esc(card.detail)}</div></div><span class="tc-dot"></span>`;
+  $sb.appendChild(el);
+  $sb.scrollTop=$sb.scrollHeight;
+  _activeCards.push(el);
+  return el;
+}
+function finalizeTC(){_activeCards.forEach(el=>{el.className='tc done'})}
+
+/* ── Event log ── */
+const EL_COLORS={buddy_chat_fast:'#a78bfa',thought:'#5ac8fa',route:'#5e5ce6',jit_boost:'#0a84ff',tribunal:'#ff9f0a',execution:'#32d74b',n_stroke_complete:'#32d74b',self_improve:'#a3e635',vlt_patch:'#fb923c'};
+function logEv(type,data){
+  const row=document.createElement('div');row.className='el-row';
+  const t=document.createElement('span');t.className='el-type';t.style.color=EL_COLORS[type]||'rgba(255,255,255,.22)';t.textContent=type;
+  const b=document.createElement('span');b.className='el-body';
+  b.textContent=data.intent?`intent:${data.intent}`:data.phase?`phase:${data.phase}`:data.mandate_id?data.mandate_id.slice(0,9):data.emotional_state?`eq:${data.emotional_state}`:'';
+  const ts=document.createElement('span');ts.className='el-time';ts.textContent=new Date().toTimeString().slice(0,8);
+  row.append(t,b,ts);$el.insertBefore(row,$el.firstChild);
+  while($el.children.length>MAX_LOG)$el.removeChild($el.lastChild);
+}
+
+/* ── SSE ── */
+let _es=null,_rDelay=2000;
+function connectSSE(){
+  _es=new EventSource('/v2/events');
+  _es.onopen=()=>{$sseDot.className='sse-dot live';$sseLbl.textContent='Live';_rDelay=2000};
+  _es.onmessage=ev=>{let d;try{d=JSON.parse(ev.data)}catch{return};handleSSE(d)};
+  _es.onerror=()=>{$sseDot.className='sse-dot';$sseLbl.textContent='Reconnecting…';_es.close();setTimeout(connectSSE,_rDelay);_rDelay=Math.min(_rDelay*1.5,28000)};
+}
+function handleSSE(d){
+  const t=d.type||'';
+  if(t==='buddy_chat_fast'){if(d.emotional_state)setEQ(d.emotional_state);if(d.intent)$intent.textContent=d.intent;if(d.jit_boost?.boosted_confidence!=null)$jit.textContent=`JIT ✦ ${Math.round(d.jit_boost.boosted_confidence*100)}%`}
+  if(t==='thought'&&d.card)addTC(d.card);
+  if(t!=='heartbeat'&&t!=='connected')logEv(t,d);
+}
+
+/* ── Active Listener ── */
+const IND={nodding:{icon:'👋',cls:'clear',tip:'Clear — looks good to send'},thinking:{icon:'🤔',cls:'listening',tip:''},listening:{icon:'👂',cls:'listening',tip:''},confused_tilt:{icon:'😕',cls:'vague',tip:'Could be more specific'}};
+async function fetchListen(text){
+  if(!text.trim()||text.length<3){hideListen();return}
+  try{
+    const r=await fetch('/v2/buddy/listen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text.slice(0,400)})});
+    if(!r.ok)return;showListen(await r.json());
+  }catch{}
+}
+function showListen(d){
+  const vi=d.visual_indicator||'listening',meta=IND[vi]||IND.listening,lvl=d.comprehension_level||'listening';
+  $lbar.classList.remove('hidden');
+  $liIcon.textContent=meta.icon;$liIcon.className='li-icon '+vi;
+  $liStat.textContent=meta.tip||(lvl==='listening'?'Keep going…':lvl);$liStat.className='li-status '+lvl;
+  $inp.className='';$aura.className='input-aura';
+  if(lvl!=='listening'){$inp.classList.add('bc-'+lvl);$aura.classList.add(lvl)}
+  if(d.detected_intent){$liInt.textContent=d.detected_intent;$liInt.classList.remove('hidden')}else{$liInt.classList.add('hidden')}
+  renderGhost(d.prompt_suggestions||[]);
+}
+function hideListen(){$lbar.classList.add('hidden');$ghost.classList.add('hidden');$inp.className='';$aura.className='input-aura'}
+function renderGhost(sug){
+  $ghost.innerHTML='';
+  if(!sug.length){$ghost.classList.add('hidden');return}
+  $ghost.classList.remove('hidden');
+  sug.forEach(s=>{const c=document.createElement('button');c.type='button';c.className='ghost-chip';c.textContent=s;c.addEventListener('click',()=>{const cur=$inp.value.trim();$inp.value=cur?cur+' — '+s:s;$inp.focus();autoGrow();fetchListen($inp.value)});$ghost.appendChild(c)});
+}
+
+/* ── Textarea ── */
+function autoGrow(){$inp.style.height='auto';$inp.style.height=Math.min($inp.scrollHeight,120)+'px'}
+function updateCC(n){if(!n){$charC.textContent='';$charC.className='char-ctr hidden';return}$charC.textContent=n+'/2000';$charC.className='char-ctr';if(n>1800)$charC.classList.add('max');else if(n>1400)$charC.classList.add('warn')}
+$inp.addEventListener('input',()=>{autoGrow();const v=$inp.value;updateCC(v.length);clearTimeout(_ltimer);if(v.trim().length>2)_ltimer=setTimeout(()=>fetchListen(v),DEBOUNCE);else hideListen()});
+$inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();doSend()}});
+
+/* ── Depth ── */
+document.querySelectorAll('.depth-btn').forEach(b=>b.addEventListener('click',()=>{_depth=parseInt(b.dataset.depth,10);document.querySelectorAll('.depth-btn').forEach(x=>x.classList.toggle('active',x===b))}));
+
+/* ── Send ── */
+$send.addEventListener('click',doSend);
+function doSend(){const t=$inp.value.trim();if(!t||_proc)return;$inp.value='';autoGrow();updateCC(0);hideListen();sendMsg(t)}
+
+/* ── Message rendering ── */
+function appendUser(text){const w=document.createElement('div');w.className='msg user';const b=document.createElement('div');b.className='msg-bub';b.textContent=text;w.appendChild(b);$msg.appendChild(w);scrollM()}
+function appendLoading(){const w=document.createElement('div');w.className='msg buddy loading';w.id='msg-loading';const b=document.createElement('div');b.className='msg-bub';b.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';w.appendChild(b);$msg.appendChild(w);scrollM();return w}
+
+/* Apply JIT Designer emphasis highlights safely */
+function applyEmphasis(text,words){
+  if(!words||!words.length)return esc(text);
+  const esc_words=words.slice(0,5).map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+  if(!esc_words.length)return esc(text);
+  const re=new RegExp('\\b('+esc_words.join('|')+')\\b','gi');
+  return esc(text).replace(re,m=>`<mark class="emphasis">${esc(m)}</mark>`);
+}
+
+function finishMsg(data){
+  const lo=$('msg-loading');if(!lo)return;
+  lo.className='msg buddy';lo.removeAttribute('id');
+  const b=lo.querySelector('.msg-bub');b.textContent='';
+  const words=data.design_directive?.emphasis_words||[];
+  b.innerHTML=applyEmphasis(data.response||'(empty response)',words);
+  const sug=data.suggestions||[];
+  if(sug.length){const cw=document.createElement('div');cw.className='chips';sug.forEach(s=>{const c=document.createElement('button');c.type='button';c.className='chip';c.textContent=s;c.addEventListener('click',()=>{$inp.value=s;$inp.focus();autoGrow();fetchListen(s)});cw.appendChild(c)});b.appendChild(cw)}
+  const meta=document.createElement('div');meta.className='msg-meta';
+  if(data.latency_ms!=null){const l=document.createElement('span');l.textContent=data.latency_ms+'ms';meta.appendChild(l)}
+  if(data.model_used){const m=document.createElement('span');m.textContent=(data.model_used.length>22?data.model_used.slice(0,22)+'…':data.model_used);m.style.fontFamily='var(--font-mono)';m.style.fontSize='10px';meta.appendChild(m)}
+  const eq=data.emotional_state||'';
+  if(eq&&eq!=='neutral'){const e=document.createElement('span');e.className='msg-eq '+eq;e.textContent=eq;meta.appendChild(e)}
+  if(meta.children.length)lo.appendChild(meta);
+  scrollM();
+}
+function scrollM(){requestAnimationFrame(()=>$msg.scrollTop=$msg.scrollHeight)}
+
+/* ── Toast ── */
+function toast(msg){$toast.textContent=msg;$toast.classList.add('vis');clearTimeout(_toastT);_toastT=setTimeout(()=>$toast.classList.remove('vis'),4500)}
+
+/* ── Main send ── */
+async function sendMsg(text){
+  _proc=true;$send.disabled=true;$sseDot.className='sse-dot proc';$sseLbl.textContent='Processing…';setThinking(true);
+  clearSB();appendUser(text);const lo=appendLoading();
+  try{
+    const r=await fetch('/v2/buddy/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text.slice(0,2000),session_id:_session,depth_level:_depth})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));const msg=e.error||`HTTP ${r.status}`;if(lo){lo.className='msg buddy';lo.removeAttribute('id');const b=lo.querySelector('.msg-bub');if(b)b.textContent=`⚠ ${msg}`}toast(msg);return}
+    const d=await r.json();
+    if(d.session_id)saveSession(d.session_id);
+    if(d.emotional_state)setEQ(d.emotional_state);
+    if(d.intent)$intent.textContent=d.intent;
+    if(d.jit_boost?.boosted_confidence!=null)$jit.textContent=`JIT ✦ ${Math.round(d.jit_boost.boosted_confidence*100)}%`;
+    const cards=d.design_directive?.thought_cards||[];
+    if(cards.length&&!$sb.querySelector('.tc'))cards.forEach((c,i)=>addTC(c,i*75));
+    finalizeTC();finishMsg(d);
+  }catch(e){if(lo){lo.className='msg buddy';lo.removeAttribute('id');const b=lo.querySelector('.msg-bub');if(b)b.textContent='⚠ Could not reach TooLoo API — is the server running?'}toast('Connection error')}
+  finally{_proc=false;$send.disabled=false;$sseDot.className='sse-dot live';$sseLbl.textContent='Live';setThinking(false)}
+}
+
+/* ── Boot ── */
+connectSSE();
+$inp.focus();
+</script>
+</body>
+</html>

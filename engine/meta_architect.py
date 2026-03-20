@@ -88,6 +88,21 @@ class DynamicExecutionPlan:
         }
 
 
+@dataclass(frozen=True)
+class SwarmTopology:
+    """Wave-plan for a Cognitive Swarm execution (FORK → SHARE)."""
+
+    active_personas: list[str]
+    # each wave is a list of {id, type} dicts
+    waves: list[list[dict[str, str]]]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "active_personas": self.active_personas,
+            "waves": self.waves,
+        }
+
+
 class MetaArchitect:
     """Deterministic Meta-Architect for dynamic DAG generation."""
 
@@ -219,6 +234,56 @@ class MetaArchitect:
             ),
         ])
         return base
+
+    def _weight_swarm_hierarchy(self, mandate: str, intent: str) -> list[str]:
+        """Determine the Dynamic Hierarchy of the Cognitive Swarm from context.
+
+        Returns an ordered list of personas to spawn.  The Gapper always leads
+        (strategy first); remaining personas are selected by intent heuristics.
+        """
+        mandate_lower = mandate.lower()
+        swarm: list[str] = ["gapper"]  # always start with gap analysis
+
+        if intent in ("IDEATE", "DESIGN", "SPAWN_REPO") or "new" in mandate_lower:
+            swarm.extend(["innovator", "optimizer", "sustainer"])
+        elif intent in ("DEBUG", "AUDIT") or any(
+            kw in mandate_lower for kw in ("fix", "error", "bug", "broken")
+        ):
+            swarm.extend(["tester_stress", "optimizer", "sustainer"])
+        elif any(
+            kw in mandate_lower for kw in ("slow", "optimize", "latency", "performance")
+        ):
+            swarm.extend(["optimizer", "tester_stress"])
+        else:
+            # Balanced default swarm
+            swarm.extend(["innovator", "optimizer",
+                         "tester_stress", "sustainer"])
+
+        return swarm
+
+    def generate_swarm_topology(self, mandate: str, intent: str) -> SwarmTopology:
+        """Generate a swarm-based FORK → SHARE wave plan for the N-Stroke Engine.
+
+        Wave 1:  Gapper defines strategy (serial — must run first).
+        Wave 2:  Parallel swarm execution via BranchExecutor FORK.
+        Wave 3:  16D convergence / synthesis node.
+        """
+        active_personas = self._weight_swarm_hierarchy(mandate, intent)
+
+        waves: list[list[dict[str, str]]] = [
+            # Wave 1 — strategic analysis
+            [{"id": "node-gap", "type": "gapper"}],
+            # Wave 2 — parallel swarm (all personas except gapper)
+            [
+                {"id": f"node-{p}", "type": p}
+                for p in active_personas
+                if p != "gapper"
+            ],
+            # Wave 3 — 16D synthesis / convergence gate
+            [{"id": "node-16d-synthesis", "type": "validate_16d"}],
+        ]
+
+        return SwarmTopology(active_personas=active_personas, waves=waves)
 
     def _build_confidence_proof(self, nodes: list[GraphNodeSpec], roi: str) -> ConfidenceProof:
         node_ids = {n.node_id for n in nodes}

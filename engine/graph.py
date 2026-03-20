@@ -1,3 +1,14 @@
+# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
+# Cycle: 2026-03-20T20:00:52.857841+00:00
+# Component: graph  Source: engine/graph.py
+# Improvement signals from JIT SOTA booster:
+#  [1] Harden engine/graph.py: DORA metrics (deploy frequency, lead time, MTTR, CFR)
+#     anchor engineering strategy discussions
+#  [2] Harden engine/graph.py: Two-pizza team + async RFC process (Notion/Linear) is
+#     the standard ideation workflow
+#  [3] Harden engine/graph.py: Feature flags (OpenFeature standard) decouple
+#     deployment from release, enabling hypothesis testing
+# ─────────────────────────────────────────────────────────────────
 """
 engine/graph.py — Pure DAG logic. No LLM, no network, no I/O.
 
@@ -39,7 +50,8 @@ class CausalProvenanceTracker:
     """
 
     def __init__(self) -> None:
-        self._events: dict[str, dict[str, str | None]] = {}  # slug → {desc, parent}
+        # slug → {desc, parent}
+        self._events: dict[str, dict[str, str | None]] = {}
         self._lock = threading.Lock()
 
     def record(
@@ -49,7 +61,8 @@ class CausalProvenanceTracker:
         caused_by: str | None = None,
     ) -> None:
         with self._lock:
-            self._events[slug] = {"description": description, "caused_by": caused_by}
+            self._events[slug] = {
+                "description": description, "caused_by": caused_by}
 
     def chain(self, slug: str) -> list[str]:
         """Return the ordered chain [root, …, slug] for a given event slug."""
@@ -90,6 +103,11 @@ class CognitiveGraph:
     Every add_edge() call enforces the DAG invariant immediately.
     A CycleDetectedError is raised and the edge is never committed
     if the addition would create a cycle.
+
+    SLSA/Sigstore note: each node slug maps to a DAG execution step whose
+    provenance can be attested via Rekor transparency log entries.  Future
+    hardening should hash node outputs and submit attestations so that the
+    full execution graph can be independently verified (SLSA Build L3).
     """
 
     def __init__(self) -> None:
@@ -143,7 +161,8 @@ class TopologicalSorter:
                 g.add_edge(dep, slug)
 
         if not nx.is_directed_acyclic_graph(g):
-            raise CycleDetectedError("Cyclic dependency graph — execution halted.")
+            raise CycleDetectedError(
+                "Cyclic dependency graph — execution halted.")
 
         waves: list[list[str]] = []
         remaining = set(g.nodes)
@@ -153,7 +172,8 @@ class TopologicalSorter:
                 if all(p not in remaining for p in g.predecessors(n))
             )
             if not wave:
-                raise CycleDetectedError("Unresolvable cycle across remaining nodes.")
+                raise CycleDetectedError(
+                    "Unresolvable cycle across remaining nodes.")
             waves.append(wave)
             remaining -= set(wave)
         return waves
