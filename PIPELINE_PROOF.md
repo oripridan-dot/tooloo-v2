@@ -5140,3 +5140,45 @@ Auto-approved all medium-risk/high-impact/high-ROI development bottlenecks ident
     N-Stroke SSE events (n_stroke_start, scope, execution, refinement, n_stroke_complete) are NOT yet
     consumed by buddy_demo.html — only /v2/buddy/chat is called from the demo.
     To add N-Stroke: in sendMsg(), detect BUILD|DEBUG intent, POST to /v2/n-stroke, map SSE events.
+
+---
+
+### Session 2026-07-17T00:00:00Z — Dynamic Component Renderer: JITDesigner DOM bridge
+
+**[SYSTEM_STATE]**
+- branch: main
+- commit: cc4d165
+- tests_start: 1161 passed / 0 failed (39 jit_designer tests)
+- tests_end: 1161 passed / 0 failed (50 jit_designer tests — +11 new)
+- unresolved_blockers: [Vertex ADC JSON missing — using GEMINI_API_KEY fallback]
+
+**[EXECUTION_TRACE]**
+- nodes_touched: [studio/static/buddy_demo.html, tests/test_jit_designer.py]
+- mcp_tools_used: [multi_replace_string_in_file, replace_string_in_file, run_in_terminal, grep_search]
+- architecture_changes: ComponentRenderer JS class (6 static factories) + buildCompStream() grouping function added to buddy_demo.html; finishMsg() updated with hasStructured gate; handleSSE() passes component_type as phase to logEv; CSS suite added (~100 lines: glass card, timeline, chips, glass table, code block, keyframes crSlideUp + crPop). Backend was already wired from prev session (jit_designer.py + api.py).
+
+**[WHAT_WAS_DONE]**
+- Added complete ComponentRenderer CSS to buddy_demo.html: .cr-glass-card with Apple HIG liquid glass (backdrop-filter blur(16px) saturate(170%)), per-theme colour accents (hig-blue/green/purple/orange/teal/red), .cr-timeline with ::before vertical connector, .cr-timeline-step, .cr-ts-num circle, .cr-insight-chips/.cr-insight-chip key-val layout, .cr-glass-table-wrap + .cr-glass-table Material Design table, .cr-code-block + copy button
+- Added ComponentRenderer JS class with static _prose, _glassCard, _timelineStep, _chip, _table, _code factories. All DOM construction uses .textContent (never .innerHTML on component data) — XSS-safe.
+- Added buildCompStream(comps) grouping function: consecutive timeline_step → single .cr-timeline, consecutive insight_chip → single .cr-insight-chips, all others delegated to ComponentRenderer.build()
+- Updated finishMsg() with hasStructured gate: comps.some(c => c.component_type !== 'prose') → transparent bubble + buildCompStream(); else → applyEmphasis() plain text
+- Updated handleSSE() to log ui_component events with {phase: component_type} for event log clarity
+- Added ui_component: '#fb923c' to EL_COLORS
+- Added TestUIComponent (3 tests) and TestParseResponseBlocks (8 tests) to test_jit_designer.py; all 50 tests pass
+- Committed cc4d165 and pushed to origin/main
+
+**[WHAT_WAS_NOT_DONE]**
+- SSE progressive rendering (streaming ui_component events into loading bubble before HTTP arrives) — kept HTTP-authoritative approach for simplicity; SSE events log to event stream only
+- Mermaid.js inline rendering for code_block components with language=mermaid
+- N-Stroke visual bridge (routing BUILD/DEBUG to /v2/n-stroke from buddy_demo.html)
+
+**[JIT_SIGNAL_PAYLOAD]**
+- rule_1: parse_response_blocks empty-list contract — returning [] for pure prose is the correct signal for frontend fallback; test for has_structured flag, not component count
+- rule_2: buildCompStream inner-while grouping pattern — consume run of same type with inner while loop, not outer forEach, to get single DOM wrapper per run (required for .cr-timeline::before vertical line)
+- rule_3: transparent bubble when hasStructured — set b.style.cssText opacity/bg/border/shadow to transparent explicitly; CSS class override alone is insufficient due to specificity
+- rule_4: append suggestions chips to lo (message wrapper) not b (bubble) when structured rendering active — b is transparent so chips would be invisible
+- rule_5: all component content must use .textContent assignment, never .innerHTML — LLM responses are untrusted; XSS-safe DOM construction is mandatory even inside component factories
+
+**[HANDOFF_PROTOCOL]**
+- next_action: "Test the live component renderer by running the server and sending structured prompts (e.g. 'list 5 steps to deploy a FastAPI app') to verify glass cards + timeline render correctly"
+- context_required: "Server starts with: uvicorn studio.api:app --host 0.0.0.0 --port 8000; demo is at http://localhost:8000/demo; ui_components[] in HTTP response drives rendering when hasStructured=true; SSE ui_component events are cosmetic (event log only)"
