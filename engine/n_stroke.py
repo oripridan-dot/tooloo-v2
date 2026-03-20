@@ -231,6 +231,7 @@ class NStrokeResult:
     model_escalations: int    # how many times the model tier increased
     healing_invocations: int  # how many times RefinementSupervisor ran
     latency_ms: float
+    crisis: dict[str, Any] | None = None  # populated by No Dead Ends Protocol
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -243,6 +244,7 @@ class NStrokeResult:
             "model_escalations": self.model_escalations,
             "healing_invocations": self.healing_invocations,
             "latency_ms": round(self.latency_ms, 2),
+            "crisis": self.crisis,
         }
 
 
@@ -499,6 +501,27 @@ class NStrokeEngine:
         final_verdict = last.refinement.verdict if last else "fail"
         satisfied = last.satisfied if last else False
 
+        # ── No Dead Ends Protocol: crisis synthesis on exhaustion ─────────────
+        # When the loop exits without satisfaction (all MAX_STROKES consumed
+        # without passing the refinement gate), synthesise a structured crisis
+        # payload and emit an `actionable_intervention` SSE event.  The UI
+        # renders this as an amber card with 2-3 clickable resolution buttons
+        # that auto-fill the mandate input — ensuring the user is never left
+        # staring at a "fail" verdict with no path forward.
+        if not satisfied:
+            crisis_payload = self._synthesize_crisis(
+                mandate_text=locked_intent.mandate_text,
+                intent=locked_intent.intent,
+                strokes=strokes,
+            )
+            self._broadcast({
+                "type": "actionable_intervention",
+                "pipeline_id": pipeline_id,
+                "crisis": crisis_payload,
+            })
+        else:
+            crisis_payload = None
+
         result = NStrokeResult(
             pipeline_id=pipeline_id,
             locked_intent=locked_intent,
@@ -509,6 +532,7 @@ class NStrokeEngine:
             model_escalations=model_escalations,
             healing_invocations=healing_invocations,
             latency_ms=round((time.monotonic() - t0) * 1000, 2),
+            crisis=crisis_payload,
         )
 
         self._broadcast({
@@ -903,4 +927,116 @@ class NStrokeEngine:
             "stroke": env.metadata.get("stroke", 1),
             "healing_applied": env.metadata.get("healing_applied", False),
             "status": "executed",
+        }
+
+    # ── No Dead Ends: crisis synthesis ────────────────────────────────────────
+
+    def _synthesize_crisis(
+        self,
+        mandate_text: str,
+        intent: str,
+        strokes: list[StrokeRecord],
+    ) -> dict[str, Any]:
+        """Generate a structured crisis payload with actionable recovery options.
+
+        Attempts a Gemini API call to produce a human-readable summary,
+        a technical root-cause description, and 2-3 concrete resolution
+        options the user can click in the UI.
+
+        Falls back to intent-based static options when the API is unavailable.
+        """
+        import json as _json
+
+        # Collect failed node names for context
+        failed_nodes: list[str] = []
+        for s in strokes[-3:]:  # last 3 strokes for brevity
+            for r in s.execution_results:
+                if not r.success:
+                    canonical = r.mandate_id.rsplit("-", 1)[-1]
+                    if canonical not in failed_nodes:
+                        failed_nodes.append(canonical)
+
+        # ── Try Gemini API for rich crisis synthesis ──────────────────────────
+        try:
+            # type: ignore[attr-defined]
+            from engine.config import _gemini_client, GEMINI_MODEL
+            if _gemini_client is not None:
+                system_prompt = (
+                    "You are the TooLoo Crisis Synthesiser. "
+                    "The autonomous pipeline has exhausted all retries without success. "
+                    "Your job: produce a structured JSON object (no markdown, no prose) "
+                    "that gives the user clear next steps. "
+                    "Schema: {\"human_summary\": str, \"technical_blocker\": str, "
+                    "\"actionable_choices\": [str, str, str]} "
+                    "Each actionable_choice must be a complete, submittable mandate "
+                    "that a user can paste directly into the chat input to unblock the system."
+                )
+                user_prompt = (
+                    f"Original mandate: {mandate_text[:400]}\n"
+                    f"Intent: {intent}\n"
+                    f"Failed nodes: {', '.join(failed_nodes[:5]) or 'unknown'}\n"
+                    f"Strokes exhausted: {len(strokes)}\n\n"
+                    "Synthesise the crisis JSON now."
+                )
+                resp = _gemini_client.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=f"{system_prompt}\n\n{user_prompt}",
+                )
+                raw = (resp.text or "").strip()
+                # Strip markdown code fences if present
+                raw = raw.removeprefix("```json").removeprefix(
+                    "```").removesuffix("```").strip()
+                parsed = _json.loads(raw)
+                if (
+                    isinstance(parsed, dict)
+                    and "human_summary" in parsed
+                    and "actionable_choices" in parsed
+                ):
+                    return parsed
+        except Exception:
+            pass  # fall through to static fallback
+
+        # ── Static fallback: intent-specific recovery choices ─────────────────
+        _STATIC_CHOICES: dict[str, list[str]] = {
+            "BUILD": [
+                f"Scope this down: build only the minimal working skeleton of «{mandate_text[:60]}»",
+                f"Debug first: diagnose what is preventing the build from completing",
+                "Audit dependencies and verify all required packages are installed",
+            ],
+            "DEBUG": [
+                f"Provide the full error traceback for «{mandate_text[:60]}»",
+                "Run: python -m pytest tests/ -x -q --timeout=30 to isolate the failure",
+                "Audit the last change to identify the regression source",
+            ],
+            "DESIGN": [
+                f"Simplify the scope: design a single component for «{mandate_text[:60]}»",
+                "Start with a Tailwind-only static HTML mockup, no JS",
+                "Explain the design requirements in plain English so I can rephrase the mandate",
+            ],
+            "AUDIT": [
+                "Run: python -m pytest tests/ -v to see which tests are failing",
+                f"Audit a single module: audit only the {failed_nodes[0] if failed_nodes else 'router'} component",
+                "Check for missing environment variables or misconfigured .env",
+            ],
+        }
+        choices = _STATIC_CHOICES.get(
+            intent,
+            [
+                f"Rephrase the mandate with more specific details about «{mandate_text[:60]}»",
+                "Break the task into smaller steps and tackle the first one only",
+                "Provide context files or error messages to help diagnose the blocker",
+            ],
+        )
+        return {
+            "human_summary": (
+                f"The pipeline exhausted {len(strokes)} strokes without satisfying "
+                f"the «{intent}» mandate. "
+                f"Last failing nodes: {', '.join(failed_nodes[:3]) or 'see logs'}."
+            ),
+            "technical_blocker": (
+                f"Intent={intent}; failed_nodes={failed_nodes[:5]}; "
+                f"strokes={len(strokes)}/{self._max_strokes}; "
+                "all healing prescriptions exhausted."
+            ),
+            "actionable_choices": choices[:3],
         }

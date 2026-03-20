@@ -27,6 +27,47 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any
 
+# ── Gemini Embedding Backend ──────────────────────────────────────────────────
+# Optional: if google-genai + GEMINI_API_KEY are available, use text-embedding-004
+# for dense semantic similarity.  Falls back to TF-IDF on any failure.
+
+_gemini_embed_client = None
+try:
+    # type: ignore[attr-defined]
+    from engine.config import GEMINI_API_KEY as _EMBED_KEY
+    if _EMBED_KEY:
+        from google import genai as _genai_embed  # type: ignore[import]
+        _gemini_embed_client = _genai_embed.Client(api_key=_EMBED_KEY)
+except Exception:
+    pass
+
+_EMBED_MODEL = "models/text-embedding-004"
+
+
+def _get_embedding(text: str) -> list[float] | None:
+    """Call Gemini text-embedding-004. Returns None on any failure."""
+    if _gemini_embed_client is None:
+        return None
+    try:
+        resp = _gemini_embed_client.models.embed_content(
+            model=_EMBED_MODEL,
+            contents=text[:2000],
+        )
+        return list(resp.embeddings[0].values)
+    except Exception:
+        return None
+
+
+def _cosine_dense(a: list[float], b: list[float]) -> float:
+    """Cosine similarity between two dense float vectors."""
+    if not a or not b or len(a) != len(b):
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b))
+    na = math.sqrt(sum(x * x for x in a))
+    nb = math.sqrt(sum(y * y for y in b))
+    return dot / (na * nb) if na > 0.0 and nb > 0.0 else 0.0
+
+
 # ── Stop-word filter ──────────────────────────────────────────────────────────
 _STOP: frozenset[str] = frozenset({
     "a", "an", "the", "and", "or", "in", "on", "at", "to", "for", "of",
@@ -69,12 +110,15 @@ def _cosine(a: dict[str, float], b: dict[str, float]) -> float:
 
 @dataclass
 class VectorDoc:
-    """One indexed document with its TF-IDF vector."""
+    """One indexed document with its TF-IDF vector and (optional) dense embedding."""
     id: str
     text: str
-    tf: dict[str, float]        # raw term frequencies (stable)
-    tfidf: dict[str, float]     # TF-IDF weighted (rebuilt on corpus changes)
+    tf: dict[str, float]            # raw term frequencies (stable)
+    # TF-IDF weighted (rebuilt on corpus changes)
+    tfidf: dict[str, float]
     metadata: dict[str, Any] = field(default_factory=dict)
+    embedding: list[float] | None = field(
+        default=None, repr=False)  # Gemini dense vec
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -82,6 +126,7 @@ class VectorDoc:
             "text": self.text[:200],
             "metadata": self.metadata,
             "vector_dims": len(self.tfidf),
+            "has_embedding": self.embedding is not None,
         }
 
 
@@ -142,15 +187,22 @@ class VectorStore:
     # ── Internal search ───────────────────────────────────────────────────────
 
     def _search_internal(
-        self, query_vec: dict[str, float], top_k: int
+        self,
+        query_vec: dict[str, float],
+        top_k: int,
+        query_embedding: list[float] | None = None,
     ) -> list[SearchResult]:
-        scored = [
-            SearchResult(id=doc.id, score=_cosine(
-                query_vec, doc.tfidf), doc=doc)
-            for doc in self._docs.values()
-        ]
-        scored.sort(key=lambda r: r.score, reverse=True)
-        return scored[:top_k]
+        results: list[SearchResult] = []
+        for doc in self._docs.values():
+            if query_embedding is not None and doc.embedding is not None:
+                # Dense semantic similarity (Gemini text-embedding-004)
+                score = _cosine_dense(query_embedding, doc.embedding)
+            else:
+                # Fallback: TF-IDF sparse cosine
+                score = _cosine(query_vec, doc.tfidf)
+            results.append(SearchResult(id=doc.id, score=score, doc=doc))
+        results.sort(key=lambda r: r.score, reverse=True)
+        return results[:top_k]
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -169,9 +221,13 @@ class VectorStore:
             tokens = _tokenize(text)
             tf = _tf(tokens)
             tfidf_tmp = self._to_tfidf(tf)
+            # Attempt to get a dense Gemini embedding for this document
+            embedding = _get_embedding(text)
 
             if self._docs:
-                top = self._search_internal(tfidf_tmp, top_k=1)
+                top = self._search_internal(
+                    tfidf_tmp, top_k=1, query_embedding=embedding
+                )
                 if top and top[0].score >= self.dup_threshold:
                     return False  # near-duplicate rejected
 
@@ -181,6 +237,7 @@ class VectorStore:
                 tf=tf,
                 tfidf=tfidf_tmp,
                 metadata=metadata or {},
+                embedding=embedding,
             )
             for t in tf:
                 self._df[t] = self._df.get(t, 0) + 1
@@ -194,14 +251,20 @@ class VectorStore:
         top_k: int = 5,
         threshold: float = 0.0,
     ) -> list[SearchResult]:
-        """Return top-k most similar documents with score ≥ threshold."""
+        """Return top-k most similar documents with score ≥ threshold.
+
+        Uses Gemini dense embeddings when available; falls back to TF-IDF sparse
+        cosine when the API is offline or not configured.
+        """
         with self._lock:
             if not self._docs:
                 return []
             tokens = _tokenize(query)
             tf = _tf(tokens)
             qvec = self._to_tfidf(tf)
-            results = self._search_internal(qvec, top_k)
+            query_embedding = _get_embedding(query)
+            results = self._search_internal(
+                qvec, top_k, query_embedding=query_embedding)
             return [r for r in results if r.score >= threshold]
 
     def get(self, doc_id: str) -> VectorDoc | None:

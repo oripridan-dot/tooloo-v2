@@ -36,6 +36,7 @@ from engine.config import GEMINI_API_KEY, GEMINI_MODEL, VERTEX_DEFAULT_MODEL
 from engine.config import _vertex_client as _vertex_client_cfg
 from engine.executor import Envelope
 from engine.mcp_manager import MCPManager
+from engine.vlt_schema import VectorTree, VLTAuditReport
 
 # ── LLM clients (initialised once at import — same pattern as jit_booster) ────
 _vertex_client = _vertex_client_cfg
@@ -60,12 +61,17 @@ _NODE_SYSTEM = (
 # Human-Centric Standard — prepended to all frontend node prompts
 _HUMAN_CENTRIC_SYSTEM = (
     "You are bound by the Human-Centric Standard. "
-    "Any interface generated must prioritize low cognitive load, clear affordances, "
-    "and elegant state transitions. Code must be production-ready, utilizing smooth "
-    "animations (GSAP) and clear visual hierarchy. "
-    "Do not output unstyled or purely utilitarian markup. "
-    "If the logic is elegant, the UI must reflect that elegance. "
-    "Follow WCAG 2.2 Level AA accessibility requirements. "
+    "Any interface generated MUST use Tailwind CSS v4 loaded via CDN: "
+    "<link href='https://cdn.tailwindcss.com' rel='stylesheet'>. "
+    "ALL layout and spacing MUST use Tailwind utility classes — NEVER bare unstyled HTML. "
+    "NEVER use inline style= attributes for layout; use Tailwind classes exclusively. "
+    "Animations and state transitions MUST use GSAP (loaded via CDN). "
+    "The visual hierarchy must reflect 2026 design standards: dark-mode-capable, "
+    "high contrast tokens, clear affordances, and micro-interactions. "
+    "Follow WCAG 2.2 Level AA accessibility requirements: semantic HTML, "
+    "aria-labels on interactive elements, minimum 4.5:1 contrast ratio. "
+    "Output must be production-ready — not a prototype, not a sketch. "
+    "Do not output unstyled, unclassed, or purely utilitarian markup. "
 )
 
 # Frontend file extensions and path patterns that trigger Human-Centric Standard
@@ -101,13 +107,25 @@ _NODE_PROMPTS: dict[str, str] = {
         "Format as: - Gap: <description> → Fix: <action>"
     ),
     "design": (
+        "{human_centric_prefix}"
         "Mandate: «{mandate}»\n"
         "Intent: {intent}\n"
         "JIT SOTA signals: {signals}\n\n"
         "Produce a concrete implementation blueprint. "
         "Name the specific files, classes, and interfaces to create or modify. "
         "State the 4-wave DAG execution order. "
-        "Format as numbered steps."
+        "Format as numbered steps.\n\n"
+        "SPATIAL UI MANDATE: If this implements any UI component, you MUST ALSO "
+        "output a Vector Layout Tree (VLT) JSON block at the end of your response "
+        "in this exact format:\n"
+        "```vlt\n"
+        "{{\"tree_id\":\"<id>\",\"viewport_width\":1920,\"viewport_height\":1080,"
+        "\"root_node\":{{\"node_id\":\"root\",\"type\":\"container\","
+        "\"dimensions\":{{\"width_pct\":100,\"height_pct\":100}},"
+        "\"constraints\":{{}},\"style_tokens\":{{}},\"children\":[]}}}}\n"
+        "```\n"
+        "All node coordinates MUST use design-system tokens (no hex codes). "
+        "Gap and padding values MUST be integers (8-px grid units)."
     ),
     "implement": (
         "Mandate: «{mandate}»\n"
@@ -168,9 +186,31 @@ _NODE_PROMPTS: dict[str, str] = {
         "2. Affordance map: key interactive elements and their visual cues.\n"
         "3. GSAP animation plan: which state transitions need micro-interactions.\n"
         "4. Accessibility checklist: WCAG 2.2 AA requirements for this UI.\n"
-        "Output a UX Blueprint. No code yet."
+        "5. SPATIAL PROOF: Output a Vector Layout Tree (VLT) JSON block that "
+        "mathematically encodes this UI. Use strict 8-px grid units for gap/padding. "
+        "No hex codes — design-system tokens only. Format:\n"
+        "```vlt\n"
+        "{{\"tree_id\":\"<id>\",\"viewport_width\":1920,\"viewport_height\":1080,"
+        "\"root_node\":{{...}}}}\n"
+        "```\n"
+        "Output a UX Blueprint with the VLT block. No implementation code yet."
+        # ── Art Director node (visual quality gate) ───────────────────────────
     ),
-    # ── Dry-run simulation node ────────────────────────────────────────────
+    "art_director": (
+        "{human_centric_prefix}"
+        "Mandate: «{mandate}»\n"
+        "Intent: {intent}\n"
+        "JIT SOTA signals: {signals}\n\n"
+        "Art Director Review. Evaluate the UI output against 2026 production standards.\n"
+        "1. Tailwind audit: are all layout elements using Tailwind v4 utility classes? "
+        "List any bare HTML tags that need class= attributes.\n"
+        "2. GSAP animation review: are state transitions smooth and purposeful? "
+        "Name any transitions that are missing or jarring.\n"
+        "3. Visual hierarchy score (1-10): rate contrast, spacing, and typography.\n"
+        "4. Accessibility check: WCAG 2.2 AA pass/fail per component.\n"
+        "5. Verdict: APPROVED | NEEDS_REVISION with specific change directives.\n"
+        "If NEEDS_REVISION, output exact Tailwind class substitutions or GSAP snippets."
+    ),    # ── Dry-run simulation node ────────────────────────────────────────────
     "dry_run": (
         "Mandate: «{mandate}»\n"
         "Intent: {intent}\n"
@@ -180,6 +220,27 @@ _NODE_PROMPTS: dict[str, str] = {
         "Mark every change with: [STAGED] <file_path> <description>.\n"
         "Flag any concerns that would prevent promotion to execute phase."
     ),
+    # ── SPAWN_REPO: repository scaffold generator ──────────────────────────
+    "spawn_repo": (
+        "Mandate: «{mandate}»\n"
+        "Intent: SPAWN_REPO\n"
+        "JIT SOTA signals: {signals}\n\n"
+        "Generate a complete repository scaffold plan. Output exactly:\n"
+        "1. REPO_NAME: <slug> (lowercase, hyphens only)\n"
+        "2. PURPOSE: <one sentence>\n"
+        "3. TREE:\n"
+        "   <directory tree using | and `-- notation>\n"
+        "4. KEY_FILES:\n"
+        "   - pyproject.toml: <purpose>\n"
+        "   - README.md: <purpose>\n"
+        "   - src/__init__.py: <purpose>\n"
+        "   - tests/__init__.py: <purpose>\n"
+        "   - .github/workflows/ci.yml: GitHub Actions CI pipeline stub\n"
+        "5. NEXT_MANDATES (3 TooLoo mandates to run after scaffolding):\n"
+        "   - <mandate-1>\n"
+        "   - <mandate-2>\n"
+        "   - <mandate-3>\n"
+    ),
 }
 
 # Default prompt for unrecognised node types (covers wave-index nodes)
@@ -187,6 +248,8 @@ _WAVE_NODE_PROMPTS: list[str] = [
     "audit_wave", "design_wave", "ux_eval",   # Phase 1 discovery
     "ingest", "analyse",                        # Phase 2 dry-run
     "implement", "validate", "emit",            # Phase 3 execute
+    "art_director",                             # Visual quality gate
+    "spawn_repo",                               # Repository scaffold
 ]
 
 
@@ -356,7 +419,7 @@ def make_live_work_fn(
                     mcp_context = f"\n\nFile contents ({file_path}):\n```\n{content}\n```"
 
         # Build prompt — inject Human-Centric Standard for frontend-targeting nodes
-        if node_type == "ux_eval":
+        if node_type in ("ux_eval", "art_director"):
             prompt = template.format(
                 human_centric_prefix=_HUMAN_CENTRIC_SYSTEM,
                 mandate=_mandate,
@@ -488,6 +551,27 @@ def make_live_work_fn(
                     "error": str(write_result.output) if not write_result.success else None,
                 }
 
+        # ── SPAWN_REPO: write scaffold files from LLM plan ─────────────────
+        spawn_repo_result: dict[str, Any] | None = None
+        if node_type == "spawn_repo" and output and not output.startswith("[symbolic-"):
+            scaffold_files = _build_spawn_repo_scaffold(_mandate, output)
+            write_results: list[dict[str, Any]] = []
+            for file_path, file_content in scaffold_files.items():
+                wr = mcp.call_uri(
+                    "mcp://tooloo/file_write",
+                    path=file_path,
+                    content=file_content,
+                )
+                write_results.append({
+                    "path": file_path,
+                    "success": wr.success,
+                    "error": str(wr.error) if not wr.success else None,
+                })
+            spawn_repo_result = {
+                "files_written": write_results,
+                "scaffold_plan": output,
+            }
+
         result: dict[str, Any] = {
             "node": env.mandate_id,
             "node_type": node_type,
@@ -500,8 +584,297 @@ def make_live_work_fn(
         }
         if mcp_write_result is not None:
             result["mcp_write"] = mcp_write_result
+        if spawn_repo_result is not None:
+            result["spawn_repo"] = spawn_repo_result
         if spawned_branches:
             result["__spawned_branches__"] = spawned_branches
+
+        # ── Art Director: visual evaluation for ux_eval nodes ──────────────
+        # When a target HTML file is supplied, render it headlessly, pass the
+        # Base64 screenshot to a vision model for WCAG / Gestalt critique, and
+        # attach actionable CSS adjustments to the result payload.
+        if node_type == "ux_eval":
+            art_result = _run_art_director(
+                mcp=mcp,
+                file_path=env.metadata.get("file_path") or target or "",
+                ux_blueprint=output,
+                mandate=_mandate,
+                intent=intent,
+                model_id=node_model_id,
+                call_llm_raw=_call_llm_raw,
+            )
+            result["art_director"] = art_result
+
+            # ── VLT Math Proofs: parse embedded VLT JSON and run full audit ──
+            vlt_audit = _run_vlt_audit(output)
+            result["vlt_audit"] = vlt_audit
+
+        # ── Design node: extract and audit any embedded VLT block ───────────
+        if node_type in ("design", "design_wave"):
+            vlt_audit = _run_vlt_audit(output)
+            if vlt_audit.get("tree_id"):  # only attach if VLT was found
+                result["vlt_audit"] = vlt_audit
+
         return result
 
     return work_fn
+
+
+# ── SPAWN_REPO Scaffold Builder ───────────────────────────────────────────────
+
+def _build_spawn_repo_scaffold(mandate: str, llm_plan: str) -> dict[str, str]:
+    """Parse the LLM scaffold plan and return a {path: content} dict.
+
+    Extracts REPO_NAME from the plan (if present) and builds canonical
+    scaffold files.  Falls back to a slug derived from the mandate text.
+    """
+    import re as _re
+
+    # Extract repo name from plan
+    name_match = _re.search(
+        r"REPO_NAME\s*:\s*([a-z0-9\-_]+)", llm_plan, _re.IGNORECASE)
+    repo_name = name_match.group(1).lower() if name_match else (
+        _re.sub(r"[^a-z0-9]+", "-", mandate[:40].lower()
+                ).strip("-") or "new-repo"
+    )
+
+    # Extract purpose sentence
+    purpose_match = _re.search(r"PURPOSE\s*:\s*(.+)", llm_plan)
+    purpose = purpose_match.group(
+        1).strip() if purpose_match else mandate[:120]
+
+    base = f"generated/{repo_name}"
+    return {
+        f"{base}/README.md": (
+            f"# {repo_name}\n\n{purpose}\n\n"
+            "## Getting Started\n\n"
+            "```bash\npip install -e .[dev]\npytest\n```\n"
+        ),
+        f"{base}/pyproject.toml": (
+            "[build-system]\n"
+            'requires = ["setuptools>=68"]\n'
+            'build-backend = "setuptools.backends.legacy:build"\n\n'
+            "[project]\n"
+            f'name = "{repo_name}"\n'
+            'version = "0.1.0"\n'
+            f'description = "{purpose[:120]}"\n'
+            'requires-python = ">=3.11"\n\n'
+            "[project.optional-dependencies]\n"
+            'dev = ["pytest>=8", "pytest-asyncio"]\n'
+        ),
+        f"{base}/src/__init__.py": f'"""{repo_name} source package."""\n',
+        f"{base}/tests/__init__.py": '"""Test suite."""\n',
+        f"{base}/.github/workflows/ci.yml": (
+            "name: CI\non: [push, pull_request]\njobs:\n"
+            "  test:\n    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - uses: actions/checkout@v4\n"
+            "      - uses: actions/setup-python@v5\n"
+            "        with: {python-version: '3.12'}\n"
+            "      - run: pip install -e .[dev]\n"
+            "      - run: pytest\n"
+        ),
+        f"{base}/scaffold_plan.md": (
+            f"# Scaffold Plan — {repo_name}\n\n"
+            f"Generated from mandate: {mandate[:200]}\n\n"
+            "```\n" + llm_plan + "\n```\n"
+        ),
+    }
+
+
+# ── VLT Audit helper ──────────────────────────────────────────────────────────
+
+
+def _run_vlt_audit(llm_output: str) -> dict[str, Any]:
+    """Extract a VLT JSON block from LLM output and run full math proofs.
+
+    Looks for a ```vlt ... ``` fenced block or a bare JSON object that can be
+    parsed as a VectorTree.  Returns a serialised VLTAuditReport dict, or an
+    empty dict if no VLT block was found.
+    """
+    import json as _json
+
+    raw_vlt: str | None = None
+
+    # Try fenced ```vlt block first
+    m = re.search(r"```vlt\s*(.*?)\s*```", llm_output,
+                  re.DOTALL | re.IGNORECASE)
+    if m:
+        raw_vlt = m.group(1).strip()
+    else:
+        # Fall back to largest JSON object in the output
+        m2 = re.search(r"\{.*\"root_node\".*\}", llm_output, re.DOTALL)
+        if m2:
+            raw_vlt = m2.group(0).strip()
+
+    if not raw_vlt:
+        return {}
+
+    try:
+        data = _json.loads(raw_vlt)
+        tree = VectorTree.model_validate(data)
+        report: VLTAuditReport = tree.full_audit()
+        return report.model_dump()
+    except Exception as exc:
+        return {"parse_error": str(exc)[:200], "raw_snippet": raw_vlt[:300]}
+
+
+# ── Art Director helper ────────────────────────────────────────────────────────
+
+
+def _run_art_director(
+    mcp: "MCPManager",
+    file_path: str,
+    ux_blueprint: str,
+    mandate: str,
+    intent: str,
+    model_id: str,
+    call_llm_raw: "Callable[[str, str, str], str]",
+) -> dict[str, Any]:
+    """Render a UI file, pass the screenshot to a vision model, return critique.
+
+    Pipeline:
+      1. ``render_screenshot`` → PNG (Base64) or stub if Playwright unavailable.
+      2. Build multimodal prompt with WCAG + Gestalt evaluation axes.
+      3. Call vision-capable model (or text-only fallback).
+      4. Return structured critique with actionable CSS/component adjustments.
+    """
+    art_output: dict[str, Any] = {
+        "rendered": False,
+        "renderer": "none",
+        "critique": "",
+        "adjustments": [],
+        "wcag_pass": None,
+    }
+
+    # Step 1 — Render screenshot if file_path is an HTML file
+    if file_path and file_path.endswith((".html", ".htm")):
+        render_result = mcp.call(
+            "render_screenshot",
+            file_path=file_path,
+            viewport_width=1280,
+            viewport_height=800,
+        )
+        if render_result.success and render_result.output:
+            rdata = render_result.output
+            art_output["rendered"] = rdata.get("screenshot_b64") is not None
+            art_output["renderer"] = rdata.get("renderer", "stub")
+            b64_png = rdata.get("screenshot_b64")
+        else:
+            b64_png = None
+    else:
+        b64_png = None
+
+    # Step 2 — Build vision evaluation prompt
+    _VISION_SYSTEM = (
+        "You are the Art Director of TooLoo V2 — a WCAG 2.2 AA and Gestalt-trained "
+        "UI critic.  Evaluate the provided UI strictly and produce ONLY actionable output.\n\n"
+        "Evaluation axes (score 1-5 each):\n"
+        "  contrast       — text and interactive element contrast ratios\n"
+        "  alignment      — grid consistency and visual rhythm\n"
+        "  cognitive_load — information density and grouping clarity\n"
+        "  affordance     — interactive elements are visually distinct\n"
+        "  animation      — state transitions are smooth and purposeful\n\n"
+        "Output format (strict JSON):\n"
+        '{"critique": "<2-sentence summary>", '
+        '"scores": {"contrast":N,"alignment":N,"cognitive_load":N,"affordance":N,"animation":N}, '
+        '"adjustments": ["<specific CSS/component fix 1>", "..."], '
+        '"wcag_pass": true|false}'
+    )
+
+    if b64_png:
+        # Multimodal path (vision model)
+        vision_prompt = (
+            f"{_VISION_SYSTEM}\n\n"
+            f"UX Blueprint context:\n{ux_blueprint[:600]}\n\n"
+            f"Mandate: «{mandate[:200]}»\n\n"
+            f"[Screenshot attached as Base64 PNG — evaluate the visual above]"
+        )
+        # Attempt multimodal call via Vertex AI / Gemini Direct
+        raw_critique = _try_vision_call(b64_png, vision_prompt, model_id)
+    else:
+        # Text-only fallback (no screenshot available)
+        vision_prompt = (
+            f"{_VISION_SYSTEM}\n\n"
+            f"UX Blueprint context:\n{ux_blueprint[:800]}\n\n"
+            f"Mandate: «{mandate[:200]}»\n\n"
+            "No screenshot available. Evaluate the blueprint text above using your "
+            "knowledge of WCAG 2.2 and Gestalt design principles."
+        )
+        raw_critique = call_llm_raw(vision_prompt, "ux_eval", model_id)
+
+    # Step 3 — Parse JSON critique from model output
+    import json as _json
+
+    m = re.search(r"\{.*\}", raw_critique, re.DOTALL)
+    if m:
+        try:
+            parsed = _json.loads(m.group(0))
+            art_output["critique"] = str(parsed.get("critique", ""))[:600]
+            art_output["adjustments"] = list(
+                parsed.get("adjustments", []))[:10]
+            art_output["wcag_pass"] = bool(parsed.get("wcag_pass", False))
+            art_output["scores"] = parsed.get("scores", {})
+        except _json.JSONDecodeError:
+            art_output["critique"] = raw_critique[:400]
+    else:
+        art_output["critique"] = raw_critique[:400]
+
+    return art_output
+
+
+def _try_vision_call(b64_png: str, prompt: str, model_id: str) -> str:
+    """Attempt a multimodal call with Base64 PNG attached.
+
+    Falls back to text-only if the provider does not support vision or
+    the client is unavailable.
+    """
+    # Vertex AI vision path (google-genai SDK supports inline image parts)
+    if _vertex_client is not None:
+        try:
+            # type: ignore[import-untyped]
+            from google.genai import types as _genai_types
+            import base64 as _b64
+
+            image_bytes = _b64.b64decode(b64_png)
+            contents = [
+                {"role": "user", "parts": [
+                    {"text": prompt},
+                    {"inline_data": {"mime_type": "image/png",
+                                     "data": _b64.b64encode(image_bytes).decode()}},
+                ]},
+            ]
+            resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
+                model=model_id, contents=contents,
+            )
+            return (resp.text or "").strip()
+        except Exception:
+            pass
+
+    # Gemini Direct vision path
+    if _gemini_client is not None:
+        try:
+            # type: ignore[import-untyped]
+            from google.genai import types as _gtypes
+            import base64 as _b64
+
+            image_bytes = _b64.b64decode(b64_png)
+            resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
+                model=GEMINI_MODEL,
+                contents=[prompt, {"inline_data": {
+                    "mime_type": "image/png",
+                    "data": _b64.b64encode(image_bytes).decode(),
+                }}],
+            )
+            return (resp.text or "").strip()
+        except Exception:
+            pass
+
+    # Text-only fallback
+    return (
+        '{"critique": "Vision model unavailable — blueprint-only evaluation.", '
+        '"scores": {"contrast":3,"alignment":3,"cognitive_load":3,"affordance":3,"animation":3}, '
+        '"adjustments": ["Verify color contrast ratios meet WCAG 4.5:1 for normal text", '
+        '"Ensure interactive elements have minimum 44x44px touch targets"], '
+        '"wcag_pass": null}'
+    )

@@ -185,6 +185,154 @@ from engine.config import CIRCUIT_BREAKER_MAX_FAILS, CIRCUIT_BREAKER_THRESHOLD
 # Maximum number of low-confidence examples retained for active-learning reuse.
 _ACTIVE_LEARNING_MAXLEN: int = 200
 
+# ── Semantic Embedding Classifier ─────────────────────────────────────────────
+# Uses Gemini text-embedding-004 to classify intent via cosine similarity against
+# pre-defined prototype phrases per intent.  Hybrid formula:
+#   final_confidence = 0.60 * embedding_score + 0.40 * keyword_score
+# Falls back to keyword-only when the API is unavailable.
+
+_INTENT_PROTOTYPES: dict[str, list[str]] = {
+    "BUILD": [
+        "build and implement a new feature",
+        "create a new service or module",
+        "write code to add functionality",
+        "generate and scaffold a new component",
+        "integrate and wire up systems",
+    ],
+    "DEBUG": [
+        "fix a bug or error",
+        "diagnose a crash or exception",
+        "investigate why something is broken",
+        "patch a regression or failing test",
+        "traceback analysis and root cause investigation",
+    ],
+    "AUDIT": [
+        "audit security and dependencies",
+        "review code quality and health",
+        "validate and verify the system",
+        "scan for outdated libraries or licenses",
+        "generate a status or health report",
+    ],
+    "DESIGN": [
+        "design a user interface layout",
+        "create a UI mockup or wireframe",
+        "redesign the visual theme or style",
+        "component and interface design",
+        "ux and experience prototype",
+    ],
+    "EXPLAIN": [
+        "explain how this works",
+        "describe and clarify a concept",
+        "walk me through this code",
+        "what does this function do",
+        "break down the architecture",
+    ],
+    "IDEATE": [
+        "brainstorm ideas and strategies",
+        "what approach should I take",
+        "recommend a solution or direction",
+        "advise on best practices",
+        "explore options and alternatives",
+    ],
+    "SPAWN_REPO": [
+        "create a new git repository",
+        "initialise and bootstrap a new project",
+        "spawn a new service repository",
+        "new repo scaffold with boilerplate",
+        "set up a new codebase from scratch",
+    ],
+}
+
+
+def _cosine_dense_router(a: list[float], b: list[float]) -> float:
+    """Cosine similarity for dense float vectors (router use only)."""
+    import math
+    if not a or not b or len(a) != len(b):
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b))
+    na = math.sqrt(sum(x * x for x in a))
+    nb = math.sqrt(sum(y * y for y in b))
+    return dot / (na * nb) if na > 0.0 and nb > 0.0 else 0.0
+
+
+class SemanticEmbeddingClassifier:
+    """Intent classifier using Gemini text-embedding-004 prototype matching.
+
+    At first use, pre-computes one mean prototype embedding per intent from
+    ``_INTENT_PROTOTYPES``.  Subsequent calls classify via cosine similarity.
+    Thread-safe: prototype computation happens once under a lock.
+    """
+
+    _EMBED_MODEL = "models/text-embedding-004"
+
+    def __init__(self) -> None:
+        import threading
+        self._lock = threading.Lock()
+        self._prototypes: dict[str, list[float]] | None = None
+        self._client = None
+        try:
+            # type: ignore[attr-defined]
+            from engine.config import GEMINI_API_KEY as _K
+            if _K:
+                from google import genai as _g  # type: ignore[import]
+                self._client = _g.Client(api_key=_K)
+        except Exception:
+            pass
+
+    def _embed(self, text: str) -> list[float] | None:
+        if self._client is None:
+            return None
+        try:
+            resp = self._client.models.embed_content(
+                model=self._EMBED_MODEL,
+                contents=text[:2000],
+            )
+            return list(resp.embeddings[0].values)
+        except Exception:
+            return None
+
+    def _mean_embed(self, phrases: list[str]) -> list[float] | None:
+        vecs = [v for p in phrases if (v := self._embed(p))]
+        if not vecs:
+            return None
+        dim = len(vecs[0])
+        mean = [sum(v[i] for v in vecs) / len(vecs) for i in range(dim)]
+        mag = sum(x * x for x in mean) ** 0.5
+        return [x / mag for x in mean] if mag > 0.0 else mean
+
+    def _ensure_prototypes(self) -> bool:
+        """Lazy-init: compute prototype embeddings once. Returns True if ready."""
+        if self._prototypes is not None:
+            return True
+        with self._lock:
+            if self._prototypes is not None:
+                return True
+            protos: dict[str, list[float]] = {}
+            for intent, phrases in _INTENT_PROTOTYPES.items():
+                emb = self._mean_embed(phrases)
+                if emb is None:
+                    return False  # API unavailable — abort, use keyword fallback
+                protos[intent] = emb
+            self._prototypes = protos
+        return True
+
+    def classify(self, text: str) -> dict[str, float] | None:
+        """Return cosine similarity scores per intent, or None if API unavailable."""
+        if not self._ensure_prototypes():
+            return None
+        emb = self._embed(text)
+        if emb is None:
+            return None
+        assert self._prototypes is not None
+        return {
+            intent: max(0.0, _cosine_dense_router(emb, proto))
+            for intent, proto in self._prototypes.items()
+        }
+
+
+# Module-level singleton — initialised once, shared across all router instances.
+_semantic_clf = SemanticEmbeddingClassifier()
+
 # ── Keyword catalogue ──────────────────────────────────────────────────────────
 
 _KEYWORDS: dict[str, list[str]] = {
@@ -352,9 +500,30 @@ class MandateRouter:
         if not text:
             return self._make("BUILD", 0.2, mandate_text)
 
-        scores = _score(text)
-        best = max(scores, key=lambda k: scores[k])
-        confidence = _scaled_confidence(scores, best)
+        # Keyword score (always computed as the reliable fallback)
+        kw_scores = _score(text)
+        kw_best = max(kw_scores, key=lambda k: kw_scores[k])
+        kw_conf = _scaled_confidence(kw_scores, kw_best)
+
+        # Semantic embedding score (Gemini text-embedding-004, may be None)
+        sem_scores = _semantic_clf.classify(text)
+        if sem_scores is not None:
+            sem_best = max(sem_scores, key=lambda k: sem_scores[k])
+            sem_conf = sem_scores[sem_best]
+            # Hybrid: prefer the intent with best combined score
+            hybrid: dict[str, float] = {}
+            all_intents = set(kw_scores) | set(sem_scores)
+            for intent in all_intents:
+                k = _scaled_confidence(
+                    kw_scores, intent) if intent in kw_scores else 0.0
+                s = sem_scores.get(intent, 0.0)
+                hybrid[intent] = 0.60 * s + 0.40 * k
+            best = max(hybrid, key=lambda k: hybrid[k])
+            confidence = min(1.0, hybrid[best])
+        else:
+            # API unavailable — fall back to pure keyword
+            best = kw_best
+            confidence = kw_conf
 
         fired = confidence < CIRCUIT_BREAKER_THRESHOLD
         if fired:
@@ -389,9 +558,25 @@ class MandateRouter:
         if not text:
             return self._make("BUILD", 0.2, mandate_text)
 
-        scores = _score(text)
-        best = max(scores, key=lambda k: scores[k])
-        confidence = _scaled_confidence(scores, best)
+        kw_scores = _score(text)
+        kw_best = max(kw_scores, key=lambda k: kw_scores[k])
+        kw_conf = _scaled_confidence(kw_scores, kw_best)
+
+        sem_scores = _semantic_clf.classify(text)
+        if sem_scores is not None:
+            hybrid: dict[str, float] = {}
+            all_intents = set(kw_scores) | set(sem_scores)
+            for intent in all_intents:
+                k = _scaled_confidence(
+                    kw_scores, intent) if intent in kw_scores else 0.0
+                s = sem_scores.get(intent, 0.0)
+                hybrid[intent] = 0.60 * s + 0.40 * k
+            best = max(hybrid, key=lambda k: hybrid[k])
+            confidence = min(1.0, hybrid[best])
+        else:
+            best = kw_best
+            confidence = kw_conf
+
         # Never set circuit_open=True for chat — low confidence in conversation is
         # normal (greetings, short follow-ups).  The breaker counter is also untouched.
         return self._make(best, confidence, mandate_text, fired=False)

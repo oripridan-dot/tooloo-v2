@@ -5,16 +5,33 @@ Provides multi-turn session memory, intent-aware DAG planning, Gemini-powered
 response generation (keyword fallback), tone modulation per intent, clarification
 detection, and follow-up suggestion generation.
 
+Visual Artifact Protocol:
+  Buddy can emit structured ``<visual_artifact>`` XML blocks inside its response.
+  Each block carries a ``type``, ``content``, and optional ``metadata``.  The
+  ConversationEngine parses these blocks from the LLM response and returns them
+  as structured ``VisualArtifact`` objects in ``ConversationResult.visual_artifacts``.
+
+  Supported artifact types:
+    html_component    — standalone HTML/JS component (rendered in sandboxed iframe)
+    svg_animation     — GSAP-driven SVG to control the #buddyCanvas
+    mermaid_diagram   — Mermaid.js diagram source
+    chart_json        — Chart.js config JSON
+
+  The ``_SYSTEM_PROMPT`` always instructs the model to prefer visual output for
+  demonstrative answers, so Buddy will naturally produce artifacts when relevant.
+
 Pipeline per turn:
   ConversationEngine.process(text, route, session_id)
     → _needs_clarification?  → build clarifying question (wave 0)
     → _plan()                → ConversationPlan (waves: understand → respond → suggest)
     → _generate_response()   → Gemini-2.0-flash or keyword fallback
+    → _parse_visual_artifacts() → list[VisualArtifact]
     → _suggest_followups()   → 3 actionable chips per intent
     → ConversationResult (stored in session, returned to caller)
 """
 from __future__ import annotations
 
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -40,6 +57,74 @@ if GEMINI_API_KEY:
     except Exception:  # pragma: no cover
         pass
 
+# ── Valid visual artifact types ───────────────────────────────────────────────
+_VALID_ARTIFACT_TYPES: frozenset[str] = frozenset(
+    {"html_component", "svg_animation", "mermaid_diagram", "chart_json"}
+)
+
+# ── Visual artifact XML pattern ────────────────────────────────────────────────
+_ARTIFACT_RE = re.compile(
+    r'<visual_artifact\s+type="([^"]+)"(?:\s+title="([^"]*)")?'
+    r'(?:\s+height="([^"]*)")?'
+    r'(?:\s+interactive="([^"]*)")?'
+    r'\s*>(.*?)</visual_artifact>',
+    re.DOTALL | re.IGNORECASE,
+)
+
+# ── VLT patch XML pattern (spatial 3D material/position diffs) ────────────────
+_VLT_PATCH_RE = re.compile(
+    r'<vlt_patch\s*>(.*?)</vlt_patch>',
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+# ── DTOs ──────────────────────────────────────────────────────────────────────
+
+
+@dataclass
+class VLTPatch:
+    """Differential Vector Layout Tree patch — morphs the spatial 3D environment.
+
+    Emitted inside ``<vlt_patch>`` XML blocks by the LLM. Parsed and broadcast
+    as a ``vlt_patch`` SSE event so the Spatial Engine can GSAP-tween node
+    materials and positions in real time without a page reload.
+    """
+
+    patches: list[dict[str, Any]]
+    transition_ms: int = 400
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "type": "vlt_patch",
+            "patches": self.patches,
+            "transition_ms": self.transition_ms,
+        }
+
+
+@dataclass
+class VisualArtifact:
+    """A structured visual payload emitted by Buddy alongside text responses.
+
+    Fields:
+        artifact_id:  Unique ID for frontend deduplication / caching.
+        type:         One of html_component | svg_animation | mermaid_diagram | chart_json.
+        content:      Raw code / JSON / SVG / Mermaid source to render.
+        metadata:     Optional dict with title, recommended_height, interactive, etc.
+    """
+
+    artifact_id: str
+    type: str
+    content: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "artifact_id": self.artifact_id,
+            "type": self.type,
+            "content": self.content,
+            "metadata": self.metadata,
+        }
+
 
 # ── DTOs ──────────────────────────────────────────────────────────────────────
 
@@ -55,6 +140,8 @@ class ConversationTurn:
     confidence: float
     response: str
     tone: str
+    # frustrated | excited | uncertain | grateful | neutral
+    emotional_state: str = "neutral"
     ts: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
@@ -66,6 +153,7 @@ class ConversationTurn:
             "confidence": self.confidence,
             "response": self.response,
             "tone": self.tone,
+            "emotional_state": self.emotional_state,
             "ts": self.ts,
         }
 
@@ -88,12 +176,27 @@ class ConversationSession:
     def intent_history(self) -> list[str]:
         return [t.intent for t in self.turns if t.role == "user"]
 
+    def emotional_arc(self) -> list[str]:
+        """Return the emotional states of the last few user turns."""
+        return [
+            t.emotional_state for t in self.turns
+            if t.role == "user" and getattr(t, "emotional_state", "neutral") != "neutral"
+        ][-3:]
+
+    def last_topic_summary(self) -> str:
+        """Return a very brief summary of the most recent topic if available."""
+        user_turns = [t for t in self.turns if t.role == "user"]
+        if len(user_turns) >= 2:
+            return user_turns[-2].text[:80]
+        return ""
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "session_id": self.session_id,
             "turn_count": len(self.turns),
             "created_at": self.created_at,
             "intent_history": self.intent_history(),
+            "emotional_arc": self.emotional_arc(),
         }
 
 
@@ -144,6 +247,9 @@ class ConversationResult:
     confidence: float
     latency_ms: float
     model_used: str
+    emotional_state: str = "neutral"
+    visual_artifacts: list[VisualArtifact] = field(default_factory=list)
+    vlt_patches: list[VLTPatch] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -157,7 +263,94 @@ class ConversationResult:
             "confidence": self.confidence,
             "latency_ms": self.latency_ms,
             "model_used": self.model_used,
+            "emotional_state": self.emotional_state,
+            "visual_artifacts": [a.to_dict() for a in self.visual_artifacts],
+            "vlt_patches": [p.to_dict() for p in self.vlt_patches],
         }
+
+
+# ── Emotional state detection ─────────────────────────────────────────────────
+
+_FRUSTRATION_SIGNALS = frozenset({
+    "broken", "stuck", "failing", "failed", "doesn't work", "won't work",
+    "not working", "can't", "cannot", "why is", "why does", "help",
+    "confused", "lost", "wrong", "error", "keeps", "still", "again",
+    "tired", "frustrated", "annoying", "terrible", "awful", "impossible",
+})
+
+_EXCITEMENT_SIGNALS = frozenset({
+    "amazing", "awesome", "love this", "love it", "great", "excellent",
+    "finally", "perfect", "brilliant", "fantastic", "let's go", "lets go",
+    "excited", "can't wait", "cant wait", "this is cool",
+})
+
+_UNCERTAINTY_SIGNALS = frozenset({
+    "not sure", "maybe", "wondering", "would it be", "could we", "is it possible",
+    "what if", "how do i", "how should", "should i", "do you think", "best way",
+})
+
+_GRATITUDE_SIGNALS = frozenset({
+    "thanks", "thank you", "cheers", "appreciate", "helpful", "that helped",
+    "that worked", "good job", "well done", "nice",
+})
+
+
+def _detect_emotional_state(text: str) -> str:
+    """Lightweight scan of user message for emotional context.
+
+    Returns one of: 'frustrated' | 'excited' | 'uncertain' | 'grateful' | 'neutral'.
+    """
+    lower = text.lower()
+    for signal in _FRUSTRATION_SIGNALS:
+        if signal in lower:
+            return "frustrated"
+    for signal in _GRATITUDE_SIGNALS:
+        if signal in lower:
+            return "grateful"
+    for signal in _EXCITEMENT_SIGNALS:
+        if signal in lower:
+            return "excited"
+    for signal in _UNCERTAINTY_SIGNALS:
+        if signal in lower:
+            return "uncertain"
+    return "neutral"
+
+
+# ── Cognitive empathy openers ──────────────────────────────────────────────────
+# Keyed by (emotional_state, intent) — fall back to (emotional_state, *) then neutral.
+
+_EMPATHY_OPENERS: dict[tuple[str, str], str] = {
+    ("frustrated", "DEBUG"): "I can see this has been a battle — let's dig in together and track it down.",
+    ("frustrated", "BUILD"): "No worries, let's clear the path and get this moving.",
+    ("frustrated", "AUDIT"): "Auditing systems is exactly how we catch the hidden culprits. Let's find what's biting you.",
+    ("frustrated", "EXPLAIN"): "Let me take a different angle on this — sometimes it just needs a fresh framing.",
+    ("frustrated", "IDEATE"): "Sometimes the best ideas come exactly when you're stuck. Let's flip the perspective.",
+    ("frustrated", "DESIGN"): "Design problems can be stubborn. Let's step back and find the root constraint.",
+    ("excited", "BUILD"): "That energy is contagious! Let's ride it and make this happen.",
+    ("excited", "IDEATE"): "Love it — let's take that spark and turn it into something real.",
+    ("excited", "DESIGN"): "Great vision. Let's shape it into something you'll be proud of.",
+    ("excited", "SPAWN_REPO"): "Let's scaffold this properly so it starts strong and scales well.",
+    ("uncertain", "BUILD"): "Good instinct to pause and think it through. Here's how I'd approach it:",
+    ("uncertain", "DESIGN"): "Design decisions feel clearer once we name the constraints. Let me help with that.",
+    ("uncertain", "EXPLAIN"): "Totally understandable — there's a lot of nuance here. Let me unpack it step by step.",
+    ("uncertain", "IDEATE"): "Uncertainty is actually the best place to ideate from. Let's explore the space.",
+    ("grateful", "BUILD"): "Happy it's working! Here's what I'd do next:",
+    ("grateful", "EXPLAIN"): "Great — building on that, here's the next layer:",
+    ("frustrated", "*"): "I hear you — let's work through this together.",
+    ("excited", "*"): "Great energy! Here's what I'm thinking:",
+    ("uncertain", "*"): "Good question to sit with. Here's how I'd frame it:",
+    ("grateful", "*"): "Really glad that helped! Here's a natural next step:",
+}
+
+
+def _get_empathy_opener(emotional_state: str, intent: str) -> str:
+    """Return an appropriate empathy opener for the given emotional state + intent."""
+    if emotional_state == "neutral":
+        return ""
+    specific = _EMPATHY_OPENERS.get((emotional_state, intent), "")
+    if specific:
+        return specific
+    return _EMPATHY_OPENERS.get((emotional_state, "*"), "")
 
 
 # ── Tone + follow-up maps ─────────────────────────────────────────────────────
@@ -175,112 +368,223 @@ _TONE: dict[str, str] = {
 
 _FOLLOWUPS: dict[str, list[str]] = {
     "BUILD": [
-        "Scaffold tests for this?",
-        "Add type annotations?",
-        "Set up a CI/CD pipeline?",
+        "Want me to write tests for this too?",
+        "Should I add type hints throughout?",
+        "Ready to wire up CI/CD when you are.",
     ],
     "DEBUG": [
-        "Add logging to trace the failure path?",
-        "Add a regression test to lock the fix?",
-        "Generate a root-cause summary?",
+        "Want a regression test to lock this fix in?",
+        "Should I trace the full call path for you?",
+        "Want a plain-English root-cause summary?",
     ],
     "AUDIT": [
-        "Generate a full dependency licence report?",
-        "Open issues for each finding?",
-        "Produce a remediation priority ranking?",
+        "Want findings ranked by severity and risk?",
+        "Should I write up remediation steps for each?",
+        "Want a dependency licence scan too?",
     ],
     "DESIGN": [
-        "Create a component storybook entry?",
-        "Suggest a dark-mode variant?",
-        "Audit colour contrast for WCAG 2.1 AA?",
+        "Want a dark-mode variant of this?",
+        "Should I check WCAG contrast ratios?",
+        "Want me to turn this into a component spec?",
     ],
     "EXPLAIN": [
-        "Create a diagram for this?",
-        "Produce a runbook from this explanation?",
-        "Generate a quiz to validate understanding?",
+        "Want a diagram to go with this?",
+        "Should I write this up as a runbook?",
+        "Want a few questions to test your understanding?",
     ],
     "IDEATE": [
-        "Build a prototype for one of these ideas?",
-        "Create a risk / effort matrix?",
-        "Research existing art for the top idea?",
+        "Want me to prototype the strongest idea?",
+        "Should I map risk vs. effort for each option?",
+        "Want to see what's already been built in this space?",
     ],
     "SPAWN_REPO": [
-        "Generate a GitHub Actions workflow?",
-        "Scaffold a README template?",
-        "Create a contributing guide?",
+        "Want me to generate a GitHub Actions workflow?",
+        "Should I scaffold a README and contributing guide?",
+        "Want a commit message convention set up too?",
     ],
     "BLOCKED": [
-        "Reset the circuit breaker via the toolbar",
-        "Check recent mandates for the trigger pattern",
-        "Review CIRCUIT_BREAKER_THRESHOLD in engine/config.py",
+        "Reset the circuit breaker from the toolbar",
+        "Tell me what you were trying to do — I can reroute",
+        "Want me to review the confidence threshold settings?",
     ],
 }
 
 _CLARIFICATION_Q: dict[str, str] = {
-    "BUILD": "Which component or service should I build — do you have a spec or example?",
-    "DEBUG": "Can you share the error message, stack trace, or steps to reproduce?",
-    "AUDIT": "Which aspect should I audit — security, dependencies, performance, or cost?",
-    "DESIGN": "What are the target platform and design-system constraints?",
-    "EXPLAIN": "What is your current understanding so I can pitch the explanation correctly?",
-    "IDEATE": "What constraints or goals should shape the ideas I generate?",
-    "SPAWN_REPO": "What tech stack, licence, and initial structure do you have in mind?",
+    "BUILD": "What are we building? A quick description of the component or feature helps me hit the ground running.",
+    "DEBUG": "What's going wrong? The error message, stack trace, or even just what you expected vs. what happened is a great start.",
+    "AUDIT": "What should I look at — security vulnerabilities, stale dependencies, performance, or something else?",
+    "DESIGN": "What's the target platform, and is there an existing design system I should stay consistent with?",
+    "EXPLAIN": "How familiar are you with this already? I'll pitch the explanation at exactly the right level.",
+    "IDEATE": "What's the core problem we're trying to solve? I'll generate ideas that actually fit your constraints.",
+    "SPAWN_REPO": "What's the project about — tech stack, purpose, and any structure preferences? I'll scaffold it properly.",
 }
 
 _KEYWORD_RESPONSES: dict[str, str] = {
     "BUILD": (
-        "I will implement that, breaking the work into recon → design → generate → validate waves. "
-        "Tribunal will scan each node for OWASP violations before execution proceeds."
+        "On it. I'll break this into recon → design → build → validate waves so nothing gets skipped. "
+        "Every generated artefact gets an OWASP scan before it lands — you'll see the plan take shape in real time."
     ),
     "DEBUG": (
-        "Entering analytical mode — I will trace the failure path, identify the root cause, "
-        "and apply a minimal patch. A regression test will be added to lock the fix."
+        "Let's track this down. I'll trace the failure path step by step, pinpoint the root cause, "
+        "and apply the smallest fix that sticks. I'll add a regression test so it can't sneak back in."
     ),
     "AUDIT": (
-        "Running a precise audit — scanning for security misconfigs, stale dependencies, "
-        "and licence issues. Findings will be ranked by severity with remediation steps."
+        "Running a thorough audit — I'll check for security misconfigs, outdated dependencies, "
+        "and licence risks, then rank every finding by severity so you know exactly what to tackle first."
     ),
     "DESIGN": (
-        "Switching to creative mode — I will analyse the requirements and produce a "
-        "component-level design. WCAG 2.1 AA contrast and responsive behaviour will be validated."
+        "Switching to design mode. I'll map the requirements, produce a component-level design, "
+        "and validate WCAG 2.1 AA contrast and responsive behaviour. Let me know if you have a design system to stay within."
     ),
     "EXPLAIN": (
-        "In pedagogical mode — I will walk you through the concept layer by layer, "
-        "starting from first principles. Ask if you'd prefer a diagram or a runbook."
+        "Happy to walk you through this. I'll build the picture layer by layer — starting simple, "
+        "adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so."
     ),
     "IDEATE": (
-        "Entering exploratory mode — generating and scoring multiple strategic approaches. "
-        "Each idea includes a risk/effort estimate and a concrete next step."
+        "Let's explore the possibility space. I'll generate and score several approaches — each with "
+        "a risk/effort estimate and a concrete first step — so you can see the tradeoffs clearly."
     ),
     "SPAWN_REPO": (
-        "Architecting a new repository — I will scaffold the project structure, "
-        "CI/CD pipeline, and documentation baseline. Tribunal validates the generated code."
+        "Let's build this right from day one. I'll scaffold the structure, CI/CD pipeline, "
+        "and documentation baseline. Every generated file gets a Tribunal pass before it goes in."
     ),
     "BLOCKED": (
-        "The circuit breaker has tripped. Reset the breaker via the toolbar before submitting "
-        "new mandates. Review CIRCUIT_BREAKER_THRESHOLD in engine/config.py if this recurs."
+        "The circuit breaker has tripped — that's a safety gate, not a failure. "
+        "Reset it from the toolbar, then tell me what you were trying to do and I'll find you a path through."
     ),
 }
 
 _SYSTEM_PROMPT = (
-    "You are Buddy, the conversational intelligence layer of TooLoo V2 — a SOTA mandate "
-    "planning and execution engine. You are precise, constructive, and terse. You do not pad "
-    "responses. You always reason about the most direct path to the user's goal. Never expose "
-    "internal implementation details unless specifically asked. Respond in at most 3 sentences "
-    "unless a longer answer is strictly necessary."
+    "You are Buddy — the cognitive partner and host of TooLoo V2. Your purpose is not just to "
+    "process requests, but to genuinely support the person behind each message. You understand "
+    "that people come to you with real goals, real frustrations, and real excitement, and your job "
+    "is to meet them where they are.\n\n"
+    "PERSONALITY: Warm, direct, and genuinely interested. You care about outcomes, not just outputs. "
+    "You adapt your tone — calm and methodical when someone is stuck, energised when they're "
+    "building something exciting, patient and clear when they're learning. You do not pad "
+    "responses with filler, but you also do not strip out the human element. A short acknowledgment "
+    "of the person's situation is always appropriate before diving into the answer.\n\n"
+    "COGNITIVE SUPPORT PRINCIPLES:\n"
+    "1. Acknowledge the person's state before answering — one sentence is enough.\n"
+    "2. Match complexity to need — simple questions deserve simple answers; complex problems "
+    "deserve structured walkthroughs.\n"
+    "3. Use 'we' and 'let's' when working through something together.\n"
+    "4. Reference prior conversation naturally — 'Building on what we discussed...' or "
+    "'Since you're already working on X...' shows you've been listening.\n"
+    "5. End with an invitation — a question, a next step, or a follow-up option — so the "
+    "conversation can continue naturally.\n"
+    "6. If someone seems confused or lost, slow down and offer to rephrase or diagram it.\n"
+    "7. Celebrate small wins — 'That approach is solid' or 'You're on the right track' costs "
+    "nothing and means a lot.\n\n"
+    "RESPONSE LENGTH: Match the depth of the answer to the complexity of the question. "
+    "Conversational questions get conversational answers (2-4 sentences). Technical deep-dives "
+    "get structured, thorough responses. Never truncate a necessary explanation.\n\n"
+    "INTERNAL DETAILS: Never expose internal engine names, node IDs, or implementation details "
+    "unless specifically asked. Speak in outcomes and capabilities, not in system internals.\n\n"
+    "VISUAL LANGUAGE: When a visual would answer the user better than text, embed one or more "
+    "<visual_artifact> blocks. Prefer visuals for architecture diagrams, UI components, data "
+    "charts, and animated concepts.\n\n"
+    'Syntax: <visual_artifact type="<TYPE>" title="<TITLE>" height="<PX>" interactive="true|false">\n'
+    "<CONTENT>\n"
+    "</visual_artifact>\n\n"
+    "Supported types:\n"
+    "  html_component  — standalone HTML/CSS/JS widget (sandboxed in iframe)\n"
+    "  svg_animation   — GSAP SVG targeting #buddyCanvas nodes\n"
+    "  mermaid_diagram — Mermaid.js diagram source\n"
+    "  chart_json      — Chart.js configuration JSON\n\n"
+    "Security: never include fetch(), XMLHttpRequest, or parent frame access in html_component.\n\n"
+    "SPATIAL UI: The frontend shows a live 3D DAG constellation. When changing the visual/material "
+    "state of the spatial environment, emit a <vlt_patch> block with a JSON array of node patches. "
+    "This fires real-time GSAP tweens in the browser.\n"
+    "Patch schema per node: {\"node_id\": \"route|jit|tribunal|scope|execute|refine\", "
+    "\"material\": {\"emissive\": 0.0-2.0, \"roughness\": 0.0-1.0, \"opacity\": 0.0-1.0}, "
+    "\"coordinates\": {\"x\": float, \"y\": float, \"rotation_y\": degrees}}\n"
+    "Example: <vlt_patch>[{\"node_id\":\"execute\",\"material\":{\"emissive\":1.5}}]</vlt_patch>\n"
+    "Only emit vlt_patch when the mandate explicitly asks for a spatial/visual change."
 )
 
 
+def _parse_vlt_patches(text: str) -> list[VLTPatch]:
+    """Extract ``<vlt_patch>`` JSON blocks from a model response.
+
+    Returns validated ``VLTPatch`` objects.  Malformed JSON is silently dropped.
+    Each patch list is capped at 20 entries to prevent abuse.
+    """
+    import json as _json  # local import avoids circular at module init
+
+    results: list[VLTPatch] = []
+    for match in _VLT_PATCH_RE.finditer(text):
+        raw = (match.group(1) or "").strip()
+        if not raw:
+            continue
+        try:
+            data = _json.loads(raw)
+        except (ValueError, TypeError):
+            continue
+        if isinstance(data, list):
+            results.append(VLTPatch(patches=data[:20]))
+        elif isinstance(data, dict) and "patches" in data:
+            results.append(VLTPatch(
+                patches=data["patches"][:20],
+                transition_ms=int(data.get("transition_ms", 400)),
+            ))
+    return results
+
+
+def _parse_visual_artifacts(text: str) -> list[VisualArtifact]:
+    """Extract all ``<visual_artifact>`` blocks from a model response.
+
+    Returns a list of validated ``VisualArtifact`` objects.  Blocks with
+    unknown types are silently dropped to prevent frontend render errors.
+    Content is length-capped at 64 KB.
+    """
+    artifacts: list[VisualArtifact] = []
+    for match in _ARTIFACT_RE.finditer(text):
+        artifact_type = (match.group(1) or "").strip().lower()
+        title = (match.group(2) or "").strip()
+        height = (match.group(3) or "").strip()
+        interactive_str = (match.group(4) or "false").strip().lower()
+        content = (match.group(5) or "").strip()
+
+        if artifact_type not in _VALID_ARTIFACT_TYPES:
+            continue  # skip unknown types
+        if not content:
+            continue
+        if len(content) > 65_536:  # 64 KB hard cap — reject oversized artifacts
+            continue
+
+        artifacts.append(VisualArtifact(
+            artifact_id=f"va-{uuid.uuid4().hex[:8]}",
+            type=artifact_type,
+            content=content,
+            metadata={
+                "title": title,
+                "recommended_height": int(height) if height.isdigit() else 400,
+                "interactive": interactive_str == "true",
+            },
+        ))
+    return artifacts
+
+
 def _build_context_block(session: ConversationSession) -> str:
-    """Return a compact, recent-turn summary for the LLM prompt."""
-    recent = session.last_n(4)
+    """Return a compact, recent-turn summary for the LLM prompt.
+
+    Includes emotional state markers so the LLM can track how the user's
+    mood and context have evolved across turns.
+    """
+    recent = session.last_n(6)
     if not recent:
         return ""
     lines = []
     for t in recent:
         if t.role == "user":
-            lines.append(f"User ({t.intent}): {t.text}")
+            emotional_note = f" [{t.emotional_state}]" if getattr(
+                t, "emotional_state", "neutral") != "neutral" else ""
+            lines.append(f"User ({t.intent}{emotional_note}): {t.text}")
         elif t.role == "buddy" and t.response:
-            lines.append(f"Buddy: {t.response}")
+            # Only first 200 chars to stay concise in context
+            preview = t.response[:200] + ("…" if len(t.response) > 200 else "")
+            lines.append(f"Buddy: {preview}")
     return "\n".join(lines)
 
 
@@ -327,6 +631,7 @@ class ConversationEngine:
         turn_id = f"t-{uuid.uuid4().hex[:8]}"
         session = self._get_or_create(session_id)
         tone = _TONE.get(route.intent, "neutral")
+        emotional_state = _detect_emotional_state(text)
 
         # Store user turn before planning (provides context)
         session.add_turn(ConversationTurn(
@@ -337,27 +642,36 @@ class ConversationEngine:
             confidence=route.confidence,
             response="",
             tone=tone,
+            emotional_state=emotional_state,
         ))
 
         plan = self._plan(route, session)
         response_text, model_used = self._generate_response(
-            route, session, plan, jit_result=jit_result)
+            route, session, plan, jit_result=jit_result, emotional_state=emotional_state)
         suggestions = _FOLLOWUPS.get(route.intent, [])
+
+        # Parse visual artifacts and VLT patches from the model response
+        artifacts = _parse_visual_artifacts(response_text)
+        vlt_patches = _parse_vlt_patches(response_text)
+        # Strip XML blocks from the text response (clean display text)
+        clean_text = _ARTIFACT_RE.sub("", response_text).strip()
+        clean_text = _VLT_PATCH_RE.sub("", clean_text).strip()
 
         session.add_turn(ConversationTurn(
             turn_id=f"{turn_id}-b",
             role="buddy",
-            text=response_text,
+            text=clean_text,
             intent=route.intent,
             confidence=route.confidence,
-            response=response_text,
+            response=clean_text,
             tone=tone,
+            emotional_state="neutral",
         ))
 
         return ConversationResult(
             session_id=session_id,
             turn_id=turn_id,
-            response_text=response_text,
+            response_text=clean_text,
             plan=plan,
             suggestions=suggestions,
             tone=tone,
@@ -365,6 +679,9 @@ class ConversationEngine:
             confidence=route.confidence,
             latency_ms=round((time.monotonic() - t0) * 1000, 2),
             model_used=model_used,
+            emotional_state=emotional_state,
+            visual_artifacts=artifacts,
+            vlt_patches=vlt_patches,
         )
 
     def get_session(self, session_id: str) -> ConversationSession | None:
@@ -445,10 +762,12 @@ class ConversationEngine:
         plan: ConversationPlan,
         jit_result: JITBoostResult | None = None,
         vertex_model_id: str | None = None,
+        emotional_state: str = "neutral",
     ) -> tuple[str, str]:
         """Return (response_text, model_used_label).
 
         Priority: Vertex AI (Model Garden) → Gemini Direct → keyword fallback.
+        Prepends an empathy opener when emotional state is non-neutral.
         """
         if plan.needs_clarification:
             return plan.clarification_question, "clarification"
@@ -459,7 +778,7 @@ class ConversationEngine:
         garden = get_garden()
         try:
             text = garden.call(model_id, self._build_prompt(
-                route, session, jit_result))
+                route, session, jit_result, emotional_state=emotional_state))
             return text, garden.source_for(model_id)
         except Exception:
             pass  # fall through to Gemini Direct
@@ -467,51 +786,57 @@ class ConversationEngine:
         # 2. Gemini Direct — secondary fallback (model name always mirrors Vertex)
         if _gemini_client is not None:
             try:
-                return self._call_gemini(route, session, jit_result), VERTEX_DEFAULT_MODEL
+                return self._call_gemini(
+                    route, session, jit_result, emotional_state=emotional_state
+                ), VERTEX_DEFAULT_MODEL
             except Exception:
                 pass  # fall through to keyword fallback
 
-        prior = session.intent_history()
-        context_note = f" (following up on {prior[-2]})" if len(
-            prior) >= 2 else ""
+        # 3. Keyword fallback — enrich with emotional context + session continuity
         base = _KEYWORD_RESPONSES.get(route.intent, route.buddy_line)
-        response = base.replace(
-            "I will", f"I will{context_note}", 1) if context_note else base
 
-        # Gracefully acknowledge medium confidence — like a human who makes a
-        # reasonable guess but keeps the door open to correction.
+        # Reference prior conversation warmly if available
+        prior_topic = session.last_topic_summary()
+        if prior_topic:
+            base = f"Building on what we were working on — {base}"
+
+        # Gracefully acknowledge medium confidence
         if route.confidence < self._MEDIUM_CONFIDENCE_THRESHOLD:
-            response = self._hedge_response(response, route)
+            base = self._hedge_response(base, route)
 
-        # Append SOTA validation signals so the user sees the concrete evidence
+        # Prepend empathy opener for non-neutral emotional states
+        empathy = _get_empathy_opener(emotional_state, route.intent)
+        if empathy:
+            base = f"{empathy} {base}"
+
+        # Append SOTA validation signals so the user sees concrete evidence
         if jit_result and jit_result.signals:
             top = jit_result.signals[:2]
             signals_text = "; ".join(top)
-            response = (
-                f"{response}\n\n"
-                f"SOTA validation ({jit_result.source}): {signals_text}."
+            base = (
+                f"{base}\n\n"
+                f"Current best practice ({jit_result.source}): {signals_text}."
             )
 
-        return response, "keyword-fallback"
+        return base, "keyword-fallback"
 
     def _hedge_response(self, response: str, route: RouteResult) -> str:
-        """Prefix response with a human-like confidence acknowledgment."""
+        """Prefix response with a warm, human-like confidence acknowledgment."""
         pct = round(route.confidence * 100)
-        # Choose the hedge phrasing based on confidence band
         if pct <= 20:
             opener = (
-                f"I\'m not certain what you\'re after (only ~{pct}\u202f% match on "
-                f"{route.intent}), but here\'s my best attempt — correct me freely."
+                f"I'm reading between the lines here (~{pct}% match on "
+                f"{route.intent}) — this is my best guess, so correct me if I'm off."
             )
         elif pct <= 40:
             opener = (
-                f"Reading this as {route.intent} (~{pct}\u202f% confident). "
-                f"If I\'ve got the intent wrong, just say so and I\'ll re-route."
+                f"I'm treating this as {route.intent} (~{pct}% confident). "
+                f"If that's not right, just tell me — I'll adjust."
             )
         else:
             opener = (
-                f"Treating this as {route.intent} (about {pct}\u202f% match). "
-                f"Let me know if you meant something else."
+                f"Reading this as {route.intent} (about {pct}% match). "
+                f"Let me know if you had something different in mind."
             )
         return f"{opener} {response}"
 
@@ -520,10 +845,17 @@ class ConversationEngine:
         route: RouteResult,
         session: ConversationSession,
         jit_result: JITBoostResult | None = None,
+        emotional_state: str = "neutral",
     ) -> str:
         """Assemble the full prompt string from session context + JIT signals."""
         context = _build_context_block(session)
         context_section = f"\n\nRecent conversation:\n{context}" if context else ""
+
+        # Include emotional state so the LLM can respond appropriately
+        emotional_note = ""
+        if emotional_state != "neutral":
+            emotional_note = f"\n\nUser's current emotional state: {emotional_state}. Acknowledge this naturally before answering."
+
         jit_section = ""
         if jit_result and jit_result.signals:
             jit_section = (
@@ -532,7 +864,7 @@ class ConversationEngine:
                 + "\n".join(f"- {s}" for s in jit_result.signals)
             )
         return (
-            f"{_SYSTEM_PROMPT}{context_section}{jit_section}\n\n"
+            f"{_SYSTEM_PROMPT}{context_section}{emotional_note}{jit_section}\n\n"
             f"Intent: {route.intent} (confidence {route.confidence:.0%})\n"
             f"User: {route.mandate_text}"
         )
@@ -543,9 +875,11 @@ class ConversationEngine:
         session: ConversationSession,
         jit_result: JITBoostResult | None = None,
         model_id: str = "",
+        emotional_state: str = "neutral",
     ) -> str:
         """Call Vertex AI Model Garden with session context + JIT signals."""
-        prompt = self._build_prompt(route, session, jit_result)
+        prompt = self._build_prompt(
+            route, session, jit_result, emotional_state=emotional_state)
         resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
             model=model_id or VERTEX_DEFAULT_MODEL, contents=prompt
         )
@@ -556,21 +890,10 @@ class ConversationEngine:
         route: RouteResult,
         session: ConversationSession,
         jit_result: JITBoostResult | None = None,
+        emotional_state: str = "neutral",
     ) -> str:
-        context = _build_context_block(session)
-        context_section = f"\n\nRecent conversation:\n{context}" if context else ""
-        jit_section = ""
-        if jit_result and jit_result.signals:
-            jit_section = (
-                f"\n\nSOTA signals fetched JIT ({jit_result.source}, "
-                f"boosted confidence {jit_result.boosted_confidence:.0%}):\n"
-                + "\n".join(f"- {s}" for s in jit_result.signals)
-            )
-        prompt = (
-            f"{_SYSTEM_PROMPT}{context_section}{jit_section}\n\n"
-            f"Intent: {route.intent} (confidence {route.confidence:.0%})\n"
-            f"User: {route.mandate_text}"
-        )
+        prompt = self._build_prompt(
+            route, session, jit_result, emotional_state=emotional_state)
         resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
             model=VERTEX_DEFAULT_MODEL, contents=prompt)
         return resp.text.strip()

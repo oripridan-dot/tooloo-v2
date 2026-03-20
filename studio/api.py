@@ -15,6 +15,9 @@ Routes:
   POST /v2/auto-loop/stop         stop autonomous improvement loop
   GET  /v2/auto-loop/status       auto-loop state + cycle stats
   POST /v2/roadmap/{id}/promote   promote a proven roadmap item
+  GET  /v2/vlt/demo               demo Vector Layout Tree + audit
+  POST /v2/vlt/audit              run math proofs on a submitted VLT
+  POST /v2/vlt/render             render a VLT tree (SSE broadcast)
 """
 from __future__ import annotations
 
@@ -29,10 +32,10 @@ from pathlib import Path
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from engine.branch_executor import (
     BRANCH_CLONE,
@@ -45,6 +48,7 @@ from engine.config import settings
 from engine.config import (
     AUTONOMOUS_EXECUTION_ENABLED,
     AUTONOMOUS_CONFIDENCE_THRESHOLD,
+    get_workspace_roots,
 )
 from engine.conversation import ConversationEngine
 from engine.daemon import BackgroundDaemon
@@ -74,6 +78,8 @@ from engine.self_improvement import SelfImprovementEngine
 from engine.sota_ingestion import SOTAIngestionEngine
 from engine.supervisor import TwoStrokeEngine
 from engine.tribunal import Engram, Tribunal
+from engine.validator_16d import Validator16D
+from engine.async_fluid_executor import AsyncFluidExecutor
 
 # ── Singletons ────────────────────────────────────────────────────────────────
 _router = MandateRouter()
@@ -98,6 +104,8 @@ _mcp_manager = MCPManager()
 _model_selector = ModelSelector()
 _refinement_supervisor = RefinementSupervisor()
 _intent_discovery = ConversationalIntentDiscovery()
+_validator_16d = Validator16D()
+_async_fluid_executor = AsyncFluidExecutor()
 _STATIC = Path(__file__).parent / "static"
 _STARTUP_TIME: str = datetime.now(UTC).isoformat()
 
@@ -296,7 +304,19 @@ async def health() -> dict[str, Any]:
             "n_stroke_engine": "up",
             "branch_executor": "up",
             "model_garden": get_garden().to_status(),
+            "validator_16d": "up",
+            "async_fluid_executor": "up",
         },
+    }
+
+
+@app.get("/v2/workspace/roots")
+async def workspace_roots() -> dict[str, Any]:
+    """Return the list of configured workspace roots (multi-root support)."""
+    roots = get_workspace_roots()
+    return {
+        "roots": [str(r) for r in roots],
+        "count": len(roots),
     }
 
 
@@ -414,6 +434,9 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
         "confidence": route.confidence,
         "jit_boost": jit_result.to_dict(),
     })
+    # Broadcast any VLT patches emitted by Buddy (spatial 3D mutations)
+    for patch in conv_result.vlt_patches:
+        _broadcast(patch.to_dict())
 
     return {
         "mandate_id": mandate_id,
@@ -423,9 +446,13 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
         "confidence": route.confidence,
         "suggestions": conv_result.suggestions,
         "model_used": conv_result.model_used,
+        "emotional_state": conv_result.emotional_state,
+        "tone": conv_result.tone,
         "jit_boost": jit_result.to_dict(),
         "tribunal_passed": tribunal_result.passed,
         "depth_level": req.depth_level,
+        "visual_artifacts": [a.to_dict() for a in conv_result.visual_artifacts],
+        "vlt_patches": [p.to_dict() for p in conv_result.vlt_patches],
         "latency_ms": round((time.monotonic() - t0) * 1000, 2),
     }
 
@@ -743,6 +770,9 @@ async def buddy_chat(req: ChatRequest) -> dict[str, Any]:
         "tribunal_result": tribunal_result.to_dict(),
         "conversation": conv_result.to_dict(),
     })
+    # Broadcast VLT patches for spatial 3D mutations
+    for patch in conv_result.vlt_patches:
+        _broadcast(patch.to_dict())
 
     # 5. Visual Engram — emit cognitive state to frontend SVG layers
     visual_engram = _engram_generator.from_chat(
@@ -834,6 +864,64 @@ async def router_reset() -> dict[str, Any]:
     return {"reset": True, "status": _router.status()}
 
 
+# ── 16-Dimension Validator endpoints ─────────────────────────────────────────
+
+class Validate16DRequest(BaseModel):
+    mandate_id: str
+    intent: str
+    code_snippet: str | None = None
+    test_pass_rate: float = 1.0
+    estimated_input_tokens: int = 500
+    estimated_output_tokens: int = 1000
+    latency_p50_ms: float = 1000.0
+    latency_p90_ms: float = 2000.0
+
+
+@app.post("/v2/validate/16d")
+async def validate_16d(req: Validate16DRequest) -> dict[str, Any]:
+    """Run the 16-dimension pre-execution validation gate."""
+    result = _validator_16d.validate(
+        mandate_id=req.mandate_id,
+        intent=req.intent,
+        code_snippet=req.code_snippet,
+        test_pass_rate=req.test_pass_rate,
+        estimated_input_tokens=req.estimated_input_tokens,
+        estimated_output_tokens=req.estimated_output_tokens,
+        latency_p50_ms=req.latency_p50_ms,
+        latency_p90_ms=req.latency_p90_ms,
+    )
+    _broadcast({"type": "tribunal", "sub": "validate_16d",
+                "gate": result.autonomous_gate_pass,
+                "composite": result.composite_score})
+    return result.to_dict()
+
+
+@app.get("/v2/validate/16d/schema")
+async def validate_16d_schema() -> dict[str, Any]:
+    """Return dimension names, thresholds, and autonomous confidence target."""
+    return {
+        "autonomous_confidence_threshold": _validator_16d.AUTONOMOUS_CONFIDENCE_THRESHOLD,
+        "dimensions": [
+            {"name": name, "threshold": threshold}
+            for name, threshold in sorted(_validator_16d._THRESHOLDS.items())
+        ],
+    }
+
+
+# ── AsyncFluidExecutor status endpoint ───────────────────────────────────────
+
+@app.get("/v2/async-exec/status")
+async def async_exec_status() -> dict[str, Any]:
+    """Return runtime stats for the AsyncFluidExecutor."""
+    hist = _async_fluid_executor._latency_histogram
+    return {
+        "max_workers": _async_fluid_executor._max_workers,
+        "histogram_size": len(hist),
+        "latency_p50_ms": round(sorted(hist)[len(hist) // 2] * 1000, 2) if hist else None,
+        "status": "up",
+    }
+
+
 @app.post("/v2/self-improve")
 async def self_improve() -> dict[str, Any]:
     """Run one full self-improvement cycle across all engine micro-components.
@@ -848,7 +936,8 @@ async def self_improve() -> dict[str, Any]:
     report = _self_improvement_engine.run()
     _broadcast({"type": "self_improve", "report": report.to_dict()})
     latency_ms = round((time.monotonic() - t0) * 1000, 2)
-    return {"self_improvement": report.to_dict(), "latency_ms": latency_ms}
+    report_dict = report.to_dict()
+    return {"self_improvement": report_dict, "report": report_dict, "latency_ms": latency_ms}
 
 
 class SelfImproveApplyRequest(BaseModel):
@@ -1615,3 +1704,124 @@ async def get_intent_signals(intent: str, n: int = 5) -> dict[str, Any]:
     """Return the top SOTA signals for a given routing intent, from knowledge banks."""
     signals = _bank_manager.signals_for_intent(intent.upper(), n)
     return {"intent": intent.upper(), "signals": signals, "count": len(signals)}
+
+
+# ── VLT (Vector Layout Tree) endpoints ───────────────────────────────────────────────
+
+from engine.vlt_schema import VectorTree, VLTAuditReport, demo_vlt  # noqa: E402
+
+
+@app.get("/v2/vlt/demo")
+async def vlt_demo() -> dict[str, Any]:
+    """Return the production-quality demo VLT + its full math audit report.
+
+    Used by the Spatial Engine canvas “Load Demo VLT” button.
+    The tree encodes the TooLoo Studio layout using pure numeric constraints;
+    the audit proves zero violations before the browser ever paints a pixel.
+    """
+    tree = demo_vlt()
+    audit: VLTAuditReport = tree.full_audit()
+    _broadcast({"type": "vlt_rendered", "tree_id": tree.tree_id,
+                "verdict": audit.verdict, "violations": audit.total_violations})
+    return {
+        "tree":  tree.model_dump(),
+        "audit": audit.model_dump(),
+    }
+
+
+@app.post("/v2/vlt/audit")
+async def vlt_audit(req: dict[str, Any]) -> dict[str, Any]:
+    """Run all three math proofs (collision / overflow / WCAG) on a submitted VLT.
+
+    Accepts a raw VectorTree JSON body (not wrapped).  Returns VLTAuditReport.
+    Security: validated through Pydantic model — no raw dict passed to eval/exec.
+    """
+    if "tree" not in req and "tree_id" not in req:
+        raise HTTPException(
+            status_code=422, detail="Missing required field: 'tree'")
+    try:
+        tree = VectorTree.model_validate(req.get("tree", req))
+    except Exception as exc:
+        return {"error": f"Invalid VLT payload: {exc}"}
+    audit: VLTAuditReport = tree.full_audit()
+    _broadcast({"type": "vlt_audit_complete", "tree_id": tree.tree_id,
+                "verdict": audit.verdict, "violations": audit.total_violations})
+    return audit.model_dump()
+
+
+@app.post("/v2/vlt/render")
+async def vlt_render(req: dict[str, Any]) -> dict[str, Any]:
+    """Validate a VLT, run audit, broadcast via SSE so all connected clients
+    automatically update their Spatial Canvas in real-time.
+
+    Returns the audit report.  The SSE ''vlt_push'' event carries the full tree
+    so the JS renderVectorTree() engine can tween coordinates client-side.
+    """
+    try:
+        tree = VectorTree.model_validate(req)
+    except Exception as exc:
+        return {"error": f"Invalid VLT payload: {exc}"}
+    audit: VLTAuditReport = tree.full_audit()
+    _broadcast({
+        "type":       "vlt_push",
+        "tree":        tree.model_dump(),
+        "audit":       audit.model_dump(),
+        "verdict":     audit.verdict,
+        "violations":  audit.total_violations,
+    })
+    return {
+        "tree_id":    tree.tree_id,
+        "audit":      audit.model_dump(),
+        "broadcast":  True,
+    }
+
+
+class VLTPatchRequest(BaseModel):
+    """Differential VLT patch — updates a subset of nodes without full reload.
+
+    Each entry in ``patches`` is a dict with ``node_id`` and any properties to
+    override (material, sensor_bindings, coordinates, style_tokens).  The SSE
+    ``vlt_patch`` event is streamed immediately so the frontend can tween only
+    the changed nodes without interrupting the current animation state.
+    """
+    tree_id: str = ""
+    patches: list[dict[str, Any]]
+    transition_ms: int = Field(
+        400, ge=0, le=5000,
+        description="Frontend GSAP tween duration for this patch (milliseconds)")
+
+
+@app.post("/v2/vlt/patch")
+async def vlt_patch(req: VLTPatchRequest) -> dict[str, Any]:
+    """Stream a differential VLT patch for live-wire real-time UI evolution.
+
+    Used by Buddy's Ghost Manifestation loop: material or sensor-binding changes
+    are extracted from LLM output and broadcast immediately so the 3D canvas
+    morphs *while* the text response is still streaming.
+
+    Security: node_id values validated as non-empty strings; no eval/exec.
+    """
+    validated_patches = []
+    for p in req.patches:
+        node_id = p.get("node_id", "")
+        if not node_id or not isinstance(node_id, str):
+            continue
+        if "material" in p:
+            from engine.vlt_schema import MaterialProps
+            try:
+                MaterialProps.model_validate(p["material"])
+            except Exception:
+                p.pop("material")
+        validated_patches.append(p)
+
+    _broadcast({
+        "type":          "vlt_patch",
+        "tree_id":       req.tree_id,
+        "patches":       validated_patches,
+        "transition_ms": req.transition_ms,
+    })
+    return {
+        "tree_id":         req.tree_id,
+        "patches_applied": len(validated_patches),
+        "broadcast":       True,
+    }

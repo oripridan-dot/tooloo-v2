@@ -18,6 +18,8 @@ dependencies = [
     "anthropic[vertex]>=0.40",
     "httpx>=0.28",
     "python-multipart>=0.0.9",
+    "opentelemetry-api>=1.28",
+    "opentelemetry-sdk>=1.28",
 ]
 
 [project.optional-dependencies]
@@ -32,14 +34,15 @@ dev = [
 tooloo-studio = "studio.api:main"
 
 [tool.setuptools.packages.find]
-include = ["engine*", "studio*", "sandbox*"]
+include = ["engine*", "studio*", "sandbox*", "src*"]
 
 [tool.pytest.ini_options]
-# Exclude Playwright browser tests from the default run.
-# They require: chromium installed + a live TooLoo server on port 8099.
-# Run them explicitly with:
+# Exclude tests that require external environment not present in offline CI:
+#   - test_playwright_ui.py  requires `playwright` installed + chromium + live server on :8099
+#   - test_ingestion.py      targets a separate service (src/api/main.py) not in this repo
+# Run them explicitly:
 #   pytest tests/test_playwright_ui.py --headed=false -v --timeout=60
-addopts = "-m 'not playwright'"
+addopts = "--ignore=tests/test_playwright_ui.py"
 markers = [
     "playwright: marks tests as Playwright UI tests (deselect with -m 'not playwright')",
 ]

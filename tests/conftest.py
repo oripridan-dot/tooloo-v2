@@ -63,3 +63,18 @@ def offline_vertex():
         patch("engine.sota_ingestion._gemini_client", None),
     ):
         yield
+
+
+# Python 3.12 changed asyncio.get_event_loop() to raise RuntimeError when
+# there is no current event loop (instead of creating one).  Tests that use
+# asyncio.run() clear the current event loop afterwards, which breaks tests
+# that rely on asyncio.get_event_loop().run_until_complete().
+# This autouse fixture ensures there is always a fresh event loop set.
+@pytest.fixture(autouse=True)
+def _ensure_event_loop():
+    import asyncio
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
+    yield

@@ -472,7 +472,8 @@ class SelfImprovementEngine:
         t0 = time.monotonic()
         improvement_id = f"si-{uuid.uuid4().hex[:8]}"
         if optimization_focus is not None:
-            self._optimization_focus = self._normalise_focus(optimization_focus)
+            self._optimization_focus = self._normalise_focus(
+                optimization_focus)
 
         # ── Phase 0: Generate architectural diagram ───────────────────────────
         arch_diagram = self._generate_arch_diagram()
@@ -953,6 +954,7 @@ class SelfImprovementEngine:
         )
 
     @staticmethod
+    @staticmethod
     def _score_improvement_value(
         component: str,
         suggestions: list[str],
@@ -961,83 +963,90 @@ class SelfImprovementEngine:
         tribunal_passed: bool,
         optimization_focus: tuple[str, ...] = ("balanced",),
     ) -> tuple[float, str]:
-        """Compute a 0.0-1.0 value score for applying this component's improvements.
+        """Compute a 0.0-1.0 value score using measurable, objective metrics.
 
-        Scoring model (additive, capped at 1.0):
-          +0.30  if component is in the critical-path tier (router/tribunal/n_stroke/executor)
-          +0.20  if ≥3 concrete suggestions were produced
-          +0.15  per 0.10 of JIT confidence_delta (max +0.30)
-          +0.10  if ≥3 JIT signals were collected
-          -0.20  if tribunal did NOT pass (security risk, apply with caution)
+        Scoring model (all five dimensions are independently measurable):
 
-        Returns (score, rationale: str).
+          0.30  Confidence uplift  — JIT boosted_confidence - original_confidence,
+                normalised to a 0-0.25 expected range.  Rewards real signal fetch.
+          0.20  Tribunal gate      — did the security check pass?  Binary.  A fail
+                caps the total at 0.40 (security risk: apply with extra caution).
+          0.20  Signal richness    — number of JIT SOTA signals fetched / 5.0 (max).
+                Rewards grounded, evidence-backed assessments.
+          0.20  Suggestion quality — fraction of suggestions that are concretely
+                actionable: contain a file path, a CODE: block, FIX:, or engine/.
+                Rewards precise, implementable output over vague narrative.
+          0.10  Source coverage    — did the assessment read actual source files
+                (non-symbolic JIT signals)?  Rewards honest grounding.
+
+        Focus bonus: up to +0.12 is added when the component aligns with the
+        declared optimization_focus vector, keeping the score bounded to [0, 1].
+
+        Returns (score, rationale: str) with an explicit per-metric breakdown.
         """
-        _CRITICAL_PATH = frozenset(
-            {"router", "tribunal", "n_stroke", "executor", "jit_booster"})
-        _HIGH_IMPACT = frozenset(
-            {"graph", "scope_evaluator", "refinement", "supervisor"})
+        # ── 1. Confidence uplift (0 – 0.30) ──────────────────────────────────
+        # Normalise to expected max delta of 0.25; clip at [0, 1] before scaling
+        delta_norm = min(max(confidence_delta / 0.25, 0.0), 1.0)
+        m_conf = round(delta_norm * 0.30, 4)
 
-        score = 0.0
-        reasons: list[str] = []
+        # ── 2. Tribunal gate (0 or 0.20) ───────────────────────────────────
+        m_tribunal = 0.20 if tribunal_passed else 0.0
 
-        if component in _CRITICAL_PATH:
-            score += 0.30
-            reasons.append("critical-path component (+0.30)")
-        elif component in _HIGH_IMPACT:
-            score += 0.20
-            reasons.append("high-impact component (+0.20)")
-        else:
-            score += 0.10
-            reasons.append("supporting component (+0.10)")
+        # ── 3. Signal richness (0 – 0.20) ──────────────────────────────────
+        real_signals = [
+            s for s in jit_signals if not s.startswith("[symbolic")]
+        m_signals = round(min(len(real_signals) / 5.0, 1.0) * 0.20, 4)
 
-        if len(suggestions) >= 3:
-            score += 0.20
-            reasons.append(f"{len(suggestions)} concrete suggestions (+0.20)")
-        elif len(suggestions) >= 1:
-            score += 0.10
-            reasons.append(f"{len(suggestions)} suggestion(s) (+0.10)")
+        # ── 4. Suggestion quality (0 – 0.20) ────────────────────────────────
+        # Actionable = contains engine/ path, FIX:, CODE:, or a Python file ref
+        _ACTIONABLE_MARKERS = ("engine/", "studio/",
+                               "FIX:", "CODE:", ".py", ".ts")
+        actionable = sum(
+            1 for s in suggestions
+            if any(m in s for m in _ACTIONABLE_MARKERS)
+        )
+        quality_ratio = actionable / max(len(suggestions), 1)
+        m_quality = round(quality_ratio * 0.20, 4)
 
-        jit_bonus = min(max(confidence_delta / 0.10, 0.0) * 0.15, 0.30)
-        if jit_bonus > 0:
-            score += jit_bonus
-            reasons.append(
-                f"confidence delta {confidence_delta:+.2f} → JIT bonus +{jit_bonus:.2f}")
+        # ── 5. Source coverage (0.10 or 0.03) ───────────────────────────────
+        # If JIT fetched real signals (not all symbolic), source was read
+        m_coverage = 0.10 if real_signals else 0.03
 
-        if len(jit_signals) >= 3:
-            score += 0.10
-            reasons.append(f"{len(jit_signals)} JIT signals (+0.10)")
+        score = m_conf + m_tribunal + m_signals + m_quality + m_coverage
 
-        if not tribunal_passed:
-            score -= 0.20
-            reasons.append("tribunal failed (-0.20, security caution)")
-
+        # ── Focus alignment bonus (up to +0.12) ─────────────────────────────
         focus_set = set(optimization_focus)
+        focus_bonus = 0.0
         if "balanced" not in focus_set:
-            if focus_set & {"efficiency", "speed"}:
-                if component in {"executor", "jit_booster", "n_stroke", "model_garden", "graph"}:
-                    score += 0.12
-                    reasons.append("focus bonus: speed/efficiency-critical component (+0.12)")
-            if "quality" in focus_set and component in {
-                "refinement",
-                "scope_evaluator",
-                "daemon",
-                "branch_executor",
-                "supervisor",
-            }:
-                score += 0.10
-                reasons.append("focus bonus: structural quality component (+0.10)")
-            if "accuracy" in focus_set and component in {
-                "router",
-                "conversation",
-                "mandate_executor",
-                "vector_store",
-                "tribunal",
-            }:
-                score += 0.10
-                reasons.append("focus bonus: deterministic accuracy component (+0.10)")
+            _SPEED_COMPS = frozenset({"executor", "jit_booster", "n_stroke",
+                                      "model_garden", "graph"})
+            _QUALITY_COMPS = frozenset({"refinement", "scope_evaluator", "daemon",
+                                        "branch_executor", "supervisor"})
+            _ACCURACY_COMPS = frozenset({"router", "conversation", "mandate_executor",
+                                         "vector_store", "tribunal"})
+            if focus_set & {"efficiency", "speed"} and component in _SPEED_COMPS:
+                focus_bonus = 0.12
+            elif "quality" in focus_set and component in _QUALITY_COMPS:
+                focus_bonus = 0.10
+            elif "accuracy" in focus_set and component in _ACCURACY_COMPS:
+                focus_bonus = 0.10
 
-        score = min(max(score, 0.0), 1.0)
-        rationale = f"focus={','.join(optimization_focus)}; " + "; ".join(reasons)
+        score = min(max(score + focus_bonus, 0.0), 1.0)
+
+        # Security cap: tribunal failure limits score to 0.40
+        if not tribunal_passed:
+            score = min(score, 0.40)
+
+        rationale = (
+            f"focus={','.join(optimization_focus)}; "
+            f"conf_delta={confidence_delta:+.3f}(m={m_conf:.3f}); "
+            f"tribunal={'PASS' if tribunal_passed else 'FAIL'}(m={m_tribunal:.2f}); "
+            f"signals={len(real_signals)}/{len(jit_signals)}(m={m_signals:.3f}); "
+            f"quality={actionable}/{len(suggestions)}(m={m_quality:.3f}); "
+            f"coverage={'real' if real_signals else 'symbolic'}(m={m_coverage:.2f}); "
+            f"focus_bonus={focus_bonus:.2f}; "
+            f"final={score:.3f}"
+        )
         return round(score, 3), rationale
 
     @staticmethod

@@ -189,8 +189,8 @@ class ReversibilityGuard:
             snapshot_id=snapshot_id,
             affected_files=affected_hashes,
             timestamp_ns=int(
-                (Path("/proc/uptime").read_text().split()
-                 [0] if Path("/proc/uptime").exists() else 0) * 1e9
+                float(Path("/proc/uptime").read_text().split()
+                      [0] if Path("/proc/uptime").exists() else 0) * 1e9
             ),
         )
 

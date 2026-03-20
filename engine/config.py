@@ -104,6 +104,19 @@ OTEL_EXPORTER_OTLP_PROTOCOL: str = _get(
     "OTEL_EXPORTER_OTLP_PROTOCOL", "grpc"
 )
 
+# ── Multi-root workspace ───────────────────────────────────────────────────────
+# WORKSPACE_ROOTS: colon-separated list of absolute or workspace-relative paths.
+# Defaults to the repository root (one level above engine/).
+# Example .env entry:  WORKSPACE_ROOTS=/workspace:/mnt/shared-libs
+_REPO_ROOT: Path = Path(__file__).resolve().parents[1]
+WORKSPACE_ROOTS: str = _get("WORKSPACE_ROOTS", str(_REPO_ROOT))
+
+
+def get_workspace_roots() -> list[Path]:
+    """Return the ordered list of workspace root paths from WORKSPACE_ROOTS."""
+    raw = WORKSPACE_ROOTS or str(_REPO_ROOT)
+    return [Path(p.strip()).resolve() for p in raw.split(":") if p.strip()]
+
 
 class _Settings:  # noqa: N801  (simple namespace)
     gemini_api_key = GEMINI_API_KEY
@@ -128,6 +141,7 @@ class _Settings:  # noqa: N801  (simple namespace)
     sandbox_max_workers = SANDBOX_MAX_WORKERS
     OTEL_EXPORTER_OTLP_ENDPOINT = OTEL_EXPORTER_OTLP_ENDPOINT
     OTEL_EXPORTER_OTLP_PROTOCOL = OTEL_EXPORTER_OTLP_PROTOCOL
+    workspace_roots = WORKSPACE_ROOTS
 
 
 settings = _Settings()

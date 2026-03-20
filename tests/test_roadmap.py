@@ -110,3 +110,49 @@ class TestRoadmapSemanticDeduplication:
         # Both are semantically distinct — both should be accepted
         assert item_a is not None
         assert item_b is not None
+
+    def test_seeded_items_survive_dedup_at_threshold_070(self):
+        """Regression: all 10 built-in roadmap items must survive VectorStore
+        dedup at dup_threshold=0.70 (the value set in engine/roadmap.py).
+
+        Each built-in item has a semantically distinct title+description, so
+        none should be rejected when loaded for the first time.
+        """
+        rm = RoadmapManager()
+        items = rm.all_items()
+        # All 10 seed items must survive — none rejected as near-duplicates.
+        assert len(items) >= 10, (
+            f"Expected >=10 seeded roadmap items but got {len(items)}. "
+            "A built-in item was likely rejected as a near-duplicate at "
+            "dup_threshold=0.70 — descriptions may have become too similar."
+        )
+
+    def test_similar_but_distinct_items_not_rejected(self):
+        """Items with overlapping topic but clearly different scope must both
+        be accepted at threshold 0.70 (was 0.88 — this exercises the lower bar).
+        Uses topics unrelated to the 10 seeded items to avoid cross-collision."""
+        rm = RoadmapManager()
+        item_a = rm.add_item(
+            title="PostgreSQL database primary-replica replication",
+            description=(
+                "Configure streaming replication between primary and replica "
+                "PostgreSQL nodes with automatic failover via Patroni. Reduces "
+                "read load on primary and provides high availability."
+            ),
+            item_id="RM-PG-REPL-001",
+        )
+        item_b = rm.add_item(
+            title="Redis caching layer with TTL eviction policy",
+            description=(
+                "Add Redis in-memory caching with LRU eviction and configurable "
+                "per-key TTL for frequently accessed API response payloads. "
+                "Reduces database round-trips under high concurrency."
+            ),
+            item_id="RM-REDIS-CACHE-001",
+        )
+        # Both are semantically distinct — both should be accepted at 0.70.
+        assert item_a is not None, "PostgreSQL replication item incorrectly rejected"
+        assert item_b is not None, (
+            "Redis caching item rejected as near-dup at threshold=0.70 — "
+            "these descriptions should be below the similarity threshold."
+        )

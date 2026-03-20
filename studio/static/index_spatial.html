@@ -1,0 +1,2362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <title>TooLoo · Spatial Orchestrator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet" />
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <!-- Three.js r165 — WebGL spatial engine -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script>
+    <!-- Mermaid — diagram rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <!-- Chart.js — telemetry charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+    <style>
+        /* ══════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — TooLoo Spatial Orchestrator
+   8-px grid · WCAG AA contrast · 3-layer z-architecture
+   ══════════════════════════════════════════════════════════════════════ */
+        :root {
+            /* Void palette */
+            --bg: #080810;
+            --bg-alt: #0C0C1A;
+            --bg-card: #111122;
+            --surface: #161628;
+            --border: rgba(108, 99, 255, 0.18);
+            --border-hi: rgba(0, 229, 255, 0.28);
+
+            /* Typography */
+            --text: #E8E8F2;
+            --text-muted: #6A6A8E;
+            --font: 'Inter', system-ui, sans-serif;
+            --mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+            /* Brand spectrum */
+            --primary: #6C63FF;
+            --primary-dim: rgba(108, 99, 255, 0.12);
+            --primary-glow: rgba(108, 99, 255, 0.35);
+            --cyan: #00E5FF;
+            --cyan-dim: rgba(0, 229, 255, 0.10);
+            --cyan-glow: rgba(0, 229, 255, 0.30);
+            --purple: #B388FF;
+            --amber: #FFAB40;
+            --danger: #FF4757;
+            --success: #2ED573;
+            --warn: #FFA502;
+
+            /* Glass system */
+            --glass-bg: rgba(8, 8, 22, 0.68);
+            --glass-border: rgba(108, 99, 255, 0.22);
+            --glass-blur: 14px;
+
+            /* Layout dimensions */
+            --topbar-h: 52px;
+            --buddy-w: 272px;
+            --hud-w: 256px;
+            --r: 10px;
+            --r-lg: 16px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        /* ── APP SHELL ── */
+        #app {
+            display: grid;
+            grid-template-columns: var(--buddy-w) 1fr var(--hud-w);
+            grid-template-rows: var(--topbar-h) 1fr;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+   TOPBAR
+   ══════════════════════════════════════════════════════════════════════ */
+        #topbar {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 20px;
+            background: rgba(8, 8, 16, 0.94);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .logo-orb {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, var(--primary), var(--cyan), var(--amber), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 12px;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 0 14px var(--primary-glow);
+            animation: orb-spin 14s linear infinite;
+        }
+
+        @keyframes orb-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .logo-text {
+            font-weight: 800;
+            font-size: 15px;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+
+        .logo-text em {
+            color: var(--cyan);
+            font-style: normal;
+        }
+
+        .logo-sub {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .sensor-strip {
+            display: flex;
+            gap: 8px;
+            margin-left: 16px;
+        }
+
+        .sensor-pill {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 11px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            user-select: none;
+        }
+
+        .sensor-pill:hover {
+            border-color: var(--primary-glow);
+            color: var(--primary);
+            background: var(--primary-dim);
+        }
+
+        .sensor-pill.active {
+            background: var(--cyan-dim);
+            color: var(--cyan);
+            border-color: var(--cyan-glow);
+            box-shadow: 0 0 10px var(--cyan-glow);
+        }
+
+        .sensor-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+        .sensor-pill.active .sensor-dot {
+            animation: blink 1.4s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        .topbar-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chip {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            border: 1px solid;
+        }
+
+        .chip-green {
+            background: rgba(46, 213, 115, 0.08);
+            color: var(--success);
+            border-color: rgba(46, 213, 115, 0.25);
+        }
+
+        .chip-warn {
+            background: rgba(255, 165, 2, 0.08);
+            color: var(--warn);
+            border-color: rgba(255, 165, 2, 0.25);
+        }
+
+        .chip-blue {
+            background: var(--primary-dim);
+            color: var(--primary);
+            border-color: var(--primary-glow);
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+   BUDDY STREAM — LEFT PANE
+   ══════════════════════════════════════════════════════════════════════ */
+        #buddy-pane {
+            background: rgba(8, 8, 20, 0.92);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(var(--glass-blur));
+            overflow: hidden;
+        }
+
+        .buddy-header {
+            padding: 14px 14px 10px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .buddy-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .buddy-icon {
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--cyan));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #fff;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .buddy-status-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+            animation: pulse-glow 2s ease infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 6px var(--success)
+            }
+
+            50% {
+                opacity: 0.6;
+                box-shadow: 0 0 12px var(--success)
+            }
+        }
+
+        /* Depth control */
+        .depth-ctrl {
+            padding: 12px 14px 10px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .depth-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .depth-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--primary-dim);
+            color: var(--primary);
+            border: 1px solid var(--primary-glow);
+        }
+
+        .depth-track {
+            height: 4px;
+            border-radius: 2px;
+            background: var(--border);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .depth-fill {
+            height: 100%;
+            border-radius: 2px;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--cyan));
+            transition: width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .depth-ticks {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 9px;
+            color: var(--text-muted);
+        }
+
+        /* Intent chips */
+        .intent-bar {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            flex-shrink: 0;
+            scrollbar-width: none;
+        }
+
+        .intent-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .intent-chip {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            padding: 4px 10px;
+            border-radius: 16px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            background: transparent;
+            transition: all 0.15s;
+        }
+
+        .intent-chip:hover {
+            background: var(--primary-dim);
+            color: var(--primary);
+            border-color: var(--primary-glow);
+        }
+
+        .intent-chip.active {
+            background: var(--primary-dim);
+            color: var(--primary);
+            border-color: var(--primary-glow);
+        }
+
+        /* Messages */
+        #buddy-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(108, 99, 255, 0.2) transparent;
+        }
+
+        .msg-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .msg-meta {
+            font-size: 10px;
+            color: var(--text-muted);
+            padding: 0 2px;
+            margin-bottom: 3px;
+        }
+
+        .msg-meta.right {
+            text-align: right;
+        }
+
+        .bubble {
+            padding: 9px 12px;
+            border-radius: 12px;
+            line-height: 1.55;
+            font-size: 13px;
+            word-break: break-word;
+            animation: pop-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes pop-in {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(5px)
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0)
+            }
+        }
+
+        .bubble.user {
+            background: linear-gradient(135deg, var(--primary) 0%, #8B83FF 100%);
+            color: #fff;
+            align-self: flex-end;
+            margin-left: 16px;
+            border-bottom-right-radius: 3px;
+        }
+
+        .bubble.buddy {
+            background: rgba(18, 18, 36, 0.92);
+            border: 1px solid var(--border);
+            color: var(--text);
+            align-self: flex-start;
+            margin-right: 16px;
+            border-bottom-left-radius: 3px;
+        }
+
+        .bubble.buddy.hot {
+            border-color: var(--cyan-glow);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.15);
+        }
+
+        /* Typing indicator */
+        .typing {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            padding: 9px 12px;
+            align-self: flex-start;
+        }
+
+        .typing span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--cyan);
+            animation: bounce-dot 1.2s ease infinite;
+        }
+
+        .typing span:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+
+        .typing span:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes bounce-dot {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0)
+            }
+
+            30% {
+                transform: translateY(-7px)
+            }
+        }
+
+        /* JIT badge under buddy messages */
+        .jit-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: rgba(0, 229, 255, 0.08);
+            color: var(--cyan);
+            border: 1px solid rgba(0, 229, 255, 0.18);
+            margin-top: 4px;
+            align-self: flex-start;
+        }
+
+        /* Input area */
+        .buddy-input {
+            padding: 10px 12px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            flex-shrink: 0;
+        }
+
+        #msg-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 9px 12px;
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 13px;
+            resize: none;
+            outline: none;
+            max-height: 96px;
+            overflow-y: auto;
+            line-height: 1.4;
+            transition: border-color 0.2s;
+        }
+
+        #msg-input:focus {
+            border-color: var(--primary-glow);
+        }
+
+        #msg-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--cyan));
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 0 14px var(--primary-glow);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 22px var(--cyan-glow);
+        }
+
+        .send-btn:active {
+            transform: scale(0.94);
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+   FRACTAL CANVAS — CENTER PANE
+   ══════════════════════════════════════════════════════════════════════ */
+        #canvas-pane {
+            position: relative;
+            overflow: hidden;
+            background: var(--bg);
+        }
+
+        #spatialCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Canvas overlay — top HUD bar */
+        .canvas-top {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .canvas-badge {
+            padding: 5px 13px;
+            border-radius: 20px;
+            background: rgba(8, 8, 20, 0.78);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .canvas-badge.live {
+            border-color: rgba(46, 213, 115, 0.35);
+            color: var(--success);
+        }
+
+        .canvas-badge.active {
+            border-color: var(--cyan-glow);
+            color: var(--cyan);
+        }
+
+        /* Canvas control buttons — bottom */
+        .canvas-controls {
+            position: absolute;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            z-index: 20;
+        }
+
+        .ctrl-btn {
+            padding: 7px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            background: rgba(8, 8, 20, 0.82);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            transition: all 0.18s;
+        }
+
+        .ctrl-btn:hover {
+            border-color: var(--primary-glow);
+            color: var(--primary);
+            background: rgba(108, 99, 255, 0.1);
+        }
+
+        .ctrl-btn.on {
+            background: var(--primary-dim);
+            color: var(--primary);
+            border-color: var(--primary-glow);
+        }
+
+        /* Spatial notification ring — top right of canvas */
+        #notif-ring {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: 230px;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .notif-card {
+            background: rgba(8, 8, 22, 0.9);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 10px 12px;
+            pointer-events: all;
+            cursor: pointer;
+            animation: slide-right 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes slide-right {
+            from {
+                opacity: 0;
+                transform: translateX(50px) scale(0.88)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1)
+            }
+        }
+
+        .notif-card.nc-info {
+            border-color: rgba(0, 229, 255, 0.3);
+        }
+
+        .notif-card.nc-warn {
+            border-color: rgba(255, 165, 2, 0.3);
+        }
+
+        .notif-card.nc-error {
+            border-color: rgba(255, 71, 87, 0.3);
+        }
+
+        .notif-card.nc-success {
+            border-color: rgba(46, 213, 115, 0.3);
+        }
+
+        .notif-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .nc-info .notif-label {
+            color: var(--cyan);
+        }
+
+        .nc-warn .notif-label {
+            color: var(--warn);
+        }
+
+        .nc-error .notif-label {
+            color: var(--danger);
+        }
+
+        .nc-success .notif-label {
+            color: var(--success);
+        }
+
+        .notif-text {
+            font-size: 11px;
+            color: var(--text);
+            line-height: 1.4;
+        }
+
+        /* Crisis Protocol */
+        #crisis-panel {
+            position: absolute;
+            bottom: 56px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(8, 8, 20, 0.94);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 165, 2, 0.38);
+            border-radius: var(--r-lg);
+            padding: 20px 22px;
+            min-width: 360px;
+            max-width: 500px;
+            display: none;
+            z-index: 200;
+            box-shadow: 0 0 40px rgba(255, 165, 2, 0.1), 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        #crisis-panel.show {
+            display: block;
+            animation: pop-in 0.3s ease;
+        }
+
+        .crisis-head {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--warn);
+            letter-spacing: 0.04em;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .crisis-body {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.55;
+            margin-bottom: 16px;
+        }
+
+        .crisis-acts {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .cact {
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid;
+            transition: all 0.15s;
+        }
+
+        .cact-p {
+            background: var(--primary-dim);
+            color: var(--primary);
+            border-color: var(--primary-glow);
+        }
+
+        .cact-p:hover {
+            background: rgba(108, 99, 255, 0.25);
+        }
+
+        .cact-s {
+            background: transparent;
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .cact-s:hover {
+            color: var(--text);
+            border-color: rgba(200, 200, 255, 0.3);
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+   TELEMETRY HUD — RIGHT PANE
+   ══════════════════════════════════════════════════════════════════════ */
+        #hud-pane {
+            background: rgba(8, 8, 20, 0.92);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(var(--glass-blur));
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(108, 99, 255, 0.2) transparent;
+        }
+
+        .hud-block {
+            padding: 12px 12px 10px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .hud-title {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hud-title::before {
+            content: '';
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: var(--cyan);
+            flex-shrink: 0;
+        }
+
+        /* JIT Signals */
+        .jit-entry {
+            padding: 7px 9px;
+            border-radius: 8px;
+            background: rgba(0, 229, 255, 0.04);
+            border: 1px solid rgba(0, 229, 255, 0.1);
+            margin-bottom: 6px;
+            cursor: default;
+            transition: border-color 0.2s;
+        }
+
+        .jit-entry:hover {
+            border-color: var(--cyan-glow);
+        }
+
+        .jit-entry-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--cyan);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .jit-entry-text {
+            font-size: 11px;
+            color: var(--text);
+            line-height: 1.4;
+        }
+
+        /* Model tier */
+        .model-card {
+            padding: 9px 11px;
+            border-radius: 8px;
+            background: var(--primary-dim);
+            border: 1px solid var(--primary-glow);
+        }
+
+        .model-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 3px;
+            letter-spacing: 0.06em;
+        }
+
+        .model-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .model-badges {
+            display: flex;
+            gap: 5px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .model-badge {
+            font-size: 9px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 9px;
+            background: rgba(0, 229, 255, 0.07);
+            color: var(--cyan);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+        }
+
+        /* Confidence meters */
+        .conf-meter {
+            margin-bottom: 8px;
+        }
+
+        .conf-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .conf-row strong {
+            color: var(--text);
+        }
+
+        .conf-track {
+            height: 3px;
+            border-radius: 2px;
+            background: var(--border);
+            overflow: hidden;
+        }
+
+        .conf-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .conf-fill.hi {
+            background: linear-gradient(90deg, var(--success), var(--cyan));
+        }
+
+        .conf-fill.mid {
+            background: linear-gradient(90deg, var(--warn), var(--amber));
+        }
+
+        .conf-fill.lo {
+            background: var(--danger);
+        }
+
+        /* Node grid */
+        .node-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+        }
+
+        .node-cell {
+            padding: 6px 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid var(--border);
+        }
+
+        .node-name {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .node-st {
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .node-st.idle {
+            color: var(--text-muted);
+        }
+
+        .node-st.active {
+            color: var(--cyan);
+            animation: blink 0.8s ease infinite;
+        }
+
+        .node-st.done {
+            color: var(--success);
+        }
+
+        .node-st.fail {
+            color: var(--danger);
+        }
+
+        /* Audio meter */
+        .audio-meter {
+            display: flex;
+            gap: 2px;
+            align-items: flex-end;
+            height: 22px;
+            margin-top: 6px;
+        }
+
+        .a-bar {
+            flex: 1;
+            border-radius: 2px;
+            min-height: 2px;
+            max-height: 20px;
+            background: linear-gradient(to top, var(--cyan), var(--primary));
+            transition: height 0.05s;
+        }
+
+        /* Event feed */
+        #event-feed {
+            font-family: var(--mono);
+            font-size: 10px;
+            max-height: 170px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(108, 99, 255, 0.2) transparent;
+        }
+
+        .ev {
+            display: flex;
+            gap: 5px;
+            padding: 2px 3px;
+            border-radius: 3px;
+            animation: fade-in 0.2s ease;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0
+            }
+
+            to {
+                opacity: 1
+            }
+        }
+
+        .ev-t {
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .ev-k {
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+
+        .ev-k.route {
+            color: var(--primary);
+        }
+
+        .ev-k.jit_boost {
+            color: var(--cyan);
+        }
+
+        .ev-k.tribunal {
+            color: var(--danger);
+        }
+
+        .ev-k.execution {
+            color: var(--success);
+        }
+
+        .ev-k.refinement {
+            color: var(--purple);
+        }
+
+        .ev-k.healing_triggered {
+            color: var(--amber);
+        }
+
+        .ev-k.vlt_patch {
+            color: #FF80AB;
+        }
+
+        .ev-k.conversation {
+            color: var(--text);
+        }
+
+        .ev-m {
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Generic helpers */
+        hr.sep {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 0;
+        }
+
+        /* Scrollbars global */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(108, 99, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        /* code in messages */
+        pre,
+        code {
+            font-family: var(--mono);
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+
+        pre {
+            padding: 8px 10px;
+            overflow-x: auto;
+            margin: 4px 0;
+        }
+
+        code {
+            padding: 1px 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+
+        <!-- ═══════════════════════════════════════ TOPBAR ═══════════════════ -->
+        <header id="topbar">
+            <div class="logo-orb">T</div>
+            <span class="logo-text">Too<em>Loo</em></span>
+            <span class="logo-sub">SPATIAL ORCHESTRATOR</span>
+
+            <div class="sensor-strip">
+                <div class="sensor-pill" id="mic-pill" title="Enable microphone — audio reactive shaders">
+                    <span class="sensor-dot"></span>MIC
+                </div>
+                <div class="sensor-pill" id="cam-pill" title="Enable camera — head-tracked parallax">
+                    <span class="sensor-dot"></span>CAM
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <span id="model-chip" class="chip chip-blue">Gemini 2.5 Flash</span>
+                <span id="breaker-chip" class="chip chip-green">CB:CLOSED</span>
+                <span id="conn-chip" class="chip chip-green">● LIVE</span>
+            </div>
+        </header>
+
+        <!-- ════════════════════════════ BUDDY STREAM (LEFT) ═════════════════ -->
+        <aside id="buddy-pane">
+
+            <div class="buddy-header">
+                <div class="buddy-title">
+                    <div class="buddy-icon">B</div>
+                    Buddy
+                </div>
+                <div class="buddy-status-row">
+                    <span class="live-dot"></span>
+                    <span id="buddy-status">Spatial Orchestrator ready</span>
+                </div>
+            </div>
+
+            <div class="depth-ctrl">
+                <div class="depth-row">
+                    Execution Depth
+                    <span class="depth-badge" id="depth-badge">CHAT</span>
+                </div>
+                <div class="depth-track" id="depth-track">
+                    <div class="depth-fill" id="depth-fill"></div>
+                </div>
+                <div class="depth-ticks">
+                    <span>Chat</span><span>Explore</span><span>Pipeline</span>
+                </div>
+            </div>
+
+            <div class="intent-bar">
+                <button class="intent-chip active" data-intent="auto">⚡ Auto</button>
+                <button class="intent-chip" data-intent="build">🔨 Build</button>
+                <button class="intent-chip" data-intent="design">🎨 Design</button>
+                <button class="intent-chip" data-intent="debug">🔍 Debug</button>
+                <button class="intent-chip" data-intent="ideate">💡 Ideate</button>
+                <button class="intent-chip" data-intent="audit">🛡 Audit</button>
+            </div>
+
+            <div id="buddy-messages">
+                <div class="msg-group">
+                    <div class="msg-meta">Buddy · Spatial Mode</div>
+                    <div class="bubble buddy hot">
+                        🌌 <strong>Spatial Orchestrator online.</strong><br />
+                        I'm manifesting your design intent directly into the 3D environment.
+                        The canvas behind me is a live DAG constellation. Enable Mic + Cam
+                        for full sensor fusion. What shall we architect?
+                    </div>
+                </div>
+            </div>
+
+            <div class="buddy-input">
+                <textarea id="msg-input" placeholder="Speak your intent…" rows="1"></textarea>
+                <button class="send-btn" id="send-btn" title="Send">↑</button>
+            </div>
+
+        </aside>
+
+        <!-- ═══════════════════════════ FRACTAL CANVAS (CENTER) ══════════════ -->
+        <main id="canvas-pane">
+
+            <canvas id="spatialCanvas"></canvas>
+
+            <!-- Top overlay badges -->
+            <div class="canvas-top">
+                <span class="canvas-badge live" id="dag-badge">■ DAG · 6 nodes</span>
+                <span class="canvas-badge" id="wave-badge">Wave 0/0</span>
+                <span class="canvas-badge" id="intent-badge">Awaiting mandate…</span>
+            </div>
+
+            <!-- Bottom canvas controls -->
+            <div class="canvas-controls">
+                <button class="ctrl-btn on" id="btn-dag">DAG</button>
+                <button class="ctrl-btn" id="btn-ghost">Ghost</button>
+                <button class="ctrl-btn" id="btn-wire">Wireframe</button>
+                <button class="ctrl-btn" id="btn-env">Particles</button>
+                <button class="ctrl-btn" id="btn-cam-reset">Reset Cam</button>
+            </div>
+
+            <!-- Spatial notifications -->
+            <div id="notif-ring"></div>
+
+            <!-- Crisis Protocol Panel -->
+            <div id="crisis-panel">
+                <div class="crisis-head">⚠ CRISIS PROTOCOL — INTERVENTION REQUIRED</div>
+                <div class="crisis-body" id="crisis-body">Pipeline divergence detected.</div>
+                <div class="crisis-acts" id="crisis-acts"></div>
+            </div>
+
+        </main>
+
+        <!-- ════════════════════════════ TELEMETRY HUD (RIGHT) ═══════════════ -->
+        <aside id="hud-pane">
+
+            <!-- JIT SOTA Signals -->
+            <div class="hud-block">
+                <div class="hud-title">JIT Signals · 2026 SOTA</div>
+                <div id="jit-feed">
+                    <div class="jit-entry">
+                        <div class="jit-entry-label">SPATIAL UI</div>
+                        <div class="jit-entry-text">Awaiting first mandate for live SOTA boost…</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Tier -->
+            <div class="hud-block">
+                <div class="hud-title">Active Engine</div>
+                <div class="model-card">
+                    <div class="model-label">MODEL TIER</div>
+                    <div class="model-name" id="hud-model">Gemini 2.5 Flash</div>
+                    <div class="model-badges">
+                        <span class="model-badge" id="hud-tier">T-2</span>
+                        <span class="model-badge">REASONING</span>
+                        <span class="model-badge">SOTA</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confidence Proofs -->
+            <div class="hud-block">
+                <div class="hud-title">Confidence Proofs</div>
+                <div class="conf-meter">
+                    <div class="conf-row"><span>Route Confidence</span><strong id="cv-route">—</strong></div>
+                    <div class="conf-track">
+                        <div class="conf-fill hi" id="cb-route" style="width:0%"></div>
+                    </div>
+                </div>
+                <div class="conf-meter">
+                    <div class="conf-row"><span>JIT Boost Δ</span><strong id="cv-jit">—</strong></div>
+                    <div class="conf-track">
+                        <div class="conf-fill mid" id="cb-jit" style="width:0%"></div>
+                    </div>
+                </div>
+                <div class="conf-meter">
+                    <div class="conf-row"><span>Refinement Score</span><strong id="cv-refine">—</strong></div>
+                    <div class="conf-track">
+                        <div class="conf-fill hi" id="cb-refine" style="width:0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pipeline Nodes -->
+            <div class="hud-block">
+                <div class="hud-title">Pipeline Nodes</div>
+                <div class="node-grid" id="node-grid">
+                    <div class="node-cell">
+                        <div class="node-name">ROUTE</div>
+                        <div class="node-st idle" id="nd-route">idle</div>
+                    </div>
+                    <div class="node-cell">
+                        <div class="node-name">JIT</div>
+                        <div class="node-st idle" id="nd-jit">idle</div>
+                    </div>
+                    <div class="node-cell">
+                        <div class="node-name">TRIBUNAL</div>
+                        <div class="node-st idle" id="nd-tribunal">idle</div>
+                    </div>
+                    <div class="node-cell">
+                        <div class="node-name">SCOPE</div>
+                        <div class="node-st idle" id="nd-scope">idle</div>
+                    </div>
+                    <div class="node-cell">
+                        <div class="node-name">EXECUTE</div>
+                        <div class="node-st idle" id="nd-execute">idle</div>
+                    </div>
+                    <div class="node-cell">
+                        <div class="node-name">REFINE</div>
+                        <div class="node-st idle" id="nd-refine">idle</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sensor Matrix -->
+            <div class="hud-block">
+                <div class="hud-title">Sensor Matrix</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                    <span style="font-size:9px;color:var(--text-muted);font-weight:700;letter-spacing:0.06em;">MIC
+                        FFT</span>
+                    <div class="audio-meter" id="audio-meter"></div>
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);display:flex;gap:12px;">
+                    <span>Face: <strong id="hud-face" style="color:var(--text)">—</strong></span>
+                    <span>Vol: <strong id="hud-vol" style="color:var(--text)">—</strong></span>
+                </div>
+            </div>
+
+            <!-- Live Event Stream -->
+            <div class="hud-block" style="flex:1;display:flex;flex-direction:column;">
+                <div class="hud-title">Live Event Stream</div>
+                <div id="event-feed" style="flex:1;"></div>
+            </div>
+
+        </aside>
+
+    </div><!-- /#app -->
+
+    <!-- ═══════════════════════════════════════ SCRIPTS ═══════════════════ -->
+    <script>
+        /* ════════════════════════════════════════════════════════════════════════
+           TooLoo Spatial Orchestrator — Core Runtime
+           Security invariants:
+             - No eval / exec / dynamic-import
+             - All untrusted data rendered via esc() before innerHTML
+             - Sensor hardware access gated behind explicit user permissions
+           ════════════════════════════════════════════════════════════════════════ */
+        'use strict';
+
+        /* ── Security: XSS escape ──────────────────────────────────────────── */
+        function esc(s) {
+            return String(s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function fmtTime() {
+            return new Date().toTimeString().slice(0, 8);
+        }
+
+        /* ════════════════════════════════════════════════════════════════════════
+           1. SENSOR MATRIX
+           Integrates mic FFT + camera head-tracking into a unified state object.
+           Falls back to mouse-driven parallax when sensors are denied.
+           ════════════════════════════════════════════════════════════════════════ */
+        const SensorMatrix = (() => {
+            const state = {
+                micVolume: 0, micLow: 0, micMid: 0, micHigh: 0,
+                faceX: 0, faceY: 0, faceZ: 0, ambientLum: 0.5,
+                micEnabled: false, camEnabled: false,
+                fftData: null,
+            };
+
+            /* ── Microphone / Web Audio ── */
+            let _ctx = null, _analyser = null;
+            const _fft = new Uint8Array(128);
+            let _mouseX = 0, _mouseY = 0;
+
+            document.addEventListener('mousemove', e => {
+                _mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                _mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+            });
+
+            async function enableMic() {
+                if (state.micEnabled) return;
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    _ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    _analyser = _ctx.createAnalyser();
+                    _analyser.fftSize = 256;
+                    _ctx.createMediaStreamSource(stream).connect(_analyser);
+                    state.micEnabled = true;
+                    document.getElementById('mic-pill').classList.add('active');
+                    spawnNotif('Microphone online — audio reactive shaders active', 'info');
+                } catch {
+                    spawnNotif('Mic access denied — mouse fallback active', 'warn');
+                }
+            }
+
+            function _tickMic() {
+                if (!_analyser) return;
+                _analyser.getByteFrequencyData(_fft);
+                state.fftData = _fft;
+                const N = _fft.length;
+                let sum = 0, low = 0, mid = 0, high = 0;
+                for (let i = 0; i < N; i++) {
+                    const v = _fft[i] / 255;
+                    sum += v;
+                    if (i < N * 0.15) low += v;
+                    else if (i < N * 0.50) mid += v;
+                    else high += v;
+                }
+                state.micVolume = sum / N;
+                state.micLow = low / (N * 0.15);
+                state.micMid = mid / (N * 0.35);
+                state.micHigh = high / (N * 0.50);
+            }
+
+            /* ── Camera / Head Tracking ── */
+            let _video = null, _faceLandmarker = null;
+
+            async function enableCamera() {
+                if (state.camEnabled) return;
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+                    _video = document.createElement('video');
+                    _video.srcObject = stream;
+                    _video.setAttribute('playsinline', '');
+                    await _video.play();
+                    state.camEnabled = true;
+                    document.getElementById('cam-pill').classList.add('active');
+                    // Try MediaPipe Face Landmarker — graceful fallback if unavailable
+                    _tryLoadMediaPipe().catch(() => spawnNotif('Head tracking: mouse fallback active', 'info'));
+                    spawnNotif('Camera online — off-axis parallax enabled', 'info');
+                } catch {
+                    spawnNotif('Camera access denied — mouse parallax active', 'warn');
+                }
+            }
+
+            async function _tryLoadMediaPipe() {
+                /* MediaPipe tasks-vision — dynamic CDN load */
+                if (!window.FilesetResolver) return; // not available, use mouse fallback
+                const { FaceLandmarker, FilesetResolver } = window;
+                const vision = await FilesetResolver.forVisionTasks(
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm'
+                );
+                _faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+                        delegate: 'GPU',
+                    },
+                    runningMode: 'VIDEO', numFaces: 1,
+                });
+            }
+
+            function _tickCamera() {
+                if (!state.camEnabled) {
+                    state.faceX += (_mouseX - state.faceX) * 0.04;
+                    state.faceY += (_mouseY - state.faceY) * 0.04;
+                    return;
+                }
+                if (_faceLandmarker && _video && _video.readyState >= 2) {
+                    const res = _faceLandmarker.detectForVideo(_video, performance.now());
+                    if (res.faceLandmarks && res.faceLandmarks[0]) {
+                        const nose = res.faceLandmarks[0][1]; // nose tip
+                        state.faceX = (nose.x - 0.5) * 2;
+                        state.faceY = (nose.y - 0.5) * 2;
+                        state.faceZ = nose.z;
+                        return;
+                    }
+                }
+                state.faceX += (_mouseX - state.faceX) * 0.06;
+                state.faceY += (_mouseY - state.faceY) * 0.06;
+            }
+
+            /* ── Camera-based ambient luminance estimate ── */
+            function _tickAmbient() {
+                if (!_video || _video.readyState < 2) return;
+                // Sample 1 pixel from center via offscreen canvas (cheap lum estimate)
+                try {
+                    const oc = document.createElement('canvas');
+                    oc.width = oc.height = 1;
+                    const octx = oc.getContext('2d');
+                    octx.drawImage(_video, 80, 60, 160, 120, 0, 0, 1, 1);
+                    const px = octx.getImageData(0, 0, 1, 1).data;
+                    state.ambientLum = (0.2126 * px[0] + 0.7152 * px[1] + 0.0722 * px[2]) / 255;
+                } catch { /* cors/sec errors are non-fatal */ }
+            }
+
+            function _updateHUDMeters() {
+                // Audio bars
+                const meter = document.getElementById('audio-meter');
+                if (meter && _fft && state.micEnabled) {
+                    const bars = meter.querySelectorAll('.a-bar');
+                    const step = Math.floor(_fft.length / bars.length);
+                    bars.forEach((b, i) => {
+                        const v = (_fft[i * step] || 0) / 255;
+                        b.style.height = Math.max(2, Math.round(v * 20)) + 'px';
+                    });
+                }
+                const fxy = document.getElementById('hud-face');
+                if (fxy) fxy.textContent = `${state.faceX.toFixed(2)},${state.faceY.toFixed(2)}`;
+                const vv = document.getElementById('hud-vol');
+                if (vv) vv.textContent = state.micVolume.toFixed(3);
+            }
+
+            let _ambientTick = 0;
+            function tick() {
+                _tickMic();
+                _tickCamera();
+                if (++_ambientTick % 30 === 0) _tickAmbient();
+                _updateHUDMeters();
+            }
+
+            return { state, enableMic, enableCamera, tick };
+        })();
+
+        /* Build audio meter bars */
+        (function () {
+            const m = document.getElementById('audio-meter');
+            if (!m) return;
+            for (let i = 0; i < 18; i++) {
+                const b = document.createElement('div');
+                b.className = 'a-bar';
+                b.style.height = '2px';
+                m.appendChild(b);
+            }
+        })();
+
+        /* ════════════════════════════════════════════════════════════════════════
+           2. NOTIFICATION SYSTEM — glass cards + 3D spatial spheres
+           ════════════════════════════════════════════════════════════════════════ */
+        function spawnNotif(msg, type = 'info', duration = 4200) {
+            const ring = document.getElementById('notif-ring');
+            if (!ring) return;
+            const card = document.createElement('div');
+            card.className = `notif-card nc-${type}`;
+            card.innerHTML = `
+    <div class="notif-label">${esc(type.toUpperCase())}</div>
+    <div class="notif-text">${esc(msg)}</div>
+  `;
+            card.addEventListener('click', () => card.remove());
+            ring.prepend(card);
+            // Spawn 3D sphere glyph
+            window.SpatialEngine?.spawnNotifSphere(type);
+            // Auto-dismiss
+            setTimeout(() => {
+                if (!card.isConnected) return;
+                if (window.gsap) gsap.to(card, { opacity: 0, x: 50, duration: 0.28, onComplete: () => card.remove() });
+                else card.remove();
+            }, duration);
+            // Cap at 5 visible
+            while (ring.children.length > 5) ring.lastChild?.remove();
+        }
+
+        /* ════════════════════════════════════════════════════════════════════════
+           3. CRISIS PROTOCOL — actionable intervention overlay
+           ════════════════════════════════════════════════════════════════════════ */
+        function showCrisis(msg, actions = []) {
+            const panel = document.getElementById('crisis-panel');
+            const body = document.getElementById('crisis-body');
+            const acts = document.getElementById('crisis-acts');
+            if (!panel || !body || !acts) return;
+            body.textContent = msg;
+            acts.innerHTML = '';
+            actions.forEach(a => {
+                const btn = document.createElement('button');
+                btn.className = `cact ${a.primary ? 'cact-p' : 'cact-s'}`;
+                btn.textContent = a.label;
+                btn.addEventListener('click', () => {
+                    panel.classList.remove('show');
+                    a.action?.();
+                });
+                acts.appendChild(btn);
+            });
+            const dim = document.createElement('button');
+            dim.className = 'cact cact-s';
+            dim.textContent = 'Dismiss';
+            dim.addEventListener('click', () => panel.classList.remove('show'));
+            acts.appendChild(dim);
+            panel.classList.add('show');
+        }
+
+        /* ════════════════════════════════════════════════════════════════════════
+           4. DEPTH SLIDER  Chat(0) → Explore(1) → Pipeline(2)
+           ════════════════════════════════════════════════════════════════════════ */
+        const DEPTH_LABELS = ['CHAT', 'EXPLORE', 'PIPELINE'];
+        let _depth = 0;
+
+        function setDepth(d) {
+            _depth = Math.max(0, Math.min(2, d));
+            document.getElementById('depth-fill').style.width = (_depth / 2 * 100) + '%';
+            document.getElementById('depth-badge').textContent = DEPTH_LABELS[_depth];
+        }
+
+        document.getElementById('depth-track').addEventListener('click', e => {
+            const r = e.currentTarget.getBoundingClientRect();
+            setDepth(Math.round(((e.clientX - r.left) / r.width) * 2));
+        });
+        setDepth(0);
+
+        /* ════════════════════════════════════════════════════════════════════════
+           5. INTENT SELECTOR
+           ════════════════════════════════════════════════════════════════════════ */
+        let _intent = 'auto';
+        document.querySelectorAll('.intent-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.intent-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                _intent = chip.dataset.intent;
+            });
+        });
+
+        /* ════════════════════════════════════════════════════════════════════════
+           6. NODE STATUS HELPERS
+           ════════════════════════════════════════════════════════════════════════ */
+        function setNode(id, status) {
+            const el = document.getElementById(`nd-${id}`);
+            if (!el) return;
+            el.className = `node-st ${status}`;
+            el.textContent = status;
+            window.SpatialEngine?.pulseOrb(id, status);
+        }
+        function resetNodes() {
+            ['route', 'jit', 'tribunal', 'scope', 'execute', 'refine'].forEach(n => setNode(n, 'idle'));
+        }
+        function setAllActive() {
+            ['route', 'jit', 'tribunal', 'scope', 'execute', 'refine'].forEach(n => setNode(n, 'active'));
+        }
+
+        /* ════════════════════════════════════════════════════════════════════════
+           7. SSE EVENT STREAM
+           ════════════════════════════════════════════════════════════════════════ */
+        const SSE_CLASSES = {
+            route: 'route', jit_boost: 'jit_boost', tribunal: 'tribunal',
+            execution: 'execution', refinement: 'refinement',
+            healing_triggered: 'healing_triggered', vlt_patch: 'vlt_patch',
+            conversation: 'conversation',
+        };
+
+        function addEventLine(type, msg) {
+            const feed = document.getElementById('event-feed');
+            if (!feed) return;
+            const cls = SSE_CLASSES[type] || '';
+            const row = document.createElement('div');
+            row.className = 'ev';
+            row.innerHTML = `
+    <span class="ev-t">${fmtTime()}</span>
+    <span class="ev-k ${esc(cls)}">${esc(type)}</span>
+    <span class="ev-m">${esc(String(msg || '').slice(0, 80))}</span>
+  `;
+            feed.prepend(row);
+            while (feed.children.length > 80) feed.lastChild?.remove();
+        }
+
+        function handleSSE(ev) {
+            const t = ev.type || '';
+            addEventLine(t, ev.message || ev.buddy_line || ev.text || '');
+
+            switch (t) {
+                case 'route':
+                    setNode('route', 'done');
+                    _updateConf(ev.confidence, ev.boost_delta, ev.boosted_confidence);
+                    document.getElementById('intent-badge').textContent = esc(`Intent: ${ev.route || '—'}`);
+                    break;
+
+                case 'jit_boost':
+                    setNode('jit', 'done');
+                    _renderJIT(ev.signals || []);
+                    if (ev.boost_delta != null) {
+                        document.getElementById('cv-jit').textContent = '+' + Math.round((ev.boost_delta || 0) * 100) + '%';
+                        document.getElementById('cb-jit').style.width = Math.round((ev.boosted_confidence || 0.5) * 100) + '%';
+                    }
+                    break;
+
+                case 'tribunal':
+                    setNode('tribunal', ev.verdict === 'PASS' ? 'done' : 'fail');
+                    if (ev.verdict !== 'PASS') spawnNotif(`Tribunal: ${ev.verdict} — ${ev.message || ''}`, 'warn');
+                    break;
+
+                case 'plan':
+                case 'scope':
+                    setNode('scope', 'active');
+                    document.getElementById('wave-badge').textContent = esc(`Wave 1/${ev.wave_count || '?'}`);
+                    break;
+
+                case 'execution':
+                    setNode('execute', 'active');
+                    break;
+
+                case 'refinement': {
+                    const st = ev.verdict === 'pass' ? 'done' : 'fail';
+                    setNode('refine', st);
+                    const pct = Math.round((ev.score || 0.8) * 100);
+                    document.getElementById('cv-refine').textContent = pct + '%';
+                    document.getElementById('cb-refine').style.width = pct + '%';
+                    setTimeout(resetNodes, 2000);
+                    break;
+                }
+
+                case 'conversation': {
+                    const reply = ev.conversation?.response || ev.buddy_line || '';
+                    if (reply) _appendBuddy(reply, ev);
+                    break;
+                }
+
+                case 'vlt_patch':
+                    window.SpatialEngine?.handleVLTPatch(ev);
+                    addEventLine('vlt_patch', `${ev.patches?.length || 0} node(s) morphed`);
+                    spawnNotif(`VLT patch: ${ev.patches?.length || 0} node(s) morphed`, 'info', 2200);
+                    break;
+
+                case 'healing_triggered':
+                    showCrisis(ev.message || 'Pipeline node exceeded failure threshold.', [
+                        { label: 'Escalate Model', primary: true, action: () => _post('/v2/router-reset', {}) },
+                        { label: 'Deepen JIT Research', action: () => sendMsg('JIT deepen and retry') },
+                        { label: 'Manual Override', action: () => sendMsg('override continue') },
+                    ]);
+                    break;
+
+                case 'n_stroke_start':
+                    setAllActive();
+                    break;
+
+                case 'n_stroke_complete':
+                    setTimeout(resetNodes, 400);
+                    break;
+
+                case 'model_selected': {
+                    const name = ev.model || ev.provider || 'Unknown';
+                    document.getElementById('hud-model').textContent = esc(name);
+                    document.getElementById('model-chip').textContent = esc(name.slice(0, 22));
+                    break;
+                }
+
+                case 'preflight':
+                case 'pipeline_start':
+                    resetNodes();
+                    setNode('route', 'active');
+                    break;
+            }
+        }
+
+        function _updateConf(conf, delta, boosted) {
+            if (conf == null) return;
+            const pct = Math.round(conf * 100);
+            document.getElementById('cv-route').textContent = pct + '%';
+            const bar = document.getElementById('cb-route');
+            bar.style.width = pct + '%';
+            bar.className = `conf-fill ${pct >= 80 ? 'hi' : pct >= 50 ? 'mid' : 'lo'}`;
+        }
+
+        function _renderJIT(sigs) {
+            const feed = document.getElementById('jit-feed');
+            if (!feed || !sigs.length) return;
+            feed.innerHTML = '';
+            sigs.slice(0, 4).forEach(sig => {
+                const lbl = sig.domain || sig.source || 'SIGNAL';
+                const text = sig.signal || sig.text || JSON.stringify(sig);
+                const el = document.createElement('div');
+                el.className = 'jit-entry';
+                el.innerHTML = `
+      <div class="jit-entry-label">${esc(String(lbl).toUpperCase().slice(0, 20))}</div>
+      <div class="jit-entry-text">${esc(String(text).slice(0, 120))}</div>
+    `;
+                feed.appendChild(el);
+            });
+        }
+
+        /* Connect SSE */
+        let _sse = null;
+        function connectSSE() {
+            _sse?.close();
+            _sse = new EventSource('/v2/events');
+            _sse.onopen = () => {
+                document.getElementById('conn-chip').className = 'chip chip-green';
+                document.getElementById('conn-chip').textContent = '● LIVE';
+            };
+            _sse.onerror = () => {
+                document.getElementById('conn-chip').className = 'chip chip-warn';
+                document.getElementById('conn-chip').textContent = '○ RECONNECTING';
+                setTimeout(connectSSE, 3000);
+            };
+            _sse.onmessage = e => {
+                let ev; try { ev = JSON.parse(e.data); } catch { return; }
+                handleSSE(ev);
+            };
+        }
+        connectSSE();
+
+        /* ════════════════════════════════════════════════════════════════════════
+           8. BUDDY CHAT ENGINE
+           ════════════════════════════════════════════════════════════════════════ */
+        const SESSION_ID = 'spatial-' + Date.now();
+
+        function _appendUser(text) {
+            const c = document.getElementById('buddy-messages');
+            const g = document.createElement('div');
+            g.className = 'msg-group';
+            g.innerHTML = `<div class="msg-meta right">You</div><div class="bubble user">${esc(text)}</div>`;
+            c.appendChild(g);
+            c.scrollTop = c.scrollHeight;
+        }
+
+        function _appendBuddy(text, ev = {}) {
+            const c = document.getElementById('buddy-messages');
+            c.querySelector('.typing')?.closest('.msg-group')?.remove();
+            const g = document.createElement('div');
+            g.className = 'msg-group';
+            const jit = ev.conversation?.jit_result;
+            const jitBadge = jit ? `<div class="jit-badge">⚡ JIT +${Math.round((jit.boost_delta || 0) * 100)}%</div>` : '';
+            g.innerHTML = `<div class="msg-meta">Buddy</div><div class="bubble buddy">${_md(text)}</div>${jitBadge}`;
+            c.appendChild(g);
+            c.scrollTop = c.scrollHeight;
+            if (window.gsap) gsap.fromTo(g, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.32, ease: 'back.out(1.7)' });
+        }
+
+        function _showTyping() {
+            const c = document.getElementById('buddy-messages');
+            const g = document.createElement('div');
+            g.className = 'msg-group';
+            g.innerHTML = `<div class="msg-meta">Buddy</div><div class="bubble buddy hot"><div class="typing"><span></span><span></span><span></span></div></div>`;
+            c.appendChild(g);
+            c.scrollTop = c.scrollHeight;
+        }
+
+        /* Minimal safe markdown renderer */
+        function _md(raw) {
+            return esc(raw)
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br />');
+        }
+
+        async function sendMsg(text) {
+            if (!text?.trim()) return;
+            _appendUser(text);
+            _showTyping();
+            document.getElementById('buddy-status').textContent = 'Thinking…';
+            resetNodes();
+            setNode('route', 'active');
+
+            const ep = _depth === 2 ? '/v2/n-stroke' : '/v2/buddy/chat';
+            const body = _depth === 2
+                ? { mandate: text, session_id: SESSION_ID }
+                : { message: text, session_id: SESSION_ID };
+
+            try {
+                const res = await fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                const reply = data.conversation?.response
+                    || data.buddy_line
+                    || data.response
+                    || (data.route ? `Routed: ${data.route} | Confidence: ${Math.round((data.confidence || 0) * 100)}%` : 'Done.');
+
+                _appendBuddy(reply, data);
+
+                // Update HUD from response payload
+                if (data.confidence != null) _updateConf(data.confidence, data.boost_delta, data.boosted_confidence);
+                if (data.jit_result) {
+                    _renderJIT(data.jit_result.signals || []);
+                    document.getElementById('cv-jit').textContent = '+' + Math.round((data.jit_result.boost_delta || 0) * 100) + '%';
+                    document.getElementById('cb-jit').style.width = Math.round((data.jit_result.boosted_confidence || 0.5) * 100) + '%';
+                }
+                if (data.route) document.getElementById('intent-badge').textContent = esc(`Intent: ${data.route}`);
+
+                // Wire VLT patch if embedded in response
+                if (data.vlt_patch) window.SpatialEngine?.handleVLTPatch(data.vlt_patch);
+
+                document.getElementById('buddy-status').textContent = 'Spatial Orchestrator ready';
+            } catch (err) {
+                document.getElementById('buddy-messages').querySelector('.typing')?.closest('.msg-group')?.remove();
+                _appendBuddy(`⚠ ${esc(err.message)} — Is the TooLoo server running on port 8002?`);
+                document.getElementById('buddy-status').textContent = 'Connection error';
+            }
+        }
+
+        document.getElementById('send-btn').addEventListener('click', () => {
+            const inp = document.getElementById('msg-input');
+            const txt = inp.value.trim();
+            if (txt) { inp.value = ''; inp.style.height = 'auto'; sendMsg(txt); }
+        });
+
+        document.getElementById('msg-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const txt = e.target.value.trim();
+                if (txt) { e.target.value = ''; e.target.style.height = 'auto'; sendMsg(txt); }
+            }
+            setTimeout(() => {
+                const t = e.target; t.style.height = 'auto';
+                t.style.height = Math.min(t.scrollHeight, 96) + 'px';
+            }, 0);
+        });
+
+        document.getElementById('mic-pill').addEventListener('click', () => SensorMatrix.enableMic());
+        document.getElementById('cam-pill').addEventListener('click', () => SensorMatrix.enableCamera());
+
+        async function _post(path, body) {
+            try { await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); } catch { }
+        }
+
+        /* ════════════════════════════════════════════════════════════════════════
+           9. SPATIAL ENGINE — Three.js 3-Layer Architecture
+           ════════════════════════════════════════════════════════════════════════
+           Layer 0 — ENVIRONMENT  (z:-4)  Star particles, volumetric fog, lights
+           Layer 1 — DATA·LOGIC   (z: 0)  3D DAG orbs, signal tubes, anchor
+           Layer 2 — INTERACTION  (z:+2)  Liquid glass panels (MeshPhysical)
+           ════════════════════════════════════════════════════════════════════════ */
+        (function SpatialEngine() {
+            'use strict';
+
+            if (typeof THREE === 'undefined') {
+                console.warn('[SpatialEngine] Three.js unavailable — spatial canvas disabled.');
+                return;
+            }
+
+            /* ── Renderer ───────────────────────────────────────────────── */
+            const canvas = document.getElementById('spatialCanvas');
+            const pane = document.getElementById('canvas-pane');
+            if (!canvas || !pane) return;
+
+            const renderer = new THREE.WebGLRenderer({
+                canvas, antialias: true, alpha: true, powerPreference: 'high-performance',
+            });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.28;
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            function resize() {
+                const w = pane.clientWidth, h = pane.clientHeight;
+                renderer.setSize(w, h, false);
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+            }
+
+            /* ── Scene ──────────────────────────────────────────────────── */
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x080810, 0.036);
+
+            /* ── Camera ─────────────────────────────────────────────────── */
+            const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
+            camera.position.set(0, 0.2, 7);
+            const _camTgt = { rx: 0, ry: 0 };
+
+            /* ══════════════════════════════════════════════════════════════
+               LAYER 0 — ENVIRONMENT
+               ══════════════════════════════════════════════════════════════ */
+            const envGroup = new THREE.Group();
+            envGroup.position.z = -4;
+            scene.add(envGroup);
+
+            /* Lights */
+            const ambLight = new THREE.AmbientLight(0x0d0d20, 0.7);
+            const rimLight = new THREE.PointLight(0x00e5ff, 1.5, 40);
+            const fillLight = new THREE.PointLight(0xb388ff, 1.0, 35);
+            const warmLight = new THREE.PointLight(0xffab40, 0.6, 25);
+            rimLight.position.set(-7, 5, 2);
+            fillLight.position.set(7, -4, 0);
+            warmLight.position.set(0, 6, -3);
+            scene.add(ambLight, rimLight, fillLight, warmLight);
+
+            /* Star-field particles (800 pts) */
+            const ptsMat = (() => {
+                const N = 800;
+                const geo = new THREE.BufferGeometry();
+                const pos = new Float32Array(N * 3);
+                const col = new Float32Array(N * 3);
+                const PAL = [[0.42, 0.39, 1.0], [0.0, 0.9, 1.0], [0.70, 0.53, 1.0], [1.0, 0.67, 0.25]];
+                for (let i = 0; i < N; i++) {
+                    pos[i * 3] = (Math.random() - 0.5) * 28;
+                    pos[i * 3 + 1] = (Math.random() - 0.5) * 18;
+                    pos[i * 3 + 2] = (Math.random() - 0.5) * 14 - 2;
+                    const c = PAL[i % PAL.length];
+                    col[i * 3] = c[0]; col[i * 3 + 1] = c[1]; col[i * 3 + 2] = c[2];
+                }
+                geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+                const mat = new THREE.PointsMaterial({
+                    size: 0.042, vertexColors: true, transparent: true, opacity: 0.55, sizeAttenuation: true,
+                });
+                envGroup.add(new THREE.Points(geo, mat));
+                return mat;
+            })();
+
+            /* ══════════════════════════════════════════════════════════════
+               LAYER 1 — DATA·LOGIC (3D DAG)
+               ══════════════════════════════════════════════════════════════ */
+            const dataGroup = new THREE.Group();
+            scene.add(dataGroup);
+
+            const ORB_DEFS = [
+                { id: 'route', x: -3.4, y: 1.4, z: 0, color: 0x6c63ff, label: 'ROUTE' },
+                { id: 'jit', x: -1.2, y: 2.2, z: 0, color: 0x00e5ff, label: 'JIT' },
+                { id: 'tribunal', x: 1.2, y: 2.2, z: 0, color: 0xff4757, label: 'TRIBUNAL' },
+                { id: 'scope', x: 3.4, y: 1.4, z: 0, color: 0xffab40, label: 'SCOPE' },
+                { id: 'execute', x: -1.6, y: -0.9, z: 0, color: 0x2ed573, label: 'EXECUTE' },
+                { id: 'refine', x: 1.6, y: -0.9, z: 0, color: 0xb388ff, label: 'REFINE' },
+            ];
+
+            const _orbMat = {};
+            const _orbMesh = {};
+            const _ringMat = {};
+
+            ORB_DEFS.forEach(def => {
+                const geo = new THREE.SphereGeometry(0.24, 32, 32);
+                const mat = new THREE.MeshStandardMaterial({
+                    color: def.color, emissive: new THREE.Color(def.color),
+                    emissiveIntensity: 0.4, roughness: 0.18, metalness: 0.65,
+                    transparent: true, opacity: 0.94,
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(def.x, def.y, def.z);
+                mesh.castShadow = true;
+                dataGroup.add(mesh);
+                _orbMesh[def.id] = mesh;
+                _orbMat[def.id] = mat;
+
+                // Halo ring
+                const rGeo = new THREE.TorusGeometry(0.34, 0.013, 8, 64);
+                const rMat = new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.22 });
+                const ring = new THREE.Mesh(rGeo, rMat);
+                ring.position.copy(mesh.position);
+                ring.rotation.x = Math.PI * 0.12;
+                dataGroup.add(ring);
+                _ringMat[def.id] = rMat;
+            });
+
+            /* Signal tubes (CatmullRomCurve3) */
+            const EDGES = [
+                ['route', 'jit'], ['route', 'tribunal'],
+                ['jit', 'scope'], ['tribunal', 'scope'],
+                ['scope', 'execute'], ['execute', 'refine'],
+            ];
+            const _tubeMats = [];
+            EDGES.forEach(([a, b]) => {
+                const pa = _orbMesh[a].position.clone();
+                const pb = _orbMesh[b].position.clone();
+                const pm = pa.clone().add(pb).multiplyScalar(0.5);
+                pm.y += 0.42;
+                const curve = new THREE.CatmullRomCurve3([pa, pm, pb]);
+                const geo = new THREE.TubeGeometry(curve, 14, 0.014, 6, false);
+                const mat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.15 });
+                dataGroup.add(new THREE.Mesh(geo, mat));
+                _tubeMats.push(mat);
+            });
+
+            /* Center TooLoo anchor (icosahedron) */
+            const anchorGeo = new THREE.IcosahedronGeometry(0.42, 3);
+            const anchorMat = new THREE.MeshStandardMaterial({
+                color: 0x6c63ff, emissive: new THREE.Color(0x6c63ff),
+                emissiveIntensity: 0.8, roughness: 0.12, metalness: 0.85,
+            });
+            const anchorMesh = new THREE.Mesh(anchorGeo, anchorMat);
+            anchorMesh.position.set(0, 0.3, 0.6);
+            dataGroup.add(anchorMesh);
+
+            const wireGeo = new THREE.IcosahedronGeometry(0.54, 1);
+            const wireMat = new THREE.MeshBasicMaterial({ color: 0x6c63ff, wireframe: true, transparent: true, opacity: 0.17 });
+            const wireMesh = new THREE.Mesh(wireGeo, wireMat);
+            wireMesh.position.copy(anchorMesh.position);
+            dataGroup.add(wireMesh);
+
+            /* ══════════════════════════════════════════════════════════════
+               LAYER 2 — INTERACTION GLASS (MeshPhysicalMaterial panels)
+               ══════════════════════════════════════════════════════════════ */
+            const glassGroup = new THREE.Group();
+            glassGroup.position.z = 2;
+            scene.add(glassGroup);
+
+            function _mkPanel(w, h, x, y, z) {
+                /* Liquid glass: MeshPhysicalMaterial with transmission */
+                const geo = new THREE.PlaneGeometry(w, h);
+                const mat = new THREE.MeshPhysicalMaterial({
+                    color: 0x0d0d22, transparent: true, opacity: 0.26,
+                    roughness: 0.07, metalness: 0.08,
+                    transmission: 0.75, thickness: 0.35,
+                    side: THREE.DoubleSide,
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(x, y, z);
+                glassGroup.add(mesh);
+                // Edge glow border
+                const eGeo = new THREE.EdgesGeometry(new THREE.PlaneGeometry(w, h));
+                const eMat = new THREE.LineBasicMaterial({ color: 0x6c63ff, transparent: true, opacity: 0.42 });
+                const edge = new THREE.LineSegments(eGeo, eMat);
+                edge.position.set(x, y, z + 0.001);
+                glassGroup.add(edge);
+                return { mesh, mat, edge, eMat };
+            }
+
+            const _panels = [
+                _mkPanel(2.2, 1.2, -3.0, 0.8, 0),    // Left glass
+                _mkPanel(2.0, 1.2, 3.0, 0.8, 0),    // Right glass
+                _mkPanel(3.4, 0.8, 0.0, -1.8, -0.3),  // Bottom glass
+            ];
+
+            /* ══════════════════════════════════════════════════════════════
+               NOTIFICATION SPHERES — spawn at anchor, drift up + dissolve
+               ══════════════════════════════════════════════════════════════ */
+            const NOTIF_COLORS = { info: 0x00e5ff, warn: 0xffab40, error: 0xff4757, success: 0x2ed573 };
+            const _notifSpheres = [];
+
+            function spawnNotifSphere(type = 'info') {
+                const color = NOTIF_COLORS[type] || 0x6c63ff;
+                const geo = new THREE.SphereGeometry(0.11, 16, 16);
+                const mat = new THREE.MeshStandardMaterial({
+                    color, emissive: new THREE.Color(color), emissiveIntensity: 1.4,
+                    transparent: true, opacity: 0.92, roughness: 0.08, metalness: 0.25,
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set((Math.random() - 0.5) * 1.4, 0.3, 0.6 + Math.random() * 0.4);
+                scene.add(mesh);
+                const s = { mesh, mat, t: 0, vy: 0.016 + Math.random() * 0.008 };
+                _notifSpheres.push(s);
+                // Self-cleanup after 4.5s
+                setTimeout(() => {
+                    const idx = _notifSpheres.indexOf(s);
+                    if (idx > -1) _notifSpheres.splice(idx, 1);
+                    scene.remove(mesh);
+                }, 4500);
+            }
+
+            /* ── PUBLIC: pulseOrb — called by setNode ───────────────────── */
+            function pulseOrb(id, status) {
+                const mat = _orbMat[id];
+                if (!mat || !window.gsap) return;
+                const INTENS = { active: 0.95, done: 1.3, fail: 0.08, idle: 0.4, warn: 0.55 };
+                gsap.to(mat, { emissiveIntensity: INTENS[status] ?? 0.4, duration: 0.38, ease: 'power2.out' });
+                const rm = _ringMat[id];
+                if (rm) gsap.to(rm, { opacity: status === 'active' ? 0.65 : 0.22, duration: 0.3 });
+            }
+
+            /* ── PUBLIC: handleVLTPatch — GSAP material/position tween ─── */
+            function handleVLTPatch(ev) {
+                if (!ev || !Array.isArray(ev.patches)) return;
+                const ms = ev.transition_ms || 400;
+                ev.patches.forEach(p => {
+                    const mesh = _orbMesh[p.node_id];
+                    const mat = _orbMat[p.node_id];
+                    if (!mesh || !mat || !window.gsap) return;
+                    if (p.material) {
+                        if (p.material.emissive != null) gsap.to(mat, { emissiveIntensity: p.material.emissive, duration: ms / 1000, ease: 'power2.out' });
+                        if (p.material.roughness != null) gsap.to(mat, { roughness: p.material.roughness, duration: ms / 1000 });
+                        if (p.material.opacity != null) gsap.to(mat, { opacity: p.material.opacity, duration: ms / 1000 });
+                    }
+                    if (p.coordinates) {
+                        const c = p.coordinates;
+                        if (c.x != null) gsap.to(mesh.position, { x: c.x, duration: ms / 1000, ease: 'elastic.out(1,0.5)' });
+                        if (c.y != null) gsap.to(mesh.position, { y: c.y, duration: ms / 1000, ease: 'elastic.out(1,0.5)' });
+                        if (c.rotation_y != null) gsap.to(mesh.rotation, { y: c.rotation_y * Math.PI / 180, duration: ms / 1000 });
+                    }
+                });
+            }
+
+            /* ── Canvas control buttons ─────────────────────────────────── */
+            const _state = { dag: true, ghost: false, wire: false, env: true };
+            document.getElementById('btn-dag')?.addEventListener('click', () => {
+                _state.dag = !_state.dag;
+                dataGroup.visible = _state.dag;
+                document.getElementById('btn-dag').classList.toggle('on', _state.dag);
+            });
+            document.getElementById('btn-ghost')?.addEventListener('click', () => {
+                _state.ghost = !_state.ghost;
+                Object.values(_orbMat).forEach(m => { m.opacity = _state.ghost ? 0.22 : 0.94; });
+                anchorMat.opacity = _state.ghost ? 0.3 : 1.0;
+                document.getElementById('btn-ghost').classList.toggle('on', _state.ghost);
+                if (_state.ghost) spawnNotif('Ghost mode: overlaying design iterations', 'info');
+            });
+            document.getElementById('btn-wire')?.addEventListener('click', () => {
+                _state.wire = !_state.wire;
+                Object.values(_orbMat).forEach(m => { m.wireframe = _state.wire; });
+                anchorMat.wireframe = _state.wire;
+                document.getElementById('btn-wire').classList.toggle('on', _state.wire);
+            });
+            document.getElementById('btn-env')?.addEventListener('click', () => {
+                _state.env = !_state.env;
+                envGroup.visible = _state.env;
+                document.getElementById('btn-env').classList.toggle('on', _state.env);
+            });
+            document.getElementById('btn-cam-reset')?.addEventListener('click', () => {
+                if (window.gsap) {
+                    gsap.to(camera.position, { x: 0, y: 0.2, z: 7, duration: 1, ease: 'power2.out' });
+                    gsap.to(camera.rotation, { x: 0, y: 0, z: 0, duration: 1, ease: 'power2.out' });
+                }
+            });
+
+            /* ── Uniform Bridge: sensor state → 3D material uniforms ───── */
+            function _uniformTick(t, s) {
+                /* Anchor pulse */
+                anchorMat.emissiveIntensity = 0.7 + s.micVolume * 0.9 + Math.sin(t * 1.2) * 0.15;
+                wireMesh.rotation.y = t * 0.26;
+                wireMesh.rotation.x = Math.sin(t * 0.42) * 0.14;
+
+                /* Orb idle bob + mic reactivity */
+                ORB_DEFS.forEach((def, i) => {
+                    const mesh = _orbMesh[def.id];
+                    const mat = _orbMat[def.id];
+                    const φ = i * (Math.PI * 2 / ORB_DEFS.length);
+                    mesh.position.y = def.y + Math.sin(t * 0.72 + φ) * 0.09;
+                    if (mat.emissiveIntensity < 0.7) {
+                        mat.emissiveIntensity = 0.36 + s.micLow * 0.55 + Math.sin(t * 1.1 + φ) * 0.08;
+                    }
+                    mesh.rotation.y += 0.005;
+                });
+
+                /* Tube opacity */
+                _tubeMats.forEach((m, i) => {
+                    m.opacity = 0.1 + s.micMid * 0.42 + Math.sin(t * 1.5 + i) * 0.04;
+                });
+
+                /* Particles drift */
+                ptsMat.opacity = 0.5 + s.micVolume * 0.35;
+                envGroup.rotation.y += 0.0002 + s.micHigh * 0.0008;
+
+                /* Camera parallax (face or mouse) */
+                _camTgt.ry += (s.faceX * 0.28 - _camTgt.ry) * 0.04;
+                _camTgt.rx += (-s.faceY * 0.15 - _camTgt.rx) * 0.04;
+                camera.rotation.y += (_camTgt.ry - camera.rotation.y) * 0.06;
+                camera.rotation.x += (_camTgt.rx - camera.rotation.x) * 0.06;
+
+                /* Glass panel idle float */
+                _panels.forEach((p, i) => {
+                    const base = [0.8, 0.8, -1.8][i];
+                    p.mesh.position.y = base + Math.sin(t * 0.5 + i * 0.8) * 0.04;
+                    p.edge.position.y = p.mesh.position.y;
+                });
+                glassGroup.rotation.y += (s.faceX * 0.1 - glassGroup.rotation.y) * 0.05;
+                glassGroup.rotation.x += (-s.faceY * 0.06 - glassGroup.rotation.x) * 0.05;
+
+                /* Lights react to mic volume */
+                rimLight.intensity = 1.4 + s.micVolume * 2.6;
+                fillLight.intensity = 0.9 + s.micMid * 1.4;
+                ambLight.intensity = 0.4 + s.ambientLum * 0.6;
+
+                /* Notification spheres drift up and dissolve */
+                for (let i = _notifSpheres.length - 1; i >= 0; i--) {
+                    const ns = _notifSpheres[i];
+                    ns.t += 0.016;
+                    ns.mesh.position.y += ns.vy;
+                    ns.mesh.position.x += Math.sin(ns.t * 2.1) * 0.003;
+                    ns.mat.opacity = Math.max(0, 0.92 - ns.t * 0.22);
+                }
+            }
+
+            /* ── Render loop ────────────────────────────────────────────── */
+            const clock = new THREE.Clock();
+            function animate() {
+                requestAnimationFrame(animate);
+                const t = clock.getElapsedTime();
+                const s = SensorMatrix.state;
+                SensorMatrix.tick();
+                _uniformTick(t, s);
+                renderer.render(scene, camera);
+            }
+
+            resize();
+            animate();
+            window.addEventListener('resize', resize);
+
+            /* ── Expose public API ──────────────────────────────────────── */
+            window.SpatialEngine = {
+                scene, camera, renderer,
+                orbMeshes: _orbMesh,
+                spawnNotifSphere,
+                pulseOrb,
+                handleVLTPatch,
+            };
+        })(); /* end SpatialEngine */
+
+        /* ════════════════════════════════════════════════════════════════════════
+           10. HEALTH CHECK — poll /v2/health on load
+           ════════════════════════════════════════════════════════════════════════ */
+        (async function _health() {
+            try {
+                const r = await fetch('/v2/health', { signal: AbortSignal.timeout(3000) });
+                if (!r.ok) return;
+                const d = await r.json();
+                const cb = d.circuit_breaker;
+                const bk = document.getElementById('breaker-chip');
+                if (bk) {
+                    bk.textContent = cb?.state === 'OPEN' ? 'CB:OPEN' : 'CB:CLOSED';
+                    bk.className = `chip ${cb?.state === 'OPEN' ? 'chip-warn' : 'chip-green'}`;
+                }
+                const model = d.model || d.config?.model || 'Gemini';
+                document.getElementById('model-chip').textContent = esc(String(model).slice(0, 22));
+                document.getElementById('hud-model').textContent = esc(String(model));
+            } catch { /* server not yet up — silently skip */ }
+        })();
+    </script>
+</body>
+
+</html>

@@ -187,9 +187,38 @@ def _tool_file_write(path: str, content: str, **_: Any) -> dict[str, Any]:
     }
 
 
-def _tool_code_analyze(code: str, **_: Any) -> dict[str, Any]:
-    """Static analysis: extract imports, detect error patterns, count LOC."""
-    lines = code.splitlines()
+def _tool_code_analyze(
+    code: str = "",
+    file_path: str | None = None,
+    **_: Any,
+) -> dict[str, Any]:
+    """Static analysis: extract imports, detect error patterns, count LOC, and build AST symbol map.
+
+    When ``file_path`` is supplied (workspace-relative), the file is read and
+    parsed in addition to (or instead of) the ``code`` string.  The ``symbol_map``
+    key is populated using Python's built-in ``ast`` module — zero tokens, zero
+    hallucination.  Ghost branches can consume this map to know exact line ranges
+    before issuing a ``patch_apply`` call.
+
+    symbol_map entries:
+      {"type": "class"|"function"|"method", "name": str, "parent": str|None,
+       "lines": [start, end], "signature": str, "docstring": str}
+    """
+    import ast as _ast
+
+    # ── Resolve source text ───────────────────────────────────────────────────
+    if file_path:
+        try:
+            resolved = _jail_path(file_path)
+            source = resolved.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            source = code
+    else:
+        source = code
+
+    lines = source.splitlines()
+
+    # ── Classic heuristic analysis ─────────────────────────────────────────
     imports = [
         ln.strip() for ln in lines
         if ln.strip().startswith(("import ", "from "))
@@ -199,11 +228,92 @@ def _tool_code_analyze(code: str, **_: Any) -> dict[str, Any]:
         if re.search(r"\b(raise|Error|Exception|Traceback)\b", ln)
     ]
     has_async = any("async " in ln or "await " in ln for ln in lines)
+
+    # ── AST symbol map ─────────────────────────────────────────────────────
+    symbol_map: list[dict[str, Any]] = []
+    try:
+        tree = _ast.parse(source)
+        for node in _ast.walk(tree):
+            if isinstance(node, _ast.ClassDef):
+                # Extract class-level docstring
+                doc = ""
+                if (
+                    node.body
+                    and isinstance(node.body[0], _ast.Expr)
+                    and isinstance(node.body[0].value, _ast.Constant)
+                    and isinstance(node.body[0].value.value, str)
+                ):
+                    doc = node.body[0].value.value.splitlines()[0][:120]
+
+                symbol_map.append({
+                    "type": "class",
+                    "name": node.name,
+                    "parent": None,
+                    "lines": [node.lineno, getattr(node, "end_lineno", node.lineno)],
+                    "signature": node.name,
+                    "docstring": doc,
+                })
+
+                # Methods inside this class
+                for item in node.body:
+                    if isinstance(item, (_ast.FunctionDef, _ast.AsyncFunctionDef)):
+                        args_str = ", ".join(
+                            a.arg for a in item.args.args
+                        )
+                        method_doc = ""
+                        if (
+                            item.body
+                            and isinstance(item.body[0], _ast.Expr)
+                            and isinstance(item.body[0].value, _ast.Constant)
+                            and isinstance(item.body[0].value.value, str)
+                        ):
+                            method_doc = item.body[0].value.value.splitlines()[
+                                0][:120]
+                        symbol_map.append({
+                            "type": "method",
+                            "name": item.name,
+                            "parent": node.name,
+                            "lines": [item.lineno, getattr(item, "end_lineno", item.lineno)],
+                            "signature": f"{item.name}({args_str})",
+                            "docstring": method_doc,
+                        })
+
+            elif isinstance(node, (_ast.FunctionDef, _ast.AsyncFunctionDef)):
+                # Top-level functions only (not inside a class — those are captured above)
+                # Heuristic: if the parent is Module, it's top-level
+                args_str = ", ".join(a.arg for a in node.args.args)
+                fn_doc = ""
+                if (
+                    node.body
+                    and isinstance(node.body[0], _ast.Expr)
+                    and isinstance(node.body[0].value, _ast.Constant)
+                    and isinstance(node.body[0].value.value, str)
+                ):
+                    fn_doc = node.body[0].value.value.splitlines()[0][:120]
+                # Skip if already captured as a method (has parent class in symbol_map)
+                is_method = any(
+                    s["type"] == "method" and s["name"] == node.name
+                    and s["lines"][0] == node.lineno
+                    for s in symbol_map
+                )
+                if not is_method:
+                    symbol_map.append({
+                        "type": "function",
+                        "name": node.name,
+                        "parent": None,
+                        "lines": [node.lineno, getattr(node, "end_lineno", node.lineno)],
+                        "signature": f"{node.name}({args_str})",
+                        "docstring": fn_doc,
+                    })
+    except SyntaxError:
+        pass  # Non-Python content or fragment — symbol_map stays empty
+
     return {
         "loc": len(lines),
         "imports": imports[:20],
         "error_patterns": error_patterns[:10],
         "has_async": has_async,
+        "symbol_map": symbol_map,
     }
 
 
@@ -345,6 +455,151 @@ def _tool_spawn_process(
     }
 
 
+def _tool_patch_apply(
+    file_path: str,
+    search_block: str,
+    replace_block: str,
+    fuzzy: bool = False,
+    **_: Any,
+) -> dict[str, Any]:
+    """Surgical micro-patch: locate search_block in file and replace with replace_block.
+
+    Unlike file_write, this never rewrites the entire file — keeping the blast radius
+    to the exact lines that need changing.
+
+    When ``fuzzy=True``, whitespace is collapsed for matching to handle minor
+    indentation drift common in LLM-generated search blocks.
+
+    Security: path-traversal guarded; only workspace files allowed.
+    """
+    resolved = _jail_path(file_path)
+    original = resolved.read_text(encoding="utf-8", errors="replace")
+
+    if fuzzy:
+        # Collapse runs of whitespace for comparison only
+        def _ws_norm(s: str) -> str:
+            return re.sub(r"[ \t]+", " ", s)
+
+        norm_original = _ws_norm(original)
+        norm_search = _ws_norm(search_block)
+        idx = norm_original.find(norm_search)
+        if idx == -1:
+            raise ValueError(
+                f"search_block not found in '{file_path}' (fuzzy=True). "
+                "Verify the target text and try again."
+            )
+        # Reconstruct original offsets from normalised position
+        # Walk through original, tracking normalised position vs raw position
+        raw_idx = 0
+        norm_pos = 0
+        while norm_pos < idx and raw_idx < len(original):
+            c = original[raw_idx]
+            norm_c = _ws_norm(c)
+            norm_pos += len(norm_c)
+            raw_idx += 1
+        # Match length in normalised space → find end in raw space
+        raw_end = raw_idx
+        match_norm_len = len(norm_search)
+        accum = 0
+        while accum < match_norm_len and raw_end < len(original):
+            accum += len(_ws_norm(original[raw_end]))
+            raw_end += 1
+        patched = original[:raw_idx] + replace_block + original[raw_end:]
+    else:
+        if search_block not in original:
+            raise ValueError(
+                f"search_block not found verbatim in '{file_path}'. "
+                "Use fuzzy=True for whitespace-tolerant matching."
+            )
+        patched = original.replace(search_block, replace_block, 1)
+
+    resolved.write_text(patched, encoding="utf-8")
+    lines_before = original.count("\n") + 1
+    lines_after = patched.count("\n") + 1
+    return {
+        "file_path": str(resolved.relative_to(_WORKSPACE_ROOT)),
+        "lines_before": lines_before,
+        "lines_after": lines_after,
+        "delta_lines": lines_after - lines_before,
+        "fuzzy": fuzzy,
+        "patched": True,
+    }
+
+
+def _tool_render_screenshot(
+    file_path: str,
+    viewport_width: int = 1280,
+    viewport_height: int = 800,
+    **_: Any,
+) -> dict[str, Any]:
+    """Render an HTML file headlessly via Playwright and return a Base64 PNG.
+
+    Falls back gracefully to a structured stub when Playwright is unavailable so that
+    the engine pipeline never blocks on a missing optional dependency.
+
+    Security: path-traversal guarded; only .html/.htm files allowed.
+    """
+    resolved = _jail_path(file_path)
+    if resolved.suffix.lower() not in {".html", ".htm"}:
+        raise ValueError(
+            f"render_screenshot only supports .html/.htm files, got: '{resolved.suffix}'"
+        )
+    if not resolved.exists():
+        raise FileNotFoundError(f"File not found: '{file_path}'")
+
+    try:
+        # type: ignore[import-untyped]
+        from playwright.sync_api import sync_playwright
+        import base64
+
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(
+                args=["--no-sandbox", "--disable-dev-shm-usage"])
+            page = browser.new_page(
+                viewport={"width": int(viewport_width),
+                          "height": int(viewport_height)}
+            )
+            page.goto(resolved.as_uri(),
+                      wait_until="networkidle", timeout=10_000)
+            png_bytes = page.screenshot(full_page=False)
+            browser.close()
+
+        b64 = base64.b64encode(png_bytes).decode("ascii")
+        return {
+            "file_path": str(resolved.relative_to(_WORKSPACE_ROOT)),
+            "viewport_width": viewport_width,
+            "viewport_height": viewport_height,
+            "screenshot_b64": b64,
+            "format": "png",
+            "renderer": "playwright",
+        }
+    except ImportError:
+        # Playwright not installed — return a structured placeholder so the
+        # Art Director node can still produce a deterministic response.
+        return {
+            "file_path": str(resolved.relative_to(_WORKSPACE_ROOT)),
+            "viewport_width": viewport_width,
+            "viewport_height": viewport_height,
+            "screenshot_b64": None,
+            "format": "png",
+            "renderer": "stub",
+            "message": (
+                "Playwright is not installed. Install with: "
+                "pip install playwright && playwright install chromium"
+            ),
+        }
+    except Exception as exc:
+        return {
+            "file_path": str(resolved.relative_to(_WORKSPACE_ROOT)),
+            "viewport_width": viewport_width,
+            "viewport_height": viewport_height,
+            "screenshot_b64": None,
+            "format": "png",
+            "renderer": "error",
+            "message": str(exc)[:200],
+        }
+
+
 # ── Tool registry ─────────────────────────────────────────────────────────────
 
 _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
@@ -372,12 +627,17 @@ _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
     "code_analyze": (_tool_code_analyze, MCPToolSpec(
         uri=f"{_MCP_PREFIX}code_analyze",
         name="code_analyze",
-        description="Statically analyse Python code: imports, error patterns, async usage, LOC.",
-        parameters=[{
-            "name": "code",
-            "type": "string",
-            "description": "Python source code to analyse",
-        }],
+        description=(
+            "Statically analyse Python code: imports, error patterns, async usage, LOC, "
+            "and an AST symbol_map with exact line ranges for every class, function, and method. "
+            "Supply file_path (workspace-relative) to analyse a file directly, or pass raw code string."
+        ),
+        parameters=[
+            {"name": "code", "type": "string",
+                "description": "Python source code snippet to analyse (optional if file_path given)"},
+            {"name": "file_path", "type": "string",
+                "description": "Workspace-relative path to a Python file for symbol mapping"},
+        ],
     )),
     "web_lookup": (_tool_web_lookup, MCPToolSpec(
         uri=f"{_MCP_PREFIX}web_lookup",
@@ -424,6 +684,40 @@ _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
                 "description": "Optional file/service target"},
             {"name": "parent_branch_id", "type": "string",
                 "description": "Optional parent branch id"},
+        ],
+    )),
+    "patch_apply": (_tool_patch_apply, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}patch_apply",
+        name="patch_apply",
+        description=(
+            "Surgical micro-patch: find search_block in a workspace file and replace it "
+            "with replace_block.  Never rewrites the whole file — minimises blast radius."
+        ),
+        parameters=[
+            {"name": "file_path", "type": "string",
+                "description": "Workspace-relative path to the file"},
+            {"name": "search_block", "type": "string",
+                "description": "Exact text to locate (≤30 lines)"},
+            {"name": "replace_block", "type": "string",
+                "description": "Replacement text"},
+            {"name": "fuzzy", "type": "boolean",
+                "description": "If true, collapse whitespace during matching (default false)"},
+        ],
+    )),
+    "render_screenshot": (_tool_render_screenshot, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}render_screenshot",
+        name="render_screenshot",
+        description=(
+            "Render an HTML/component file headlessly via Playwright and return a "
+            "Base64-encoded PNG screenshot for visual inspection or Art-Director evaluation."
+        ),
+        parameters=[
+            {"name": "file_path", "type": "string",
+                "description": "Workspace-relative path to an .html file"},
+            {"name": "viewport_width", "type": "integer",
+                "description": "Viewport width in pixels (default 1280)"},
+            {"name": "viewport_height", "type": "integer",
+                "description": "Viewport height in pixels (default 800)"},
         ],
     )),
 }

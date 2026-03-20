@@ -63,7 +63,7 @@ class TestNodeTypeFromId:
         # Very high index → clamped to last wave type
         result = _node_type_from_id("m-abc123-999")
         assert result in ("emit", "dry_run", "ux_eval",
-                          "audit_wave", "analyse")
+                          "audit_wave", "analyse", "art_director", "spawn_repo")
 
     def test_unknown_suffix_defaults_to_analyse(self):
         assert _node_type_from_id("m-abc123-unknown") == "analyse"

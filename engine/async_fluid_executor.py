@@ -20,9 +20,13 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Any, AsyncCallable, Callable
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from engine.config import settings
+
+# Type alias: async callable that takes an AsyncEnvelope and returns Any
+AsyncCallable = Callable[..., Coroutine[Any, Any, Any]]
 
 
 @dataclass
