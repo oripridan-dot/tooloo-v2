@@ -44,3 +44,11 @@ nohup.out
 cycle_run_report.json
 ouroboros_report.json
 *.egg-info/
+ux_blueprint.json
+
+# Self-improvement cycle artifacts (auto-generated)
+full-cycle-si-*
+tests/temp_test_*.py
+tests/test_full_cycle_si_*.py
+tests/test_si_*.py
+archive/ephemeral_si/

@@ -38,7 +38,7 @@
 
       /* Typography */
       --text: #E8E8F2;
-      --text-muted: #6A6A8E;
+      --text-muted: #8E8EAE;
       --font: 'Inter', system-ui, sans-serif;
       --mono: 'JetBrains Mono', 'Fira Code', monospace;
 
@@ -714,6 +714,12 @@
       border-color: var(--primary-glow);
     }
 
+    .ctrl-btn:disabled, .sensor-pill:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
     /* Spatial notification ring — top right of canvas */
     #notif-ring {
       position: absolute;
@@ -1012,7 +1018,7 @@
     .conf-fill {
       height: 100%;
       border-radius: 2px;
-      transition: width 0.5s ease;
+      transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
     .conf-fill.hi {
@@ -1093,7 +1099,7 @@
     /* Event feed */
     #event-feed {
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: 11px;
       max-height: 170px;
       overflow-y: auto;
       display: flex;
@@ -1995,6 +2001,7 @@
        2. NOTIFICATION SYSTEM — glass cards + 3D spatial spheres
        ════════════════════════════════════════════════════════════════════════ */
     function spawnNotif(msg, type = 'info', duration = 4200) {
+      msg = String(msg).slice(0, 200);
       const ring = document.getElementById('notif-ring');
       if (!ring) return;
       const card = document.createElement('div');
@@ -2159,6 +2166,7 @@
     }
 
     function handleSSE(ev) {
+      try {
       const t = ev.type || '';
       addEventLine(t, ev.message || ev.buddy_line || ev.text || '', ev);
 
@@ -2407,6 +2415,7 @@
           );
           break;
       }
+      } catch (err) { console.error('handleSSE error:', err) }
     }
 
     function _updateConf(conf, delta, boosted) {
@@ -2436,24 +2445,29 @@
     }
 
     /* Connect SSE */
-    let _sse = null;
+    let _sse = null, _sseRetries = 0, _sseDelay = 3000;
     function connectSSE() {
-      _sse?.close();
+      if (_sse) { _sse.onopen = null; _sse.onmessage = null; _sse.onerror = null; _sse.close() }
       _sse = new EventSource('/v2/events');
       _sse.onopen = () => {
         document.getElementById('conn-chip').className = 'chip chip-green';
         document.getElementById('conn-chip').textContent = '● LIVE';
+        _sseRetries = 0; _sseDelay = 3000;
       };
       _sse.onerror = () => {
         document.getElementById('conn-chip').className = 'chip chip-warn';
+        _sseRetries++;
+        if (_sseRetries > 15) { document.getElementById('conn-chip').textContent = '○ DISCONNECTED'; return }
         document.getElementById('conn-chip').textContent = '○ RECONNECTING';
-        setTimeout(connectSSE, 3000);
+        setTimeout(connectSSE, _sseDelay); _sseDelay = Math.min(_sseDelay * 1.5, 30000);
       };
       _sse.onmessage = e => {
         let ev; try { ev = JSON.parse(e.data); } catch { return; }
         handleSSE(ev);
       };
     }
+    window.addEventListener('offline', () => { if (_sse) { _sse.close(); document.getElementById('conn-chip').className = 'chip chip-warn'; document.getElementById('conn-chip').textContent = '○ OFFLINE' } });
+    window.addEventListener('online', () => { _sseRetries = 0; _sseDelay = 3000; connectSSE() });
     connectSSE();
 
     /* ════════════════════════════════════════════════════════════════════════

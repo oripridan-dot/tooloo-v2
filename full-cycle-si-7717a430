@@ -1,3 +1,0 @@
-def vulnerable_function(data):
-    # Placeholder for some logic
-    return data

@@ -27,7 +27,7 @@
       --border: rgba(255, 255, 255, 0.09);
       --border-hi: rgba(255, 255, 255, 0.18);
       --text-pri: rgba(255, 255, 255, 0.92);
-      --text-sec: rgba(255, 255, 255, 0.54);
+      --text-sec: rgba(255, 255, 255, 0.64);
       --text-ter: rgba(255, 255, 255, 0.28);
       --sys-blue: #0A84FF;
       --sys-purple: #BF5AF2;
@@ -572,6 +572,7 @@
       line-height: 1.68;
       white-space: pre-wrap;
       word-break: break-word;
+      overflow-wrap: break-word;
       position: relative
     }
 
@@ -1684,13 +1685,21 @@
     }
 
     /* ── SSE ── */
-    let _es = null, _rDelay = 2000;
+    let _es = null, _rDelay = 2000, _retries = 0;
     function connectSSE() {
+      if (_es) { _es.onopen = null; _es.onmessage = null; _es.onerror = null; _es.close() }
       _es = new EventSource('/v2/events');
-      _es.onopen = () => { $sseDot.className = 'sse-dot live'; $sseLbl.textContent = 'Live'; _rDelay = 2000 };
+      _es.onopen = () => { $sseDot.className = 'sse-dot live'; $sseLbl.textContent = 'Live'; _rDelay = 2000; _retries = 0 };
       _es.onmessage = ev => { let d; try { d = JSON.parse(ev.data) } catch { return }; handleSSE(d) };
-      _es.onerror = () => { $sseDot.className = 'sse-dot'; $sseLbl.textContent = 'Reconnecting…'; _es.close(); setTimeout(connectSSE, _rDelay); _rDelay = Math.min(_rDelay * 1.5, 28000) };
+      _es.onerror = () => {
+        $sseDot.className = 'sse-dot'; $sseLbl.textContent = 'Reconnecting…';
+        _es.close(); _retries++;
+        if (_retries > 15) { $sseLbl.textContent = 'Disconnected'; return }
+        setTimeout(connectSSE, _rDelay); _rDelay = Math.min(_rDelay * 1.5, 30000);
+      };
     }
+    window.addEventListener('offline', () => { if (_es) { _es.close(); $sseDot.className = 'sse-dot'; $sseLbl.textContent = 'Offline' } });
+    window.addEventListener('online', () => { _rDelay = 2000; _retries = 0; connectSSE() });
     function handleSSE(d) {
       const t = d.type || '';
       if (t === 'buddy_chat_fast') { if (d.emotional_state) setEQ(d.emotional_state); if (d.intent) $intent.textContent = d.intent; if (d.jit_boost?.boosted_confidence != null) $jit.textContent = `JIT ✦ ${Math.round(d.jit_boost.boosted_confidence * 100)}%` }
@@ -1719,8 +1728,8 @@
       if (!text.trim() || text.length < 3) { hideListen(); return }
       try {
         const r = await fetch('/v2/buddy/listen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.slice(0, 400), session_id: _session || '' }) });
-        if (!r.ok) return; showListen(await r.json());
-      } catch { }
+        if (!r.ok) { hideListen(); return } showListen(await r.json());
+      } catch { hideListen() }
     }
     function showListen(d) {
       const vi = d.visual_indicator || 'listening', meta = IND[vi] || IND.listening, lvl = d.comprehension_level || 'listening';
@@ -1885,7 +1894,7 @@
       const hasStructured = comps.some(c => c.component_type !== 'prose');
       if (hasStructured) {
         b.style.cssText = 'white-space:normal;padding:6px 8px;background:transparent;border:none;box-shadow:none';
-        b.appendChild(buildCompStream(comps));
+        try { b.appendChild(buildCompStream(comps)) } catch (err) { console.error('Component render error:', err); b.textContent = data.response || '(render error)' }
       } else {
         const words = data.design_directive?.emphasis_words || [];
         b.innerHTML = applyEmphasis(data.response || '(empty response)', words);
