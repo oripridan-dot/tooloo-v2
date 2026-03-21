@@ -35,8 +35,7 @@ sandbox_crucible_*/
 # GCP service account key — never commit
 tooloo-sa-key.json
 *.sa-key.json
-too-loo-zi8g7e-42ad0fb883ee.json
-too-loo-zi8g7e-755de9c9051a.json
+too-loo-zi8g7e-*.json
 
 # Runtime / generated
 .venv/
