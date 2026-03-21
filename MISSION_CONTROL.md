@@ -11,16 +11,16 @@
 | Key | Value |
 |-----|-------|
 | **Branch** | `main` |
-| **Tests** | 103 passed (smoke + jit_designer) / 0 failed — prev full suite 1191 |
+| **Tests** | 1191 passed / 1 skipped / 0 failed |
 | **Live mode** | ✅ ACTIVE — `TOOLOO_LIVE_TESTS=1` set in `.env` |
-| **Studio API** | ✅ RUNNING — uvicorn port 8000 |
-| **Vertex ADC** | ⚠️ COMMENTED OUT — using `GEMINI_API_KEY` fallback |
-| **StreamInterceptor** | ✅ LIVE — `engine/jit_designer.py` line-level state machine |
-| **`/v2/buddy/chat/stream`** | ✅ LIVE — SSE streaming; yields `token`/`ui_component`/`thought`/`done` |
-| **Mermaid rendering** | ✅ NEW — `language='mermaid'` code blocks render as diagrams via mermaid.js v11 |
-| **Typing cursor** | ✅ NEW — blinking `.typing-cursor` spans during token streaming; auto-removed on `done` |
-| **N-Stroke visual bridge** | ✅ NEW — BUILD/DEBUG keywords route to `/v2/n-stroke`; wave events render in Storybook |
-| **Last session** | 2026-03-21 — Mermaid + N-Stroke bridge + typing cursor in buddy_demo.html |
+| **Vertex ADC** | ⚠️ MISSING — using `GEMINI_API_KEY` fallback |
+| **StreamInterceptor** | ✅ LIVE — `engine/jit_designer.py` |
+| **`/v2/buddy/chat/stream`** | ✅ LIVE — SSE streaming |
+| **Mermaid / Typing cursor / N-Stroke bridge** | ✅ COMMITTED |
+| **WCAG contrast** | ✅ FIXED — `--text-muted` #8E8EAE, `--text-sec` 0.64 |
+| **SSE reconnection** | ✅ HARDENED — retry limit 15, backoff, offline detection |
+| **Dead code** | ✅ CLEANED — 50+ SI artifacts removed, gitignore patterns added |
+| **Last session** | 2026-03-21 — Operation Awakening (dead code, WCAG, SSE hardening) |
 
 ---
 
@@ -28,40 +28,36 @@
 
 ### 🟡 BLOCKER 1 — Vertex ADC JSON missing (degraded to Gemini Direct only)
 `_vertex_client` is constructed but all Vertex API calls fail at auth time; system uses `GEMINI_API_KEY` path.
-**Fix:** Upload service account JSON → `/workspaces/tooloo-v2/too-loo-zi8g7e-755de9c9051a.json` and uncomment in `.env`.
+**Fix:** Upload service account JSON and uncomment in `.env`.
 
-### � BLOCKER 2 — buddy_demo.html streaming stack uncommitted
-All new features (sendMsgStream, appendToken, insertComponent, N-Stroke bridge, mermaid, cursor) are unstaged.
-**Fix:** `git add studio/static/buddy_demo.html && git commit -m "feat: streaming stack + mermaid + N-stroke bridge + typing cursor"`
-
-### 🟢 Cleared this session (2026-03-21)
-- ✅ Mermaid.js v11 inline rendering — `language='mermaid'` code blocks render as diagrams
-- ✅ Typing cursor — blinking `.typing-cursor` during SSE token streaming; auto-removed on `done`
-- ✅ N-Stroke visual bridge — BUILD/DEBUG keywords → `/v2/n-stroke`; wave events render in Storybook
-- ✅ `sendMsgStream` / `appendToken` / `insertComponent` streaming stack reconstructed in buddy_demo
-
+### 🟢 Cleared
+- ✅ buddy_demo.html streaming stack committed (1e08cd1)
+- ✅ Dead code cleaned (50+ SI artifacts, 5 dead root files)
+- ✅ WCAG contrast fixed (--text-muted, --text-sec)
+- ✅ SSE reconnection hardened (retry limit, backoff, offline detection)
+- ✅ Error boundaries added (handleSSE, component render, listener fetch)
+- ✅ Test suite: 1191 passed / 1 skipped (was 13 skipped)
 ---
 
 ## Immediate Next Steps
 
 ```
-1. COMMIT: git add studio/static/buddy_demo.html && git commit -m "feat: ..."
-2. TEST: start server (port 8000), open /demo, send build/debug mandate → verify N-Stroke path
-3. Skeleton-placeholder cards while blocks buffer (UX polish)
-4. (Optional) Restore Vertex ADC — upload service account JSON, uncomment in .env
-5. Run next ouroboros cycle: python ouroboros_cycle.py
+1. Start server, verify streaming + N-Stroke + SSE reconnection in browser
+2. Add prefers-reduced-motion for logo orb animation (accessibility)
+3. Event feed row stagger animation (JS-based animation-delay)
+4. Skeleton-placeholder cards while blocks buffer (UX polish)
+5. (Optional) Restore Vertex ADC — upload service account JSON
+6. Run next ouroboros cycle: python ouroboros_cycle.py
 ```
-
 ---
 
 ## JIT Bank (Last 5 Rules)
 
-1. **NEVER use `multi_replace_string_in_file` with large CSS blocks** — tool mangles hyphens throughout the newString (e.g. `border-left` → `border - left`). Use single targeted `replace_string_in_file` calls with minimal context hunks.
-2. **Always commit `buddy_demo.html` before session end** — streaming JS is pure frontend, easy to lose via `git checkout`. Uncommitted code was wiped and had to be reconstructed from PIPELINE_PROOF this session.
-3. **N-Stroke `/v2/n-stroke` is JSON, not SSE** — wave events broadcast via `/v2/events`; frontend uses existing `EventSource` for live Storybook cards. POST returns `{pipeline_id, result, latency_ms}`.
-4. **`mermaid.run({ nodes: [pre] })` requires DOM insertion first** — call via `requestAnimationFrame()` after `container.appendChild(wrap)`; set `pre.textContent` BEFORE calling run, not after.
-5. **Typing cursor: use `step-end` timing, not `ease`** — authentic terminal blink requires instantaneous opacity flip. Always store as `b._cursorNode` and `delete b._cursorNode` after removal.
-
+1. **--text-muted #6A6A8E on dark bg only achieves 2.9:1 contrast** — need #8E8EAE minimum for WCAG AA 4.5:1.
+2. **EventSource auto-reconnects on error; manual .close() + setTimeout creates double-connection** — null handlers before close, add retry limit with offline/online detection.
+3. **Root-level SI artifacts accumulate fast** — gitignore patterns (`full-cycle-si-*`, `tests/temp_test_*.py`) prevent future tracking.
+4. **Ephemeral SI test files that are permanently skipped pollute skip count** — remove them rather than keeping skip markers.
+5. **NEVER use `multi_replace_string_in_file` with large CSS blocks** — tool mangles hyphens. Use single targeted `replace_string_in_file` calls.
 ---
 
 ## Engine Quick-Reference

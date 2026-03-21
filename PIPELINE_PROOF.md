@@ -5284,3 +5284,57 @@ Auto-approved all medium-risk/high-impact/high-ROI development bottlenecks ident
 **[HANDOFF_PROTOCOL]**
 - next_action: "Start server (uvicorn studio.api:app --host 0.0.0.0 --port 8000), open /demo, send 'build a FastAPI endpoint for user auth'. Verify: N-Stroke routed, Storybook shows wave cards, result renders as glass card. Then send 'what is Merkle tree' to verify streaming path with cursor."
 - context_required: "buddy_demo.html is the PRIMARY demo UI. All 3 paths wired: (1) Generic chat → /v2/buddy/chat/stream SSE; (2) BUILD/DEBUG keywords → /v2/n-stroke JSON; (3) Mermaid diagrams render inline via mermaid.run(). Commit status: DIRTY — streaming code not committed yet."
+
+### Session 2026-03-21T03:00:00Z — Operation Awakening: Dead code cleanup, WCAG fixes, SSE hardening
+
+**[SYSTEM_STATE]**
+- branch: main
+- tests_start: 1191 passed / 13 skipped / 0 failed
+- tests_end: 1191 passed / 1 skipped / 0 failed
+- unresolved_blockers: [Vertex ADC JSON still missing — using GEMINI_API_KEY fallback]
+
+**[EXECUTION_TRACE]**
+- nodes_touched: [.gitignore, studio/static/buddy_demo.html, studio/static/index.html, 50+ deleted root SI artifacts, 4 deleted ephemeral test files, studio/api.py.bak deleted, 5 dead root .py files deleted]
+- mcp_tools_used: [read_file, replace_string_in_file, multi_replace_string_in_file, run_in_terminal, grep_search, runSubagent]
+- architecture_changes: |
+    - Removed 5 dead root files (constants.py, dag_nodes.py, dag_orchestrator.py, too_loo_dag_pipeline.py, mermaid_dag.mmd)
+    - Removed 50+ root-level SI cycle artifacts (full-cycle-si-* dirs/files, temp_test_*, test_full_cycle_si_*)
+    - Removed 4 permanently-skipped ephemeral SI test files from tests/
+    - Added gitignore patterns: full-cycle-si-*, tests/temp_test_*.py, tests/test_full_cycle_si_*.py, tests/test_si_*.py, archive/ephemeral_si/, ux_blueprint.json
+    - Bumped --text-muted: #6A6A8E → #8E8EAE in index.html (WCAG AA compliance)
+    - Bumped --text-sec: 0.54 → 0.64 opacity in buddy_demo.html (WCAG AA compliance)
+    - SSE reconnection hardened in both UIs: retry limit (15), exponential backoff (cap 30s), offline/online detection
+    - handleSSE wrapped in try/catch in index.html
+    - Active Listener: hideListen() on fetch error instead of silent fail
+    - Component stream rendering: try/catch with text fallback
+    - Notification text truncated to 200 chars
+    - Confidence meter: 0.5s→0.3s cubic-bezier transition
+    - Event feed: 10px→11px font
+    - Message bubbles: overflow-wrap: break-word
+    - Disabled button styles added
+
+**[WHAT_WAS_DONE]**
+- PHASE 1: Removed all dead code (5 root .py files, 50+ SI artifacts, 4 ephemeral test files, api.py.bak)
+- PHASE 1: Reduced skipped tests from 13 to 1 (only legitimate openfeature dep skip remains)
+- PHASE 2: Fixed WCAG contrast violations (--text-muted and --text-sec bumped to AA compliance)
+- PHASE 2: SSE reconnection hardened (retry limit, backoff, offline/online handlers) in both UIs
+- PHASE 2: Error boundaries added (handleSSE try/catch, component render fallback, listener fetch fallback)
+- PHASE 2: Micro-polish (confidence meter speed, event feed readability, disabled buttons, overflow-wrap)
+- PHASE 3: Full test suite verified (1191 passed / 1 skipped / 0 failed)
+- All changes committed: 1e08cd1
+
+**[WHAT_WAS_NOT_DONE]**
+- Logo orb animation accessibility (prefers-reduced-motion media query) — deferred
+- Event feed row stagger animation — deferred (JS-based animation-delay)
+- Skeleton-placeholder cards while blocks buffer — deferred
+- Vertex ADC JSON (blocked on user action)
+
+**[JIT_SIGNAL_PAYLOAD]**
+- rule_1: --text-muted #6A6A8E on dark bg (#080810) only achieves 2.9:1 contrast — need #8E8EAE minimum for WCAG AA 4.5:1
+- rule_2: EventSource auto-reconnects on error; manual .close() + setTimeout creates double-connection race — use explicit cleanup (null handlers before close) or let browser handle
+- rule_3: Root-level SI artifacts (full-cycle-si-*, temp_test_*) accumulate fast — gitignore patterns prevent future tracking
+- rule_4: Ephemeral SI test files that are permanently skipped pollute the skip count — remove them rather than keeping skip markers
+
+**[HANDOFF_PROTOCOL]**
+- next_action: "Start server, verify buddy_demo streaming + N-Stroke routing work with new SSE reconnection logic. Then implement prefers-reduced-motion for logo orb animation and event feed row stagger."
+- context_required: "All UI changes are committed (1e08cd1). buddy_demo.html streaming stack (sendMsgStream, appendToken, insertComponent, N-Stroke bridge, mermaid) is committed. SSE reconnection now has 15-retry limit + offline/online detection in both UIs."
