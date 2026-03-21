@@ -78,12 +78,12 @@ class RefinementLoop:
             # retry failed envelopes only
     """
 
-    # DEV MODE: raised 500→2000ms; nodes are slow locally
+    # LLM-appropriate slow threshold (network round-trips make 2s realistic)
     SLOW_THRESHOLD_MS: float = 2000.0
 
-    # DEV MODE: thresholds widened for dev flow — warn 0.70→0.45, fail 0.50→0.25
-    _WARN_THRESHOLD: float = 0.45
-    _FAIL_THRESHOLD: float = 0.25
+    # Production thresholds — warn if < 70% success, fail if < 50% success
+    _WARN_THRESHOLD: float = 0.70
+    _FAIL_THRESHOLD: float = 0.50
 
     def __init__(
         self,

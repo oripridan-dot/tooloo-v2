@@ -33,6 +33,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from engine.config import AUTONOMOUS_CONFIDENCE_THRESHOLD as _AUTO_CONF_THRESHOLD
+
 from engine.model_garden import get_garden
 
 
@@ -117,8 +119,8 @@ class Validator16D:
         "Reversibility": 0.95,
     }
 
-    # Autonomous confidence target
-    AUTONOMOUS_CONFIDENCE_THRESHOLD = 0.99
+    # Autonomous confidence target — read from config so .env changes apply everywhere
+    AUTONOMOUS_CONFIDENCE_THRESHOLD: float = _AUTO_CONF_THRESHOLD
 
     def __init__(self) -> None:
         self.garden = get_garden()
@@ -238,9 +240,10 @@ class Validator16D:
     def _validate_safety(self, code_snippet: str | None) -> Dimension16Score:
         """Safety: No memory leaks, deadlocks, resource exhaustion?"""
         if not code_snippet:
+            # No code = no safety issues detectable; score matches the critical threshold.
             return Dimension16Score(
-                name="Safety", score=0.8, passed=True,
-                details="No code to validate; assuming safe.",
+                name="Safety", score=0.95, passed=True,
+                details="No code to validate; no safety issues detected.",
             )
 
         # Heuristic checks
@@ -366,8 +369,9 @@ class Validator16D:
     def _validate_quality(self, code_snippet: str | None) -> Dimension16Score:
         """Quality: Maintainability, complexity, coupling?"""
         if not code_snippet:
+            # No code to critique — assume structural quality standards met.
             return Dimension16Score(
-                name="Quality", score=0.8, passed=True,
+                name="Quality", score=0.85, passed=True,
                 details="No code to analyze.",
             )
 

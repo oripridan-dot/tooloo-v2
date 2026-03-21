@@ -7,57 +7,31 @@
 ---
 
 ## Current State
-
-| Key | Value |
-|-----|-------|
-| **Branch** | `main` |
-| **Tests** | 1191 passed / 1 skipped / 0 failed |
-| **Live mode** | ✅ ACTIVE — `TOOLOO_LIVE_TESTS=1` set in `.env` |
-| **Vertex ADC** | ⚠️ MISSING — using `GEMINI_API_KEY` fallback |
-| **StreamInterceptor** | ✅ LIVE — `engine/jit_designer.py` |
-| **`/v2/buddy/chat/stream`** | ✅ LIVE — SSE streaming |
-| **Mermaid / Typing cursor / N-Stroke bridge** | ✅ COMMITTED |
-| **WCAG contrast** | ✅ FIXED — `--text-muted` #8E8EAE, `--text-sec` 0.64 |
-| **SSE reconnection** | ✅ HARDENED — retry limit 15, backoff, offline detection |
-| **Dead code** | ✅ CLEANED — 50+ SI artifacts removed, gitignore patterns added |
-| **Last session** | 2026-03-21 — Operation Awakening (dead code, WCAG, SSE hardening) |
-
----
+- branch: main
+- live-mode status: FULLY OPERATIONAL
+- Tests: 1191 passed, 1 skipped, 0 failed. All green.
+- All core calculators/selectors calibrated (see JIT Bank below).
+- Autonomous Phase 1.5 injection loop de-armed (was corrupting engine files).
+- Engine recovered from 3 corrupted files (config.py, executor.py, jit_booster.py).
 
 ## Active Blockers (ranked)
-
-### 🟡 BLOCKER 1 — Vertex ADC JSON missing (degraded to Gemini Direct only)
-`_vertex_client` is constructed but all Vertex API calls fail at auth time; system uses `GEMINI_API_KEY` path.
-**Fix:** Upload service account JSON and uncomment in `.env`.
-
 ### 🟢 Cleared
-- ✅ buddy_demo.html streaming stack committed (1e08cd1)
-- ✅ Dead code cleaned (50+ SI artifacts, 5 dead root files)
-- ✅ WCAG contrast fixed (--text-muted, --text-sec)
-- ✅ SSE reconnection hardened (retry limit, backoff, offline detection)
-- ✅ Error boundaries added (handleSSE, component render, listener fetch)
-- ✅ Test suite: 1191 passed / 1 skipped (was 13 skipped)
----
+- ✅ **Corrupted engine files**: config.py, executor.py, jit_booster.py — restored from git HEAD.
+- ✅ **Duplicate Phase 1.5 injection**: self_improvement.py was calling `_implement_top_assessments` 4× per cycle — fixed.
+- ✅ **Miscalibrated calculators/selectors** — all 5 calibrations applied (see JIT Bank).
 
 ## Immediate Next Steps
-
-```
-1. Start server, verify streaming + N-Stroke + SSE reconnection in browser
-2. Add prefers-reduced-motion for logo orb animation (accessibility)
-3. Event feed row stagger animation (JS-based animation-delay)
-4. Skeleton-placeholder cards while blocks buffer (UX polish)
-5. (Optional) Restore Vertex ADC — upload service account JSON
-6. Run next ouroboros cycle: python ouroboros_cycle.py
-```
----
+1. Run improvement cycles now that all calculators are calibrated correctly.
+2. Optionally gate `_implement_top_assessments` with a single explicit call (not automatic) to resume autonomous SOTA patching safely.
 
 ## JIT Bank (Last 5 Rules)
 
-1. **--text-muted #6A6A8E on dark bg only achieves 2.9:1 contrast** — need #8E8EAE minimum for WCAG AA 4.5:1.
-2. **EventSource auto-reconnects on error; manual .close() + setTimeout creates double-connection** — null handlers before close, add retry limit with offline/online detection.
-3. **Root-level SI artifacts accumulate fast** — gitignore patterns (`full-cycle-si-*`, `tests/temp_test_*.py`) prevent future tracking.
-4. **Ephemeral SI test files that are permanently skipped pollute skip count** — remove them rather than keeping skip markers.
-5. **NEVER use `multi_replace_string_in_file` with large CSS blocks** — tool mangles hyphens. Use single targeted `replace_string_in_file` calls.
+1. **Autonomous file patching = corruption vector**: MCP `patch_apply` chains writing back to engine/ inject raw tool_call JSON, zeroing files. Never let the autonomous loop write to files being actively tested.
+2. **RefinementLoop DEV MODE must be off before improvement runs**: Thresholds 0.45/0.25 allowed 25% success = "warn". Production is 0.70/0.50. Now restored.
+3. **Validator16D Safety default must meet critical threshold**: Safety=0.80 default (no code) < threshold 0.95 → always blocks autonomous gate. Must be 0.95.
+4. **BUILD is a deep intent requiring T2**: Code generation mandates need enhanced flash (T2/gemini-2.5-flash) from stroke 1, not lite (T1). Now in _DEEP_INTENTS.
+5. **AUTONOMOUS_CONFIDENCE_THRESHOLD must come from config**: Both validator_16d.py and n_stroke.py must read the same source or they diverge silently.
+
 ---
 
 ## Engine Quick-Reference
@@ -80,4 +54,3 @@ Mandate → MandateRouter(CB:0.85) → JITBooster → Tribunal(OWASP)
 | Run tests | `pytest tests/ --ignore=tests/test_ingestion.py --ignore=tests/test_playwright_ui.py` |
 
 *Last updated: 2026-03-21*
-

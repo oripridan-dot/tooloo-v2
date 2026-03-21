@@ -49,7 +49,10 @@ _TIER_MODELS: dict[int, str] = dict(_FULL_TIERS)
 VERTEX_TIER_MAP: dict[int, str] = dict(_FULL_TIERS)
 
 # Intents that benefit from deeper reasoning from the very first stroke
-_DEEP_INTENTS: frozenset[str] = frozenset({"SPAWN_REPO", "DEBUG", "AUDIT"})
+# BUILD added: code generation/implementation mandates require the enhanced flash model
+# from the first stroke to produce correct, high-quality implementation output.
+_DEEP_INTENTS: frozenset[str] = frozenset(
+    {"BUILD", "SPAWN_REPO", "DEBUG", "AUDIT"})
 
 
 # ── DTOs ──────────────────────────────────────────────────────────────────────

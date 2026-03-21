@@ -280,21 +280,6 @@ def _make_build_work_fn(
                 "latency_ms": round((time.monotonic() - t0) * 1000, 2),
             }
 
-        # Step 2: Build SOTA annotation block from suggestions
-        annotation_lines = [
-            "# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────",
-            f"# Cycle: {datetime.now(UTC).isoformat()}",
-            f"# Component: {component}  Source: {source_path}",
-            "# Improvement signals from JIT SOTA booster:",
-        ]
-        for i, sig in enumerate(suggestions[:5], start=1):
-            wrapped = textwrap.fill(sig, width=78, subsequent_indent="#     ")
-            annotation_lines.append(f"#  [{i}] {wrapped}")
-        annotation_lines.append(
-            "# ─────────────────────────────────────────────────────────────────"
-        )
-        annotation_block = "\n".join(annotation_lines) + "\n"
-
         # In offline / dry-run mode: report plan without writing
         if dry_run or not live_mode:
             return {
@@ -303,47 +288,68 @@ def _make_build_work_fn(
                 "component": component,
                 "source_path": source_path,
                 "line_count": line_count,
-                "annotation_preview": annotation_block[:400],
+                "annotation_preview": str(suggestions)[:400],
                 "suggestions_count": len(suggestions),
                 "write_skipped": True,
                 "reason": "dry_run" if dry_run else "offline_mode",
                 "latency_ms": round((time.monotonic() - t0) * 1000, 2),
             }
 
-        # Step 3: God-mode live write — inject annotation block above module docstring
-        # Locate end of shebang + copyright lines (if any), then insert
-        lines = current_source.splitlines(keepends=True)
-        # Skip any existing ouroboros annotations so re-runs are idempotent.
-        # Strategy: drop all leading comment-only lines before the first real
-        # Python line (docstring / import / class / def / from), then prepend a
-        # fresh annotation block.  This is robust to textwrap continuation lines
-        # and varying separator dash counts that slipped through pattern filters.
-        first_real = 0
-        for _i, _ln in enumerate(lines):
-            _s = _ln.strip()
-            if _s and not _s.startswith("#"):
-                first_real = _i
-                break
-        # If no real Python line found, fall back to the full file (safety)
-        filtered_lines = lines[first_real:] if first_real > 0 else lines
-        # Safety guard: abort if filtered content has no executable Python lines.
-        # This prevents re-annotating a previously-corrupted (annotation-only) file
-        # back into a 56-line stub with no classes or functions.
-        python_lines = [
-            ln for ln in filtered_lines
-            if ln.strip() and not ln.strip().startswith("#")
-        ]
-        if not python_lines:
+        # Step 2: Use LLM to actually rewrite code and implement suggestions
+        prompt = (
+            f"You are the TooLoo God Mode Code Improver.\n"
+            f"Component to improve: {component} at {source_path}\n"
+            f"Please FULLY rewrite the code below to implement these suggestions/requirements:\n"
+            f"{chr(10).join(suggestions)}\n\n"
+            f"Return ONLY the raw python code. Do not wrap in markdown tags like ```python. "
+            f"Ensure to keep the exact same logic where not requested to change.\n\n"
+            f"Current file code:\n{current_source}\n"
+        )
+
+        new_source = current_source
+        try:
+            import engine.jit_booster as _jib_mod
+            from engine.config import VERTEX_DEFAULT_MODEL, GEMINI_MODEL
+            if _jib_mod._vertex_client:
+                resp = _jib_mod._vertex_client.models.generate_content(
+                    model=VERTEX_DEFAULT_MODEL, contents=prompt
+                )
+                if resp.text:
+                    new_source = resp.text.strip()
+            elif _jib_mod._gemini_client:
+                resp = _jib_mod._gemini_client.models.generate_content(
+                    model=GEMINI_MODEL, contents=prompt
+                )
+                if resp.text:
+                    new_source = resp.text.strip()
+
+            import re
+
+            # Reject tool call hallucinations
+            if "<tool_call>" in new_source or '{"uri":' in new_source:
+                raise ValueError(
+                    "Hallucinated tool call detected in raw code output.")
+
+            # Clean up markdown (models often ignore 'do not wrap in markdown')
+            block_match = re.search(
+                r"```(?:python)?\s*(.*?)```", new_source, re.DOTALL)
+            if block_match:
+                new_source = block_match.group(1)
+
+            new_source = new_source.strip() + "\n"
+
+            # Strict syntax validation before write: prevent cascading DAG breaks
+            compile(new_source, source_path, "exec")
+
+        except Exception as e:
             return {
-                "status": "aborted",
-                "phase": "safety_guard",
+                "status": "error",
+                "phase": "llm_rewrite",
+                "error": str(e),
                 "component": component,
                 "source_path": source_path,
-                "reason": "no executable Python remains after filtering — file may be corrupted, aborting write",
-                "line_count": line_count,
                 "latency_ms": round((time.monotonic() - t0) * 1000, 2),
             }
-        new_source = annotation_block + "".join(filtered_lines)
 
         write_result = mcp.call(
             "file_write",
@@ -534,8 +540,14 @@ class OuroborosCycle:
 
             ct0 = time.monotonic()
             events: list[dict[str, Any]] = []
+
+            # Dynamic max strokes based on JIT context complexity
+            # More suggestions = more complex = higher stroke budget
+            dynamic_strokes = min(
+                self._max_strokes, max(3, len(suggestions) + 2))
+
             n_engine = _build_n_stroke_engine(
-                events, self._mcp, self._max_strokes)
+                events, self._mcp, dynamic_strokes)
 
             # Build the consent-bypassed work function
             work_fn = _make_build_work_fn(

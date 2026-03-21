@@ -231,13 +231,16 @@ class TestMCPManager:
 class TestModelSelector:
     """Prove the deterministic model escalation ladder."""
 
-    def test_stroke_1_default_intent_is_tier_1(self) -> None:
-        sel = ModelSelector().select(stroke=1, intent="BUILD")
-        assert sel.tier == 1
-        assert sel.model == TIER_1_MODEL
+    def test_stroke_1_light_intent_is_tier_1(self) -> None:
+        # EXPLAIN, DESIGN, IDEATE are light intents — start at T1 (fastest flash)
+        for intent in ("EXPLAIN", "DESIGN", "IDEATE"):
+            sel = ModelSelector().select(stroke=1, intent=intent)
+            assert sel.tier == 1, f"{intent} should start at tier 1"
+            assert sel.model == TIER_1_MODEL
 
     def test_stroke_1_deep_intent_is_tier_2(self) -> None:
-        for intent in ("DEBUG", "AUDIT", "SPAWN_REPO"):
+        # BUILD, DEBUG, AUDIT, SPAWN_REPO are deep intents — start at T2 (enhanced flash)
+        for intent in ("BUILD", "DEBUG", "AUDIT", "SPAWN_REPO"):
             sel = ModelSelector().select(stroke=1, intent=intent)
             assert sel.tier == 2, f"{intent} should start at tier 2"
             assert sel.model == TIER_2_MODEL
@@ -459,11 +462,12 @@ class TestNStrokeHappyPath:
         assert len(s.mcp_tools_injected) == 10
         assert s.healing_report is None
 
-    def test_first_stroke_uses_tier_1_model_for_build(self) -> None:
+    def test_first_stroke_uses_tier_2_model_for_build(self) -> None:
+        # BUILD is a deep intent — starts at T2 (enhanced flash) for better code quality
         engine = _make_engine()
         result = engine.run(_make_locked(intent="BUILD"))
-        assert result.strokes[0].model_selection.tier == 1
-        assert result.strokes[0].model_selection.model == TIER_1_MODEL
+        assert result.strokes[0].model_selection.tier == 2
+        assert result.strokes[0].model_selection.model == TIER_2_MODEL
 
     def test_first_stroke_uses_tier_2_model_for_audit(self) -> None:
         engine = _make_engine()
@@ -561,12 +565,16 @@ class TestNStrokeModelEscalation:
         return _work
 
     def test_model_escalates_on_second_stroke(self) -> None:
-        """Stroke 1 fails → stroke 2 uses a higher-tier model."""
+        """Stroke 1 fails → stroke 2 uses a higher-tier model.
+
+        Uses EXPLAIN (T1 start) so the fail escalation to T2 is clearly observable.
+        (BUILD starts at T2 and remains T2 on stroke-2 fail; escalation to T3 requires stroke 3.)
+        """
         events: list[dict[str, Any]] = []
         engine = _make_engine(broadcast_events=events, max_strokes=3)
 
         work_fn = self._failing_work_fn_factory(fail_strokes={1})
-        result = engine.run(_make_locked(), work_fn=work_fn)
+        result = engine.run(_make_locked(intent="EXPLAIN"), work_fn=work_fn)
 
         assert result.total_strokes == 2
         stroke_1_tier = result.strokes[0].model_selection.tier
@@ -619,11 +627,14 @@ class TestNStrokeModelEscalation:
         )
 
     def test_retry_signal_injected_in_subsequent_strokes(self) -> None:
-        """Failure signal from previous stroke must appear in next stroke's preflight."""
+        """Failure signal from previous stroke must appear in next stroke's preflight.
+
+        Uses EXPLAIN (T1 start) to guarantee the preflight model changes on escalation.
+        """
         events: list[dict[str, Any]] = []
         engine = _make_engine(broadcast_events=events, max_strokes=3)
         work_fn = self._failing_work_fn_factory(fail_strokes={1})
-        engine.run(_make_locked(), work_fn=work_fn)
+        engine.run(_make_locked(intent="EXPLAIN"), work_fn=work_fn)
 
         # The second preflight event's jit_signals should differ (retry-signal injected)
         preflight_events = [e for e in events if e["type"] == "preflight"]
@@ -657,8 +668,10 @@ class TestImpossibleTask:
     )
 
     def _make_dsp_locked(self) -> LockedIntent:
+        # EXPLAIN intent (T1 start) lets us confirm T1→T2 escalation on stroke-1 failure.
+        # This cleanly proves model-upgrade semantics without conflating BUILD logic.
         return _make_locked(
-            intent="BUILD",
+            intent="EXPLAIN",
             confidence=0.92,
             mandate_text=self.IMPOSSIBLE_MANDATE,
         )

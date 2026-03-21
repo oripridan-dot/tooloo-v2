@@ -496,9 +496,9 @@ class TestJITBooster:
         booster = JITBooster()
         route = MandateRouter().route("Audit security posture")
         result = booster.fetch(route)
-        expected_delta = min(
-            len(result.signals) * BOOST_PER_SIGNAL, MAX_BOOST_DELTA)
-        assert abs(result.boost_delta - round(expected_delta, 4)) < 0.001
+        expected_delta = min(len(result.signals) *
+                             BOOST_PER_SIGNAL, MAX_BOOST_DELTA)
+        assert abs(result.boost_delta - expected_delta) < 0.001
 
     def test_source_field_populated(self) -> None:
         from engine.jit_booster import JITBooster

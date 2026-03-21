@@ -7,24 +7,25 @@
     ],
     "emotional_arc": [],
     "turn_count": 4,
-    "created_at": "2026-03-21T01:25:23.636334+00:00",
-    "last_turn_at": "2026-03-21T01:25:23.749161+00:00",
+    "created_at": "2026-03-21T22:18:16.735999+00:00",
+    "last_turn_at": "2026-03-21T22:18:16.849483+00:00",
     "last_message_preview": "explain the difference between access tokens and refresh tokens"
   },
   {
     "session_id": "s-eb2d47dbbfc6",
-    "summary": "EXPLAIN session (3 user turns): explain to me on tooloo; Should I write this up as a runbook?",
+    "summary": "EXPLAIN session (5 user turns): hey buddy explain on the system; Should I write this up as a runbook?",
     "key_topics": [
       "EXPLAIN",
       "IDEATE",
       "DESIGN"
     ],
     "emotional_arc": [
+      "uncertain",
       "uncertain"
     ],
-    "turn_count": 6,
-    "created_at": "2026-03-21T00:27:33.267449+00:00",
-    "last_turn_at": "2026-03-21T00:28:26.084728+00:00",
-    "last_message_preview": "Want me to prototype the strongest idea?"
+    "turn_count": 10,
+    "created_at": "2026-03-21T15:23:07.634259+00:00",
+    "last_turn_at": "2026-03-21T15:24:31.929681+00:00",
+    "last_message_preview": "Should I check WCAG contrast ratios?"
   }
 ]
