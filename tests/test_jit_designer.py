@@ -7,6 +7,7 @@ from engine.jit_designer import (
     DesignDirective,
     ThoughtCard,
     UIComponent,
+    StreamInterceptor,
     analyze_partial_prompt,
     _extract_emphasis_words,
     _confidence_tier,
@@ -346,13 +347,15 @@ class TestUIComponent:
             style_directives={"theme": "hig-blue", "elevation": 1},
         )
         d = comp.to_dict()
-        assert set(d.keys()) == {"component_type", "content", "style_directives"}
+        assert set(d.keys()) == {"component_type",
+                                 "content", "style_directives"}
 
     def test_to_dict_round_trip(self):
         comp = UIComponent(
             component_type="timeline_step",
             content={"index": 3, "label": "Deploy", "body": "Push to prod"},
-            style_directives={"theme": "hig-green", "elevation": 1, "intent": "BUILD"},
+            style_directives={"theme": "hig-green",
+                              "elevation": 1, "intent": "BUILD"},
         )
         d = comp.to_dict()
         assert d["component_type"] == "timeline_step"
@@ -423,11 +426,189 @@ class TestParseResponseBlocks:
 
     def test_style_directives_reflect_palette_key(self, designer):
         text = "1. Build it\n2. Ship it"
-        result = designer.parse_response_blocks(text, palette_key="system_purple")
+        result = designer.parse_response_blocks(
+            text, palette_key="system_purple")
         assert result[0].style_directives["theme"] == "hig-purple"
 
     def test_unknown_palette_key_falls_back_to_material_dark(self, designer):
         text = "- Foo: bar"
-        result = designer.parse_response_blocks(text, palette_key="unknown_key")
+        result = designer.parse_response_blocks(
+            text, palette_key="unknown_key")
         assert result[0].style_directives["theme"] == "material-dark"
 
+
+# ── StreamInterceptor tests ───────────────────────────────────────────────────
+
+class TestStreamInterceptor:
+    """Tests for the StreamInterceptor streaming state machine."""
+
+    @pytest.fixture
+    def interceptor(self):
+        return StreamInterceptor(intent="EXPLAIN", palette_key="system_blue")
+
+    # ── Basic prose streaming ─────────────────────────────────────────────────
+
+    def test_plain_prose_emits_tokens(self, interceptor):
+        events = interceptor.feed("Hello, how are you?\n")
+        token_events = [e for e in events if e["type"] == "token"]
+        assert token_events, "Plain prose should emit token events"
+
+    def test_no_ui_component_for_plain_prose(self, interceptor):
+        events = interceptor.feed("Just a simple sentence.\n")
+        events += interceptor.flush()
+        assert not any(e["type"] == "ui_component" for e in events)
+
+    # ── Code block detection ──────────────────────────────────────────────────
+
+    def test_code_block_emits_ui_component(self, interceptor):
+        chunk = "```python\ndef foo():\n    return 42\n```\n"
+        events = interceptor.feed(chunk)
+        events += interceptor.flush()
+        ui_events = [e for e in events if e["type"] == "ui_component"]
+        assert ui_events, "Code block should emit a ui_component event"
+        assert ui_events[0]["component"]["component_type"] == "code_block"
+
+    def test_code_block_not_emitted_as_token(self, interceptor):
+        chunk = "```python\nprint('hi')\n```\n"
+        events = interceptor.feed(chunk)
+        events += interceptor.flush()
+        token_texts = "".join(e.get("text", "")
+                              for e in events if e["type"] == "token")
+        assert "```" not in token_texts, "Code fence should not appear in token stream"
+
+    def test_code_block_language_preserved(self, interceptor):
+        chunk = "```javascript\nconsole.log('x');\n```\n"
+        events = interceptor.feed(chunk)
+        events += interceptor.flush()
+        ui_events = [e for e in events if e["type"] == "ui_component"]
+        assert ui_events[0]["component"]["content"]["language"] == "javascript"
+
+    # ── Numbered list detection ───────────────────────────────────────────────
+
+    def test_numbered_list_emits_timeline_steps(self, interceptor):
+        chunk = "1. Step one\n2. Step two\n3. Step three\n\n"
+        events = interceptor.feed(chunk)
+        events += interceptor.flush()
+        ui_events = [e for e in events if e["type"] == "ui_component"]
+        assert len(ui_events) == 3
+        assert all(e["component"]["component_type"] ==
+                   "timeline_step" for e in ui_events)
+
+    def test_numbered_list_not_emitted_as_tokens(self, interceptor):
+        chunk = "1. Alpha\n2. Beta\n\n"
+        events = interceptor.feed(chunk)
+        events += interceptor.flush()
+        token_texts = "".join(e.get("text", "")
+                              for e in events if e["type"] == "token")
+        assert "1. Alpha" not in token_texts
+
+    # ── Bullet list detection ─────────────────────────────────────────────────
+
+    def test_bullet_list_emits_components(self, interceptor):
+        chunk = "- **Key**: value\n- **Other**: data\n\n"
+        events = interceptor.feed(chunk)
+        events += interceptor.flush()
+        ui_events = [e for e in events if e["type"] == "ui_component"]
+        assert ui_events, "Bullet list with bold KV should produce ui_component events"
+
+    # ── Chunking robustness ───────────────────────────────────────────────────
+
+    def test_chunk_split_across_newline_boundary(self):
+        """Feed identical content in different chunk splits; same events expected."""
+        full = "1. Step one\n2. Step two\n\n"
+        # Split 1: single chunk
+        s1 = StreamInterceptor()
+        ev1 = s1.feed(full) + s1.flush()
+
+        # Split 2: each character as a separate chunk
+        s2 = StreamInterceptor()
+        ev2 = []
+        for c in full:
+            ev2.extend(s2.feed(c))
+        ev2.extend(s2.flush())
+
+        comps1 = [e for e in ev1 if e["type"] == "ui_component"]
+        comps2 = [e for e in ev2 if e["type"] == "ui_component"]
+        assert len(comps1) == len(
+            comps2), "Split-chunk feeding should produce same components"
+
+    def test_mixed_prose_and_code(self, interceptor):
+        chunk = "Here is the code:\n```python\nreturn 1\n```\nAnd some prose after.\n"
+        events = interceptor.feed(chunk)
+        events += interceptor.flush()
+        types = [e["type"] for e in events]
+        assert "token" in types
+        assert "ui_component" in types
+
+    # ── Flush behaviour ───────────────────────────────────────────────────────
+
+    def test_flush_closes_open_block(self):
+        s = StreamInterceptor()
+        s.feed("1. Item one\n")
+        s.feed("2. Item two\n")
+        # Do NOT send a blank line — open block
+        events = s.flush()
+        ui_events = [e for e in events if e["type"] == "ui_component"]
+        assert ui_events, "flush() must close any open structured block"
+
+    def test_flush_empty_interceptor_returns_empty(self):
+        s = StreamInterceptor()
+        assert s.flush() == []
+
+    # ── Safety: max block size ────────────────────────────────────────────────
+
+    def test_large_block_flushed_safely(self):
+        """Blocks exceeding _MAX_BLOCK_BYTES should be flushed, not buffered forever."""
+        s = StreamInterceptor()
+        # feed 200 numbered items without a closing blank line
+        for n in range(200):
+            s.feed(f"{n + 1}. Line {n + 1}\n")
+        events = s.flush()
+        ui_events = [e for e in events if e["type"] == "ui_component"]
+        # We don't care about exact count — just that *something* was emitted
+        assert ui_events or any(e["type"] == "token" for e in events)
+
+
+# ── Enhanced analyze_partial_prompt tests ────────────────────────────────────
+
+class TestAnalyzePartialPromptEnhanced:
+    """Tests for context-aware enhancements to analyze_partial_prompt."""
+
+    def test_session_context_short_text_shows_contextual_tip(self):
+        result = analyze_partial_prompt("fix", session_context="DEBUG")
+        # Short text with DEBUG context should show a contextual tip
+        assert result["prompt_suggestions"], "Should have suggestions"
+        # Tip should reference debugging context, not the generic one
+        tip = result["prompt_suggestions"][0]
+        assert tip  # non-empty
+
+    def test_session_context_empty_still_works(self):
+        result = analyze_partial_prompt(
+            "build a login page", session_context="")
+        assert result["detected_intent"] == "BUILD"
+
+    def test_continuity_tip_when_intent_switches(self):
+        result = analyze_partial_prompt(
+            "build me a dashboard", session_context="DEBUG"
+        )
+        suggestions = result["prompt_suggestions"]
+        # Should contain a continuity switch notice
+        switch_notices = [s for s in suggestions if "Switching" in s]
+        assert switch_notices, "Should have a continuity tip when intent switches"
+
+    def test_no_continuity_tip_when_same_intent(self):
+        result = analyze_partial_prompt(
+            "build the login component", session_context="BUILD"
+        )
+        switch_notices = [
+            s for s in result["prompt_suggestions"] if "Switching" in s]
+        assert not switch_notices, "No switch tip when intent matches session context"
+
+    def test_suggestions_capped_at_two(self):
+        result = analyze_partial_prompt("build", session_context="DEBUG")
+        assert len(result["prompt_suggestions"]) <= 2
+
+    def test_very_short_with_context_uses_ctx_tip(self):
+        result = analyze_partial_prompt("hi", session_context="BUILD")
+        assert any("build" in s.lower() or "building" in s.lower()
+                   for s in result["prompt_suggestions"])

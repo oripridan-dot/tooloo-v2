@@ -603,6 +603,16 @@
       font-weight: 500
     }
 
+    .ic {
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: .85em;
+      color: var(--sys-teal)
+    }
+
     /* Typing dots */
     .typing-dots {
       display: flex;
@@ -1847,11 +1857,23 @@
 
     /* Apply JIT Designer emphasis highlights safely */
     function applyEmphasis(text, words) {
-      if (!words || !words.length) return esc(text);
-      const esc_words = words.slice(0, 5).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      if (!esc_words.length) return esc(text);
-      const re = new RegExp('\\b(' + esc_words.join('|') + ')\\b', 'gi');
-      return esc(text).replace(re, m => `<mark class="emphasis">${esc(m)}</mark>`);
+      // 1. HTML-escape to prevent XSS
+      let safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      // 2. Inline markdown (content already escaped — safe to add known tags only)
+      safe = safe
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`\n]+?)`/g, '<code class="ic">$1</code>');
+      // 3. Newlines → <br> for visual line breaks
+      safe = safe.replace(/\n/g, '<br>');
+      // 4. Emphasis keyword highlights
+      if (words && words.length) {
+        const ew = words.slice(0, 5).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        if (ew.length) {
+          const re = new RegExp('\\b(' + ew.join('|') + ')\\b', 'gi');
+          safe = safe.replace(re, m => `<mark class="emphasis">${m}</mark>`);
+        }
+      }
+      return safe;
     }
 
     function finishMsg(data) {

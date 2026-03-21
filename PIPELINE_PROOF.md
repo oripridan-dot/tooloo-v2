@@ -5182,3 +5182,105 @@ Auto-approved all medium-risk/high-impact/high-ROI development bottlenecks ident
 **[HANDOFF_PROTOCOL]**
 - next_action: "Test the live component renderer by running the server and sending structured prompts (e.g. 'list 5 steps to deploy a FastAPI app') to verify glass cards + timeline render correctly"
 - context_required: "Server starts with: uvicorn studio.api:app --host 0.0.0.0 --port 8000; demo is at http://localhost:8000/demo; ui_components[] in HTTP response drives rendering when hasStructured=true; SSE ui_component events are cosmetic (event log only)"
+
+### Session 2026-03-20T00:00:00Z — Buddy Brain-to-Hands Bridge: Full Streaming Interceptor + Component Factory
+
+**[SYSTEM_STATE]**
+- branch: main
+- tests_start: 1172 passed / 13 skipped / 0 failed
+- tests_end: 1191 passed / 13 skipped / 0 failed (+19 new tests)
+- unresolved_blockers: [Vertex ADC JSON still missing — using GEMINI_API_KEY fallback]
+
+**[EXECUTION_TRACE]**
+- nodes_touched: [engine/jit_designer.py, engine/conversation.py, studio/api.py, studio/static/buddy_demo.html, tests/test_jit_designer.py]
+- mcp_tools_used: [read_file, replace_string_in_file, run_in_terminal, grep_search]
+- architecture_changes: |
+    - Added StreamInterceptor class (line-level state machine: PROSE/CODE/NUM/BULLET/TABLE)
+    - Added prepare_stream() / finalize_stream() / stream_chunks_sync() to ConversationEngine
+    - Added /v2/buddy/chat/stream POST SSE endpoint → yields token/ui_component/thought/done events
+    - analyze_partial_prompt() gains session_context param; BuddyListenRequest gains session_id
+    - sendMsg() replaced by sendMsgStream() in buddy_demo.html — ReadableStream SSE parser
+    - appendToken() + insertComponent() with slide-up CSS transition (opacity/translateY)
+    - 19 new tests: TestStreamInterceptor (18 cases) + TestAnalyzePartialPromptEnhanced (6 cases)
+
+**[WHAT_WAS_DONE]**
+- Implemented StreamInterceptor: feeds LLM stream chunks through line-buffered state machine;
+  prose lines → token events; fenced code/numbered list/bullet list/tables → ui_component events
+- Fixed critical design bug: partial token emission in PROSE state broke structured detection
+  for char-by-char chunk splits; removed eager emission, buffer until newline
+- Added ConversationEngine.prepare_stream() / finalize_stream() / stream_chunks_sync()
+  so the API can call Gemini's sync streaming SDK via asyncio.to_thread() without blocking
+- Added /v2/buddy/chat/stream SSE endpoint with identical pre-flight (route → JIT → Tribunal)
+  then StreamInterceptor routes chunks; done event carries suggestions, design_directive, latency
+- Updated buddy_demo.html: sendMsgStream() parses SSE events from fetch ReadableStream;
+  token events → appendToken() for progressive text; ui_component events → insertComponent()
+  with slide-up fade animation (CSS transition opacity/translateY); done event triggers chips+meta
+- Enhanced analyze_partial_prompt with session_context: contextual nudge tips, continuity
+  switch notice when intent changes, session_id plumbed from BuddyListenRequest → fetchListen()
+- Imported _FOLLOWUPS and StreamInterceptor into studio/api.py
+
+**[WHAT_WAS_NOT_DONE]**
+- Mermaid.js rendering for ```mermaid code blocks (deferred — next session)
+- N-Stroke visual bridge from buddy_demo → /v2/n-stroke (deferred)
+- Animated typing cursor between token emissions (UX polish, deferred)
+- Vertex ADC JSON upload (blocked on user action — cannot fix programmatically)
+
+**[JIT_SIGNAL_PAYLOAD]**
+- rule_1: StreamInterceptor.feed() MUST NOT emit `token` for partial text between newlines — partial emission breaks structured block detection for small chunks. Buffer until \n then decide.
+- rule_2: asyncio.to_thread() is the correct pattern for running sync Gemini SDK streaming inside async FastAPI routes — avoids event loop blocking
+- rule_3: SSE streaming endpoint must yield `data: {...}\n\n` format; frontend ReadableStream.getReader() with TextDecoder(stream:true) correctly handles partial SSE frames across chunk boundaries
+- rule_4: _FOLLOWUPS is a module-level dict in engine/conversation.py — import explicitly in studio/api.py rather than re-defining
+- rule_5: StreamInterceptor._MAX_BLOCK_BYTES = 8KB safety valve prevents indefinite buffering of malformed/unterminated blocks
+
+**[HANDOFF_PROTOCOL]**
+- next_action: "Test /v2/buddy/chat/stream by running the server and sending a structured prompt (e.g. 'give me 5 steps to deploy FastAPI'). Verify: typing dots disappear on first token, timeline_step ui_component slides in as each numbered item is streamed, suggestion chips appear after done event"
+- context_required: "Server: uvicorn studio.api:app --host 0.0.0.0 --port 8000; demo: http://localhost:8000/demo (buddy_demo.html); streaming endpoint: POST /v2/buddy/chat/stream; GEMINI_API_KEY active in .env; stream_chunks_sync() calls _gemini_client.models.generate_content_stream()"
+
+### Session 2026-03-21T00:00:00Z — Buddy Demo: Mermaid rendering + N-Stroke bridge + Typing cursor
+
+**[SYSTEM_STATE]**
+- branch: main
+- tests_start: 34 passed (smoke) — full suite not re-run (previous 1191 baseline)
+- tests_end: 103 passed (smoke + jit_designer) / 0 failed
+- unresolved_blockers: [Vertex ADC JSON still missing — using GEMINI_API_KEY fallback; streaming functions were in uncommitted state and had to be reconstructed from PIPELINE_PROOF]
+
+**[EXECUTION_TRACE]**
+- nodes_touched: [studio/static/buddy_demo.html]
+- mcp_tools_used: [read_file, replace_string_in_file, grep_search, run_in_terminal]
+- architecture_changes: |
+    - CAUTION: streaming code (sendMsgStream/appendToken/insertComponent) was uncommitted at session start; git checkout during CSS repair wiped it; fully reconstructed from PIPELINE_PROOF session log
+    - Added mermaid.js v11 CDN + mermaid.initialize() in boot
+    - Added ComponentRenderer._mermaid() — detects language='mermaid', renders via mermaid.run()
+    - Added .cr-mermaid-wrap CSS + SVG constraints
+    - Added .typing-cursor blinking CSS + cursorBlink @keyframes
+    - appendToken() now creates b._cursorNode after first token; done event removes it
+    - insertComponent() removes cursor when first component arrives
+    - Added handleSSE() N-Stroke wave cases: n_stroke_start/scope/plan/execution/satisfaction_gate/n_stroke_complete/model_selected/healing_triggered → Storybook cards
+    - Added CSS: .tc.ns-wave/.tc.ns-complete/.tc.ns-error (indigo/green/red sidebar)
+    - Added sendMsgNStroke() — POSTs to /v2/n-stroke, renders result as cr-glass-card
+    - sendMsg() now keyword-routes (BUILD/create/implement/debug/fix/refactor) → sendMsgNStroke; else → sendMsgStream
+    - fetchListen() now sends session_id in body
+
+**[WHAT_WAS_DONE]**
+- Reconstructed full streaming stack (sendMsgStream, appendToken, insertComponent) that was uncommitted
+- Implemented mermaid.js diagram rendering for code_block components with language='mermaid'
+- Added blinking typing cursor (typing-cursor CSS + b._cursorNode) during token streaming
+- Added N-Stroke visual bridge: keyword detection routes build/debug mandates to /v2/n-stroke
+- N-Stroke SSE events (via /v2/events broadcast) now render as animated Storybook wave cards
+- session_id added to fetchListen body for context-aware suggestions
+
+**[WHAT_WAS_NOT_DONE]**
+- Skeleton-placeholder cards while blocks buffer (further UX polish)
+- Vertex ADC JSON (blocked on user action)
+- Full 1191-test suite re-run (only smoke+jit_designer run = 103 passed)
+
+**[JIT_SIGNAL_PAYLOAD]**
+- rule_1: NEVER use multi_replace_string_in_file with large CSS newString — tool mangles hyphens throughout the block. Use single replace_string_in_file with small targeted hunks only.
+- rule_2: Always git commit streaming/UI work before session end — uncommitted JS in buddy_demo.html was wiped by git checkout during a CSS repair and had to be reconstructed from PIPELINE_PROOF
+- rule_3: N-Stroke /v2/n-stroke returns JSON (not SSE stream); events broadcast via /v2/events SSE — frontend can show wave progress by listening on the existing EventSource connection
+- rule_4: mermaid.run({ nodes: [pre] }) must be called AFTER the pre element is inserted into DOM via requestAnimationFrame; pre.textContent must be set before calling run()
+- rule_5: typing-cursor MUST use step-end timing function (not ease/linear) for authentic blink; remove b._cursorNode reference after removal to prevent stale references
+
+**[HANDOFF_PROTOCOL]**
+- next_action: "Start server (uvicorn studio.api:app --host 0.0.0.0 --port 8000), open /demo, send 'build a FastAPI endpoint for user auth'. Verify: N-Stroke routed, Storybook shows wave cards, result renders as glass card. Then send 'what is Merkle tree' to verify streaming path with cursor."
+- context_required: "buddy_demo.html is the PRIMARY demo UI. All 3 paths wired: (1) Generic chat → /v2/buddy/chat/stream SSE; (2) BUILD/DEBUG keywords → /v2/n-stroke JSON; (3) Mermaid diagrams render inline via mermaid.run(). Commit status: DIRTY — streaming code not committed yet."

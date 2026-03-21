@@ -50,7 +50,7 @@ from engine.config import (
     AUTONOMOUS_CONFIDENCE_THRESHOLD,
     get_workspace_roots,
 )
-from engine.conversation import ConversationEngine
+from engine.conversation import ConversationEngine, _FOLLOWUPS
 from engine.buddy_memory import BuddyMemoryStore
 from engine.daemon import BackgroundDaemon
 from engine.engram_visual import VisualEngramGenerator
@@ -81,7 +81,7 @@ from engine.supervisor import TwoStrokeEngine
 from engine.tribunal import Engram, Tribunal
 from engine.validator_16d import Validator16D
 from engine.async_fluid_executor import AsyncFluidExecutor
-from engine.jit_designer import JITDesigner, analyze_partial_prompt
+from engine.jit_designer import JITDesigner, StreamInterceptor, analyze_partial_prompt
 
 # ── Singletons ────────────────────────────────────────────────────────────────
 _router = MandateRouter()
@@ -372,6 +372,7 @@ class BuddyChatRequest(BaseModel):
 
 class BuddyListenRequest(BaseModel):
     text: str = Field(default="", max_length=2000)
+    session_id: str = ""  # optional — enables context-aware suggestions
 
 
 class PipelineRequest(BaseModel):
@@ -492,6 +493,20 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
     for patch in conv_result.vlt_patches:
         _broadcast(patch.to_dict())
 
+    # 8. Parse response into structured UI components → broadcast + HTTP payload
+    ui_components = _jit_designer.parse_response_blocks(
+        conv_result.response_text,
+        intent=route.intent,
+        palette_key=design_directive.palette_key,
+    )
+    for comp in ui_components:
+        _broadcast({
+            "type": "ui_component",
+            "mandate_id": mandate_id,
+            "session_id": session_id,
+            "component": comp.to_dict(),
+        })
+
     return {
         "mandate_id": mandate_id,
         "session_id": session_id,
@@ -508,8 +523,189 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
         "visual_artifacts": [a.to_dict() for a in conv_result.visual_artifacts],
         "vlt_patches": [p.to_dict() for p in conv_result.vlt_patches],
         "design_directive": design_directive.to_dict(),
+        "ui_components": [c.to_dict() for c in ui_components],
         "latency_ms": round((time.monotonic() - t0) * 1000, 2),
     }
+
+
+# ── Buddy Chat SSE streaming endpoint ────────────────────────────────────────
+
+
+@app.post("/v2/buddy/chat/stream")
+async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
+    """SSE streaming path for Buddy Chat.
+
+    Identical pre-flight to /v2/buddy/chat (route → JIT → Tribunal), then
+    yields a ``text/event-stream`` response where:
+
+      - ``type: "token"``        — plain prose text chunks
+      - ``type: "ui_component"`` — structured Markdown block parsed into a
+                                   UIComponent (swallowed from token stream)
+      - ``type: "thought"``      — JIT Designer ThoughtCard (pipeline phases)
+      - ``type: "done"``         — final metadata (suggestions, design_directive,
+                                   latency_ms, model_used, etc.)
+
+    The ``StreamInterceptor`` is responsible for routing chunks: prose text
+    becomes ``token`` events immediately for progressive rendering, while
+    fenced code blocks, numbered/bullet lists, and Markdown tables are buffered
+    until complete and emitted as ``ui_component`` events.
+    """
+    t0 = time.monotonic()
+    mandate_id = f"bcs-{uuid.uuid4().hex[:8]}"
+    session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
+
+    # ── 1. Route ──────────────────────────────────────────────────────────────
+    route = _router.route_chat(req.text)
+
+    if route.intent in _EXECUTION_INTENTS:
+        async def _reject() -> AsyncGenerator[str, None]:
+            payload = json.dumps({
+                "type": "error",
+                "error": (
+                    f"Intent '{route.intent}' requires N-Stroke execution. "
+                    "Use /v2/pipeline or /v2/n-stroke for build / debug / spawn tasks."
+                ),
+                "intent": route.intent,
+            })
+            yield f"data: {payload}\n\n"
+
+        return StreamingResponse(_reject(), media_type="text/event-stream")
+
+    # ── 2. JIT SOTA grounding ─────────────────────────────────────────────────
+    jit_result = _jit_booster.fetch_for_node(
+        route=route,
+        node_type="chat",
+        action_context=req.text[:200],
+        vertex_model_id=None,
+    )
+    _router.apply_jit_boost(route, jit_result.boosted_confidence)
+
+    # ── 3. Tribunal scan ──────────────────────────────────────────────────────
+    engram = Engram(
+        slug=mandate_id,
+        intent=route.intent,
+        logic_body=req.text,
+        domain="conversation",
+        mandate_level="L1",
+    )
+    tribunal_result = _tribunal.evaluate(engram)
+
+    # ── 4. JIT Designer — design directive + thought cards ───────────────────
+    memory_recalled = bool(_buddy_memory.find_relevant(req.text, limit=1))
+    design_directive = _jit_designer.evaluate(
+        intent=route.intent,
+        emotional_state="neutral",   # updated after stream in finalize
+        confidence=route.confidence,
+        response_text=req.text,      # approximation for emphasis; refined in done
+        memory_recalled=memory_recalled,
+        jit_signal_count=len(jit_result.signals) if jit_result.signals else 0,
+    )
+
+    # ── 5. prepare_stream — session tracking + prompt assembly ────────────────
+    prompt, session, plan, tone, emotional_state = _conversation_engine.prepare_stream(
+        text=req.text,
+        route=route,
+        session_id=session_id,
+        jit_result=jit_result,
+    )
+
+    # ── 6. Build SSE generator ────────────────────────────────────────────────
+    async def _stream() -> AsyncGenerator[str, None]:
+        def _sse(payload: dict[str, Any]) -> str:
+            return f"data: {json.dumps(payload)}\n\n"
+
+        # Emit connection header
+        yield _sse({"type": "connected", "mandate_id": mandate_id, "session_id": session_id})
+
+        # Emit thought cards upfront
+        for card in design_directive.thought_cards:
+            yield _sse({"type": "thought", "mandate_id": mandate_id,
+                        "session_id": session_id, "card": card.to_dict()})
+
+        # If plan asks for clarification, emit that directly and short-circuit
+        if plan.needs_clarification:
+            yield _sse({"type": "token", "text": plan.clarification_question})
+            full_response = plan.clarification_question
+        else:
+            interceptor = StreamInterceptor(
+                intent=route.intent,
+                palette_key=design_directive.palette_key,
+                designer=_jit_designer,
+            )
+
+            # Run sync Gemini streaming in a thread to avoid blocking the event loop
+            chunks = await asyncio.to_thread(
+                _conversation_engine.stream_chunks_sync, prompt
+            )
+
+            full_parts: list[str] = []
+            for chunk in chunks:
+                full_parts.append(chunk)
+                for event in interceptor.feed(chunk):
+                    event.update({"mandate_id": mandate_id,
+                                 "session_id": session_id})
+                    yield _sse(event)
+
+            # Flush any remaining buffered block
+            for event in interceptor.flush():
+                event.update({"mandate_id": mandate_id,
+                             "session_id": session_id})
+                yield _sse(event)
+
+            full_response = "".join(full_parts)
+
+        # Finalize session tracking with the assembled response
+        _conversation_engine.finalize_stream(
+            session=session,
+            buddy_text=full_response,
+            plan=plan,
+            tone=tone,
+            route=route,
+            emotional_state=emotional_state,
+        )
+
+        # Compute final design directive with actual response text
+        final_directive = _jit_designer.evaluate(
+            intent=route.intent,
+            emotional_state=emotional_state,
+            confidence=route.confidence,
+            response_text=full_response,
+            memory_recalled=memory_recalled,
+            jit_signal_count=len(
+                jit_result.signals) if jit_result.signals else 0,
+        )
+
+        suggestions = _FOLLOWUPS.get(route.intent, [])
+
+        # Broadcast to global SSE clients
+        _broadcast({
+            "type": "buddy_chat_fast",
+            "mandate_id": mandate_id,
+            "session_id": session_id,
+            "intent": route.intent,
+            "confidence": route.confidence,
+            "emotional_state": emotional_state,
+            "tribunal_passed": tribunal_result.passed,
+            "jit_boost": jit_result.to_dict(),
+            "design_directive": final_directive.to_dict(),
+        })
+
+        yield _sse({
+            "type": "done",
+            "mandate_id": mandate_id,
+            "session_id": session_id,
+            "intent": route.intent,
+            "confidence": route.confidence,
+            "emotional_state": emotional_state,
+            "suggestions": suggestions,
+            "model_used": "gemini-stream",
+            "tribunal_passed": tribunal_result.passed,
+            "design_directive": final_directive.to_dict(),
+            "jit_boost": jit_result.to_dict(),
+            "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+        })
+
+    return StreamingResponse(_stream(), media_type="text/event-stream")
 
 
 # ── Buddy Active Listener endpoint ──────────────────────────────────────────
@@ -527,7 +723,15 @@ async def buddy_listen(req: BuddyListenRequest) -> dict[str, Any]:
       - detected_intent     : best-guess intent (or "")
       - word_count          : int
     """
-    result = analyze_partial_prompt(req.text)
+    session_context = ""
+    if req.session_id:
+        history = _conversation_engine.session_history(req.session_id)
+        if history:
+            recent_intents = [t["intent"]
+                              for t in history[-4:] if t.get("role") == "user"]
+            if recent_intents:
+                session_context = recent_intents[-1]
+    result = analyze_partial_prompt(req.text, session_context=session_context)
     return result
 
 

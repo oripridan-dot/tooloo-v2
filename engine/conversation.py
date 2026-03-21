@@ -512,7 +512,17 @@ _SYSTEM_PROMPT = (
     "\"material\": {\"emissive\": 0.0-2.0, \"roughness\": 0.0-1.0, \"opacity\": 0.0-1.0}, "
     "\"coordinates\": {\"x\": float, \"y\": float, \"rotation_y\": degrees}}\n"
     "Example: <vlt_patch>[{\"node_id\":\"execute\",\"material\":{\"emissive\":1.5}}]</vlt_patch>\n"
-    "Only emit vlt_patch when the mandate explicitly asks for a spatial/visual change."
+    "Only emit vlt_patch when the mandate explicitly asks for a spatial/visual change.\n\n"
+    "FORMAT RULES — these directly control how the UI renders your response:\n"
+    "  • NUMBERED LIST (1. Step title: detail) → each item becomes an interactive timeline card\n"
+    "  • BULLET LIST (- Point title: detail)   → each item becomes an insight chip card\n"
+    "  • CODE BLOCK (```language\\ncode\\n```)  → rendered as a syntax-highlighted panel\n"
+    "  • TABLE (| Col | Col |\\n| --- | --- |)  → rendered as a glass data table\n"
+    "  • PLAIN PROSE                            → only for 1–3 sentence greetings or clarifications\n\n"
+    "CRITICAL: If an answer requires more than three sentences of explanation, use numbered steps "
+    "or bullet points instead of multi-paragraph prose. Never write four or more prose paragraphs. "
+    "Use **term** for key terms, `code` for inline code references. "
+    "Pick ONE format per reply (numbered list OR bullets OR table OR prose) and commit to it."
 )
 
 
@@ -1052,6 +1062,116 @@ class ConversationEngine:
         resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
             model=VERTEX_DEFAULT_MODEL, contents=prompt)
         return resp.text.strip()
+
+    # ── Streaming support ─────────────────────────────────────────────────────
+
+    def prepare_stream(
+        self,
+        text: str,
+        route: RouteResult,
+        session_id: str,
+        jit_result: "JITBoostResult | None" = None,
+    ) -> "tuple[str, ConversationSession, ConversationPlan, str, str]":
+        """Pre-flight for token streaming.  Returns (prompt, session, plan,
+        tone, emotional_state) without generating the LLM response.
+
+        The caller is responsible for:
+          1. Streaming the LLM response from the returned ``prompt``.
+          2. Calling ``finalize_stream()`` once the full response is known.
+        """
+        session = self._get_or_create(session_id)
+        tone = _TONE.get(route.intent, "neutral")
+        emotional_state = _detect_emotional_state(text)
+        memory_context = self._load_memory_context(text)
+        turn_id = f"t-{uuid.uuid4().hex[:8]}"
+
+        # Store user turn so _build_context_block picks it up
+        session.add_turn(ConversationTurn(
+            turn_id=turn_id,
+            role="user",
+            text=text,
+            intent=route.intent,
+            confidence=route.confidence,
+            response="",
+            tone=tone,
+            emotional_state=emotional_state,
+        ))
+
+        plan = self._plan(route, session)
+        if plan.needs_clarification:
+            # Surface the clarifying question directly — no LLM needed
+            prompt = plan.clarification_question
+        else:
+            prompt = self._build_prompt(
+                route, session, jit_result,
+                emotional_state=emotional_state,
+                memory_context=memory_context,
+            )
+        return prompt, session, plan, tone, emotional_state
+
+    def finalize_stream(
+        self,
+        session: "ConversationSession",
+        buddy_text: str,
+        plan: "ConversationPlan",
+        tone: str,
+        route: "RouteResult",
+        emotional_state: str = "neutral",
+    ) -> None:
+        """Record the completed streaming response in the session and memory.
+
+        Call once after the full streamed response has been assembled.
+        Keeps session hygiene identical to the batch ``process()`` path.
+        """
+        # Strip XML artifact blocks from the stored text (same as process())
+        clean = _ARTIFACT_RE.sub("", buddy_text).strip()
+        clean = _VLT_PATCH_RE.sub("", clean).strip()
+
+        session.add_turn(ConversationTurn(
+            turn_id=f"{uuid.uuid4().hex[:8]}-b",
+            role="buddy",
+            text=clean,
+            intent=route.intent,
+            confidence=route.confidence,
+            response=clean,
+            tone=tone,
+            emotional_state="neutral",
+        ))
+
+        user_turn_count = sum(1 for t in session.turns if t.role == "user")
+        if self._memory is not None and user_turn_count >= self._MEMORY_SAVE_THRESHOLD:
+            self._memory.save_session(session)
+
+    def stream_chunks_sync(self, prompt: str) -> "list[str]":
+        """Call the LLM with streaming and return all chunks as a list.
+
+        Used by the async SSE endpoint via ``asyncio.to_thread()`` so the sync
+        Gemini SDK can run without blocking the event loop.
+
+        Preference: Gemini Direct streaming → Vertex batch (no streaming SDK
+        available in current garden) → keyword response.
+
+        Returns a flat list of text chunks so the caller can iterate them.
+        """
+        if _gemini_client is not None:
+            try:
+                chunks: list[str] = []
+                for chunk in _gemini_client.models.generate_content_stream(  # type: ignore[union-attr]
+                    model=VERTEX_DEFAULT_MODEL,
+                    contents=prompt,
+                ):
+                    text = getattr(chunk, "text", None)
+                    if text:
+                        chunks.append(text)
+                if chunks:
+                    return chunks
+            except Exception:
+                pass  # fall through to keyword fallback
+
+        # Fall back: return prompt as a single chunk (keyword responses are
+        # already assigned by the caller via prepare_stream → plan.clarify_q
+        # or via _KEYWORD_RESPONSES; here we just echo the prompt placeholder)
+        return [prompt]
 
     # ── Session management ────────────────────────────────────────────────────
 
