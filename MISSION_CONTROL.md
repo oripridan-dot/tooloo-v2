@@ -10,27 +10,27 @@
 - branch: main
 - live-mode status: FULLY OPERATIONAL
 - Tests: 1191 passed, 1 skipped, 0 failed. All green.
-- All core calculators/selectors calibrated (see JIT Bank below).
-- Autonomous Phase 1.5 injection loop de-armed (was corrupting engine files).
-- Engine recovered from 3 corrupted files (config.py, executor.py, jit_booster.py).
+- Calibration Cycle 2 complete — 5 threshold/constant fixes applied (see JIT Bank).
+- All engine calculators/selectors at production-correct values.
 
 ## Active Blockers (ranked)
 ### 🟢 Cleared
-- ✅ **Corrupted engine files**: config.py, executor.py, jit_booster.py — restored from git HEAD.
-- ✅ **Duplicate Phase 1.5 injection**: self_improvement.py was calling `_implement_top_assessments` 4× per cycle — fixed.
-- ✅ **Miscalibrated calculators/selectors** — all 5 calibrations applied (see JIT Bank).
+- ✅ **Calibration Cycle 2**: MAX_STROKES, NODE_FAIL_THRESHOLD, _INTENT_LOCK_THRESHOLD, proof_confidence ceiling, _SYMBOLIC_RATIO_THRESHOLD — all corrected.
+- ✅ **Corrupted engine files**: config.py, executor.py, jit_booster.py — restored from git HEAD (previous session).
+- ✅ **Duplicate Phase 1.5 injection**: self_improvement.py was calling `_implement_top_assessments` 4× per cycle — fixed (previous session).
+- ✅ **Miscalibrated calculators/selectors** (previous session) — all calibrations applied.
 
 ## Immediate Next Steps
-1. Run improvement cycles now that all calculators are calibrated correctly.
-2. Optionally gate `_implement_top_assessments` with a single explicit call (not automatic) to resume autonomous SOTA patching safely.
+1. Run `ouroboros_cycle.py` or `POST /v2/self-improve` — improvement loop is now correctly calibrated at all gate thresholds.
+2. Optionally wire `_implement_top_assessments` back as an explicit single call to resume autonomous SOTA patching safely.
 
 ## JIT Bank (Last 5 Rules)
 
-1. **Autonomous file patching = corruption vector**: MCP `patch_apply` chains writing back to engine/ inject raw tool_call JSON, zeroing files. Never let the autonomous loop write to files being actively tested.
-2. **RefinementLoop DEV MODE must be off before improvement runs**: Thresholds 0.45/0.25 allowed 25% success = "warn". Production is 0.70/0.50. Now restored.
-3. **Validator16D Safety default must meet critical threshold**: Safety=0.80 default (no code) < threshold 0.95 → always blocks autonomous gate. Must be 0.95.
-4. **BUILD is a deep intent requiring T2**: Code generation mandates need enhanced flash (T2/gemini-2.5-flash) from stroke 1, not lite (T1). Now in _DEEP_INTENTS.
-5. **AUTONOMOUS_CONFIDENCE_THRESHOLD must come from config**: Both validator_16d.py and n_stroke.py must read the same source or they diverge silently.
+1. **MetaArchitect proof_confidence ceiling must reach AUTONOMOUS_CONFIDENCE_THRESHOLD**: Component score caps must mathematically allow best-case weighted sum ≥ 0.99. Prior ceiling was 0.9829 — autonomous gate was structurally unreachable.
+2. **NODE_FAIL_THRESHOLD ≤ CIRCUIT_BREAKER_MAX_FAILS**: Healing must trigger before or as the CB trips. Dev-mode inflation (6 vs 3) creates a dead-zone where CB fires but healing never runs.
+3. **_INTENT_LOCK_THRESHOLD < CIRCUIT_BREAKER_THRESHOLD is the correct invariant**: Know intent (lock=0.85) before gatekeeping execution (CB=0.90). Equal values create ambiguous dual-trigger semantics.
+4. **DEV MODE constant inflation must be reverted before any production run**: MAX_STROKES=12 and NODE_FAIL_THRESHOLD=6 were both dev artifacts left in production code. Always check for "DEV MODE" comments in constants.
+5. **Autonomous patch_apply = corruption vector**: MCP `patch_apply` chains writing back to engine/ inject raw tool_call JSON, zeroing files. Never let the autonomous loop write to files being actively tested.
 
 ---
 

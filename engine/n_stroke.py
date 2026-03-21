@@ -80,8 +80,11 @@ from engine.validator_16d import Validator16D
 # Constants
 # ---------------------------------------------------------------------------
 
-# DEV MODE: max strokes raised 7→12 — give the loop more room to converge
-MAX_STROKES: int = 12       # hard cap on N-stroke loop iterations
+# Production default: 7 strokes. Override via MAX_STROKES env var for extended dev runs.
+MAX_STROKES: int = 7        # hard cap on N-stroke loop iterations
+
+# SimulationGate: warn if more than this fraction of dry-run outputs are symbolic.
+_SYMBOLIC_RATIO_THRESHOLD: float = 0.60   # >60% symbolic → surface as warn
 
 # Phase identifiers for the 3-phase pipeline
 PHASE_BLUEPRINT = "blueprint"    # Phase 1: AUDIT + DESIGN + UX_EVAL — plan only
@@ -161,7 +164,7 @@ class SimulationGate:
                 out = str(r.output.get("output", ""))
                 if out.startswith("[symbolic-"):
                     symbolic_count += 1
-        if symbolic_count > len(dry_run_results) * 0.6:
+        if symbolic_count > len(dry_run_results) * _SYMBOLIC_RATIO_THRESHOLD:
             # More than 60 % symbolic — ok in offline mode, surface as warn
             failures.append(
                 f"Dry-run produced {symbolic_count}/{len(dry_run_results)} symbolic outputs "

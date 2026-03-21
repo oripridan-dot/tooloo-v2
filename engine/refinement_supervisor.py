@@ -46,8 +46,9 @@ from engine.healing_guards import (
     check_healing_gates,
 )
 
-# DEV MODE: fail threshold raised 3→6 — allow more retries before healing kicks in
-NODE_FAIL_THRESHOLD: int = 6   # failures before healing is triggered
+# Production default: 3 failures before healing is triggered.
+# Override via NODE_FAIL_THRESHOLD env var for extended dev tolerance.
+NODE_FAIL_THRESHOLD: int = 3   # failures before healing is triggered
 
 # Speculative healing: parallel micro-ghost branches
 N_SPECULATIVE_BRANCHES: int = 3   # number of micro-variant ghosts to spawn

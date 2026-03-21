@@ -292,7 +292,8 @@ class TestRefinementSupervisorRegression:
         assert len(report.prescriptions) == 1
 
     def test_node_fail_threshold_constant(self):
-        assert NODE_FAIL_THRESHOLD == 6
+        # Production default is 3; dev mode previously raised this to 6.
+        assert NODE_FAIL_THRESHOLD == 3
 
     def test_heal_builds_work_fn(self):
         from engine.executor import Envelope

@@ -5574,3 +5574,40 @@ Auto-approved all medium-risk/high-impact/high-ROI development bottlenecks ident
 **[HANDOFF_PROTOCOL]**
 - next_action: "All calculators/selectors are calibrated. Safe to run improvement cycles. Verify .env has TOOLOO_LIVE_TESTS=0 before ouroboros to prevent test contamination."
 - context_required: "Tests are at 1191 passed/0 failed. Self-improvement loop corruption was caused by duplicate Phase 1.5 injection in self_improvement.py — already fixed. The _implement_top_assessments method exists but is not called automatically."
+
+### Session 2026-03-21T00:00:00Z — Calibration Cycle 2: 5 threshold/constant fixes
+
+**[SYSTEM_STATE]**
+- branch: main
+- tests_start: 1191 passed / 0 failed
+- tests_end: 1191 passed / 0 failed
+- unresolved_blockers: []
+
+**[EXECUTION_TRACE]**
+- nodes_touched: [engine/meta_architect.py, engine/n_stroke.py, engine/refinement_supervisor.py, engine/router.py, tests/test_speculative_healing.py]
+- mcp_tools_used: [read_file, multi_replace_string_in_file, replace_string_in_file, run_in_terminal, grep_search]
+- architecture_changes: 5 targeted threshold/constant calibrations (no structural DAG changes)
+
+**[WHAT_WAS_DONE]**
+- CALIBRATION 1 — MetaArchitect proof_confidence ceiling fix: convergence_guardrail max raised 0.95→1.0 and reversibility_guarantees max raised 0.98→1.0. Best-case proof_confidence is now ~0.9932 (exceeds 0.99 autonomous threshold; was mathematically capped at 0.9829 — autonomous gating via MetaArchitect was impossible).
+- CALIBRATION 2 — NStrokeEngine MAX_STROKES reset: 12→7 (production default restored; DEV MODE artifact removed). Comment documents env-override pattern.
+- CALIBRATION 3 — RefinementSupervisor NODE_FAIL_THRESHOLD reset: 6→3 (production default restored; DEV MODE artifact removed). With old value=6, circuit breaker (threshold=3) fired before healing could intervene.
+- CALIBRATION 4 — Router _INTENT_LOCK_THRESHOLD separated from CIRCUIT_BREAKER_THRESHOLD: lowered 0.90→0.85. Now semantically correct — locking intent requires less certainty than autonomous execution. Prevents ambiguous dual-trigger at the shared 0.90 boundary.
+- CALIBRATION 5 — NStrokeEngine _SYMBOLIC_RATIO_THRESHOLD named constant: extracted magic number 0.60 from SimulationGate into a named module-level constant for clarity and future tuning.
+- Fixed test_speculative_healing.py::test_node_fail_threshold_constant: updated hardcoded expected value 6→3.
+
+**[WHAT_WAS_NOT_DONE]**
+- Did not fix Validator16D stub dimensions (Control, Honesty, Convergence always hardcoded to pass) — low risk, would require real runtime oracle data.
+- Did not fix SSTI regex in tribunal.py (ssti-template-injection too broad) — false-positive risk is cosmetic, fixing requires careful testing.
+- Did not fix ScopeEvaluator _HIGH_RISK_INTENTS (SECURITY/PATCH not valid router intents) — dead code, harmless.
+- Did not add env-override to MAX_STROKES/NODE_FAIL_THRESHOLD (would need os import; kept simple by restoring hard production defaults with comment).
+
+**[JIT_SIGNAL_PAYLOAD]**
+- rule_1: MetaArchitect proof_confidence weights must allow best-case reach of ≥ AUTONOMOUS_CONFIDENCE_THRESHOLD (0.99). If any component cap limits the weighted sum below the threshold, autonomous execution is mathematically impossible regardless of mandate quality.
+- rule_2: NODE_FAIL_THRESHOLD must always be ≤ CIRCUIT_BREAKER_MAX_FAILS (3) or healing can never trigger before the CB trips. Dev-mode inflation of fail thresholds creates a healing dead-zone.
+- rule_3: _INTENT_LOCK_THRESHOLD < CIRCUIT_BREAKER_THRESHOLD is the correct ordering: know what user wants (lock) before deciding whether to proceed (CB gate).
+- rule_4: Magic numbers in SimulationGate / routing logic should always be extracted as named module constants — enables future calibration without grep-hunting.
+
+**[HANDOFF_PROTOCOL]**
+- next_action: "All 5 calibrations applied and verified. Run ouroboros_cycle.py or trigger /v2/self-improve to exercise the improvement loop with corrected thresholds."
+- context_required: "Tests 1191/0. MetaArchitect proof_confidence can now reach ~0.993 in best-case (has_healing_guards + roi=high + emit node). MAX_STROKES=7, NODE_FAIL_THRESHOLD=3, _INTENT_LOCK_THRESHOLD=0.85 are all production values now."

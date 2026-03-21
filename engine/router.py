@@ -485,7 +485,10 @@ class MandateRouter:
 
 # ── Conversational Intent Discovery ──────────────────────────────────────────
 
-_INTENT_LOCK_THRESHOLD: float = 0.90   # confidence gate to lock intent
+# Intentionally below CIRCUIT_BREAKER_THRESHOLD (0.90): locking intent requires
+# less confidence than executing — we want to know WHAT the user wants even
+# when we are not yet certain enough to proceed autonomously.
+_INTENT_LOCK_THRESHOLD: float = 0.85   # confidence gate to lock intent
 
 _GENERIC_INTENT_QUESTION = (
     "What are you trying to accomplish — what should exist or work that doesn't right now?"
