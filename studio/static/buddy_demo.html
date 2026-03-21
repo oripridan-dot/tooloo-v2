@@ -16,6 +16,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
     :root {
       --bg: #08080f;
@@ -1400,6 +1401,68 @@
       border-radius: 2px
     }
 
+    /* Mermaid diagram wrapper */
+    .cr-mermaid-wrap {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .08);
+      background: rgba(255, 255, 255, .02);
+      animation: crSlideUp .28s var(--ease-out) both;
+      width: 100%;
+      padding: 16px;
+      display: flex;
+      justify-content: center
+    }
+
+    .cr-mermaid-wrap .mermaid {
+      color: var(--text-pri);
+      max-width: 100%
+    }
+
+    .cr-mermaid-wrap svg {
+      max-width: 100%;
+      height: auto
+    }
+
+    /* Streaming typing cursor */
+    .typing-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--accent);
+      margin-left: 1px;
+      vertical-align: text-bottom;
+      animation: cursorBlink .9s step-end infinite
+    }
+
+    @keyframes cursorBlink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0
+      }
+    }
+
+    /* N-Stroke storybook cards */
+    .tc.ns-wave {
+      border-left: 2px solid var(--sys-indigo);
+      background: rgba(94, 92, 230, .07)
+    }
+
+    .tc.ns-complete {
+      border-left: 2px solid var(--sys-green);
+      background: rgba(50, 215, 75, .06)
+    }
+
+    .tc.ns-error {
+      border-left: 2px solid var(--sys-red);
+      background: rgba(255, 69, 58, .07)
+    }
+
     /* Toast */
     #toast {
       position: fixed;
@@ -1622,6 +1685,20 @@
       const t = d.type || '';
       if (t === 'buddy_chat_fast') { if (d.emotional_state) setEQ(d.emotional_state); if (d.intent) $intent.textContent = d.intent; if (d.jit_boost?.boosted_confidence != null) $jit.textContent = `JIT ✦ ${Math.round(d.jit_boost.boosted_confidence * 100)}%` }
       if (t === 'thought' && d.card) addTC(d.card);
+      // N-Stroke wave events → Storybook cards
+      if (t === 'n_stroke_start') addTC({ icon: '⚡', phase: 'scope', title: 'N-Stroke: ' + (d.intent || 'Running…'), detail: `max_strokes:${d.max_strokes || 7} · ${(d.pipeline_id || '').slice(0, 8)}`, status: 'active' });
+      if (t === 'scope') addTC({ icon: '🗺', phase: 'scope', title: 'Scope evaluated', detail: d.scope_summary || JSON.stringify(d).slice(0, 80), status: 'active' });
+      if (t === 'plan') addTC({ icon: '📋', phase: 'scope', title: 'Plan ready', detail: d.plan_summary || JSON.stringify(d).slice(0, 80), status: 'active' });
+      if (t === 'execution') addTC({ icon: '⚙️', phase: 'execute', title: 'Execution wave', detail: d.node_id || d.message || JSON.stringify(d).slice(0, 80), status: 'active' });
+      if (t === 'satisfaction_gate') addTC({ icon: '🎯', phase: 'refine', title: 'Satisfaction gate', detail: `stroke ${d.stroke || '?'} · verdict: ${d.verdict || '?'}`, status: d.passed ? 'done' : 'active' });
+      if (t === 'n_stroke_complete') {
+        finalizeTC();
+        const ok = d.result?.success;
+        const nc = addTC({ icon: ok ? '✅' : '⚠️', phase: ok ? 'execute' : 'refine', title: ok ? 'N-Stroke complete' : 'N-Stroke — review', detail: `strokes: ${d.result?.stroke_count || '?'} · ${Math.round(d.latency_ms || 0)}ms`, status: 'done' });
+        if (nc) nc.className = 'tc ' + (ok ? 'ns-complete' : 'ns-error');
+      }
+      if (t === 'model_selected') addTC({ icon: '🤖', phase: 'route', title: 'Model selected', detail: d.model_id || d.tier || '?', status: 'active' });
+      if (t === 'healing_triggered') addTC({ icon: '🩹', phase: 'refine', title: 'Healing triggered', detail: `node: ${d.node_id || '?'} · fails: ${d.fail_count || '?'}`, status: 'active' });
       // Log ui_component with its type as the detail field
       if (t !== 'heartbeat' && t !== 'connected') logEv(t, t === 'ui_component' && d.component ? { phase: d.component.component_type } : d);
     }
@@ -1631,7 +1708,7 @@
     async function fetchListen(text) {
       if (!text.trim() || text.length < 3) { hideListen(); return }
       try {
-        const r = await fetch('/v2/buddy/listen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.slice(0, 400) }) });
+        const r = await fetch('/v2/buddy/listen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.slice(0, 400), session_id: _session || '' }) });
         if (!r.ok) return; showListen(await r.json());
       } catch { }
     }
@@ -1713,6 +1790,7 @@
         wrap.appendChild(tbl); return wrap;
       }
       static _code(comp) {
+        if ((comp.content.language || '').toLowerCase() === 'mermaid') return CR._mermaid(comp);
         const block = document.createElement('div'); block.className = 'cr-code-block';
         const hdr = document.createElement('div'); hdr.className = 'cr-cb-header';
         const lang = document.createElement('span'); lang.className = 'cr-cb-lang'; lang.textContent = comp.content.language || 'text';
@@ -1723,6 +1801,14 @@
         hdr.append(lang, copy);
         const pre = document.createElement('pre'); pre.className = 'cr-cb-code'; pre.textContent = comp.content.code || '';
         block.append(hdr, pre); return block;
+      }
+      static _mermaid(comp) {
+        const wrap = document.createElement('div'); wrap.className = 'cr-mermaid-wrap';
+        const pre = document.createElement('pre'); pre.className = 'mermaid';
+        pre.textContent = comp.content.code || '';
+        wrap.appendChild(pre);
+        requestAnimationFrame(() => { if (window.mermaid) { try { mermaid.run({ nodes: [pre] }) } catch (_) { } } });
+        return wrap;
       }
     }
     const CR = ComponentRenderer;
@@ -1797,26 +1883,177 @@
     /* ── Toast ── */
     function toast(msg) { $toast.textContent = msg; $toast.classList.add('vis'); clearTimeout(_toastT); _toastT = setTimeout(() => $toast.classList.remove('vis'), 4500) }
 
-    /* ── Main send ── */
-    async function sendMsg(text) {
-      _proc = true; $send.disabled = true; $sseDot.className = 'sse-dot proc'; $sseLbl.textContent = 'Processing…'; setThinking(true);
+    /* ── Progressive component insertion (slide-up fade) ── */
+    function insertComponent(lo, comp) {
+      const b = lo.querySelector('.msg-bub');
+      if (!b) return;
+      if (!lo.dataset.hasComponents) {
+        lo.dataset.hasComponents = '1';
+        b.style.cssText = 'white-space:normal;padding:6px 8px;background:transparent;border:none;box-shadow:none';
+        const dots = b.querySelector('.typing-dots'); if (dots) dots.remove();
+        const cur = b._cursorNode || b.querySelector('.typing-cursor'); if (cur) { cur.remove(); delete b._cursorNode; }
+        let container = b.querySelector('.cr-container');
+        if (!container) { container = document.createElement('div'); container.className = 'cr-container'; b.appendChild(container); }
+      }
+      const container = b.querySelector('.cr-container') || b;
+      const theme = comp.style_directives?.theme || 'material-dark';
+      let node;
+      if (comp.component_type === 'timeline_step') {
+        let tl = container.querySelector('.cr-timeline.cr-streaming-tl');
+        if (!tl) { tl = document.createElement('div'); tl.className = 'cr-timeline cr-streaming-tl'; container.appendChild(tl); }
+        node = CR._timelineStep(comp, theme); tl.appendChild(node);
+      } else if (comp.component_type === 'insight_chip') {
+        let chips = container.querySelector('.cr-insight-chips.cr-streaming-chips');
+        if (!chips) { chips = document.createElement('div'); chips.className = 'cr-insight-chips cr-streaming-chips'; container.appendChild(chips); }
+        node = CR._chip(comp, theme); chips.appendChild(node);
+      } else {
+        container.querySelectorAll('.cr-streaming-tl, .cr-streaming-chips').forEach(el => el.classList.remove('cr-streaming-tl', 'cr-streaming-chips'));
+        node = CR.build(comp); if (node) container.appendChild(node);
+      }
+      if (node) {
+        node.style.cssText = (node.style.cssText || '') + ';opacity:0;transform:translateY(10px);transition:opacity 0.22s ease,transform 0.22s ease';
+        requestAnimationFrame(() => { node.style.opacity = '1'; node.style.transform = 'translateY(0)' });
+      }
+      scrollM();
+    }
+
+    /* ── Progressive token insertion ── */
+    function appendToken(lo, text) {
+      if (!text) return;
+      const b = lo.querySelector('.msg-bub'); if (!b) return;
+      const dots = b.querySelector('.typing-dots'); if (dots) { dots.remove(); b.innerHTML = '' }
+      if (!lo.dataset.hasComponents) {
+        let tn = b._tokenNode;
+        if (!tn) {
+          tn = document.createElement('span'); b.appendChild(tn); b._tokenNode = tn;
+          const cur = document.createElement('span'); cur.className = 'typing-cursor'; cur.setAttribute('aria-hidden', 'true');
+          b.appendChild(cur); b._cursorNode = cur;
+        }
+        tn.textContent = (tn.textContent || '') + text;
+      }
+      scrollM();
+    }
+
+    /* ── SSE stream consumer for /v2/buddy/chat/stream ── */
+    async function sendMsgStream(text) {
+      _proc = true; $send.disabled = true; $sseDot.className = 'sse-dot proc'; $sseLbl.textContent = 'Streaming…'; setThinking(true);
       clearSB(); appendUser(text); const lo = appendLoading();
+      let accTokens = '';
       try {
-        const r = await fetch('/v2/buddy/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.slice(0, 2000), session_id: _session, depth_level: _depth }) });
-        if (!r.ok) { const e = await r.json().catch(() => ({})); const msg = e.error || `HTTP ${r.status}`; if (lo) { lo.className = 'msg buddy'; lo.removeAttribute('id'); const b = lo.querySelector('.msg-bub'); if (b) b.textContent = `⚠ ${msg}` } toast(msg); return }
-        const d = await r.json();
-        if (d.session_id) saveSession(d.session_id);
-        if (d.emotional_state) setEQ(d.emotional_state);
-        if (d.intent) $intent.textContent = d.intent;
-        if (d.jit_boost?.boosted_confidence != null) $jit.textContent = `JIT ✦ ${Math.round(d.jit_boost.boosted_confidence * 100)}%`;
-        const cards = d.design_directive?.thought_cards || [];
-        if (cards.length && !$sb.querySelector('.tc')) cards.forEach((c, i) => addTC(c, i * 75));
-        finalizeTC(); finishMsg(d);
-      } catch (e) { if (lo) { lo.className = 'msg buddy'; lo.removeAttribute('id'); const b = lo.querySelector('.msg-bub'); if (b) b.textContent = '⚠ Could not reach TooLoo API — is the server running?' } toast('Connection error') }
-      finally { _proc = false; $send.disabled = false; $sseDot.className = 'sse-dot live'; $sseLbl.textContent = 'Live'; setThinking(false) }
+        const r = await fetch('/v2/buddy/chat/stream', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text.slice(0, 2000), session_id: _session, depth_level: _depth })
+        });
+        if (!r.ok || !r.body) {
+          const e = await r.json().catch(() => ({}));
+          const msg = e.error || `HTTP ${r.status}`;
+          if (lo) { lo.className = 'msg buddy'; lo.removeAttribute('id'); const b = lo.querySelector('.msg-bub'); if (b) b.textContent = `⚠ ${msg}` }
+          toast(msg); return;
+        }
+        const reader = r.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '', done = false;
+        while (!done) {
+          const { value, done: sd } = await reader.read(); done = sd;
+          if (value) buf += decoder.decode(value, { stream: !done });
+          let boundary;
+          while ((boundary = buf.indexOf('\n\n')) !== -1) {
+            const raw = buf.slice(0, boundary).trim(); buf = buf.slice(boundary + 2);
+            if (!raw.startsWith('data: ')) continue;
+            let ev; try { ev = JSON.parse(raw.slice(6)); } catch { continue; }
+            const t = ev.type || '';
+            if (t === 'connected') { if (ev.session_id) saveSession(ev.session_id); }
+            else if (t === 'token') { accTokens += ev.text || ''; appendToken(lo, ev.text || ''); }
+            else if (t === 'ui_component' && ev.component) { insertComponent(lo, ev.component); logEv('ui_component', { phase: ev.component.component_type }); }
+            else if (t === 'thought' && ev.card) { addTC(ev.card); logEv('thought', ev.card); }
+            else if (t === 'error') { toast(ev.error || 'Stream error'); done = true; }
+            else if (t === 'done') {
+              // Remove cursor
+              { const b2 = lo.querySelector('.msg-bub'); if (b2?._cursorNode) { b2._cursorNode.remove(); delete b2._cursorNode; } }
+              // Apply emphasis to accumulated tokens
+              if (accTokens && !lo.dataset.hasComponents) {
+                const b = lo.querySelector('.msg-bub');
+                if (b) b.innerHTML = applyEmphasis(accTokens, ev.design_directive?.emphasis_words || []);
+              }
+              finalizeTC();
+              const lo2 = $('msg-loading') || lo;
+              if (lo2) { lo2.className = 'msg buddy'; lo2.removeAttribute('id'); }
+              const sug = ev.suggestions || [];
+              if (sug.length) {
+                const cw = document.createElement('div'); cw.className = 'chips';
+                sug.forEach(s => { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = s; c.addEventListener('click', () => { $inp.value = s; $inp.focus(); autoGrow(); fetchListen(s) }); cw.appendChild(c); });
+                lo.appendChild(cw);
+              }
+              const meta = document.createElement('div'); meta.className = 'msg-meta';
+              if (ev.latency_ms != null) { const l = document.createElement('span'); l.textContent = ev.latency_ms + 'ms'; meta.appendChild(l) }
+              const m = document.createElement('span'); m.textContent = 'stream'; m.style.fontFamily = 'var(--font-mono)'; m.style.fontSize = '10px'; meta.appendChild(m);
+              const eq = ev.emotional_state || '';
+              if (eq && eq !== 'neutral') { const e = document.createElement('span'); e.className = 'msg-eq ' + eq; e.textContent = eq; meta.appendChild(e) }
+              if (meta.children.length) lo.appendChild(meta);
+              if (ev.intent) $intent.textContent = ev.intent;
+              if (ev.jit_boost?.boosted_confidence != null) $jit.textContent = `JIT ✦ ${Math.round(ev.jit_boost.boosted_confidence * 100)}%`;
+              if (ev.emotional_state) setEQ(ev.emotional_state);
+              scrollM(); done = true;
+            }
+          }
+        }
+      } catch (e) {
+        if (lo) { lo.className = 'msg buddy'; lo.removeAttribute('id'); const b = lo.querySelector('.msg-bub'); if (b) b.textContent = '⚠ Could not reach TooLoo API — is the server running?' }
+        toast('Connection error');
+      } finally { _proc = false; $send.disabled = false; $sseDot.className = 'sse-dot live'; $sseLbl.textContent = 'Live'; setThinking(false); }
+    }
+
+    /* ── N-Stroke engine bridge ── */
+    async function sendMsgNStroke(text) {
+      _proc = true; $send.disabled = true; $sseDot.className = 'sse-dot proc'; $sseLbl.textContent = 'N-Stroke…'; setThinking(true);
+      clearSB(); appendUser(text); const lo = appendLoading();
+      addTC({ icon: '🧠', phase: 'route', title: 'Routing to N-Stroke engine', detail: text.slice(0, 60) + (text.length > 60 ? '…' : ''), status: 'active' });
+      try {
+        const r = await fetch('/v2/n-stroke', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ intent: 'BUILD', confidence: 0.92, value_statement: text, constraint_summary: 'Buddy UI mandate', mandate_text: text.slice(0, 2000), session_id: _session || '', max_strokes: 3 })
+        });
+        if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || `HTTP ${r.status}`); }
+        const data = await r.json();
+        const res = data.result || {};
+        lo.className = 'msg buddy'; lo.removeAttribute('id');
+        const b = lo.querySelector('.msg-bub');
+        if (b) {
+          const dots = b.querySelector('.typing-dots'); if (dots) dots.remove();
+          b.style.cssText = 'white-space:normal;padding:6px 8px;background:transparent;border:none;box-shadow:none';
+          const container = document.createElement('div'); container.className = 'cr-container';
+          const card = document.createElement('div'); card.className = 'cr-glass-card';
+          const ct = document.createElement('div'); ct.className = 'cr-gc-title'; ct.textContent = res.success ? '✅ N-Stroke Complete' : '⚠️ N-Stroke Finished'; card.appendChild(ct);
+          const cb = document.createElement('div'); cb.className = 'cr-gc-body';
+          cb.textContent = res.final_response || res.synthesis || res.plan || `Strokes: ${res.stroke_count || '?'} · Latency: ${Math.round(data.latency_ms || 0)}ms`;
+          card.appendChild(cb); container.appendChild(card); b.appendChild(container);
+        }
+        const meta = document.createElement('div'); meta.className = 'msg-meta';
+        const l = document.createElement('span'); l.textContent = Math.round(data.latency_ms || 0) + 'ms'; meta.appendChild(l);
+        const m = document.createElement('span'); m.textContent = 'n-stroke'; m.style.fontFamily = 'var(--font-mono)'; m.style.fontSize = '10px'; meta.appendChild(m);
+        lo.appendChild(meta); finalizeTC();
+        logEv('n_stroke_complete', { mandate_id: data.pipeline_id || '' });
+        if (data.session_id) saveSession(data.session_id);
+      } catch (e) {
+        if (lo) { lo.className = 'msg buddy'; lo.removeAttribute('id'); const b = lo.querySelector('.msg-bub'); if (b) b.textContent = '⚠ N-Stroke error: ' + (e.message || 'Unknown'); }
+        toast('N-Stroke: ' + (e.message || 'error'));
+      } finally { _proc = false; $send.disabled = false; $sseDot.className = 'sse-dot live'; $sseLbl.textContent = 'Live'; setThinking(false); scrollM(); }
+    }
+
+    /* ── Main send — keyword routing ── */
+    async function sendMsg(text) {
+      const NS_KEYWORDS = /\b(build|create|implement|develop|generate|write\s+code|debug|fix\s+(this|bug|error)|refactor|deploy|architect|scaffold)\b/i;
+      if (NS_KEYWORDS.test(text) && text.length > 20) {
+        sendMsgNStroke(text);
+      } else {
+        sendMsgStream(text);
+      }
     }
 
     /* ── Boot ── */
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: false, theme: 'dark', fontFamily: 'Inter, sans-serif', fontSize: 13 });
+    }
     connectSSE();
     $inp.focus();
   </script>
