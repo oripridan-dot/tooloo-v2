@@ -1,0 +1,205 @@
+{
+  "benchmark_id": "bm-20260321201020",
+  "ts": "2026-03-21T20:10:20.728168+00:00",
+  "focus": "balanced",
+  "aggregate": {
+    "component_count": 17,
+    "avg_efficiency": 1.0,
+    "avg_quality": 0.987,
+    "avg_accuracy": 0.936,
+    "avg_speed_ms": 1683.48,
+    "executor_p50_ms": 1663.09,
+    "executor_p90_ms": 2007.01,
+    "refinement_p50_ms": 1663.09,
+    "refinement_p90_ms": 2007.01
+  },
+  "components": [
+    {
+      "component": "psyche_bank",
+      "wave": 1,
+      "efficiency": 1.0,
+      "quality": 1.0,
+      "accuracy": 1.0,
+      "speed_ms": 1801.02,
+      "value_score": 0.8,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "router",
+      "wave": 1,
+      "efficiency": 1.0,
+      "quality": 1.0,
+      "accuracy": 1.0,
+      "speed_ms": 1858.52,
+      "value_score": 0.9,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "tribunal",
+      "wave": 1,
+      "efficiency": 1.0,
+      "quality": 0.975,
+      "accuracy": 0.88,
+      "speed_ms": 1498.33,
+      "value_score": 0.9,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "executor",
+      "wave": 2,
+      "efficiency": 1.0,
+      "quality": 1.0,
+      "accuracy": 1.0,
+      "speed_ms": 1222.05,
+      "value_score": 0.92,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "graph",
+      "wave": 2,
+      "efficiency": 1.0,
+      "quality": 1.0,
+      "accuracy": 1.0,
+      "speed_ms": 1612.19,
+      "value_score": 0.92,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "jit_booster",
+      "wave": 2,
+      "efficiency": 1.0,
+      "quality": 1.0,
+      "accuracy": 1.0,
+      "speed_ms": 1252.99,
+      "value_score": 0.92,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "refinement",
+      "wave": 3,
+      "efficiency": 1.0,
+      "quality": 0.975,
+      "accuracy": 0.88,
+      "speed_ms": 1278.67,
+      "value_score": 0.9,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "scope_evaluator",
+      "wave": 3,
+      "efficiency": 1.0,
+      "quality": 1.0,
+      "accuracy": 1.0,
+      "speed_ms": 2007.01,
+      "value_score": 0.9,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "n_stroke",
+      "wave": 4,
+      "efficiency": 1.0,
+      "quality": 1.0,
+      "accuracy": 1.0,
+      "speed_ms": 1677.11,
+      "value_score": 0.92,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "supervisor",
+      "wave": 4,
+      "efficiency": 1.0,
+      "quality": 0.975,
+      "accuracy": 0.88,
+      "speed_ms": 1371.27,
+      "value_score": 0.9,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "config",
+      "wave": 5,
+      "efficiency": 1.0,
+      "quality": 0.975,
+      "accuracy": 0.88,
+      "speed_ms": 1663.09,
+      "value_score": 0.8,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "conversation",
+      "wave": 5,
+      "efficiency": 1.0,
+      "quality": 0.975,
+      "accuracy": 0.88,
+      "speed_ms": 1843.41,
+      "value_score": 0.9,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "branch_executor",
+      "wave": 6,
+      "efficiency": 1.0,
+      "quality": 0.975,
+      "accuracy": 0.88,
+      "speed_ms": 1883.52,
+      "value_score": 0.9,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "daemon",
+      "wave": 6,
+      "efficiency": 1.0,
+      "quality": 1.0,
+      "accuracy": 1.0,
+      "speed_ms": 1747.77,
+      "value_score": 0.9,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "mandate_executor",
+      "wave": 6,
+      "efficiency": 1.0,
+      "quality": 0.975,
+      "accuracy": 0.88,
+      "speed_ms": 2181.5,
+      "value_score": 0.9,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "model_garden",
+      "wave": 6,
+      "efficiency": 1.0,
+      "quality": 0.975,
+      "accuracy": 0.88,
+      "speed_ms": 2223.84,
+      "value_score": 0.92,
+      "jit_source": "structured",
+      "suggestions": 3
+    },
+    {
+      "component": "vector_store",
+      "wave": 6,
+      "efficiency": 1.0,
+      "quality": 0.975,
+      "accuracy": 0.88,
+      "speed_ms": 1496.93,
+      "value_score": 0.8,
+      "jit_source": "structured",
+      "suggestions": 3
+    }
+  ]
+}

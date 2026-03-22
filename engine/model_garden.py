@@ -494,6 +494,15 @@ class ModelGarden:
 
     def __init__(self) -> None:
         self._static_tiers = get_tier_models_static()
+        self._dynamic_registry = None  # lazy-init to avoid circular import
+
+    @property
+    def dynamic_registry(self):
+        """Lazy accessor for the DynamicModelRegistry singleton."""
+        if self._dynamic_registry is None:
+            from engine.dynamic_model_registry import get_dynamic_registry
+            self._dynamic_registry = get_dynamic_registry()
+        return self._dynamic_registry
 
     # ── Model selection ──────────────────────────────────────────────────────
 
@@ -596,11 +605,13 @@ class ModelGarden:
         raise RuntimeError(
             f"Google/Vertex client unavailable (model={model_id})")
 
+    _PROVIDER_TO_SOURCE = {"google": "gemini", "anthropic": "anthropic"}
+
     def source_for(self, model_id: str) -> str:
         """Return the source label for SSE / JIT result metadata."""
         info = self._find(model_id)
         if info:
-            return info.provider  # "google" or "anthropic"
+            return self._PROVIDER_TO_SOURCE.get(info.provider, info.provider)
         if model_id.startswith("local/"):
             return "local_slm"
         return "vertex"

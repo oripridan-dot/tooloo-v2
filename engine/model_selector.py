@@ -181,3 +181,44 @@ class ModelSelector:
             f"Stroke {stroke}: {stroke}+ failed attempts → "
             f"maximum capability deployed ({model_label}) for {intent_clause}."
         )
+
+    def select_with_bidder(
+        self,
+        stroke: int,
+        intent: str,
+        prior_verdict: str = "",
+        node_id: str = "",
+        task_type: str = "reasoning",
+    ) -> ModelSelection:
+        """Select model using JIT16DBidder when available, else fall back to tier logic.
+
+        This is a convenience bridge that integrates the DynamicModelRegistry
+        bidding into the existing ModelSelector interface.
+        """
+        # Always fall back to tier-based deterministic selection
+        tier_sel = self.select(stroke, intent, prior_verdict)
+        try:
+            from engine.dynamic_model_registry import get_bidder
+            bidder = get_bidder()
+            bid = bidder.bid(
+                node_id=node_id or f"stroke-{stroke}",
+                task_type=task_type,
+                estimated_tokens=2000,
+            )
+            if bid.winning_score > 0:
+                return ModelSelection(
+                    stroke=stroke,
+                    intent=intent,
+                    model=bid.winning_model,
+                    tier=tier_sel.tier,
+                    rationale=(
+                        f"{tier_sel.rationale} "
+                        f"[JIT16D bid: {bid.winning_model} "
+                        f"score={bid.winning_score:.2f} "
+                        f"cost=${bid.winning_cost_per_10k:.4f}/10k]"
+                    ),
+                    vertex_model_id=bid.winning_model,
+                )
+        except Exception:
+            pass
+        return tier_sel

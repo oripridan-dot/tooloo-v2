@@ -97,6 +97,52 @@ _INTENT_PROTOTYPES: dict[str, list[str]] = {
         "new repo scaffold with boilerplate",
         "set up a new codebase from scratch",
     ],
+    # ── Human-like conversation modes ─────────────────────────────────────────
+    "CASUAL": [
+        "just chatting and talking casually",
+        "small talk and everyday conversation",
+        "hello how are you doing today",
+        "what do you think about this",
+        "let's just have a normal conversation",
+        "tell me something interesting",
+        "what's on your mind",
+    ],
+    "SUPPORT": [
+        "I need someone to talk to",
+        "I'm feeling stressed and overwhelmed",
+        "I just want to vent and be heard",
+        "I'm struggling and could use support",
+        "I feel anxious and don't know what to do",
+        "going through a tough time",
+        "need emotional support and empathy",
+    ],
+    "DISCUSS": [
+        "let's discuss and debate this topic",
+        "what's your opinion on this subject",
+        "I want to explore this idea together",
+        "philosophical discussion about life",
+        "what do you think about current events",
+        "share your perspective on this",
+        "let's have an intellectual conversation",
+    ],
+    "COACH": [
+        "help me set and achieve my goals",
+        "I want to improve and grow personally",
+        "motivate and guide me forward",
+        "life coaching and personal development",
+        "what steps should I take to improve",
+        "help me stay accountable to my goals",
+        "career guidance and mentoring advice",
+    ],
+    "PRACTICE": [
+        "let's practice a conversation scenario",
+        "mock interview practice and rehearsal",
+        "roleplay a social interaction with me",
+        "help me practice my communication skills",
+        "simulate a job interview conversation",
+        "practice talking to people and social skills",
+        "I want to rehearse a difficult conversation",
+    ],
 }
 
 
@@ -230,6 +276,37 @@ _KEYWORDS: dict[str, list[str]] = {
         "new repo", "new repository", "create repo", "spawn repo", "bootstrap repo",
         "initialise repo", "initialize repo", "new project", "new service",
     ],
+    # ── Human-like conversation modes ─────────────────────────────────────────
+    "CASUAL": [
+        r"\bhello\b", r"\bhi\b", r"\bhey\b", "how are you", "what's up", "sup",
+        "good morning", "good afternoon", "good evening", "how's it going",
+        "tell me", "what do you think", "chat", "just talking", "casual",
+        "fun fact", "something interesting", "what's new",
+    ],
+    "SUPPORT": [
+        "feeling", "stressed", "anxious", "overwhelmed", "sad", "upset", "depressed",
+        "struggling", "need to talk", "need support", "vent", "hard time", "tough time",
+        "worried", "scared", "lonely", "exhausted", "burned out", "frustrated with life",
+        "don't know what to do",
+    ],
+    "DISCUSS": [
+        "discuss", "debate", "opinion", "perspective", "thoughts on", "view on",
+        "what do you think about", "do you believe", "philosophy", "ethical",
+        "interesting topic", "let's talk about", "curious about", "wonder why",
+        "fascinating", "controversial", "society", "future of",
+    ],
+    "COACH": [
+        "goal", "goals", "motivate", "motivation", "improve myself", "personal growth",
+        "life advice", "guidance", "mentor", "coach", "accountability", "habit",
+        "discipline", "focus", "productivity", "mindset", "career advice",
+        "how to be better", "self improvement",
+    ],
+    "PRACTICE": [
+        "practice", "rehearse", "roleplay", "role play", "mock interview",
+        "simulate", "scenario", "pretend", "act as", "play the role", "interview prep",
+        "social skills", "practice conversation", "how would i say", "help me practice",
+        "difficult conversation",
+    ],
 }
 
 
@@ -282,6 +359,12 @@ _BUDDY_LINES: dict[str, str] = {
     "IDEATE": "Entering IDEATE mode — let's explore ideas together.",
     "SPAWN_REPO": "Activating SPAWN_REPO mode — architecting a new repo factory.",
     "BLOCKED": "Circuit breaker is tripped. Governor reset required before proceeding.",
+    # ── Human-like conversation modes ─────────────────────────────────────────
+    "CASUAL": "Just here to chat — no agenda, just a real conversation.",
+    "SUPPORT": "I'm here with you. Take your time.",
+    "DISCUSS": "Opening the floor — let's explore this together.",
+    "COACH": "Coaching mode on. Let's figure out your next real step.",
+    "PRACTICE": "Practice mode — I'll be your partner. You set the scene.",
 }
 
 _HEDGE_THRESHOLD: float = 0.65  # below this confidence, buddy_line includes a hedge

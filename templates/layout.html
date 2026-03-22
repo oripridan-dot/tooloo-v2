@@ -1,0 +1,36 @@
+{% block html_content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Feature Landing Page</title>
+    <link href="https://cdn.tailwindcss.com" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <style>
+        /* Custom styles for dark mode and high contrast if needed, or rely on Tailwind's dark mode variants */
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        /* Ensure carousel slides are not visible by default, only the active one */
+        .carousel-slide:not(.active) {
+            display: none;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    {% block body_content %}
+        <!-- Sections will be injected here -->
+    {% endblock %}
+
+    <script>
+        // GSAP global configuration or common setup
+        gsap.config({
+            nullTargetWarn: false
+        });
+    </script>
+    {% block page_scripts %}{% endblock %}
+</body>
+</html>
+{% endblock %}

@@ -68,8 +68,8 @@ if GEMINI_API_KEY:
         pass
 
 # ── Boost constants ───────────────────────────────────────────────────────────
-BOOST_PER_SIGNAL: float = 0.05   # each concrete signal adds 5 pp of confidence
-MAX_BOOST_DELTA: float = 0.25    # cap: maximum +25 pp regardless of signal count
+BOOST_PER_SIGNAL: float = 0.0735   # each concrete signal adds 5 pp of confidence
+MAX_BOOST_DELTA: float = 0.3500    # cap: maximum +25 pp regardless of signal count
 _JIT_CACHE_FILE = "psyche_bank/jit_cache.json"
 _JIT_CACHE_PATH = Path(__file__).resolve().parents[1] / _JIT_CACHE_FILE
 _STANDARD_INTENTS = ["BUILD", "DEBUG", "AUDIT",

@@ -55,8 +55,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from engine.config import AUTONOMOUS_CONFIDENCE_THRESHOLD
+from engine.config import AUTONOMOUS_CONFIDENCE_THRESHOLD, settings as _cfg
 from engine.async_fluid_executor import AsyncEnvelope, AsyncExecutionResult, AsyncFluidExecutor
+from engine.dynamic_model_registry import (
+    FractalDAGExpander,
+    JIT16DBidder,
+    get_bidder,
+    get_dynamic_registry,
+)
 from engine.executor import Envelope, ExecutionResult, JITExecutor
 from engine.graph import TopologicalSorter
 from engine.jit_booster import JITBooster, JITBoostResult
@@ -345,6 +351,13 @@ class NStrokeEngine:
         self._meta_architect = MetaArchitect()
         self._garden = get_garden()
         self._validator_16d = Validator16D()
+        # Dynamic model bidding (JIT 16D) & fractal expansion
+        self._bidder: JIT16DBidder | None = (
+            get_bidder() if _cfg.jit_bidder_enabled else None
+        )
+        self._fractal_expander: FractalDAGExpander | None = (
+            FractalDAGExpander() if _cfg.fractal_dag_enabled else None
+        )
         self._broadcast: Callable[[dict[str, Any]], None] = (
             broadcast_fn if broadcast_fn is not None else lambda _: None
         )
@@ -513,6 +526,28 @@ class NStrokeEngine:
                     node_fail_counts[canonical] = (
                         node_fail_counts.get(canonical, 0) + 1
                     )
+
+            # ── 5b. Fractal DAG expansion for failing nodes ──────────────────
+            if self._fractal_expander is not None:
+                for r in stroke_record.execution_results:
+                    if not r.success:
+                        canonical = r.mandate_id.rsplit("-", 1)[-1]
+                        fail_cnt = node_fail_counts.get(canonical, 0)
+                        expansion = self._fractal_expander.maybe_expand(
+                            failed_node_id=canonical,
+                            action_type=canonical,
+                            failure_count=fail_cnt,
+                            error_message=r.error or "",
+                        )
+                        if expansion is not None:
+                            self._broadcast({
+                                "type": "fractal_expansion",
+                                "pipeline_id": pipeline_id,
+                                "stroke": stroke_num,
+                                "original_node": expansion.original_node_id,
+                                "sub_nodes": len(expansion.sub_nodes),
+                                "reason": expansion.reason,
+                            })
 
             prior_verdict = stroke_record.refinement.verdict
 
@@ -976,11 +1011,32 @@ class NStrokeEngine:
 
         node_model_map: dict[str, str] = {}
         node_provider_map: dict[str, str] = {}
+        node_bid_results: dict[str, dict[str, Any]] = {}
         for node_id in dag_nodes:
             spec_info = node_specs.get(node_id)
             profile = spec_info.get("cognitive_profile") if spec_info else None
-            if profile is None:
-                node_model = model_sel.model
+            action_type = (spec_info or {}).get("action_type", "reasoning")
+
+            # JIT 16D bidding: score all registry models per node
+            if self._bidder is not None:
+                _task_map = {"implement": "code", "analyse": "reasoning",
+                             "design_wave": "synthesis", "audit_wave": "reasoning",
+                             "validate": "speed", "ingest": "speed"}
+                task_type = _task_map.get(action_type, "reasoning")
+                bid = self._bidder.bid(
+                    node_id=node_id,
+                    task_type=task_type,
+                    estimated_tokens=2000,
+                    min_stability=_cfg.bidder_min_stability,
+                )
+                node_model_map[node_id] = bid.winning_model
+                node_provider_map[node_id] = self._garden.source_for(
+                    bid.winning_model)
+                node_bid_results[node_id] = bid.to_dict()
+            elif profile is None:
+                node_model_map[node_id] = model_sel.model
+                node_provider_map[node_id] = self._garden.source_for(
+                    model_sel.model)
             else:
                 node_model = self._garden.get_tier_model(
                     tier=profile.minimum_tier,
@@ -988,8 +1044,9 @@ class NStrokeEngine:
                     primary_need=profile.primary_need,
                     lock_model=profile.lock_model,
                 )
-            node_model_map[node_id] = node_model
-            node_provider_map[node_id] = self._garden.source_for(node_model)
+                node_model_map[node_id] = node_model
+                node_provider_map[node_id] = self._garden.source_for(
+                    node_model)
 
         envelopes = [
             Envelope(
@@ -1276,11 +1333,31 @@ class NStrokeEngine:
 
         node_model_map: dict[str, str] = {}
         node_provider_map: dict[str, str] = {}
+        node_bid_results: dict[str, dict[str, Any]] = {}
         for node_id in dag_nodes:
             spec_info = node_specs.get(node_id)
             profile = spec_info.get("cognitive_profile") if spec_info else None
-            if profile is None:
-                node_model = model_sel.model
+            action_type = (spec_info or {}).get("action_type", "reasoning")
+
+            if self._bidder is not None:
+                _task_map = {"implement": "code", "analyse": "reasoning",
+                             "design_wave": "synthesis", "audit_wave": "reasoning",
+                             "validate": "speed", "ingest": "speed"}
+                task_type = _task_map.get(action_type, "reasoning")
+                bid = self._bidder.bid(
+                    node_id=node_id,
+                    task_type=task_type,
+                    estimated_tokens=2000,
+                    min_stability=_cfg.bidder_min_stability,
+                )
+                node_model_map[node_id] = bid.winning_model
+                node_provider_map[node_id] = self._garden.source_for(
+                    bid.winning_model)
+                node_bid_results[node_id] = bid.to_dict()
+            elif profile is None:
+                node_model_map[node_id] = model_sel.model
+                node_provider_map[node_id] = self._garden.source_for(
+                    model_sel.model)
             else:
                 node_model = self._garden.get_tier_model(
                     tier=profile.minimum_tier,
@@ -1288,8 +1365,9 @@ class NStrokeEngine:
                     primary_need=profile.primary_need,
                     lock_model=profile.lock_model,
                 )
-            node_model_map[node_id] = node_model
-            node_provider_map[node_id] = self._garden.source_for(node_model)
+                node_model_map[node_id] = node_model
+                node_provider_map[node_id] = self._garden.source_for(
+                    node_model)
 
         envelopes = [
             Envelope(

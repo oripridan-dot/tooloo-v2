@@ -1,0 +1,2871 @@
+{
+  "inspection_id": "fractal-16d-223b1f62",
+  "timestamp": "2026-03-22T09:40:24.169161+00:00",
+  "components_inspected": 17,
+  "total_fractal_sub_tasks": 51,
+  "total_latency_ms": 95.66,
+  "avg_composite_score": 0.9745,
+  "min_composite_score": 0.9643,
+  "max_composite_score": 0.9837,
+  "autonomous_gate_pass_rate": 1.0,
+  "tribunal_pass_rate": 1.0,
+  "dimension_aggregates": [
+    {
+      "name": "ROI",
+      "avg_score": 1.0,
+      "min_score": 1.0,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "router"
+    },
+    {
+      "name": "Safety",
+      "avg_score": 1.0,
+      "min_score": 1.0,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "router"
+    },
+    {
+      "name": "Security",
+      "avg_score": 1.0,
+      "min_score": 1.0,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "router"
+    },
+    {
+      "name": "Legal",
+      "avg_score": 1.0,
+      "min_score": 1.0,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "router"
+    },
+    {
+      "name": "Human Considering",
+      "avg_score": 0.9329,
+      "min_score": 0.86,
+      "max_score": 0.98,
+      "pass_rate": 1.0,
+      "weakest_component": "jit_booster"
+    },
+    {
+      "name": "Accuracy",
+      "avg_score": 1.0,
+      "min_score": 1.0,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "router"
+    },
+    {
+      "name": "Efficiency",
+      "avg_score": 0.9941,
+      "min_score": 0.95,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "psyche_bank"
+    },
+    {
+      "name": "Quality",
+      "avg_score": 0.9694,
+      "min_score": 0.87,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "jit_booster"
+    },
+    {
+      "name": "Speed",
+      "avg_score": 1.0,
+      "min_score": 1.0,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "router"
+    },
+    {
+      "name": "Monitor",
+      "avg_score": 0.9053,
+      "min_score": 0.81,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "mandate_executor"
+    },
+    {
+      "name": "Control",
+      "avg_score": 0.9124,
+      "min_score": 0.9,
+      "max_score": 0.97,
+      "pass_rate": 1.0,
+      "weakest_component": "tribunal"
+    },
+    {
+      "name": "Honesty",
+      "avg_score": 0.95,
+      "min_score": 0.95,
+      "max_score": 0.95,
+      "pass_rate": 1.0,
+      "weakest_component": "router"
+    },
+    {
+      "name": "Resilience",
+      "avg_score": 0.9482,
+      "min_score": 0.88,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "tribunal"
+    },
+    {
+      "name": "Financial Awareness",
+      "avg_score": 1.0,
+      "min_score": 1.0,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "router"
+    },
+    {
+      "name": "Convergence",
+      "avg_score": 1.0,
+      "min_score": 1.0,
+      "max_score": 1.0,
+      "pass_rate": 1.0,
+      "weakest_component": "router"
+    },
+    {
+      "name": "Reversibility",
+      "avg_score": 0.98,
+      "min_score": 0.98,
+      "max_score": 0.98,
+      "pass_rate": 1.0,
+      "weakest_component": "router"
+    }
+  ],
+  "inspections": [
+    {
+      "component": "router",
+      "source_file": "engine/router.py",
+      "source_lines": 842,
+      "wave": 1,
+      "focus": "accuracy",
+      "composite_score": 0.9768,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.9,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 0.96,
+          "passed": true,
+          "details": "Score: 0.96 (fn_count=5, class_count=1, lines=207)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.89,
+          "passed": true,
+          "details": "Instrumentation: 0.89 (structured-output, lifecycle-methods, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.97,
+          "passed": true,
+          "details": "Control signals: circuit-breaker, config-gated",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.98,
+          "passed": true,
+          "details": "Error handling: try/except, context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_router_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_router_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_router_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_router_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_router_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of router)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 6.04
+    },
+    {
+      "component": "tribunal",
+      "source_file": "engine/tribunal.py",
+      "source_lines": 268,
+      "wave": 1,
+      "focus": "accuracy",
+      "composite_score": 0.9668,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 0.96,
+          "passed": true,
+          "details": "Score: 0.96 (fn_count=1, class_count=3, lines=217)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.86,
+          "passed": true,
+          "details": "Instrumentation: 0.86 (structured-output, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.88,
+          "passed": true,
+          "details": "Error handling: context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_tribunal_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_tribunal_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_tribunal_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_tribunal_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_tribunal_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of tribunal)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.59
+    },
+    {
+      "component": "psyche_bank",
+      "source_file": "engine/psyche_bank.py",
+      "source_lines": 194,
+      "wave": 1,
+      "focus": "quality",
+      "composite_score": 0.9775,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 0.95,
+          "passed": true,
+          "details": "Concerns: Deeply nested loops detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 1.0,
+          "passed": true,
+          "details": "Score: 1.00 (fn_count=8, class_count=3, lines=194)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.94,
+          "passed": true,
+          "details": "Instrumentation: 0.94 (structured-output, error-reporting, lifecycle-methods, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.98,
+          "passed": true,
+          "details": "Error handling: try/except, raise",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_psyche_bank_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_psyche_bank_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_psyche_bank_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_psyche_bank_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_psyche_bank_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of psyche_bank)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.53
+    },
+    {
+      "component": "jit_booster",
+      "source_file": "engine/jit_booster.py",
+      "source_lines": 788,
+      "wave": 2,
+      "focus": "speed",
+      "composite_score": 0.9643,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.86,
+          "passed": true,
+          "details": "Signals: docstrings",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 0.87,
+          "passed": true,
+          "details": "Score: 0.87 (fn_count=0, class_count=0, lines=138)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.83,
+          "passed": true,
+          "details": "Instrumentation: 0.83 (structured-output)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.94,
+          "passed": true,
+          "details": "Control signals: circuit-breaker",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 1.0,
+          "passed": true,
+          "details": "Error handling: try/except, fallback/retry, context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_jit_booster_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_jit_booster_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_jit_booster_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_jit_booster_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_jit_booster_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of jit_booster)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.52
+    },
+    {
+      "component": "executor",
+      "source_file": "engine/executor.py",
+      "source_lines": 322,
+      "wave": 2,
+      "focus": "speed",
+      "composite_score": 0.9756,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 0.95,
+          "passed": true,
+          "details": "Concerns: Deeply nested loops detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 1.0,
+          "passed": true,
+          "details": "Score: 1.00 (fn_count=7, class_count=4, lines=214)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.94,
+          "passed": true,
+          "details": "Instrumentation: 0.94 (structured-output, error-reporting, lifecycle-methods, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.95,
+          "passed": true,
+          "details": "Error handling: raise, fallback/retry, context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_executor_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_executor_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_executor_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_executor_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_executor_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of executor)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 6.67
+    },
+    {
+      "component": "graph",
+      "source_file": "engine/graph.py",
+      "source_lines": 188,
+      "wave": 2,
+      "focus": "speed",
+      "composite_score": 0.9762,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 1.0,
+          "passed": true,
+          "details": "Score: 1.00 (fn_count=13, class_count=5, lines=188)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.94,
+          "passed": true,
+          "details": "Instrumentation: 0.94 (structured-output, error-reporting, lifecycle-methods, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.91,
+          "passed": true,
+          "details": "Error handling: raise, context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_graph_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_graph_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_graph_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_graph_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_graph_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of graph)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.26
+    },
+    {
+      "component": "scope_evaluator",
+      "source_file": "engine/scope_evaluator.py",
+      "source_lines": 161,
+      "wave": 3,
+      "focus": "quality",
+      "composite_score": 0.9693,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 1.0,
+          "passed": true,
+          "details": "Score: 1.00 (fn_count=3, class_count=3, lines=161)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.86,
+          "passed": true,
+          "details": "Instrumentation: 0.86 (structured-output, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.88,
+          "passed": true,
+          "details": "Error handling: context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_scope_evaluator_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_scope_evaluator_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_scope_evaluator_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_scope_evaluator_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_scope_evaluator_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of scope_evaluator)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.21
+    },
+    {
+      "component": "refinement",
+      "source_file": "engine/refinement.py",
+      "source_lines": 198,
+      "wave": 3,
+      "focus": "quality",
+      "composite_score": 0.9737,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 1.0,
+          "passed": true,
+          "details": "Score: 1.00 (fn_count=3, class_count=2, lines=198)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.89,
+          "passed": true,
+          "details": "Instrumentation: 0.89 (structured-output, lifecycle-methods, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.92,
+          "passed": true,
+          "details": "Error handling: raise, fallback/retry",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_refinement_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_refinement_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_refinement_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_refinement_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_refinement_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of refinement)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.52
+    },
+    {
+      "component": "n_stroke",
+      "source_file": "engine/n_stroke.py",
+      "source_lines": 1790,
+      "wave": 4,
+      "focus": "speed",
+      "composite_score": 0.965,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.9,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 0.9,
+          "passed": true,
+          "details": "Score: 0.90 (fn_count=2, class_count=1, lines=192)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.86,
+          "passed": true,
+          "details": "Instrumentation: 0.86 (structured-output, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.93,
+          "passed": true,
+          "details": "Control signals: kill-switch",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.92,
+          "passed": true,
+          "details": "Error handling: fallback/retry, context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_n_stroke_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_n_stroke_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_n_stroke_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_n_stroke_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_n_stroke_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of n_stroke)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.69
+    },
+    {
+      "component": "supervisor",
+      "source_file": "engine/supervisor.py",
+      "source_lines": 438,
+      "wave": 4,
+      "focus": "quality",
+      "composite_score": 0.9768,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 1.0,
+          "passed": true,
+          "details": "Score: 1.00 (fn_count=5, class_count=4, lines=216)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.98,
+          "passed": true,
+          "details": "Instrumentation: 0.98 (sse-broadcast, structured-output, lifecycle-methods, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.88,
+          "passed": true,
+          "details": "Error handling: context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_supervisor_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_supervisor_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_supervisor_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_supervisor_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_supervisor_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of supervisor)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.47
+    },
+    {
+      "component": "conversation",
+      "source_file": "engine/conversation.py",
+      "source_lines": 1499,
+      "wave": 5,
+      "focus": "accuracy",
+      "composite_score": 0.9768,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 1.0,
+          "passed": true,
+          "details": "Score: 1.00 (fn_count=8, class_count=4, lines=215)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.86,
+          "passed": true,
+          "details": "Instrumentation: 0.86 (structured-output, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 1.0,
+          "passed": true,
+          "details": "Error handling: try/except, fallback/retry, context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_conversation_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_conversation_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_conversation_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_conversation_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_conversation_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of conversation)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.68
+    },
+    {
+      "component": "config",
+      "source_file": "engine/config.py",
+      "source_lines": 213,
+      "wave": 5,
+      "focus": "accuracy",
+      "composite_score": 0.9818,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 0.92,
+          "passed": true,
+          "details": "Score: 0.92 (fn_count=2, class_count=1, lines=178)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.96,
+          "passed": true,
+          "details": "Instrumentation: 0.96 (logging, structured-output, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.97,
+          "passed": true,
+          "details": "Control signals: circuit-breaker, config-gated",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.99,
+          "passed": true,
+          "details": "Error handling: try/except, fallback/retry",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_config_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_config_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_config_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_config_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_config_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of config)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.28
+    },
+    {
+      "component": "branch_executor",
+      "source_file": "engine/branch_executor.py",
+      "source_lines": 632,
+      "wave": 6,
+      "focus": "quality",
+      "composite_score": 0.9837,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.96,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types, async-ux",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 1.0,
+          "passed": true,
+          "details": "Score: 1.00 (fn_count=9, class_count=5, lines=225)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 1.0,
+          "passed": true,
+          "details": "Instrumentation: 1.00 (sse-broadcast, structured-output, async-observable, lifecycle-methods, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.95,
+          "passed": true,
+          "details": "Error handling: try/except",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_branch_executor_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_branch_executor_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_branch_executor_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_branch_executor_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_branch_executor_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of branch_executor)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.73
+    },
+    {
+      "component": "mandate_executor",
+      "source_file": "engine/mandate_executor.py",
+      "source_lines": 971,
+      "wave": 6,
+      "focus": "accuracy",
+      "composite_score": 0.9706,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.98,
+          "passed": true,
+          "details": "Signals: aria-attributes, docstrings, type-hints",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 0.91,
+          "passed": true,
+          "details": "Score: 0.91 (fn_count=0, class_count=0, lines=175)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.81,
+          "passed": true,
+          "details": "Instrumentation: 0.81 (typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 1.0,
+          "passed": true,
+          "details": "Error handling: try/except, fallback/retry, context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_mandate_executor_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_mandate_executor_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_mandate_executor_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_mandate_executor_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_mandate_executor_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of mandate_executor)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.46
+    },
+    {
+      "component": "model_garden",
+      "source_file": "engine/model_garden.py",
+      "source_lines": 813,
+      "wave": 6,
+      "focus": "speed",
+      "composite_score": 0.9725,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 1.0,
+          "passed": true,
+          "details": "Score: 1.00 (fn_count=4, class_count=3, lines=198)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.91,
+          "passed": true,
+          "details": "Instrumentation: 0.91 (structured-output, error-reporting, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 0.88,
+          "passed": true,
+          "details": "Error handling: raise",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_model_garden_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_model_garden_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_model_garden_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_model_garden_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_model_garden_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of model_garden)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.71
+    },
+    {
+      "component": "vector_store",
+      "source_file": "engine/vector_store.py",
+      "source_lines": 305,
+      "wave": 6,
+      "focus": "speed",
+      "composite_score": 0.9787,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.94,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, structured-types",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 1.0,
+          "passed": true,
+          "details": "Score: 1.00 (fn_count=13, class_count=3, lines=227)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.89,
+          "passed": true,
+          "details": "Instrumentation: 0.89 (structured-output, lifecycle-methods, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 1.0,
+          "passed": true,
+          "details": "Error handling: try/except, fallback/retry, context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_vector_store_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_vector_store_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_vector_store_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_vector_store_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_vector_store_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of vector_store)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.33
+    },
+    {
+      "component": "daemon",
+      "source_file": "engine/daemon.py",
+      "source_lines": 388,
+      "wave": 6,
+      "focus": "quality",
+      "composite_score": 0.98,
+      "autonomous_gate_pass": true,
+      "dimensions": [
+        {
+          "name": "ROI",
+          "score": 1.0,
+          "passed": true,
+          "details": "Estimated cost: $0.0007 (intent=AUDIT)",
+          "recommendation": ""
+        },
+        {
+          "name": "Safety",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Security",
+          "score": 1.0,
+          "passed": true,
+          "details": "Issues: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Legal",
+          "score": 1.0,
+          "passed": true,
+          "details": "Risks: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Human Considering",
+          "score": 0.92,
+          "passed": true,
+          "details": "Signals: docstrings, type-hints, async-ux",
+          "recommendation": ""
+        },
+        {
+          "name": "Accuracy",
+          "score": 1.0,
+          "passed": true,
+          "details": "Test pass rate: 100.0%",
+          "recommendation": ""
+        },
+        {
+          "name": "Efficiency",
+          "score": 1.0,
+          "passed": true,
+          "details": "Concerns: None detected",
+          "recommendation": ""
+        },
+        {
+          "name": "Quality",
+          "score": 0.96,
+          "passed": true,
+          "details": "Score: 0.96 (fn_count=7, class_count=1, lines=192)",
+          "recommendation": ""
+        },
+        {
+          "name": "Speed",
+          "score": 1.0,
+          "passed": true,
+          "details": "p50=500ms, p90=1200ms",
+          "recommendation": ""
+        },
+        {
+          "name": "Monitor",
+          "score": 0.97,
+          "passed": true,
+          "details": "Instrumentation: 0.97 (sse-broadcast, async-observable, lifecycle-methods, typed-interface)",
+          "recommendation": ""
+        },
+        {
+          "name": "Control",
+          "score": 0.9,
+          "passed": true,
+          "details": "Reversibility guard module responsible for validation.",
+          "recommendation": ""
+        },
+        {
+          "name": "Honesty",
+          "score": 0.95,
+          "passed": true,
+          "details": "Composite confidence gate enforces epistemic humility.",
+          "recommendation": ""
+        },
+        {
+          "name": "Resilience",
+          "score": 1.0,
+          "passed": true,
+          "details": "Error handling: try/except, fallback/retry, context-manager",
+          "recommendation": ""
+        },
+        {
+          "name": "Financial Awareness",
+          "score": 1.0,
+          "passed": true,
+          "details": "Cost: $0.0007",
+          "recommendation": ""
+        },
+        {
+          "name": "Convergence",
+          "score": 1.0,
+          "passed": true,
+          "details": "Convergence score: 1.00 (psyche-bank rule count drives this)",
+          "recommendation": ""
+        },
+        {
+          "name": "Reversibility",
+          "score": 0.98,
+          "passed": true,
+          "details": "Transactional state module guarantees atomic rollback.",
+          "recommendation": ""
+        }
+      ],
+      "critical_failures": [],
+      "estimated_cost_usd": 0.000675,
+      "fractal_expanded": true,
+      "fractal_sub_tasks": [
+        {
+          "sub_node_id": "inspect_daemon_fractal_scan_security",
+          "task_type": "reasoning",
+          "dependencies": [],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_daemon_fractal_check_compliance",
+          "task_type": "reasoning",
+          "dependencies": [
+            "inspect_daemon_fractal_scan_security"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5745.0,
+          "bid_cost_per_10k": 0.0001
+        },
+        {
+          "sub_node_id": "inspect_daemon_fractal_generate_report",
+          "task_type": "synthesis",
+          "dependencies": [
+            "inspect_daemon_fractal_check_compliance"
+          ],
+          "bid_model": "local/llama-3.2-3b-instruct",
+          "bid_score": 5740.0,
+          "bid_cost_per_10k": 0.0001
+        }
+      ],
+      "fractal_reason": "Node failed 2x (last error: Fractal inspection of daemon)",
+      "tribunal_passed": true,
+      "tribunal_details": "clean",
+      "inspection_latency_ms": 5.36
+    }
+  ],
+  "critical_components": [],
+  "top_recommendations": [
+    "[Monitor] avg=0.905, weakest=mandate_executor (pass_rate=100%) — prioritize improvement",
+    "[Control] avg=0.912, weakest=tribunal (pass_rate=100%) — prioritize improvement",
+    "[Human Considering] avg=0.933, weakest=jit_booster (pass_rate=100%) — prioritize improvement",
+    "[Resilience] avg=0.948, weakest=tribunal (pass_rate=100%) — prioritize improvement"
+  ]
+}

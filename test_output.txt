@@ -1,0 +1,265 @@
+
+==================================== ERRORS ====================================
+_______________ ERROR collecting tests/test_benchmark_metrics.py _______________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_benchmark_metrics.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_benchmark_metrics.py:3: in <module>
+    from benchmark_metrics import run_benchmark
+benchmark_metrics.py:29: in <module>
+    import engine.jit_booster as _jib_mod
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+________________ ERROR collecting tests/test_branch_executor.py ________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_branch_executor.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_branch_executor.py:23: in <module>
+    from engine.branch_executor import (
+engine/branch_executor.py:41: in <module>
+    from engine.jit_booster import JITBooster, JITBoostResult
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+_________________ ERROR collecting tests/test_buddy_listen.py __________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_buddy_listen.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_buddy_listen.py:6: in <module>
+    from studio.api import app
+studio/api.py:40: in <module>
+    from engine.branch_executor import (
+engine/branch_executor.py:41: in <module>
+    from engine.jit_booster import JITBooster, JITBoostResult
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+_________________ ERROR collecting tests/test_buddy_memory.py __________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_buddy_memory.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_buddy_memory.py:35: in <module>
+    from engine.conversation import ConversationEngine, ConversationSession, ConversationTurn
+engine/conversation.py:53: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+___________________ ERROR collecting tests/test_crucible.py ____________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_crucible.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_crucible.py:50: in <module>
+    from engine.router import (
+E   ImportError: cannot import name 'CIRCUIT_BREAKER_THRESHOLD' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+____________________ ERROR collecting tests/test_daemon.py _____________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_daemon.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_daemon.py:23: in <module>
+    from engine.daemon import BackgroundDaemon, _HIGH_RISK_COMPONENTS
+engine/daemon.py:10: in <module>
+    from engine.self_improvement import SelfImprovementEngine
+engine/self_improvement.py:41: in <module>
+    from engine.jit_booster import JITBooster
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+____________________ ERROR collecting tests/test_e2e_api.py ____________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_e2e_api.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_e2e_api.py:32: in <module>
+    import studio.api as api_module
+studio/api.py:40: in <module>
+    from engine.branch_executor import (
+engine/branch_executor.py:41: in <module>
+    from engine.jit_booster import JITBooster, JITBoostResult
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+______________ ERROR collecting tests/test_endpoint_validation.py ______________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_endpoint_validation.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_endpoint_validation.py:17: in <module>
+    from studio.api import app
+studio/api.py:40: in <module>
+    from engine.branch_executor import (
+engine/branch_executor.py:41: in <module>
+    from engine.jit_booster import JITBooster, JITBoostResult
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+________________ ERROR collecting tests/test_meta_architect.py _________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_meta_architect.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_meta_architect.py:7: in <module>
+    from engine.jit_booster import JITBooster
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+________________ ERROR collecting tests/test_n_stroke_async.py _________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_n_stroke_async.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_n_stroke_async.py:28: in <module>
+    from engine.jit_booster import JITBooster
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+________________ ERROR collecting tests/test_n_stroke_stress.py ________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_n_stroke_stress.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_n_stroke_stress.py:32: in <module>
+    from engine.jit_booster import JITBooster
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+____________________ ERROR collecting tests/test_sandbox.py ____________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_sandbox.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_sandbox.py:4: in <module>
+    from engine.sandbox import PROMOTE_THRESHOLD, SandboxOrchestrator
+engine/sandbox.py:44: in <module>
+    from engine.jit_booster import JITBooster
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+_______________ ERROR collecting tests/test_self_improvement.py ________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_self_improvement.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_self_improvement.py:31: in <module>
+    from engine.self_improvement import (
+engine/self_improvement.py:41: in <module>
+    from engine.jit_booster import JITBooster
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+__________________ ERROR collecting tests/test_two_stroke.py ___________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_two_stroke.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_two_stroke.py:25: in <module>
+    from engine.jit_booster import JITBoostResult, JITBooster
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+______________________ ERROR collecting tests/test_v2.py _______________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_v2.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_v2.py:21: in <module>
+    from engine.n_stroke import _infer_workspace_file_target
+engine/n_stroke.py:62: in <module>
+    from engine.jit_booster import JITBooster, JITBoostResult
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+_______________ ERROR collecting tests/test_visual_artifacts.py ________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_visual_artifacts.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_visual_artifacts.py:19: in <module>
+    from engine.conversation import (
+engine/conversation.py:53: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+________________ ERROR collecting tests/test_workflow_proof.py _________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_workflow_proof.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_workflow_proof.py:41: in <module>
+    from engine.router import MandateRouter
+E   ImportError: cannot import name 'MandateRouter' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+________________ ERROR collecting tests/test_workspace_roots.py ________________
+ImportError while importing test module '/workspaces/tooloo-v2/tests/test_workspace_roots.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_workspace_roots.py:18: in <module>
+    from studio.api import app
+studio/api.py:40: in <module>
+    from engine.branch_executor import (
+engine/branch_executor.py:41: in <module>
+    from engine.jit_booster import JITBooster, JITBoostResult
+engine/jit_booster.py:50: in <module>
+    from engine.router import RouteResult
+E   ImportError: cannot import name 'RouteResult' from 'engine.router' (/workspaces/tooloo-v2/engine/router.py)
+=========================== short test summary info ============================
+ERROR tests/test_benchmark_metrics.py
+ERROR tests/test_branch_executor.py
+ERROR tests/test_buddy_listen.py
+ERROR tests/test_buddy_memory.py
+ERROR tests/test_crucible.py
+ERROR tests/test_daemon.py
+ERROR tests/test_e2e_api.py
+ERROR tests/test_endpoint_validation.py
+ERROR tests/test_meta_architect.py
+ERROR tests/test_n_stroke_async.py
+ERROR tests/test_n_stroke_stress.py
+ERROR tests/test_sandbox.py
+ERROR tests/test_self_improvement.py
+ERROR tests/test_two_stroke.py
+ERROR tests/test_v2.py
+ERROR tests/test_visual_artifacts.py
+ERROR tests/test_workflow_proof.py
+ERROR tests/test_workspace_roots.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 18 errors during collection !!!!!!!!!!!!!!!!!!!
+1 skipped, 18 errors in 2.55s

@@ -3,11 +3,18 @@ import json
 import re
 import subprocess
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from engine.calibration_engine import CalibrationEngine
 from engine.psyche_bank import PsycheBank
 from engine.self_improvement import SelfImprovementEngine
+
+# Re-calibration interval (Ebbinghaus half-life rule: every 7 days)
+_RECAL_INTERVAL = timedelta(days=7)
+_RECAL_STAMP_FILE = Path(__file__).resolve(
+).parents[1] / "psyche_bank" / "last_recalibration.json"
 
 # ── Repo root (used for path-jail checks) ─────────────────────────────────────
 _REPO_ROOT: Path = Path(__file__).resolve().parents[1]
@@ -34,6 +41,7 @@ class BackgroundDaemon:
         self._broadcast = broadcast_fn
         self.si_engine = SelfImprovementEngine()
         self._bank = PsycheBank()
+        self._cal_engine = CalibrationEngine()
         self.awaiting_approval: list[dict[str, Any]] = []
 
     async def start(self):
@@ -60,6 +68,8 @@ class BackgroundDaemon:
         if removed:
             self._broadcast({"type": "daemon_rt",
                              "msg": f"PsycheBank: purged {removed} expired rule(s)"})
+        # 7-day auto-recalibration (Ebbinghaus rule)
+        await self._maybe_recalibrate()
         self._broadcast(
             {"type": "daemon_rt", "msg": "Initiating background scan..."})
         loop = asyncio.get_event_loop()
@@ -303,6 +313,57 @@ class BackgroundDaemon:
             return None
 
         return file_rel, old_code, new_code
+
+    # ── 7-day auto-recalibration ───────────────────────────────────────────────
+
+    async def _maybe_recalibrate(self) -> None:
+        """Run a 5-cycle CalibrationEngine pass if the last run was >7 days ago.
+
+        The last-run timestamp is persisted in
+        psyche_bank/last_recalibration.json so the interval survives process
+        restarts.
+        """
+        now = datetime.now(timezone.utc)
+        last_run: datetime | None = None
+
+        if _RECAL_STAMP_FILE.exists():
+            try:
+                data = json.loads(
+                    _RECAL_STAMP_FILE.read_text(encoding="utf-8"))
+                last_run = datetime.fromisoformat(data.get("last_run", ""))
+            except Exception:
+                last_run = None
+
+        if last_run is not None and (now - last_run) < _RECAL_INTERVAL:
+            return  # not yet due
+
+        self._broadcast(
+            {"type": "daemon_rt",
+                "msg": "[CalibrationEngine] 7-day recalibration triggered…"}
+        )
+        loop = asyncio.get_event_loop()
+        try:
+            report = await loop.run_in_executor(None, self._cal_engine.run_5_cycles)
+            # Persist calibration artefacts (proof.json, rules.cog.json, etc.)
+            self._cal_engine.persist(report)
+            # Record the timestamp so we don't re-run for another 7 days
+            _RECAL_STAMP_FILE.write_text(
+                json.dumps({"last_run": now.isoformat(), "run_id": report.run_id},
+                           indent=2),
+                encoding="utf-8",
+            )
+            self._broadcast(
+                {"type": "daemon_rt",
+                 "msg": f"[CalibrationEngine] ✓ Recalibration complete "
+                         f"(run={report.run_id}, "
+                         f"alignment {report.system_alignment_before:.4f}"
+                         f"→{report.system_alignment_after:.4f})"}
+            )
+        except Exception as exc:
+            self._broadcast(
+                {"type": "daemon_rt",
+                 "msg": f"[CalibrationEngine] Recalibration failed: {exc}"}
+            )
 
     # ── Approval flow ─────────────────────────────────────────────────────────
 

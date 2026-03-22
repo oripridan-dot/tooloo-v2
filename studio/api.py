@@ -51,6 +51,7 @@ from engine.config import (
     get_workspace_roots,
 )
 from engine.conversation import ConversationEngine, _FOLLOWUPS
+from engine.buddy_cognition import CognitiveLens
 from engine.buddy_memory import BuddyMemoryStore
 from engine.daemon import BackgroundDaemon
 from engine.engram_visual import VisualEngramGenerator
@@ -368,6 +369,10 @@ class BuddyChatRequest(BaseModel):
     text: str
     session_id: str = ""
     depth_level: int = 1  # 1=Chat/Explore, 2=JIT Validation (deeper signals)
+    # User-selected mode/intent override (empty = auto-detect)
+    # Accepts technical intents (EXPLAIN, IDEATE, DESIGN, AUDIT) and human
+    # conversation modes (CASUAL, SUPPORT, DISCUSS, COACH, PRACTICE).
+    forced_intent: str = ""
 
 
 class BuddyListenRequest(BaseModel):
@@ -417,6 +422,17 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
 
     # 1. Route (chat path — no circuit-breaker counter increments)
     route = _router.route_chat(req.text)
+
+    # 1a. User-selected intent override (includes social modes)
+    _CHAT_VALID_INTENTS = {
+        "AUDIT", "DESIGN", "EXPLAIN", "IDEATE",
+        "CASUAL", "SUPPORT", "DISCUSS", "COACH", "PRACTICE",
+    }
+    if req.forced_intent and req.forced_intent.upper() in _CHAT_VALID_INTENTS:
+        from engine.router import compute_buddy_line
+        route.intent = req.forced_intent.upper()
+        route.confidence = 1.0
+        route.buddy_line = compute_buddy_line(route.intent, route.confidence)
 
     # 2. Gate execution intents — they must use the N-Stroke pipeline
     if route.intent in _EXECUTION_INTENTS:
@@ -557,6 +573,17 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
     # ── 1. Route ──────────────────────────────────────────────────────────────
     route = _router.route_chat(req.text)
 
+    # ── 1a. User-selected intent override (includes social modes) ────────────
+    _STREAM_VALID_INTENTS = {
+        "AUDIT", "DESIGN", "EXPLAIN", "IDEATE",
+        "CASUAL", "SUPPORT", "DISCUSS", "COACH", "PRACTICE",
+    }
+    if req.forced_intent and req.forced_intent.upper() in _STREAM_VALID_INTENTS:
+        from engine.router import compute_buddy_line as _cbl
+        route.intent = req.forced_intent.upper()
+        route.confidence = 1.0
+        route.buddy_line = _cbl(route.intent, route.confidence)
+
     if route.intent in _EXECUTION_INTENTS:
         async def _reject() -> AsyncGenerator[str, None]:
             payload = json.dumps({
@@ -626,6 +653,11 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
         if plan.needs_clarification:
             yield _sse({"type": "token", "text": plan.clarification_question})
             full_response = plan.clarification_question
+        elif plan.cache_hit:
+            # 3-layer cache hit — emit cached response as a single token burst
+            yield _sse({"type": "cache_hit", "mandate_id": mandate_id, "session_id": session_id})
+            yield _sse({"type": "token", "text": plan.cache_response})
+            full_response = plan.cache_response
         else:
             interceptor = StreamInterceptor(
                 intent=route.intent,
@@ -690,6 +722,8 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
             "design_directive": final_directive.to_dict(),
         })
 
+        profile = _conversation_engine.get_user_profile()
+        ct_load = CognitiveLens.analyze(req.text).cognitive_load
         yield _sse({
             "type": "done",
             "mandate_id": mandate_id,
@@ -698,11 +732,14 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
             "confidence": route.confidence,
             "emotional_state": emotional_state,
             "suggestions": suggestions,
-            "model_used": "gemini-stream",
+            "model_used": "cache" if plan.cache_hit else "gemini-stream",
             "tribunal_passed": tribunal_result.passed,
             "design_directive": final_directive.to_dict(),
             "jit_boost": jit_result.to_dict(),
             "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+            "cache_hit": plan.cache_hit,
+            "expertise_label": profile.expertise_label(),
+            "cognitive_load": ct_load,
         })
 
     return StreamingResponse(_stream(), media_type="text/event-stream")
@@ -763,7 +800,201 @@ async def save_buddy_memory(session_id: str) -> dict[str, Any]:
     return {"saved": True, "session_id": session_id, "entry": entry.to_dict()}
 
 
-# ── Intent Discovery endpoint ─────────────────────────────────────────────────
+# ── Buddy Cognitive Profile & Cache endpoints ─────────────────────────────────
+# Research basis: UserProfile (buddy_cognition.py) tracks expertise, goals, and
+# learning style across sessions. BuddyCache (buddy_cache.py) provides 3-layer
+# semantic caching to eliminate redundant LLM calls and reduce response latency.
+
+
+@app.get("/v2/buddy/profile")
+async def get_buddy_profile() -> dict[str, Any]:
+    """Return the user's persistent cognitive profile.
+
+    Includes expertise score (0.0–1.0), expertise tier label, preferred
+    learning style, active cross-session goals, completed goals, and the
+    most recent knowledge anchors (effective explanations for this user).
+    """
+    profile = _conversation_engine.get_user_profile()
+    return {
+        "profile": profile.to_dict(),
+        "expertise_label": profile.expertise_label(),
+    }
+
+
+@app.get("/v2/buddy/goals")
+async def get_buddy_goals() -> dict[str, Any]:
+    """Return the user's active and completed cross-session goals."""
+    profile = _conversation_engine.get_user_profile()
+    return {
+        "active_goals": profile.active_goals,
+        "completed_goals": profile.completed_goals,
+        "active_count": len(profile.active_goals),
+        "completed_count": len(profile.completed_goals),
+    }
+
+
+@app.post("/v2/buddy/goals/complete")
+async def complete_buddy_goal(payload: dict[str, Any]) -> dict[str, Any]:
+    """Mark the best-matching active goal as completed.
+
+    Body: {"goal_text": "the goal to complete"}
+    Uses substring fuzzy matching — does not need to be an exact string.
+    """
+    goal_text = str(payload.get("goal_text", "")).strip()
+    if not goal_text:
+        raise HTTPException(status_code=422, detail="goal_text is required.")
+    completed = _conversation_engine.complete_goal(goal_text)
+    _broadcast({"type": "buddy_goal_completed",
+               "goal": goal_text, "found": completed})
+    return {"completed": completed, "goal_text": goal_text}
+
+
+@app.get("/v2/buddy/cache/stats")
+async def get_buddy_cache_stats() -> dict[str, Any]:
+    """Return 3-layer cache hit/miss statistics with per-layer descriptions.
+
+    Useful for monitoring latency optimisation from semantic caching.
+    Layer 1: in-session Jaccard similarity cache.
+    Layer 2: process-scoped exact-fingerprint cache (TTL=1h).
+    Layer 3: persistent disk knowledge cache (TTL=24h).
+    """
+    return _conversation_engine.get_cache_stats()
+
+
+@app.post("/v2/buddy/cache/invalidate")
+async def invalidate_buddy_cache() -> dict[str, Any]:
+    """Clear all 3 cache layers. Use for testing or after major content updates."""
+    _conversation_engine.invalidate_cache()
+    _broadcast({"type": "buddy_cache_invalidated"})
+    return {"invalidated": True, "layers_cleared": ["l1_semantic", "l2_process", "l3_persistent"]}
+
+
+# ── Buddy conversation modes catalogue ──────────────────────────────────────
+
+# Human-like social interaction modes with full metadata for the UI.
+_BUDDY_MODES: list[dict[str, Any]] = [
+    # ── Technical modes ──────────────────────────────────────────────────────
+    {
+        "id": "auto",
+        "label": "Auto",
+        "icon": "⚡",
+        "category": "technical",
+        "description": "Buddy auto-detects the best mode from your message.",
+        "tone": "adaptive",
+        "example_prompt": "What are you working on?",
+    },
+    {
+        "id": "build",
+        "label": "Build",
+        "icon": "🔨",
+        "category": "technical",
+        "description": "Implement features, scaffold services, write and wire code.",
+        "tone": "constructive",
+        "example_prompt": "Build a REST endpoint that…",
+    },
+    {
+        "id": "debug",
+        "label": "Debug",
+        "icon": "🔍",
+        "category": "technical",
+        "description": "Trace failures, find root causes, lock in regression tests.",
+        "tone": "analytical",
+        "example_prompt": "This keeps crashing with…",
+    },
+    {
+        "id": "design",
+        "label": "Design",
+        "icon": "🎨",
+        "category": "technical",
+        "description": "Shape UIs, wireframes, component specs, and design systems.",
+        "tone": "creative",
+        "example_prompt": "Design a dashboard that shows…",
+    },
+    {
+        "id": "ideate",
+        "label": "Ideate",
+        "icon": "💡",
+        "category": "technical",
+        "description": "Brainstorm, compare approaches, and explore the solution space.",
+        "tone": "exploratory",
+        "example_prompt": "What's the best way to approach…",
+    },
+    {
+        "id": "audit",
+        "label": "Audit",
+        "icon": "🛡",
+        "category": "technical",
+        "description": "Security scan, dependency review, OWASP, and posture reporting.",
+        "tone": "precise",
+        "example_prompt": "Audit this module for vulnerabilities…",
+    },
+    # ── Human-like conversation modes ────────────────────────────────────────
+    {
+        "id": "casual",
+        "label": "Casual",
+        "icon": "💬",
+        "category": "human",
+        "description": "Just talk. Small talk, random topics, genuine conversation — no agenda.",
+        "tone": "warm",
+        "example_prompt": "Hey, how are you doing?",
+    },
+    {
+        "id": "support",
+        "label": "Support",
+        "icon": "🤝",
+        "category": "human",
+        "description": "Emotional support and active listening — Buddy is here for you.",
+        "tone": "empathetic",
+        "example_prompt": "I've been feeling really overwhelmed lately…",
+    },
+    {
+        "id": "discuss",
+        "label": "Discuss",
+        "icon": "🗣",
+        "category": "human",
+        "description": "Open intellectual discussion — opinions, debates, big ideas.",
+        "tone": "conversational",
+        "example_prompt": "What do you think about…",
+    },
+    {
+        "id": "coach",
+        "label": "Coach",
+        "icon": "🎯",
+        "category": "human",
+        "description": "Personalized coaching — goals, accountability, and your next real action.",
+        "tone": "encouraging",
+        "example_prompt": "I want to improve my…",
+    },
+    {
+        "id": "practice",
+        "label": "Practice",
+        "icon": "🎭",
+        "category": "human",
+        "description": "Roleplay scenarios — interview prep, social skills, difficult conversations.",
+        "tone": "engaged",
+        "example_prompt": "Let's practice a job interview for…",
+    },
+]
+
+
+@app.get("/v2/buddy/modes")
+async def get_buddy_modes() -> dict[str, Any]:
+    """Return the full catalogue of Buddy conversation modes.
+
+    Includes both technical modes (BUILD / DEBUG / DESIGN / IDEATE / AUDIT)
+    and the new human-like social interaction modes (CASUAL / SUPPORT /
+    DISCUSS / COACH / PRACTICE).  The UI uses this to render the mode
+    selector with icons, descriptions, and example prompts.
+    """
+    technical = [m for m in _BUDDY_MODES if m["category"] == "technical"]
+    human = [m for m in _BUDDY_MODES if m["category"] == "human"]
+    return {
+        "modes": _BUDDY_MODES,
+        "technical_modes": technical,
+        "human_modes": human,
+        "total": len(_BUDDY_MODES),
+    }
+
 
 @app.post("/v2/intent/clarify")
 async def intent_clarify(req: IntentClarifyRequest) -> dict[str, Any]:
@@ -1041,8 +1272,10 @@ async def buddy_chat(req: ChatRequest) -> dict[str, Any]:
     route = _router.route_chat(req.text)
 
     # 1a. User-selected intent override — full confidence, recompute buddy_line
-    _VALID_INTENTS = {"BUILD", "DEBUG", "AUDIT",
-                      "DESIGN", "EXPLAIN", "IDEATE", "SPAWN_REPO"}
+    _VALID_INTENTS = {
+        "BUILD", "DEBUG", "AUDIT", "DESIGN", "EXPLAIN", "IDEATE", "SPAWN_REPO",
+        "CASUAL", "SUPPORT", "DISCUSS", "COACH", "PRACTICE",
+    }
     if req.forced_intent and req.forced_intent.upper() in _VALID_INTENTS:
         route.intent = req.forced_intent.upper()
         route.confidence = 1.0

@@ -375,17 +375,32 @@
 
     /* Intent chips */
     .intent-bar {
-      padding: 8px 10px;
+      padding: 8px 10px 4px;
       border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .intent-row {
       display: flex;
       gap: 4px;
       overflow-x: auto;
-      flex-shrink: 0;
       scrollbar-width: none;
     }
 
-    .intent-bar::-webkit-scrollbar {
+    .intent-row::-webkit-scrollbar {
       display: none;
+    }
+
+    .intent-row-label {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding: 0 2px;
     }
 
     .intent-chip {
@@ -413,6 +428,20 @@
       background: var(--primary-dim);
       color: var(--primary);
       border-color: var(--primary-glow);
+    }
+
+    .intent-chip.human:hover,
+    .intent-chip.human.active {
+      background: rgba(0, 210, 190, 0.12);
+      color: var(--cyan);
+      border-color: rgba(0, 210, 190, 0.4);
+    }
+
+    .mode-divider {
+      height: 0;
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0 -10px;
     }
 
     /* Messages */
@@ -714,7 +743,8 @@
       border-color: var(--primary-glow);
     }
 
-    .ctrl-btn:disabled, .sensor-pill:disabled {
+    .ctrl-btn:disabled,
+    .sensor-pill:disabled {
       opacity: 0.45;
       cursor: not-allowed;
       pointer-events: none;
@@ -1276,12 +1306,23 @@
       </div>
 
       <div class="intent-bar">
-        <button class="intent-chip active" data-intent="auto">⚡ Auto</button>
-        <button class="intent-chip" data-intent="build">🔨 Build</button>
-        <button class="intent-chip" data-intent="design">🎨 Design</button>
-        <button class="intent-chip" data-intent="debug">🔍 Debug</button>
-        <button class="intent-chip" data-intent="ideate">💡 Ideate</button>
-        <button class="intent-chip" data-intent="audit">🛡 Audit</button>
+        <div class="intent-row-label">Technical</div>
+        <div class="intent-row" id="intent-row-tech">
+          <button class="intent-chip active" data-intent="auto">⚡ Auto</button>
+          <button class="intent-chip" data-intent="build">🔨 Build</button>
+          <button class="intent-chip" data-intent="design">🎨 Design</button>
+          <button class="intent-chip" data-intent="debug">🔍 Debug</button>
+          <button class="intent-chip" data-intent="ideate">💡 Ideate</button>
+          <button class="intent-chip" data-intent="audit">🛡 Audit</button>
+        </div>
+        <div class="intent-row-label">Human</div>
+        <div class="intent-row" id="intent-row-human">
+          <button class="intent-chip human" data-intent="casual">💬 Casual</button>
+          <button class="intent-chip human" data-intent="support">🤝 Support</button>
+          <button class="intent-chip human" data-intent="discuss">🗣 Discuss</button>
+          <button class="intent-chip human" data-intent="coach">🎯 Coach</button>
+          <button class="intent-chip human" data-intent="practice">🎭 Practice</button>
+        </div>
       </div>
 
       <div id="buddy-messages">
@@ -1504,6 +1545,8 @@
         style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">VLT</button>
       <button class="ops-tab" data-tab="memory"
         style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">MEMORY</button>
+      <button class="ops-tab" data-tab="profile"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">PROFILE</button>
     </div>
     <!-- Tab Content -->
     <div id="ops-content" style="flex:1;overflow-y:auto;padding:20px;font-size:13px;color:var(--text);">
@@ -1803,6 +1846,30 @@
         <div id="ops-memory-list" style="display:flex;flex-direction:column;gap:8px;">Loading…</div>
       </div>
 
+      <!-- BUDDY PROFILE -->
+      <div id="ops-tab-profile" class="ops-tab-pane" style="display:none;">
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">BUDDY
+          COGNITIVE PROFILE</h3>
+        <p style="font-size:11px;color:var(--text-muted);margin:0 0 12px;">Persistent model of your expertise, preferred
+          communication style, goals, and learned knowledge anchors. Evolves with every session.</p>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button id="ops-profile-refresh-btn"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">↻
+            Refresh</button>
+          <button id="ops-profile-invalidate-cache-btn"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">⌫
+            Clear Cache</button>
+        </div>
+        <div id="ops-profile-content" style="display:flex;flex-direction:column;gap:10px;">Loading…</div>
+        <div style="margin-top:18px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">
+            3-LAYER RESPONSE CACHE</div>
+          <div id="ops-profile-cache"
+            style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;">
+            Loading…</div>
+        </div>
+      </div>
+
     </div><!-- /#ops-content -->
   </div><!-- /#ops-panel -->
 
@@ -2074,11 +2141,28 @@
        5. INTENT SELECTOR
        ════════════════════════════════════════════════════════════════════════ */
     let _intent = 'auto';
+
+    const _MODE_PLACEHOLDERS = {
+      auto: "What are you working on?",
+      build: "What do you want to build?",
+      design: "What should we design?",
+      debug: "What's broken or failing?",
+      ideate: "What are you trying to solve?",
+      audit: "What should I scan or review?",
+      casual: "Hey, what's up?",
+      support: "What's on your mind? I'm here.",
+      discuss: "What topic do you want to explore?",
+      coach: "What are you working toward?",
+      practice: "What scenario should we rehearse?",
+    };
+
     document.querySelectorAll('.intent-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         document.querySelectorAll('.intent-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         _intent = chip.dataset.intent;
+        const ph = _MODE_PLACEHOLDERS[_intent] || "What are you working on?";
+        document.getElementById('msg-input').placeholder = ph;
       });
     });
 
@@ -2167,254 +2251,254 @@
 
     function handleSSE(ev) {
       try {
-      const t = ev.type || '';
-      addEventLine(t, ev.message || ev.buddy_line || ev.text || '', ev);
+        const t = ev.type || '';
+        addEventLine(t, ev.message || ev.buddy_line || ev.text || '', ev);
 
-      switch (t) {
-        case 'route':
-          setNode('route', 'done');
-          _updateConf(ev.confidence, ev.boost_delta, ev.boosted_confidence);
-          document.getElementById('intent-badge').textContent = esc(`Intent: ${ev.route || '—'}`);
-          break;
+        switch (t) {
+          case 'route':
+            setNode('route', 'done');
+            _updateConf(ev.confidence, ev.boost_delta, ev.boosted_confidence);
+            document.getElementById('intent-badge').textContent = esc(`Intent: ${ev.route || '—'}`);
+            break;
 
-        case 'jit_boost':
-          setNode('jit', 'done');
-          _renderJIT(ev.signals || []);
-          if (ev.boost_delta != null) {
-            document.getElementById('cv-jit').textContent = '+' + Math.round((ev.boost_delta || 0) * 100) + '%';
-            document.getElementById('cb-jit').style.width = Math.round((ev.boosted_confidence || 0.5) * 100) + '%';
+          case 'jit_boost':
+            setNode('jit', 'done');
+            _renderJIT(ev.signals || []);
+            if (ev.boost_delta != null) {
+              document.getElementById('cv-jit').textContent = '+' + Math.round((ev.boost_delta || 0) * 100) + '%';
+              document.getElementById('cb-jit').style.width = Math.round((ev.boosted_confidence || 0.5) * 100) + '%';
+            }
+            break;
+
+          case 'tribunal':
+            setNode('tribunal', ev.verdict === 'PASS' ? 'done' : 'fail');
+            if (ev.verdict !== 'PASS') spawnNotif(`Tribunal: ${ev.verdict} — ${ev.message || ''}`, 'warn');
+            break;
+
+          case 'plan':
+          case 'scope':
+            setNode('scope', 'active');
+            document.getElementById('wave-badge').textContent = esc(`Wave 1/${ev.wave_count || '?'}`);
+            break;
+
+          case 'execution':
+            setNode('execute', 'active');
+            break;
+
+          case 'refinement': {
+            const st = ev.verdict === 'pass' ? 'done' : 'fail';
+            setNode('refine', st);
+            const pct = Math.round((ev.score || 0.8) * 100);
+            document.getElementById('cv-refine').textContent = pct + '%';
+            document.getElementById('cb-refine').style.width = pct + '%';
+            setTimeout(resetNodes, 2000);
+            break;
           }
-          break;
 
-        case 'tribunal':
-          setNode('tribunal', ev.verdict === 'PASS' ? 'done' : 'fail');
-          if (ev.verdict !== 'PASS') spawnNotif(`Tribunal: ${ev.verdict} — ${ev.message || ''}`, 'warn');
-          break;
-
-        case 'plan':
-        case 'scope':
-          setNode('scope', 'active');
-          document.getElementById('wave-badge').textContent = esc(`Wave 1/${ev.wave_count || '?'}`);
-          break;
-
-        case 'execution':
-          setNode('execute', 'active');
-          break;
-
-        case 'refinement': {
-          const st = ev.verdict === 'pass' ? 'done' : 'fail';
-          setNode('refine', st);
-          const pct = Math.round((ev.score || 0.8) * 100);
-          document.getElementById('cv-refine').textContent = pct + '%';
-          document.getElementById('cb-refine').style.width = pct + '%';
-          setTimeout(resetNodes, 2000);
-          break;
-        }
-
-        case 'conversation': {
-          const reply = ev.conversation?.response || ev.buddy_line || '';
-          if (reply) _appendBuddy(reply, ev);
-          break;
-        }
-
-        case 'vlt_patch':
-          window.SpatialEngine?.handleVLTPatch(ev);
-          addEventLine('vlt_patch', `${ev.patches?.length || 0} node(s) morphed`);
-          spawnNotif(`VLT patch: ${ev.patches?.length || 0} node(s) morphed`, 'info', 2200);
-          break;
-
-        case 'healing_triggered':
-          showCrisis(ev.message || 'Pipeline node exceeded failure threshold.', [
-            { label: 'Escalate Model', primary: true, action: () => _post('/v2/router-reset', {}) },
-            { label: 'Deepen JIT Research', action: () => sendMsg('JIT deepen and retry') },
-            { label: 'Manual Override', action: () => sendMsg('override continue') },
-          ]);
-          break;
-
-        case 'n_stroke_start':
-          setAllActive();
-          break;
-
-        case 'n_stroke_complete':
-          setTimeout(resetNodes, 400);
-          break;
-
-        case 'model_selected': {
-          const name = ev.model || ev.provider || 'Unknown';
-          document.getElementById('hud-model').textContent = esc(name);
-          document.getElementById('model-chip').textContent = esc(name.slice(0, 22));
-          break;
-        }
-
-        case 'preflight':
-        case 'pipeline_start':
-          resetNodes();
-          setNode('route', 'active');
-          break;
-
-        case 'intent_clarification':
-          setNode('route', 'active');
-          document.getElementById('buddy-status').textContent =
-            `Discovering intent… turn ${ev.result?.turn_count || 1}`;
-          break;
-
-        case 'intent_locked':
-          setNode('route', 'done');
-          setNode('jit', 'active');
-          document.getElementById('buddy-status').textContent =
-            `Intent locked: ${ev.result?.intent_hint || ''}`;
-          break;
-
-        case 'satisfaction_gate': {
-          const satisfied = ev.satisfied ?? ev.passed ?? true;
-          setNode('refine', satisfied ? 'done' : 'active');
-          if (satisfied) spawnNotif('Satisfaction gate passed ✓', 'info', 1800);
-          break;
-        }
-
-        case 'process_1_draft':
-          setNode('execute', 'active');
-          break;
-
-        case 'process_2_execute':
-          setNode('execute', 'done');
-          break;
-
-        case 'loop_complete':
-          setTimeout(resetNodes, 600);
-          break;
-
-        case 'self_improve': {
-          const comp = ev.component || '';
-          const verdict = ev.verdict || ev.status || '';
-          spawnNotif(`Self-improve${comp ? ': ' + comp : ''} — ${verdict || 'done'}`, 'info', 2500);
-          break;
-        }
-
-        case 'auto_loop': {
-          const phase = ev.phase || '';
-          if (phase === 'completed') {
-            spawnNotif(`Auto-loop cycle ${ev.cycle || ''} complete — ${ev.proven_count || 0} proven`, 'info', 3000);
-          } else if (phase === 'error') {
-            spawnNotif(`Auto-loop error: ${ev.error || 'unknown'}`, 'warn', 4000);
+          case 'conversation': {
+            const reply = ev.conversation?.response || ev.buddy_line || '';
+            if (reply) _appendBuddy(reply, ev);
+            break;
           }
-          break;
+
+          case 'vlt_patch':
+            window.SpatialEngine?.handleVLTPatch(ev);
+            addEventLine('vlt_patch', `${ev.patches?.length || 0} node(s) morphed`);
+            spawnNotif(`VLT patch: ${ev.patches?.length || 0} node(s) morphed`, 'info', 2200);
+            break;
+
+          case 'healing_triggered':
+            showCrisis(ev.message || 'Pipeline node exceeded failure threshold.', [
+              { label: 'Escalate Model', primary: true, action: () => _post('/v2/router-reset', {}) },
+              { label: 'Deepen JIT Research', action: () => sendMsg('JIT deepen and retry') },
+              { label: 'Manual Override', action: () => sendMsg('override continue') },
+            ]);
+            break;
+
+          case 'n_stroke_start':
+            setAllActive();
+            break;
+
+          case 'n_stroke_complete':
+            setTimeout(resetNodes, 400);
+            break;
+
+          case 'model_selected': {
+            const name = ev.model || ev.provider || 'Unknown';
+            document.getElementById('hud-model').textContent = esc(name);
+            document.getElementById('model-chip').textContent = esc(name.slice(0, 22));
+            break;
+          }
+
+          case 'preflight':
+          case 'pipeline_start':
+            resetNodes();
+            setNode('route', 'active');
+            break;
+
+          case 'intent_clarification':
+            setNode('route', 'active');
+            document.getElementById('buddy-status').textContent =
+              `Discovering intent… turn ${ev.result?.turn_count || 1}`;
+            break;
+
+          case 'intent_locked':
+            setNode('route', 'done');
+            setNode('jit', 'active');
+            document.getElementById('buddy-status').textContent =
+              `Intent locked: ${ev.result?.intent_hint || ''}`;
+            break;
+
+          case 'satisfaction_gate': {
+            const satisfied = ev.satisfied ?? ev.passed ?? true;
+            setNode('refine', satisfied ? 'done' : 'active');
+            if (satisfied) spawnNotif('Satisfaction gate passed ✓', 'info', 1800);
+            break;
+          }
+
+          case 'process_1_draft':
+            setNode('execute', 'active');
+            break;
+
+          case 'process_2_execute':
+            setNode('execute', 'done');
+            break;
+
+          case 'loop_complete':
+            setTimeout(resetNodes, 600);
+            break;
+
+          case 'self_improve': {
+            const comp = ev.component || '';
+            const verdict = ev.verdict || ev.status || '';
+            spawnNotif(`Self-improve${comp ? ': ' + comp : ''} — ${verdict || 'done'}`, 'info', 2500);
+            break;
+          }
+
+          case 'auto_loop': {
+            const phase = ev.phase || '';
+            if (phase === 'completed') {
+              spawnNotif(`Auto-loop cycle ${ev.cycle || ''} complete — ${ev.proven_count || 0} proven`, 'info', 3000);
+            } else if (phase === 'error') {
+              spawnNotif(`Auto-loop error: ${ev.error || 'unknown'}`, 'warn', 4000);
+            }
+            break;
+          }
+
+          case 'roadmap_run': {
+            const count = ev.reports?.length || 0;
+            spawnNotif(`Roadmap run: ${count} sandbox report${count !== 1 ? 's' : ''}`, 'info', 2500);
+            break;
+          }
+
+          case 'buddy_chat_fast':
+            setNode('jit', 'done');
+            break;
+
+          case 'midflight':
+            setNode('scope', 'done');
+            setNode('execute', 'active');
+            break;
+
+          case 'connected':
+            document.getElementById('buddy-status').textContent = 'SSE connected';
+            break;
+
+          // ── N-Stroke 3-phase events ──────────────────────────────────────
+          case 'blueprint_phase':
+            setNode('scope', 'active');
+            document.getElementById('buddy-status').textContent = 'Blueprint phase…';
+            break;
+
+          case 'dry_run_phase':
+            setNode('execute', 'active');
+            document.getElementById('buddy-status').textContent = 'Dry-run simulation…';
+            break;
+
+          case 'execute_phase':
+            setNode('execute', 'done');
+            break;
+
+          case 'simulation_gate': {
+            const gatePass = ev.passed ?? ev.satisfied ?? true;
+            setNode('refine', gatePass ? 'done' : 'active');
+            if (!gatePass) spawnNotif('Simulation gate: dry-run failed — retrying', 'warn', 2500);
+            break;
+          }
+
+          case 'consultation_recommended':
+            spawnNotif(`Consultation recommended (conf < threshold): ${ev.message || ''}`, 'warn', 3500);
+            break;
+
+          case 'actionable_intervention':
+            spawnNotif(`Intervention: ${ev.action || ev.message || 'check pipeline'}`, 'info', 2500);
+            break;
+
+          // ── Branch executor events ───────────────────────────────────────
+          case 'branch_run_start':
+            spawnNotif(`Branch run started: ${ev.branch_count || ''} branch(es)`, 'info', 1800);
+            break;
+
+          case 'branch_run_complete':
+            spawnNotif(`Branch run complete — ${ev.satisfied_count ?? '?'} satisfied`, 'info', 2500);
+            break;
+
+          case 'branch_spawned':
+            spawnNotif(`Branch spawned: ${esc(ev.branch_id || '')} [${esc(ev.branch_type || '')}]`, 'info', 1800);
+            break;
+
+          case 'branch_mitosis': {
+            const childCount = (ev.spawned_branch_ids || []).length;
+            spawnNotif(`Branch mitosis: ${childCount} child branch(es) from ${esc(ev.parent_branch_id || '?')}`, 'info', 2500);
+            break;
+          }
+
+          case 'branch_complete':
+            spawnNotif(`Branch complete: ${esc(ev.branch_id || '')} — ${esc(ev.verdict || 'done')}`, 'info', 1800);
+            break;
+
+          // ── Knowledge / SOTA events ──────────────────────────────────────
+          case 'knowledge_ingested':
+            spawnNotif(`Knowledge ingested: ${ev.domain || ''} — ${ev.entry_count || ''} entries`, 'info', 2200);
+            break;
+
+          case 'sota_ingestion_complete':
+            spawnNotif(`SOTA ingestion complete — ${ev.total_ingested || ''} entries`, 'info', 2500);
+            break;
+
+          // ── Engram / VLT events ──────────────────────────────────────────
+          case 'visual_engram':
+            // Engram updates are polled in the Ops Panel; SSE is advisory only
+            break;
+
+          case 'vlt_audit_complete':
+            spawnNotif(`VLT audit: ${ev.violations || 0} violation(s) found`, ev.violations ? 'warn' : 'info', 2000);
+            break;
+
+          case 'vlt_rendered':
+            spawnNotif('VLT render complete', 'info', 1500);
+            break;
+
+          // ── Roadmap / Daemon events ──────────────────────────────────────
+          case 'roadmap_promote':
+            spawnNotif(`Roadmap item promoted: ${esc(ev.item_id || '')}`, 'info', 2000);
+            break;
+
+          case 'daemon_status':
+            // Daemon status polled by Ops Panel; SSE is advisory
+            break;
+
+          case 'daemon_rt':
+            // Daemon real-time log; silently included in event feed by addEventLine above
+            break;
+
+          case 'daemon_approval_needed':
+            spawnNotif(
+              `Daemon approval required: ${esc(ev.proposal?.component || 'component')} — visit Ops › Daemon`,
+              'warn', 6000
+            );
+            break;
         }
-
-        case 'roadmap_run': {
-          const count = ev.reports?.length || 0;
-          spawnNotif(`Roadmap run: ${count} sandbox report${count !== 1 ? 's' : ''}`, 'info', 2500);
-          break;
-        }
-
-        case 'buddy_chat_fast':
-          setNode('jit', 'done');
-          break;
-
-        case 'midflight':
-          setNode('scope', 'done');
-          setNode('execute', 'active');
-          break;
-
-        case 'connected':
-          document.getElementById('buddy-status').textContent = 'SSE connected';
-          break;
-
-        // ── N-Stroke 3-phase events ──────────────────────────────────────
-        case 'blueprint_phase':
-          setNode('scope', 'active');
-          document.getElementById('buddy-status').textContent = 'Blueprint phase…';
-          break;
-
-        case 'dry_run_phase':
-          setNode('execute', 'active');
-          document.getElementById('buddy-status').textContent = 'Dry-run simulation…';
-          break;
-
-        case 'execute_phase':
-          setNode('execute', 'done');
-          break;
-
-        case 'simulation_gate': {
-          const gatePass = ev.passed ?? ev.satisfied ?? true;
-          setNode('refine', gatePass ? 'done' : 'active');
-          if (!gatePass) spawnNotif('Simulation gate: dry-run failed — retrying', 'warn', 2500);
-          break;
-        }
-
-        case 'consultation_recommended':
-          spawnNotif(`Consultation recommended (conf < threshold): ${ev.message || ''}`, 'warn', 3500);
-          break;
-
-        case 'actionable_intervention':
-          spawnNotif(`Intervention: ${ev.action || ev.message || 'check pipeline'}`, 'info', 2500);
-          break;
-
-        // ── Branch executor events ───────────────────────────────────────
-        case 'branch_run_start':
-          spawnNotif(`Branch run started: ${ev.branch_count || ''} branch(es)`, 'info', 1800);
-          break;
-
-        case 'branch_run_complete':
-          spawnNotif(`Branch run complete — ${ev.satisfied_count ?? '?'} satisfied`, 'info', 2500);
-          break;
-
-        case 'branch_spawned':
-          spawnNotif(`Branch spawned: ${esc(ev.branch_id || '')} [${esc(ev.branch_type || '')}]`, 'info', 1800);
-          break;
-
-        case 'branch_mitosis': {
-          const childCount = (ev.spawned_branch_ids || []).length;
-          spawnNotif(`Branch mitosis: ${childCount} child branch(es) from ${esc(ev.parent_branch_id || '?')}`, 'info', 2500);
-          break;
-        }
-
-        case 'branch_complete':
-          spawnNotif(`Branch complete: ${esc(ev.branch_id || '')} — ${esc(ev.verdict || 'done')}`, 'info', 1800);
-          break;
-
-        // ── Knowledge / SOTA events ──────────────────────────────────────
-        case 'knowledge_ingested':
-          spawnNotif(`Knowledge ingested: ${ev.domain || ''} — ${ev.entry_count || ''} entries`, 'info', 2200);
-          break;
-
-        case 'sota_ingestion_complete':
-          spawnNotif(`SOTA ingestion complete — ${ev.total_ingested || ''} entries`, 'info', 2500);
-          break;
-
-        // ── Engram / VLT events ──────────────────────────────────────────
-        case 'visual_engram':
-          // Engram updates are polled in the Ops Panel; SSE is advisory only
-          break;
-
-        case 'vlt_audit_complete':
-          spawnNotif(`VLT audit: ${ev.violations || 0} violation(s) found`, ev.violations ? 'warn' : 'info', 2000);
-          break;
-
-        case 'vlt_rendered':
-          spawnNotif('VLT render complete', 'info', 1500);
-          break;
-
-        // ── Roadmap / Daemon events ──────────────────────────────────────
-        case 'roadmap_promote':
-          spawnNotif(`Roadmap item promoted: ${esc(ev.item_id || '')}`, 'info', 2000);
-          break;
-
-        case 'daemon_status':
-          // Daemon status polled by Ops Panel; SSE is advisory
-          break;
-
-        case 'daemon_rt':
-          // Daemon real-time log; silently included in event feed by addEventLine above
-          break;
-
-        case 'daemon_approval_needed':
-          spawnNotif(
-            `Daemon approval required: ${esc(ev.proposal?.component || 'component')} — visit Ops › Daemon`,
-            'warn', 6000
-          );
-          break;
-      }
       } catch (err) { console.error('handleSSE error:', err) }
     }
 
@@ -3355,6 +3439,59 @@
             if (el) el.textContent = 'Error: ' + e.message;
           }
         },
+        profile: async () => {
+          try {
+            const [pd, cd] = await Promise.all([
+              fetch('/v2/buddy/profile').then(r => r.json()),
+              fetch('/v2/buddy/cache/stats').then(r => r.json()),
+            ]);
+            const p = pd.profile || {};
+            const el = document.getElementById('ops-profile-content');
+            if (el) {
+              const bar = (v) => {
+                const pct = Math.round(v * 100);
+                return '<div style="height:6px;border-radius:3px;background:var(--border);margin-top:4px;">' +
+                  '<div style="height:6px;border-radius:3px;background:var(--accent);width:' + pct + '%;"></div></div>';
+              };
+              el.innerHTML =
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+                '<span style="font-size:11px;font-weight:700;color:var(--text-muted);">EXPERTISE</span>' +
+                '<span style="font-size:13px;font-weight:700;color:var(--accent);">' + esc(pd.expertise_label || 'unknown') + '</span>' +
+                '</div>' + bar(p.expertise_score || 0) +
+                '<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">' + Math.round((p.expertise_score || 0) * 100) + ' / 100</div>' +
+                '</div>' +
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;">' +
+                '<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px;">PREFERRED STYLE</div>' +
+                '<div style="font-size:14px;color:var(--text);">' + esc(p.preferred_style || '—') + '</div>' +
+                '</div>' +
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;">' +
+                '<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">ACTIVE GOALS (' + esc(String((p.active_goals || []).length)) + ')</div>' +
+                ((!p.active_goals || !p.active_goals.length)
+                  ? '<span style="font-size:11px;color:var(--text-muted);">No active goals yet.</span>'
+                  : p.active_goals.map(g => '<div style="font-size:12px;color:var(--text);padding:4px 0;border-bottom:1px solid var(--border);">' + esc(g) + '</div>').join('')) +
+                '</div>' +
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;">' +
+                '<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">FREQUENT INTENTS</div>' +
+                ((!p.frequent_intents || !p.frequent_intents.length)
+                  ? '<span style="font-size:11px;color:var(--text-muted);">Not yet observed.</span>'
+                  : '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+                  p.frequent_intents.map(i => '<span style="font-size:10px;font-weight:700;padding:2px 8px;background:var(--surface);border:1px solid var(--accent);border-radius:3px;color:var(--accent);">' + esc(i) + '</span>').join('') +
+                  '</div>') +
+                '</div>' +
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;">' +
+                '<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px;">SESSIONS CONTRIBUTING</div>' +
+                '<div style="font-size:14px;color:var(--text);">' + esc(String(p.session_count || 0)) + '</div>' +
+                '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Last updated: ' + esc(p.last_updated || '—') + '</div>' +
+                '</div>';
+            }
+            const cacheEl = document.getElementById('ops-profile-cache');
+            if (cacheEl) cacheEl.textContent = JSON.stringify(cd, null, 2);
+          } catch (e) {
+            const el = document.getElementById('ops-profile-content');
+            if (el) el.textContent = 'Error: ' + e.message;
+          }
+        },
         memory: async () => {
           try {
             const d = await (await fetch('/v2/buddy/memory?limit=20')).json();
@@ -3400,6 +3537,12 @@
       document.getElementById('ops-router-refresh-btn').addEventListener('click', () => { loaders.router(); _refreshRouterStatus(); });
       document.getElementById('ops-psychebank-refresh-btn').addEventListener('click', () => { loaders.psychebank(); _refreshPsychebankCount(); });
       document.getElementById('ops-memory-refresh-btn').addEventListener('click', () => loaders.memory());
+      document.getElementById('ops-profile-refresh-btn').addEventListener('click', () => loaders.profile());
+      document.getElementById('ops-profile-invalidate-cache-btn').addEventListener('click', async () => {
+        await fetch('/v2/buddy/cache/invalidate', { method: 'POST' });
+        spawnNotif('Buddy response cache cleared.', 'info', 2500);
+        loaders.profile();
+      });
 
       document.getElementById('ops-si-run-btn').addEventListener('click', async () => {
         const el = document.getElementById('ops-si-output');

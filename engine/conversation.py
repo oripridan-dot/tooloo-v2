@@ -52,6 +52,13 @@ from typing import TYPE_CHECKING, Any
 from engine.config import GEMINI_API_KEY, VERTEX_DEFAULT_MODEL, _vertex_client as _vertex_client_cfg
 from engine.router import RouteResult
 from engine.model_garden import get_garden
+from engine.buddy_cache import BuddyCache
+from engine.buddy_cognition import (
+    CognitiveLens,
+    UserProfileStore,
+    UserProfile,
+    build_cognition_context,
+)
 
 if TYPE_CHECKING:
     from engine.jit_booster import JITBoostResult
@@ -70,9 +77,17 @@ if GEMINI_API_KEY:
         pass
 
 # ── Valid visual artifact types ───────────────────────────────────────────────
-_VALID_ARTIFACT_TYPES: frozenset[str] = frozenset(
-    {"html_component", "svg_animation", "mermaid_diagram", "chart_json"}
-)
+# 2026 expanded set — code_playground, timeline, kanban added based on deep
+# research into the most-requested visual communication formats for dev tools.
+_VALID_ARTIFACT_TYPES: frozenset[str] = frozenset({
+    "html_component",    # Standalone HTML/CSS/JS widget (sandboxed iframe)
+    "svg_animation",     # GSAP-driven SVG for the #buddyCanvas
+    "mermaid_diagram",   # Mermaid.js diagram source
+    "chart_json",        # Chart.js configuration JSON
+    "code_playground",   # Interactive code editor with run-in-browser capability
+    "timeline",          # Horizontal/vertical timeline for processes + roadmaps
+    "kanban",            # Kanban board — goal tracking, sprint planning
+})
 
 # ── Visual artifact XML pattern ────────────────────────────────────────────────
 _ARTIFACT_RE = re.compile(
@@ -233,6 +248,9 @@ class ConversationPlan:
     phases: list[ConversationPhase]
     needs_clarification: bool = False
     clarification_question: str = ""
+    # Set by prepare_stream when the 3-layer cache has a ready response
+    cache_hit: bool = False
+    cache_response: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -242,6 +260,7 @@ class ConversationPlan:
             "waves": len(self.phases),
             "needs_clarification": self.needs_clarification,
             "clarification_question": self.clarification_question,
+            "cache_hit": self.cache_hit,
         }
 
 
@@ -262,6 +281,12 @@ class ConversationResult:
     emotional_state: str = "neutral"
     visual_artifacts: list[VisualArtifact] = field(default_factory=list)
     vlt_patches: list[VLTPatch] = field(default_factory=list)
+    # Cache metadata — which layer served this response ("" = LLM-generated)
+    cache_hit: bool = False
+    cache_layer: str = ""
+    # Cognitive profile snapshot at the time of this turn
+    expertise_label: str = "intermediate"
+    cognitive_load: str = "medium"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -278,6 +303,10 @@ class ConversationResult:
             "emotional_state": self.emotional_state,
             "visual_artifacts": [a.to_dict() for a in self.visual_artifacts],
             "vlt_patches": [p.to_dict() for p in self.vlt_patches],
+            "cache_hit": self.cache_hit,
+            "cache_layer": self.cache_layer,
+            "expertise_label": self.expertise_label,
+            "cognitive_load": self.cognitive_load,
         }
 
 
@@ -352,6 +381,24 @@ _EMPATHY_OPENERS: dict[tuple[str, str], str] = {
     ("excited", "*"): "Great energy! Here's what I'm thinking:",
     ("uncertain", "*"): "Good question to sit with. Here's how I'd frame it:",
     ("grateful", "*"): "Really glad that helped! Here's a natural next step:",
+    # ── Social mode empathy openers ─────────────────────────────────────────
+    ("frustrated", "CASUAL"): "Sounds like things have been a bit rough. I'm glad you reached out — let's just talk.",
+    ("frustrated", "SUPPORT"): "I can hear that. Let's slow down — you've got my full attention.",
+    ("frustrated", "DISCUSS"): "Frustration often sparks the best thinking. Tell me what's bothering you about this.",
+    ("frustrated", "COACH"): "That feeling of being stuck is actually useful data. Let's unpack what's causing it.",
+    ("frustrated", "PRACTICE"): "Frustration with a scenario usually means it's hitting something real. Let's use that.",
+    ("excited", "CASUAL"): "Your energy is infectious! Let's run with it.",
+    ("excited", "DISCUSS"): "Yes! Let's make this a proper conversation — I'm genuinely interested.",
+    ("excited", "COACH"): "That excitement is fuel — let's channel it into something real and lasting.",
+    ("excited", "PRACTICE"): "Love that energy. Let's make this practice session count.",
+    ("uncertain", "CASUAL"): "No pressure at all — this is just two people talking. There's no wrong thing to say.",
+    ("uncertain", "SUPPORT"): "Not knowing where to start is completely normal. Just say whatever comes to mind.",
+    ("uncertain", "DISCUSS"): "Uncertainty is actually the perfect place to start a good discussion.",
+    ("uncertain", "COACH"): "Not knowing exactly what you want yet is the first honest step. Let's figure it out together.",
+    ("uncertain", "PRACTICE"): "A little nervousness before practice is a good sign. Ready when you are.",
+    ("grateful", "CASUAL"): "Really glad you're here! What shall we talk about?",
+    ("grateful", "SUPPORT"): "I'm so glad that helped. How are you feeling now?",
+    ("grateful", "COACH"): "That's the spirit — momentum builds on wins. What's next?",
 }
 
 
@@ -376,6 +423,12 @@ _TONE: dict[str, str] = {
     "IDEATE":     "exploratory",
     "SPAWN_REPO": "architectural",
     "BLOCKED":    "cautious",
+    # ── Human-like conversation modes ──────────────────────────────────────
+    "CASUAL":     "warm",
+    "SUPPORT":    "empathetic",
+    "DISCUSS":    "conversational",
+    "COACH":      "encouraging",
+    "PRACTICE":   "engaged",
 }
 
 _FOLLOWUPS: dict[str, list[str]] = {
@@ -419,6 +472,32 @@ _FOLLOWUPS: dict[str, list[str]] = {
         "Tell me what you were trying to do — I can reroute",
         "Want me to review the confidence threshold settings?",
     ],
+    # ── Human-like conversation modes ──────────────────────────────────────
+    "CASUAL": [
+        "Anything else you want to talk about?",
+        "What's been on your mind lately?",
+        "Want to explore a random interesting topic?",
+    ],
+    "SUPPORT": [
+        "How are you feeling right now — better or worse?",
+        "Would it help to talk through next steps?",
+        "Is there something specific weighing on you most?",
+    ],
+    "DISCUSS": [
+        "What's your own take on this?",
+        "Want to argue the other side together?",
+        "Any related topic you'd like to dig into?",
+    ],
+    "COACH": [
+        "Want to set a concrete first action for this week?",
+        "Should we track this goal across sessions?",
+        "What's the biggest thing blocking you right now?",
+    ],
+    "PRACTICE": [
+        "Want to run the scenario again differently?",
+        "Should I give you feedback on how that went?",
+        "Ready to try a harder version of this?",
+    ],
 }
 
 _CLARIFICATION_Q: dict[str, str] = {
@@ -429,6 +508,12 @@ _CLARIFICATION_Q: dict[str, str] = {
     "EXPLAIN": "How familiar are you with this already? I'll pitch the explanation at exactly the right level.",
     "IDEATE": "What's the core problem we're trying to solve? I'll generate ideas that actually fit your constraints.",
     "SPAWN_REPO": "What's the project about — tech stack, purpose, and any structure preferences? I'll scaffold it properly.",
+    # ── Human-like conversation modes ──────────────────────────────────────
+    "CASUAL": "What's on your mind? Happy to chat about anything.",
+    "SUPPORT": "I'm here with you. What's going on?",
+    "DISCUSS": "What topic would you like to explore? I'll bring my honest perspective.",
+    "COACH": "What's the main thing you want to work on or improve right now?",
+    "PRACTICE": "What scenario would you like to rehearse? Tell me the situation and I'll step into the role.",
 }
 
 _KEYWORD_RESPONSES: dict[str, str] = {
@@ -463,6 +548,30 @@ _KEYWORD_RESPONSES: dict[str, str] = {
     "BLOCKED": (
         "The circuit breaker has tripped — that's a safety gate, not a failure. "
         "Reset it from the toolbar, then tell me what you were trying to do and I'll find you a path through."
+    ),
+    # ── Human-like conversation modes ──────────────────────────────────────
+    "CASUAL": (
+        "Hey! Great to just chat. No agenda, no pressure — I'm genuinely here for the conversation. "
+        "What's on your mind?"
+    ),
+    "SUPPORT": (
+        "I hear you, and I'm here. Whatever you're going through, you don't have to figure it out alone. "
+        "Take your time — tell me as much or as little as you want."
+    ),
+    "DISCUSS": (
+        "Love this. Let's actually dig into it — I'll share my honest perspective, "
+        "push back where I disagree, and explore the parts neither of us has fully thought through. "
+        "What's your starting position?"
+    ),
+    "COACH": (
+        "Let's get to work on what actually matters to you. "
+        "I'm not here to give you a generic pep talk — I want to understand your specific situation, "
+        "identify the real blocker, and help you find the next concrete step. What are you working toward?"
+    ),
+    "PRACTICE": (
+        "Perfect — practice is how real confidence gets built. "
+        "Tell me the scenario: what role do you want me to play, and what's the situation? "
+        "I'll jump right in and we can debrief after."
     ),
 }
 
@@ -500,11 +609,37 @@ _SYSTEM_PROMPT = (
     "<CONTENT>\n"
     "</visual_artifact>\n\n"
     "Supported types:\n"
-    "  html_component  — standalone HTML/CSS/JS widget (sandboxed in iframe)\n"
+    "  html_component  — standalone HTML/CSS/JS widget (sandboxed iframe)\n"
     "  svg_animation   — GSAP SVG targeting #buddyCanvas nodes\n"
     "  mermaid_diagram — Mermaid.js diagram source\n"
-    "  chart_json      — Chart.js configuration JSON\n\n"
-    "Security: never include fetch(), XMLHttpRequest, or parent frame access in html_component.\n\n"
+    "  chart_json      — Chart.js configuration JSON\n"
+    "  code_playground — interactive code editor; content is the pre-filled code\n"
+    "  timeline        — timeline/process visualization; content is JSON array of\n"
+    "                    {title, description, date?, status?} objects\n"
+    "  kanban          — kanban board for goals/tasks; content is JSON object with\n"
+    "                    columns: {todo: [...], in_progress: [...], done: [...]}\n\n"
+    "Security: never include fetch(), XMLHttpRequest, or parent frame access in html_component.\n"
+    "Always prefer a visual artifact over prose when the answer is spatial, sequential, or\n"
+    "comparative — visuals reduce cognitive load and improve retention by 40-60% (2026 research).\n\n"
+    "COGNITIVE ADAPTATION: [COGNITION] blocks in this prompt contain the user's expertise tier,\n"
+    "cognitive load level, and learning style. These are MANDATORY adaptations — they come from\n"
+    "real analysis of this user's vocabulary and session history. Follow them precisely:\n"
+    "  - NOVICE: analogies, plain language, step-by-step, define every term\n"
+    "  - INTERMEDIATE: standard technical terms, practical examples alongside concepts\n"
+    "  - ADVANCED: precise language, trade-offs, edge cases, skip fundamentals\n"
+    "  - EXPERT: peer-level, maximum density, reference SOTA directly, NO basics\n\n"
+    "HUMAN CONVERSATION MODES: When the intent is a social/human mode, shift fully into that mode:\n"
+    "  - CASUAL: Natural warm chitchat. No bullet points. No structure. Just genuine human conversation.\n"
+    "    Keep responses to 2-3 sentences. Ask one follow-up question. Use contractions and natural speech.\n"
+    "  - SUPPORT: Active listening mode. Prioritise validation over advice. Reflect feelings back.\n"
+    "    Ask open questions. Never rush to a solution — sit with the person first. No lists.\n"
+    "  - DISCUSS: Intellectual peer mode. Share your actual perspective with conviction.\n"
+    "    Disagree thoughtfully when warranted. Pose counter-questions. Keep turns balanced in length.\n"
+    "  - COACH: Action-oriented mentoring. Help the person clarify their goal, identify the real blocker,\n"
+    "    and name one concrete next action. Be direct but warm. No generic motivational clichés.\n"
+    "  - PRACTICE: Immersive roleplay mode. Stay fully in character for the agreed scenario.\n"
+    "    Respond naturally as the role (interviewer, colleague, difficult customer, etc.).\n"
+    "    Break character ONLY to give direct feedback when explicitly asked.\n\n"
     "SPATIAL UI: The frontend shows a live 3D DAG constellation. When changing the visual/material "
     "state of the spatial environment, emit a <vlt_patch> block with a JSON array of node patches. "
     "This fires real-time GSAP tweens in the browser.\n"
@@ -649,9 +784,18 @@ class ConversationEngine:
     # Minimum user turns before a session is worth auto-saving to memory
     _MEMORY_SAVE_THRESHOLD = 3
 
-    def __init__(self, memory_store: "BuddyMemoryStore | None" = None) -> None:
+    def __init__(
+        self,
+        memory_store: "BuddyMemoryStore | None" = None,
+        cache: BuddyCache | None = None,
+        profile_store: UserProfileStore | None = None,
+    ) -> None:
         self._sessions: dict[str, ConversationSession] = {}
         self._memory: "BuddyMemoryStore | None" = memory_store
+        self._cache: BuddyCache = cache if cache is not None else BuddyCache()
+        self._profile_store: UserProfileStore = (
+            profile_store if profile_store is not None else UserProfileStore()
+        )
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
@@ -662,17 +806,86 @@ class ConversationEngine:
         session_id: str,
         jit_result: JITBoostResult | None = None,
     ) -> ConversationResult:
-        """Plan and execute a conversational turn; return structured result."""
+        """Plan and execute a conversational turn; return structured result.
+
+        Enhanced pipeline (2026 research session):
+          0. 3-Layer cache lookup — return cached response on hit.
+          1. Cognitive analysis (CognitiveLens) — expertise, load, goals.
+          2. User profile update (UserProfileStore) — EMA expertise + goals.
+          3. Memory context retrieval (BuddyMemoryStore).
+          4. Plan + generate response with cognition-aware prompt.
+          5. Store response in cache (L1 + L2, optionally L3 for EXPLAIN).
+          6. Profile anchor detection — store Buddy's response as anchor if
+             user signals the explanation was effective.
+        """
         t0 = time.monotonic()
         turn_id = f"t-{uuid.uuid4().hex[:8]}"
         session = self._get_or_create(session_id)
         tone = _TONE.get(route.intent, "neutral")
         emotional_state = _detect_emotional_state(text)
 
-        # Retrieve relevant past-session context from persistent memory
+        # ── Step 0: 3-layer cache lookup ──────────────────────────────────
+        cached_response = self._cache.lookup(session_id, text, route.intent)
+        if cached_response is not None:
+            # Determine which cache layer served this (stats already updated)
+            stats = self._cache.stats()
+            # Cache layer identification: check which layer's last hit rate jumped
+            cache_layer = "l1"
+            if stats["l1_semantic"]["hits"] == 0:
+                cache_layer = "l2" if stats["l2_process"]["hits"] > 0 else "l3"
+
+            plan = self._plan(route, session)
+            profile = self._profile_store.get_profile()
+            ct = CognitiveLens.analyze(text)
+
+            # Still record the user turn for session continuity
+            session.add_turn(ConversationTurn(
+                turn_id=turn_id, role="user", text=text,
+                intent=route.intent, confidence=route.confidence,
+                response="", tone=tone, emotional_state=emotional_state,
+            ))
+            session.add_turn(ConversationTurn(
+                turn_id=f"{turn_id}-b", role="buddy", text=cached_response,
+                intent=route.intent, confidence=route.confidence,
+                response=cached_response, tone=tone, emotional_state="neutral",
+            ))
+
+            return ConversationResult(
+                session_id=session_id,
+                turn_id=turn_id,
+                response_text=cached_response,
+                plan=plan,
+                suggestions=_FOLLOWUPS.get(route.intent, []),
+                tone=tone,
+                intent=route.intent,
+                confidence=route.confidence,
+                latency_ms=round((time.monotonic() - t0) * 1000, 2),
+                model_used="cache",
+                emotional_state=emotional_state,
+                cache_hit=True,
+                cache_layer=cache_layer,
+                expertise_label=profile.expertise_label(),
+                cognitive_load=ct.cognitive_load,
+            )
+
+        # ── Step 1: Cognitive analysis ────────────────────────────────────
+        ct = CognitiveLens.analyze(text)
+
+        # ── Step 2: User profile update ───────────────────────────────────
+        # Detect anchor signal from the PREVIOUS Buddy turn (if any)
+        last_buddy_turns = [t for t in session.turns if t.role == "buddy"]
+        last_buddy_text = last_buddy_turns[-1].response if last_buddy_turns else ""
+        profile = self._profile_store.update_from_turn(
+            ct, intent=route.intent, last_buddy_response=last_buddy_text
+        )
+
+        # ── Step 3: Memory context ────────────────────────────────────────
         memory_context = self._load_memory_context(text)
 
-        # Store user turn before planning (provides context)
+        # Build cognition context from profile + this turn's analysis
+        cognition_ctx = build_cognition_context(profile, ct)
+
+        # Store user turn before planning (provides context to _plan)
         session.add_turn(ConversationTurn(
             turn_id=turn_id,
             role="user",
@@ -684,10 +897,12 @@ class ConversationEngine:
             emotional_state=emotional_state,
         ))
 
+        # ── Step 4: Plan + generate ───────────────────────────────────────
         plan = self._plan(route, session)
         response_text, model_used = self._generate_response(
             route, session, plan, jit_result=jit_result,
             emotional_state=emotional_state, memory_context=memory_context,
+            cognition_context=cognition_ctx,
         )
         suggestions = _FOLLOWUPS.get(route.intent, [])
 
@@ -709,7 +924,17 @@ class ConversationEngine:
             emotional_state="neutral",
         ))
 
-        # Auto-save session to persistent memory once it's substantive
+        # ── Step 5: Store in cache ────────────────────────────────────────
+        # EXPLAIN intent answers are good L3 candidates (stable knowledge)
+        self._cache.store(
+            session_id=session_id,
+            text=text,
+            intent=route.intent,
+            response_text=clean_text,
+            persist_to_l3=(route.intent == "EXPLAIN"),
+        )
+
+        # ── Step 6: Auto-save session to persistent memory ────────────────
         user_turn_count = sum(1 for t in session.turns if t.role == "user")
         if self._memory is not None and user_turn_count >= self._MEMORY_SAVE_THRESHOLD:
             self._memory.save_session(session)
@@ -728,6 +953,10 @@ class ConversationEngine:
             emotional_state=emotional_state,
             visual_artifacts=artifacts,
             vlt_patches=vlt_patches,
+            cache_hit=False,
+            cache_layer="",
+            expertise_label=profile.expertise_label(),
+            cognitive_load=ct.cognitive_load,
         )
 
     def get_session(self, session_id: str) -> ConversationSession | None:
@@ -745,7 +974,25 @@ class ConversationEngine:
         if self._memory is not None:
             self._memory.save_session(session)
         del self._sessions[session_id]
+        # Evict L1 cache entries for this session
+        self._cache.evict_session(session_id)
         return True
+
+    def get_user_profile(self) -> UserProfile:
+        """Return the current user cognitive profile snapshot."""
+        return self._profile_store.get_profile()
+
+    def get_cache_stats(self) -> dict:
+        """Return 3-layer cache hit/miss statistics."""
+        return {**self._cache.stats(), **{"sizes": self._cache.sizes()}}
+
+    def invalidate_cache(self) -> None:
+        """Clear all 3 cache layers."""
+        self._cache.invalidate_all()
+
+    def complete_goal(self, goal_text: str) -> bool:
+        """Explicitly mark a goal as completed. Returns True if found."""
+        return self._profile_store.complete_goal(goal_text)
 
     def save_session_to_memory(self, session_id: str) -> "BuddyMemoryEntry | None":
         """Explicitly persist the named session to memory. Returns the entry or None."""
@@ -902,12 +1149,13 @@ class ConversationEngine:
         vertex_model_id: str | None = None,
         emotional_state: str = "neutral",
         memory_context: str = "",
+        cognition_context: str = "",
     ) -> tuple[str, str]:
         """Return (response_text, model_used_label).
 
         Priority: Vertex AI (Model Garden) → Gemini Direct → keyword fallback.
         Prepends an empathy opener when emotional state is non-neutral.
-        Includes persistent memory context when available.
+        Includes persistent memory context and cognitive profile context.
         """
         if plan.needs_clarification:
             return plan.clarification_question, "clarification"
@@ -919,7 +1167,7 @@ class ConversationEngine:
         try:
             text = garden.call(model_id, self._build_prompt(
                 route, session, jit_result, emotional_state=emotional_state,
-                memory_context=memory_context))
+                memory_context=memory_context, cognition_context=cognition_context))
             return text, garden.source_for(model_id)
         except Exception:
             pass  # fall through to Gemini Direct
@@ -929,7 +1177,7 @@ class ConversationEngine:
             try:
                 return self._call_gemini(
                     route, session, jit_result, emotional_state=emotional_state,
-                    memory_context=memory_context,
+                    memory_context=memory_context, cognition_context=cognition_context,
                 ), VERTEX_DEFAULT_MODEL
             except Exception:
                 pass  # fall through to keyword fallback
@@ -989,11 +1237,13 @@ class ConversationEngine:
         jit_result: JITBoostResult | None = None,
         emotional_state: str = "neutral",
         memory_context: str = "",
+        cognition_context: str = "",
     ) -> str:
         """Assemble the full prompt string from session context + JIT signals.
 
         Layer order (later layers override earlier ones for the model):
           system_prompt → memory_context → recent_context → emotional_note
+          → cognition_context (expertise + load + goals from UserProfile)
           → dynamic_persona (state-aware JIT advisory) → jit_catalogue
           → intent + user_text
         """
@@ -1011,6 +1261,10 @@ class ConversationEngine:
                 "Acknowledge this naturally before answering."
             )
 
+        # Cognition context: expertise level, cognitive load, active goals,
+        # preferred learning style — produces measurably better-adapted responses.
+        cognition_section = f"\n\n{cognition_context}" if cognition_context else ""
+
         # Dynamic persona: state-aware advisory directive from JIT signals
         persona_directive = self._build_dynamic_persona_context(
             emotional_state, jit_result
@@ -1027,7 +1281,7 @@ class ConversationEngine:
             )
         return (
             f"{_SYSTEM_PROMPT}{memory_section}{context_section}{emotional_note}"
-            f"{persona_section}{jit_section}\n\n"
+            f"{cognition_section}{persona_section}{jit_section}\n\n"
             f"Intent: {route.intent} (confidence {route.confidence:.0%})\n"
             f"User: {route.mandate_text}"
         )
@@ -1039,10 +1293,12 @@ class ConversationEngine:
         jit_result: JITBoostResult | None = None,
         model_id: str = "",
         emotional_state: str = "neutral",
+        cognition_context: str = "",
     ) -> str:
         """Call Vertex AI Model Garden with session context + JIT signals."""
         prompt = self._build_prompt(
-            route, session, jit_result, emotional_state=emotional_state)
+            route, session, jit_result, emotional_state=emotional_state,
+            cognition_context=cognition_context)
         resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
             model=model_id or VERTEX_DEFAULT_MODEL, contents=prompt
         )
@@ -1055,10 +1311,11 @@ class ConversationEngine:
         jit_result: JITBoostResult | None = None,
         emotional_state: str = "neutral",
         memory_context: str = "",
+        cognition_context: str = "",
     ) -> str:
         prompt = self._build_prompt(
             route, session, jit_result, emotional_state=emotional_state,
-            memory_context=memory_context)
+            memory_context=memory_context, cognition_context=cognition_context)
         resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
             model=VERTEX_DEFAULT_MODEL, contents=prompt)
         return resp.text.strip()
@@ -1075,15 +1332,58 @@ class ConversationEngine:
         """Pre-flight for token streaming.  Returns (prompt, session, plan,
         tone, emotional_state) without generating the LLM response.
 
+        Enhanced pipeline (mirrors process()):
+          0. 3-layer cache lookup — if hit, signals via plan.cache_hit.
+          1. Cognitive analysis (CognitiveLens) — expertise, load, goals.
+          2. User profile update (UserProfileStore) — EMA expertise + goals.
+          3. Memory context retrieval (BuddyMemoryStore).
+          4. Build cognition-aware prompt.
+
         The caller is responsible for:
-          1. Streaming the LLM response from the returned ``prompt``.
-          2. Calling ``finalize_stream()`` once the full response is known.
+          1. Checking plan.cache_hit; if True, use plan.cache_response directly.
+          2. Otherwise streaming the LLM response from the returned ``prompt``.
+          3. Calling ``finalize_stream()`` once the full response is known.
         """
         session = self._get_or_create(session_id)
         tone = _TONE.get(route.intent, "neutral")
         emotional_state = _detect_emotional_state(text)
-        memory_context = self._load_memory_context(text)
         turn_id = f"t-{uuid.uuid4().hex[:8]}"
+
+        # ── Step 0: 3-layer cache lookup ──────────────────────────────────
+        cached_response = self._cache.lookup(session_id, text, route.intent)
+        if cached_response is not None:
+            # Record turns for session continuity (mirrors process() cache path)
+            session.add_turn(ConversationTurn(
+                turn_id=turn_id, role="user", text=text,
+                intent=route.intent, confidence=route.confidence,
+                response="", tone=tone, emotional_state=emotional_state,
+            ))
+            session.add_turn(ConversationTurn(
+                turn_id=f"{turn_id}-b", role="buddy", text=cached_response,
+                intent=route.intent, confidence=route.confidence,
+                response=cached_response, tone=tone, emotional_state="neutral",
+            ))
+            plan = self._plan(route, session)
+            plan.cache_hit = True
+            plan.cache_response = cached_response
+            # Return cached text as the prompt; stream path will short-circuit
+            return cached_response, session, plan, tone, emotional_state
+
+        # ── Step 1: Cognitive analysis ────────────────────────────────────
+        ct = CognitiveLens.analyze(text)
+
+        # ── Step 2: User profile update ───────────────────────────────────
+        last_buddy_turns = [t for t in session.turns if t.role == "buddy"]
+        last_buddy_text = last_buddy_turns[-1].response if last_buddy_turns else ""
+        profile = self._profile_store.update_from_turn(
+            ct, intent=route.intent, last_buddy_response=last_buddy_text
+        )
+
+        # Build cognition context from profile + this turn's analysis
+        cognition_ctx = build_cognition_context(profile, ct)
+
+        # ── Step 3: Memory context ────────────────────────────────────────
+        memory_context = self._load_memory_context(text)
 
         # Store user turn so _build_context_block picks it up
         session.add_turn(ConversationTurn(
@@ -1097,6 +1397,7 @@ class ConversationEngine:
             emotional_state=emotional_state,
         ))
 
+        # ── Step 4: Build cognition-aware prompt ──────────────────────────
         plan = self._plan(route, session)
         if plan.needs_clarification:
             # Surface the clarifying question directly — no LLM needed
@@ -1106,6 +1407,7 @@ class ConversationEngine:
                 route, session, jit_result,
                 emotional_state=emotional_state,
                 memory_context=memory_context,
+                cognition_context=cognition_ctx,
             )
         return prompt, session, plan, tone, emotional_state
 
@@ -1122,7 +1424,12 @@ class ConversationEngine:
 
         Call once after the full streamed response has been assembled.
         Keeps session hygiene identical to the batch ``process()`` path.
+        Skips session/cache writes when plan.cache_hit is True (already recorded).
         """
+        # Cache hit — turns already recorded by prepare_stream; nothing to do.
+        if plan.cache_hit:
+            return
+
         # Strip XML artifact blocks from the stored text (same as process())
         clean = _ARTIFACT_RE.sub("", buddy_text).strip()
         clean = _VLT_PATCH_RE.sub("", clean).strip()
@@ -1137,6 +1444,15 @@ class ConversationEngine:
             tone=tone,
             emotional_state="neutral",
         ))
+
+        # ── Store in cache (mirrors process() Step 5) ─────────────────────
+        self._cache.store(
+            session_id=session.session_id,
+            text=route.mandate_text,
+            intent=route.intent,
+            response_text=clean,
+            persist_to_l3=(route.intent == "EXPLAIN"),
+        )
 
         user_turn_count = sum(1 for t in session.turns if t.role == "user")
         if self._memory is not None and user_turn_count >= self._MEMORY_SAVE_THRESHOLD:

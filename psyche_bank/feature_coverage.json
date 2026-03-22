@@ -1,0 +1,136 @@
+{
+  "run_id": "1937e7f1913c",
+  "timestamp": "2026-03-22T07:23:12.831192+00:00",
+  "engine_version": "5-cycle-v2",
+  "domain_coverage": [
+    {
+      "cycle": 4,
+      "domain": "16d_validation",
+      "component_count": 2,
+      "coverage_score": 0.8096,
+      "is_desert": false,
+      "top_component": "validator_16d",
+      "top_alignment": 0.87,
+      "weak_component": "self_improvement",
+      "weak_alignment": 0.778,
+      "benchmark_count": 3
+    },
+    {
+      "cycle": 4,
+      "domain": "engineering",
+      "component_count": 7,
+      "coverage_score": 0.7511,
+      "is_desert": true,
+      "top_component": "refinement_supervisor",
+      "top_alignment": 0.7857,
+      "weak_component": "roadmap",
+      "weak_alignment": 0.7163,
+      "benchmark_count": 5
+    },
+    {
+      "cycle": 4,
+      "domain": "execution",
+      "component_count": 11,
+      "coverage_score": 0.7181,
+      "is_desert": true,
+      "top_component": "meta_architect",
+      "top_alignment": 0.7926,
+      "weak_component": "executor",
+      "weak_alignment": 0.6066,
+      "benchmark_count": 8
+    },
+    {
+      "cycle": 4,
+      "domain": "intelligence",
+      "component_count": 8,
+      "coverage_score": 0.6829,
+      "is_desert": true,
+      "top_component": "router",
+      "top_alignment": 0.9176,
+      "weak_component": "model_selector",
+      "weak_alignment": 0.538,
+      "benchmark_count": 2
+    },
+    {
+      "cycle": 4,
+      "domain": "jit",
+      "component_count": 2,
+      "coverage_score": 0.737,
+      "is_desert": true,
+      "top_component": "jit_booster",
+      "top_alignment": 0.7748,
+      "weak_component": "sota_ingestion",
+      "weak_alignment": 0.7074,
+      "benchmark_count": 2
+    },
+    {
+      "cycle": 4,
+      "domain": "performance",
+      "component_count": 5,
+      "coverage_score": 0.556,
+      "is_desert": true,
+      "top_component": "executor",
+      "top_alignment": 0.6066,
+      "weak_component": "buddy_cache",
+      "weak_alignment": 0.5107,
+      "benchmark_count": 5
+    },
+    {
+      "cycle": 4,
+      "domain": "retrieval",
+      "component_count": 6,
+      "coverage_score": 0.6848,
+      "is_desert": true,
+      "top_component": "conversation",
+      "top_alignment": 0.8273,
+      "weak_component": "buddy_cache",
+      "weak_alignment": 0.5107,
+      "benchmark_count": 2
+    },
+    {
+      "cycle": 4,
+      "domain": "routing",
+      "component_count": 1,
+      "coverage_score": 0.9176,
+      "is_desert": false,
+      "top_component": "router",
+      "top_alignment": 0.9176,
+      "weak_component": "router",
+      "weak_alignment": 0.9176,
+      "benchmark_count": 2
+    },
+    {
+      "cycle": 4,
+      "domain": "security",
+      "component_count": 4,
+      "coverage_score": 0.7653,
+      "is_desert": true,
+      "top_component": "tribunal",
+      "top_alignment": 0.7867,
+      "weak_component": "config",
+      "weak_alignment": 0.748,
+      "benchmark_count": 3
+    },
+    {
+      "cycle": 4,
+      "domain": "validation",
+      "component_count": 3,
+      "coverage_score": 0.8362,
+      "is_desert": false,
+      "top_component": "refinement",
+      "top_alignment": 0.944,
+      "weak_component": "refinement_supervisor",
+      "weak_alignment": 0.7857,
+      "benchmark_count": 2
+    }
+  ],
+  "desert_domains": [
+    "engineering",
+    "execution",
+    "intelligence",
+    "jit",
+    "performance",
+    "retrieval",
+    "security"
+  ]
+}

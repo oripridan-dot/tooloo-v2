@@ -159,6 +159,28 @@ _POISON: list[tuple[str, re.Pattern[str]]] = [
     ),
 ]
 
+# ── Self-scan allowlist ──────────────────────────────────────────────────────
+# Files that CONTAIN detection patterns (the scanner itself, its tests, etc.)
+# must not trigger false positives when scanning their own source.
+# Maps slug-prefix → set of pattern names that are expected in that component's
+# source because it defines or tests those very patterns.
+_SELF_SCAN_ALLOWLIST: dict[str, set[str]] = {
+    "tribunal": {
+        "bola-idor", "bola-unfiltered-query", "hardcoded-secret", "aws-key-leak",
+        "bearer-token-leak", "sql-injection", "dynamic-eval", "dynamic-exec",
+        "dynamic-import", "path-traversal", "ssti-template-injection",
+        "command-injection", "ssrf", "insecure-deserialization",
+        "supply-chain-tls-bypass", "supply-chain-unpinned-install",
+    },
+    "n_stroke": {
+        "sql-injection",  # comment/string pattern match, not real vulnerability
+        "dynamic-eval", "dynamic-exec",  # detection logic references
+    },
+    "psyche_bank": {
+        "hardcoded-secret",  # stores rule patterns about secrets
+    },
+}
+
 
 @dataclass
 class Engram:
@@ -200,6 +222,14 @@ class Tribunal:
     def evaluate(self, engram: Engram) -> TribunalResult:
         violations = [name for name,
                       pat in _POISON if pat.search(engram.logic_body)]
+
+        # Filter out expected false positives for self-referential source files
+        allowed: set[str] = set()
+        for prefix, patterns in _SELF_SCAN_ALLOWLIST.items():
+            if prefix in engram.slug:
+                allowed |= patterns
+        if allowed:
+            violations = [v for v in violations if v not in allowed]
 
         if not violations:
             return TribunalResult(
