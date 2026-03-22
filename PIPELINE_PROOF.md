@@ -6034,3 +6034,55 @@ Auto-approved all medium-risk/high-impact/high-ROI development bottlenecks ident
 **[HANDOFF_PROTOCOL]**
 - next_action: "Build Buddy Profile sidebar panel in studio/static/index.html. Then wire conversation.py streaming cache pipeline."
 - context_required: "Tests 1337/0. Avg composite 0.9843. Monitor 0.980. Control 0.983. All 16 dims 100% pass. 5/5 SI cycles stable. Only remaining gaps: Buddy UI, streaming cache, Human Considering 0.933."
+
+### Session 2026-03-22T14:00:00Z — Parallel Validation Pipeline (write→test→QA→display fanout)
+
+**[SYSTEM_STATE]**
+- branch: main
+- tests_start: 1337 passed / 0 failed
+- tests_end: 1352 passed / 0 failed
+- unresolved_blockers: Buddy Profile sidebar; conversation.py cache pipeline; Vertex ADC JSON missing
+
+**[EXECUTION_TRACE]**
+- nodes_touched: [engine/parallel_validation.py (NEW), engine/self_improvement.py, studio/api.py, tests/test_parallel_validation.py (NEW)]
+- mcp_tools_used: [read_file, replace_string_in_file, create_file, run_in_terminal, grep_search, semantic_search]
+- architecture_changes: New parallel validation pipeline that fans out tribunal + 16D + tests concurrently per file batch. Wired into SelfImprovementEngine.run_parallel() and 2 new API endpoints.
+
+**[WHAT_WAS_DONE]**
+- Created engine/parallel_validation.py (~500 lines):
+  - ParallelValidationPipeline class with validate_changes(), validate_and_write()
+  - Fan-out: tribunal + 16D per file + single-batch pytest — all concurrent via asyncio.gather
+  - Write queue (single-writer serialisation) prevents file-system races
+  - SSE broadcast events fire per-stage as they complete
+  - Data classes: FileChange, StageResult, ValidationReport
+- Wired into engine/self_improvement.py:
+  - Added run_parallel() method combining component assessment + concurrent validation
+  - Uses improvement_id prefix "si-pv-" for parallel validation runs
+- Added 2 new API endpoints in studio/api.py:
+  - POST /v2/self-improve/parallel — full parallel self-improvement
+  - POST /v2/validate/parallel — standalone parallel validation
+- Created tests/test_parallel_validation.py with 15 tests (all pass in 2.37s)
+- Root-caused and fixed subprocess hang:
+  - engine.config injects TOOLOO_LIVE_TESTS=1 into os.environ at import time
+  - Child pytest inherits this and attempts live API calls → hangs
+  - Fix: pass TOOLOO_LIVE_TESTS=0 in child subprocess env
+- Root-caused and fixed _find_test_targets over-matching:
+  - Import-grepping (from engine.X) matched 368 tests across 9 files → 70s timeout
+  - Fix: use only test_{stem}.py exact match + test_{stem}_*.py glob
+
+**[WHAT_WAS_NOT_DONE]**
+- Buddy Profile sidebar panel
+- conversation.py streaming cache pipeline
+- Human Considering avg improvement (0.933)
+- User mentioned "2 things" but only described the first (parallel validation); second was never stated
+
+**[JIT_SIGNAL_PAYLOAD]**
+- rule_1: engine.config injects TOOLOO_LIVE_TESTS=1 into os.environ at import time. Any subprocess inheriting full env will attempt live API calls and hang. Always set TOOLOO_LIVE_TESTS=0 in child subprocess env.
+- rule_2: asyncio.create_subprocess_exec works fine when child env is clean — the hang was NOT a fork/gRPC issue but live-test mode in the child process.
+- rule_3: _find_test_targets must NOT grep imports — matching "from engine.X" catches 300+ tests across 9+ files. Use only test_{stem}.py exact match + test_{stem}_*.py glob prefix.
+- rule_4: BaseSubprocessTransport.__del__ RuntimeError on event loop close is cosmetic — does not affect functionality. Occurs when asyncio.run() closes loop before subprocess transports are GC'd.
+- rule_5: ParallelValidationPipeline E2E: tribunal 11-24ms, 16D 11-19ms, tests 9s, total wall 9.1s for 3 files. Tests dominate; tribunal/16D are negligible.
+
+**[HANDOFF_PROTOCOL]**
+- next_action: "Build Buddy Profile sidebar panel in studio/static/index.html. Then wire conversation.py streaming cache pipeline."
+- context_required: "Tests 1352/0. Parallel validation pipeline fully wired and tested. 2 new endpoints: /v2/self-improve/parallel, /v2/validate/parallel. E2E composite 0.9814. Only remaining gaps: Buddy UI, streaming cache, Human Considering 0.933."

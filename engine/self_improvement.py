@@ -46,6 +46,7 @@ from engine.refinement import RefinementLoop
 from engine.router import LockedIntent, MandateRouter
 from engine.scope_evaluator import ScopeEvaluator
 from engine.tribunal import Engram, Tribunal
+from engine.validator_16d import Validator16D
 
 if TYPE_CHECKING:
     from engine.jit_booster import JITBoostResult
@@ -1257,6 +1258,113 @@ class SelfImprovementEngine:
             regression_passed=regression_passed,
             regression_details=regression_details,
         )
+
+    # ── Parallel Validation (write + test + QA + display concurrently) ────────
+
+    def run_parallel(
+        self,
+        broadcast_fn: Callable[[dict[str, Any]], None] | None = None,
+        optimization_focus: str | None = None,
+    ) -> SelfImprovementReport:
+        """Self-improvement cycle with parallel validation pipeline.
+
+        Combines component assessment with concurrent test/tribunal/16D validation.
+        For each component:
+          1. Assess (JIT + route + LLM analysis) — wave-ordered
+          2. Validate in parallel (tribunal + 16D + tests) — all stages concurrent
+          3. Broadcast results live via SSE as each stage completes
+
+        This replaces the sequential assess → regression-gate → refine flow with
+        a concurrent assess+validate pipeline that saves wall-clock time.
+        """
+        from engine.parallel_validation import (
+            FileChange,
+            ParallelValidationPipeline,
+        )
+
+        t0 = time.monotonic()
+        improvement_id = f"si-pv-{uuid.uuid4().hex[:8]}"
+        _broadcast = broadcast_fn or (lambda _: None)
+
+        if optimization_focus is not None:
+            self._optimization_focus = self._normalise_focus(
+                optimization_focus)
+
+        # Phase 0: Arch diagram
+        arch_diagram = self._generate_arch_diagram()
+
+        # Phase 1: Component assessments (wave-ordered, async fan-out)
+        loop = asyncio.new_event_loop()
+        try:
+            assessments = loop.run_until_complete(
+                self._run_ouroboros_async(_broadcast, improvement_id)
+            )
+
+            # Phase 2: Parallel validation of all component source files
+            pipeline = ParallelValidationPipeline(
+                broadcast_fn=_broadcast,
+                tribunal=self._tribunal,
+                validator=Validator16D(),
+            )
+            changes = [
+                FileChange(
+                    path=_COMPONENT_SOURCE.get(a.component, ""),
+                    component=a.component,
+                )
+                for a in assessments
+                if _COMPONENT_SOURCE.get(a.component)
+            ]
+            validation_report = loop.run_until_complete(
+                pipeline.validate_changes(changes, pipeline_id=improvement_id)
+            )
+        finally:
+            loop.close()
+
+        # Phase 3: Refinement using BOTH assessment + validation results
+        from engine.executor import ExecutionResult as _ER
+        refinement_inputs = [
+            _ER(
+                mandate_id=f"{improvement_id}-{a.component}",
+                success=a.execution_success,
+                output=a.component,
+                latency_ms=a.execution_latency_ms,
+            )
+            for a in assessments
+        ]
+        refinement = self._refinement_loop.evaluate(refinement_inputs)
+        top_recs = self._top_recommendations(
+            assessments, refinement.recommendations)
+        total_signals = sum(len(a.jit_signals) for a in assessments)
+
+        report = SelfImprovementReport(
+            improvement_id=improvement_id,
+            ts=datetime.now(UTC).isoformat(),
+            components_assessed=len(assessments),
+            waves_executed=len(self._sorter.sort(self._build_wave_spec())),
+            total_signals=total_signals,
+            assessments=assessments,
+            top_recommendations=top_recs,
+            refinement_verdict=refinement.verdict,
+            refinement_success_rate=refinement.success_rate,
+            latency_ms=round((time.monotonic() - t0) * 1000, 2),
+            arch_diagram=arch_diagram,
+            regression_passed=validation_report.all_passed,
+            regression_details=(
+                f"parallel validation: {validation_report.files_validated} files, "
+                f"composite={validation_report.composite_score:.4f}, "
+                f"tribunal={'PASS' if validation_report.tribunal_passed else 'FAIL'}, "
+                f"tests={'PASS' if validation_report.test_passed else 'FAIL'}"
+            ),
+        )
+
+        _broadcast({
+            "type": "self_improve",
+            "mode": "parallel_validation",
+            "report": report.to_dict(),
+            "validation": validation_report.to_dict(),
+        })
+
+        return report
 
     def _read_component_source(self, component: str, max_lines: int = 120) -> str:
         """Read the first ``max_lines`` of the component's source file.

@@ -9,26 +9,19 @@
 ## Current State
 - branch: main
 - live-mode status: FULLY OPERATIONAL
-- Tests: 1337 passed, 1 skipped, 0 failed. All green.
-- **Monitor+Control Hardening + 5-Cycle SI (2026-03-22)**
-  - 5/5 self-improvement cycles PASS, 17/17 components, 100% success rate
-  - Avg composite: **0.9843** (was 0.9745, +0.98pp)
-  - Autonomous gate pass: **100% 17/17** (maintained)
-  - Tribunal pass: **100%** (maintained)
-  - All 16 dimensions at 100% pass rate
-  - Monitor avg: **0.9800** (was 0.9053, +7.47pp — logging+timing to 5 components)
-  - Control avg: **0.9829** (was 0.9124, +7.05pp — threshold/circuit-breaker/rollback to 12 components)
-  - Convergence avg: **1.0000** (maintained)
-  - Quality avg: **0.9694** (maintained)
-  - Efficiency avg: **0.9941** (maintained)
-  - Security avg: **1.0000** (maintained)
-  - Resilience avg: **0.9600** (maintained)
+- Tests: 1352 passed, 1 skipped, 0 failed. All green.
+- **Parallel Validation Pipeline (2026-03-22)**
+  - New `engine/parallel_validation.py` — concurrent write→test→QA→display pipeline
+  - Tribunal (11-24ms) + 16D (11-19ms) + tests (9s) fan out concurrently
+  - E2E integration: 3 files validated in 9.1s wall time, composite 0.9814
+  - Wired into `SelfImprovementEngine.run_parallel()` and 2 new API endpoints
+  - 15 new tests added (`tests/test_parallel_validation.py`)
+  - Root-cause fix: `TOOLOO_LIVE_TESTS=0` in child subprocess env prevents live API hang
 
 ## Active Blockers (ranked)
 ### Cleared
-- Monitor avg: 0.905 → **0.980** (logging+timing+structured-output to all weak components)
-- Control avg: 0.912 → **0.983** (threshold/circuit-breaker/rollback to all components)
-- Security, Convergence, Efficiency, Quality all at ceiling
+- Parallel validation pipeline: fully wired, 15 tests, E2E passing
+- Subprocess hang: root-caused to `TOOLOO_LIVE_TESTS=1` env propagation, fixed
 
 ### Pending
 1. Buddy Profile sidebar panel in `studio/static/index.html`
@@ -42,11 +35,11 @@
 
 ## JIT Bank (Last 5 Rules)
 
-1. **Monitor instrumentation**: `logging` + `perf_counter` + `@dataclass`/`to_dict` in first 8000 chars pushes Monitor above 0.95. Validator only reads first 8000 chars.
-2. **Control keywords**: `threshold`, `max_retries`, `circuit_breaker`, `rollback` must appear in first 8000 chars. `MAX_ITERATIONS` does NOT match validator's control detector.
-3. **Convergence via PsycheBank**: `_validate_convergence()` must call `all_rules()` not `list_rules()`. With 90 rules, score → 1.00.
-4. **Config instrumentation**: `@dataclass` + `to_dict()` + `logging` + `time.perf_counter` + `__repr__` = Monitor ceiling.
-5. **Ephemeral test cleanup**: Self-improvement cycles may generate broken test files — clean up `test_full_cycle_si_*.py` artifacts.
+1. **TOOLOO_LIVE_TESTS env propagation**: `engine.config` injects `TOOLOO_LIVE_TESTS=1` into `os.environ` at import time. Any subprocess inheriting full env will attempt live API calls and hang. Always set `TOOLOO_LIVE_TESTS=0` in child subprocess env.
+2. **asyncio.create_subprocess_exec is fork-safe** when env is clean — the hang was NOT a gRPC fork issue but live-test mode in the child process.
+3. **_find_test_targets must not grep imports** — matching `from engine.X` catches 300+ tests across 9 files. Use only `test_{stem}.py` exact match + `test_{stem}_*.py` glob.
+4. **Monitor instrumentation**: `logging` + `perf_counter` + `@dataclass`/`to_dict` in first 8000 chars pushes Monitor above 0.95.
+5. **Control keywords**: `threshold`, `max_retries`, `circuit_breaker`, `rollback` must appear in first 8000 chars.
 
 ---
 
@@ -65,10 +58,11 @@ Mandate → MandateRouter(CB:0.85) → JITBooster → Tribunal(OWASP)
 | Config / env vars | `engine/config.py` |
 | 58 API endpoints | `studio/api.py` (search `/v2/`) |
 | Self-improve loop | `engine/self_improvement.py` → `SelfImprovementEngine` |
+| Parallel validation | `engine/parallel_validation.py` → `ParallelValidationPipeline` |
 | Calibration engine | `engine/calibration_engine.py` → `CalibrationEngine.run_5_cycles()` |
 | Feature profiles | `engine/feature_registry.py` → `get_component_profile(name)` |
 | Autonomous loop | `ouroboros_cycle.py` (gated by `TOOLOO_LIVE_TESTS`) |
 | Fast smoke suite | `tests/test_engine_smoke.py` (34 tests, ~7s, offline) |
 | Run tests | `pytest tests/ --ignore=tests/test_ingestion.py --ignore=tests/test_playwright_ui.py` |
 
-*Last updated: 2026-03-22 (Monitor+Control Hardening session)*
+*Last updated: 2026-03-22 (Parallel Validation Pipeline session)*

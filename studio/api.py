@@ -1479,6 +1479,58 @@ async def self_improve() -> dict[str, Any]:
     return {"self_improvement": report_dict, "report": report_dict, "latency_ms": latency_ms}
 
 
+@app.post("/v2/self-improve/parallel")
+async def self_improve_parallel() -> dict[str, Any]:
+    """Self-improvement with parallel validation pipeline.
+
+    Combines component assessment with concurrent tribunal + 16D + test
+    validation.  All stages run simultaneously per file — results stream
+    live via SSE as each stage completes.
+
+    SSE event types emitted:
+      - parallel_validation_start
+      - parallel_validation_stage (per file × per stage)
+      - parallel_validation_complete
+    """
+    t0 = time.monotonic()
+    loop = asyncio.get_running_loop()
+    report = await loop.run_in_executor(
+        None,
+        lambda: _self_improvement_engine.run_parallel(broadcast_fn=_broadcast),
+    )
+    latency_ms = round((time.monotonic() - t0) * 1000, 2)
+    report_dict = report.to_dict()
+    return {"self_improvement": report_dict, "report": report_dict, "latency_ms": latency_ms}
+
+
+@app.post("/v2/validate/parallel")
+async def validate_parallel(
+    files: list[str] | None = None,
+) -> dict[str, Any]:
+    """Run parallel validation (tribunal + 16D + tests) on specified files.
+
+    If no files are specified, validates all 17 engine components.
+    Returns a ValidationReport with per-file, per-stage results.
+    """
+    from engine.parallel_validation import FileChange, ParallelValidationPipeline
+    from engine.self_improvement import _COMPONENT_SOURCE
+
+    pipeline = ParallelValidationPipeline(
+        broadcast_fn=_broadcast,
+        tribunal=_tribunal,
+        validator=_validator_16d,
+    )
+    if files:
+        changes = [FileChange(path=f) for f in files]
+    else:
+        changes = [
+            FileChange(path=src, component=comp)
+            for comp, src in _COMPONENT_SOURCE.items()
+        ]
+    report = await pipeline.validate_changes(changes)
+    return report.to_dict()
+
+
 class SelfImproveApplyRequest(BaseModel):
     """Apply a single FIX suggestion from a self-improvement assessment.
 
