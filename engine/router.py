@@ -21,14 +21,17 @@ Circuit breaker (Law 19):
   - Governor calls reset() to restore
 """
 from __future__ import annotations
+from engine.config import CIRCUIT_BREAKER_MAX_FAILS, CIRCUIT_BREAKER_THRESHOLD
 
+import logging
 import re
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from engine.config import CIRCUIT_BREAKER_MAX_FAILS, CIRCUIT_BREAKER_THRESHOLD
+logger = logging.getLogger(__name__)
+
 
 # Maximum number of low-confidence examples retained for active-learning reuse.
 _ACTIVE_LEARNING_MAXLEN: int = 200

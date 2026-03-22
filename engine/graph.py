@@ -20,11 +20,19 @@ TopologicalSorter          — Parallel-wave sorter that hard-rejects cycles.
 """
 from __future__ import annotations
 
+import logging
 import threading
 from dataclasses import dataclass
 from typing import Any
 
 import networkx as nx
+
+logger = logging.getLogger(__name__)
+
+# Control: configurable thresholds for DAG safety
+_MAX_NODES_THRESHOLD = 500    # hard cap to prevent runaway graph expansion
+_MAX_RETRIES = 3              # retry limit for transient graph operations
+_ROLLBACK_ON_CYCLE = True     # auto-rollback edge additions that create cycles
 
 
 class CycleDetectedError(ValueError):

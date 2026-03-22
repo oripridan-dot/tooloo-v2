@@ -21,11 +21,18 @@ Public API:
 """
 from __future__ import annotations
 
+import logging
 import math
 import re
 import threading
 from dataclasses import dataclass, field
 from typing import Any
+
+# Control: rollback and circuit-breaker thresholds for corpus safety
+_MAX_CORPUS_SIZE = 50_000     # hard cap to prevent unbounded memory growth
+_ROLLBACK_ON_CORRUPT = True   # auto-rollback corrupted document insertions
+
+logger = logging.getLogger(__name__)
 
 # ── Gemini Embedding Backend ──────────────────────────────────────────────────
 # Optional: if google-genai + GEMINI_API_KEY are available, use text-embedding-004

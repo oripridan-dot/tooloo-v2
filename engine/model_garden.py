@@ -37,8 +37,18 @@ All model IDs are confirmed against the Vertex AI Model Garden catalog
 (project too-loo-zi8g7e, us-central1) and Anthropic Vertex docs - 2026-03-18.
 """
 from __future__ import annotations
+from engine.local_slm_client import LocalSLMClient, LocalSLMConfig
+from engine.config import (
+    ANTHROPIC_VERTEX_REGION,
+    CROSS_MODEL_CONSENSUS_ENABLED,
+    GCP_PROJECT_ID,
+    LOCAL_SLM_ENDPOINT,
+    LOCAL_SLM_MODEL,
+    _vertex_client as _google_client,
+)
 
 import json
+import logging
 import threading
 from collections.abc import Callable
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
@@ -47,17 +57,11 @@ from typing import Any
 from urllib import request as urlrequest
 from urllib.error import HTTPError, URLError
 
-from engine.config import (
-    ANTHROPIC_VERTEX_REGION,
-    CROSS_MODEL_CONSENSUS_ENABLED,
-    GCP_PROJECT_ID,
-    LOCAL_SLM_ENDPOINT,
-    LOCAL_SLM_MODEL,
-)
-from engine.config import (
-    _vertex_client as _google_client,  # patchable in tests
-)
-from engine.local_slm_client import LocalSLMClient, LocalSLMConfig
+logger = logging.getLogger(__name__)
+
+# Control: configurable thresholds for model garden safety
+_MAX_RETRIES = 3              # per-model retry ceiling
+_COST_CIRCUIT_BREAKER = 50.0  # USD — hard cap per-mandate to prevent runaway spend
 
 
 # ── Cognitive Profile (Four Pillars Support) ──────────────────────────────────

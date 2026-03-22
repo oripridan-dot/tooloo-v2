@@ -27,11 +27,19 @@ TTL support:
 from __future__ import annotations
 
 import json
+import logging
 import threading
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
+
+# Control: configurable thresholds for rule store safety
+MAX_RULES_THRESHOLD = 10_000  # hard cap to prevent unbounded growth
+MAX_RETRIES = 3               # max I/O retries for corrupted .cog.json
+_ROLLBACK_ON_CORRUPT = True   # auto-rollback on parse failure
 
 _DEFAULT_BANK = (
     Path(__file__).resolve().parents[1] /

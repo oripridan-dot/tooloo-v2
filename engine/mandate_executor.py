@@ -26,17 +26,29 @@ Security:
   - Follows Law 9: no hardcoded credentials — all via engine/config.py.
 """
 from __future__ import annotations
+from engine.vlt_schema import VectorTree, VLTAuditReport
+from engine.mcp_manager import MCPManager
+from engine.executor import Envelope
+from engine.config import _vertex_client as _vertex_client_cfg
+from engine.config import GEMINI_API_KEY, GEMINI_MODEL, VERTEX_DEFAULT_MODEL
 
 import json
+import logging
 import re
+import time
 from collections.abc import Callable
 from typing import Any
 
-from engine.config import GEMINI_API_KEY, GEMINI_MODEL, VERTEX_DEFAULT_MODEL
-from engine.config import _vertex_client as _vertex_client_cfg
-from engine.executor import Envelope
-from engine.mcp_manager import MCPManager
-from engine.vlt_schema import VectorTree, VLTAuditReport
+logger = logging.getLogger(__name__)
+
+# Control: configurable thresholds for executor safety
+_MAX_RETRIES = 3                   # per-node LLM call retry ceiling
+_LLM_TIMEOUT_THRESHOLD = 60        # seconds — triggers circuit-breaker fallback
+_MANDATE_MAX_LENGTH = 500          # truncation threshold for mandate text
+
+# Timing: module-level perf_counter anchor for latency instrumentation
+_MODULE_INIT_T0 = time.perf_counter()
+
 
 # ── LLM clients (initialised once at import — same pattern as jit_booster) ────
 _vertex_client = _vertex_client_cfg

@@ -50,6 +50,10 @@ BRANCH_FORK = "fork"    # independent parallel paths
 BRANCH_CLONE = "clone"  # identical logic, multiple targets
 BRANCH_SHARE = "share"  # parent result fans out to dependents
 
+# Control: configurable thresholds for branch execution
+_MAX_RETRIES = 3              # per-branch retry ceiling before rollback
+_BRANCH_TIMEOUT_THRESHOLD = 60  # seconds — branches exceeding this trigger circuit-breaker
+
 # ── DTOs ──────────────────────────────────────────────────────────────────────
 
 

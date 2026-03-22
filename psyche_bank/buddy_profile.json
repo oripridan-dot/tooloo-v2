@@ -1,5 +1,5 @@
 {
-  "expertise_score": 0.184,
+  "expertise_score": 0.096,
   "preferred_style": "direct",
   "frequent_intents": [
     "DESIGN",
@@ -12,5 +12,5 @@
   "completed_goals": [],
   "knowledge_anchors": [],
   "session_count": 0,
-  "last_updated": "2026-03-22T09:42:49.760870+00:00"
+  "last_updated": "2026-03-22T11:30:12.548655+00:00"
 }

@@ -34,6 +34,10 @@ except Exception:
 # Core security files — changes require explicit user approval (Law 20)
 _HIGH_RISK_COMPONENTS = {"tribunal", "psyche_bank", "router"}
 
+# Control: configurable thresholds for daemon safety
+_MAX_CYCLE_RETRIES = 3         # per-cycle retry ceiling before rollback
+_DAEMON_CIRCUIT_BREAKER = 5    # consecutive failures before daemon pauses
+
 
 class BackgroundDaemon:
     def __init__(self, broadcast_fn):

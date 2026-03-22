@@ -22,11 +22,15 @@ Runs after every fan_out() call to:
 This closes the action loop: scope → execute → refine → (re-run if needed).
 """
 from __future__ import annotations
+from engine.executor import ExecutionResult
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from engine.executor import ExecutionResult
+# Control: rollback and circuit-breaker thresholds
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

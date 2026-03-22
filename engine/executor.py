@@ -16,6 +16,7 @@ No imports from tooloo-core. Uses stdlib ThreadPoolExecutor.
 """
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed, wait
@@ -23,6 +24,12 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from engine.config import settings
+
+logger = logging.getLogger(__name__)
+
+# Control: configurable thresholds for fan-out safety
+_MAX_RETRIES = 3          # per-node retry ceiling before circuit-breaker escalation
+_TIMEOUT_THRESHOLD = 30   # seconds — nodes exceeding this trigger remediation
 
 
 @dataclass

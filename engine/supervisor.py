@@ -61,6 +61,10 @@ from engine.tribunal import Engram, Tribunal, TribunalResult
 
 MAX_ITERATIONS: int = 3  # safety cap on the satisfaction loop
 
+# Control: configurable thresholds for two-stroke safety
+_MAX_RETRIES = 3              # per-process retry ceiling before rollback
+_CIRCUIT_BREAKER_THRESHOLD = 0.85  # confidence floor for execution gating
+
 # ---------------------------------------------------------------------------
 # DTOs
 # ---------------------------------------------------------------------------

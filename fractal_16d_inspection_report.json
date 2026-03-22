@@ -1,12 +1,12 @@
 {
-  "inspection_id": "fractal-16d-223b1f62",
-  "timestamp": "2026-03-22T09:40:24.169161+00:00",
+  "inspection_id": "fractal-16d-ac43255a",
+  "timestamp": "2026-03-22T11:32:53.815379+00:00",
   "components_inspected": 17,
   "total_fractal_sub_tasks": 51,
-  "total_latency_ms": 95.66,
-  "avg_composite_score": 0.9745,
-  "min_composite_score": 0.9643,
-  "max_composite_score": 0.9837,
+  "total_latency_ms": 57.52,
+  "avg_composite_score": 0.9843,
+  "min_composite_score": 0.975,
+  "max_composite_score": 0.9906,
   "autonomous_gate_pass_rate": 1.0,
   "tribunal_pass_rate": 1.0,
   "dimension_aggregates": [
@@ -84,17 +84,17 @@
     },
     {
       "name": "Monitor",
-      "avg_score": 0.9053,
-      "min_score": 0.81,
+      "avg_score": 0.98,
+      "min_score": 0.96,
       "max_score": 1.0,
       "pass_rate": 1.0,
-      "weakest_component": "mandate_executor"
+      "weakest_component": "tribunal"
     },
     {
       "name": "Control",
-      "avg_score": 0.9124,
-      "min_score": 0.9,
-      "max_score": 0.97,
+      "avg_score": 0.9829,
+      "min_score": 0.95,
+      "max_score": 1.0,
       "pass_rate": 1.0,
       "weakest_component": "tribunal"
     },
@@ -108,7 +108,7 @@
     },
     {
       "name": "Resilience",
-      "avg_score": 0.9482,
+      "avg_score": 0.96,
       "min_score": 0.88,
       "max_score": 1.0,
       "pass_rate": 1.0,
@@ -143,10 +143,10 @@
     {
       "component": "router",
       "source_file": "engine/router.py",
-      "source_lines": 842,
+      "source_lines": 845,
       "wave": 1,
       "focus": "accuracy",
-      "composite_score": 0.9768,
+      "composite_score": 0.985,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -202,7 +202,7 @@
           "name": "Quality",
           "score": 0.96,
           "passed": true,
-          "details": "Score: 0.96 (fn_count=5, class_count=1, lines=207)",
+          "details": "Score: 0.96 (fn_count=5, class_count=1, lines=209)",
           "recommendation": ""
         },
         {
@@ -214,16 +214,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.89,
+          "score": 0.99,
           "passed": true,
-          "details": "Instrumentation: 0.89 (structured-output, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 0.99 (logging, structured-output, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.97,
+          "score": 1.0,
           "passed": true,
-          "details": "Control signals: circuit-breaker, config-gated",
+          "details": "Control signals: circuit-breaker, config-gated, remediation, threshold-gated",
           "recommendation": ""
         },
         {
@@ -298,15 +298,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of router)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 6.04
+      "inspection_latency_ms": 2.84
     },
     {
       "component": "tribunal",
       "source_file": "engine/tribunal.py",
-      "source_lines": 268,
+      "source_lines": 271,
       "wave": 1,
       "focus": "accuracy",
-      "composite_score": 0.9668,
+      "composite_score": 0.9762,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -362,7 +362,7 @@
           "name": "Quality",
           "score": 0.96,
           "passed": true,
-          "details": "Score: 0.96 (fn_count=1, class_count=3, lines=217)",
+          "details": "Score: 0.96 (fn_count=1, class_count=2, lines=219)",
           "recommendation": ""
         },
         {
@@ -374,16 +374,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.86,
+          "score": 0.96,
           "passed": true,
-          "details": "Instrumentation: 0.86 (structured-output, typed-interface)",
+          "details": "Instrumentation: 0.96 (logging, structured-output, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 0.95,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: remediation, access-control",
           "recommendation": ""
         },
         {
@@ -458,15 +458,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of tribunal)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.59
+      "inspection_latency_ms": 2.52
     },
     {
       "component": "psyche_bank",
       "source_file": "engine/psyche_bank.py",
-      "source_lines": 194,
+      "source_lines": 202,
       "wave": 1,
       "focus": "quality",
-      "composite_score": 0.9775,
+      "composite_score": 0.9856,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -522,7 +522,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=8, class_count=3, lines=194)",
+          "details": "Score: 1.00 (fn_count=8, class_count=3, lines=202)",
           "recommendation": ""
         },
         {
@@ -534,16 +534,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.94,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.94 (structured-output, error-reporting, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 0.97,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: rollback, threshold-gated",
           "recommendation": ""
         },
         {
@@ -618,15 +618,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of psyche_bank)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.53
+      "inspection_latency_ms": 2.58
     },
     {
       "component": "jit_booster",
       "source_file": "engine/jit_booster.py",
-      "source_lines": 788,
+      "source_lines": 798,
       "wave": 2,
       "focus": "speed",
-      "composite_score": 0.9643,
+      "composite_score": 0.9775,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -682,7 +682,7 @@
           "name": "Quality",
           "score": 0.87,
           "passed": true,
-          "details": "Score: 0.87 (fn_count=0, class_count=0, lines=138)",
+          "details": "Score: 0.87 (fn_count=0, class_count=0, lines=142)",
           "recommendation": ""
         },
         {
@@ -694,16 +694,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.83,
+          "score": 0.98,
           "passed": true,
-          "details": "Instrumentation: 0.83 (structured-output)",
+          "details": "Instrumentation: 0.98 (logging, structured-output, timing)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.94,
+          "score": 1.0,
           "passed": true,
-          "details": "Control signals: circuit-breaker",
+          "details": "Control signals: rollback, circuit-breaker, config-gated, threshold-gated",
           "recommendation": ""
         },
         {
@@ -778,15 +778,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of jit_booster)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.52
+      "inspection_latency_ms": 2.58
     },
     {
       "component": "executor",
       "source_file": "engine/executor.py",
-      "source_lines": 322,
+      "source_lines": 329,
       "wave": 2,
       "focus": "speed",
-      "composite_score": 0.9756,
+      "composite_score": 0.9831,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -842,7 +842,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=7, class_count=4, lines=214)",
+          "details": "Score: 1.00 (fn_count=7, class_count=4, lines=215)",
           "recommendation": ""
         },
         {
@@ -854,16 +854,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.94,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.94 (structured-output, error-reporting, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 0.96,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: remediation, threshold-gated",
           "recommendation": ""
         },
         {
@@ -938,15 +938,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of executor)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 6.67
+      "inspection_latency_ms": 3.56
     },
     {
       "component": "graph",
       "source_file": "engine/graph.py",
-      "source_lines": 188,
+      "source_lines": 196,
       "wave": 2,
       "focus": "speed",
-      "composite_score": 0.9762,
+      "composite_score": 0.9868,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1002,7 +1002,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=13, class_count=5, lines=188)",
+          "details": "Score: 1.00 (fn_count=13, class_count=5, lines=196)",
           "recommendation": ""
         },
         {
@@ -1014,16 +1014,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.94,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.94 (structured-output, error-reporting, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 0.97,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: rollback, threshold-gated",
           "recommendation": ""
         },
         {
@@ -1035,9 +1035,9 @@
         },
         {
           "name": "Resilience",
-          "score": 0.91,
+          "score": 0.95,
           "passed": true,
-          "details": "Error handling: raise, context-manager",
+          "details": "Error handling: raise, fallback/retry, context-manager",
           "recommendation": ""
         },
         {
@@ -1098,15 +1098,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of graph)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.26
+      "inspection_latency_ms": 2.58
     },
     {
       "component": "scope_evaluator",
       "source_file": "engine/scope_evaluator.py",
-      "source_lines": 161,
+      "source_lines": 169,
       "wave": 3,
       "focus": "quality",
-      "composite_score": 0.9693,
+      "composite_score": 0.9843,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1162,7 +1162,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=3, class_count=3, lines=161)",
+          "details": "Score: 1.00 (fn_count=3, class_count=3, lines=169)",
           "recommendation": ""
         },
         {
@@ -1174,16 +1174,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.86,
+          "score": 0.96,
           "passed": true,
-          "details": "Instrumentation: 0.86 (structured-output, typed-interface)",
+          "details": "Instrumentation: 0.96 (logging, structured-output, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 1.0,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: circuit-breaker, config-gated, remediation, threshold-gated",
           "recommendation": ""
         },
         {
@@ -1195,9 +1195,9 @@
         },
         {
           "name": "Resilience",
-          "score": 0.88,
+          "score": 0.92,
           "passed": true,
-          "details": "Error handling: context-manager",
+          "details": "Error handling: fallback/retry, context-manager",
           "recommendation": ""
         },
         {
@@ -1258,15 +1258,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of scope_evaluator)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.21
+      "inspection_latency_ms": 2.54
     },
     {
       "component": "refinement",
       "source_file": "engine/refinement.py",
-      "source_lines": 198,
+      "source_lines": 202,
       "wave": 3,
       "focus": "quality",
-      "composite_score": 0.9737,
+      "composite_score": 0.9843,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1322,7 +1322,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=3, class_count=2, lines=198)",
+          "details": "Score: 1.00 (fn_count=3, class_count=2, lines=202)",
           "recommendation": ""
         },
         {
@@ -1334,16 +1334,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.89,
+          "score": 0.99,
           "passed": true,
-          "details": "Instrumentation: 0.89 (structured-output, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 0.99 (logging, structured-output, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 0.97,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: rollback, threshold-gated",
           "recommendation": ""
         },
         {
@@ -1418,15 +1418,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of refinement)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.52
+      "inspection_latency_ms": 3.56
     },
     {
       "component": "n_stroke",
       "source_file": "engine/n_stroke.py",
-      "source_lines": 1790,
+      "source_lines": 1793,
       "wave": 4,
       "focus": "speed",
-      "composite_score": 0.965,
+      "composite_score": 0.975,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1482,7 +1482,7 @@
           "name": "Quality",
           "score": 0.9,
           "passed": true,
-          "details": "Score: 0.90 (fn_count=2, class_count=1, lines=192)",
+          "details": "Score: 0.90 (fn_count=2, class_count=1, lines=193)",
           "recommendation": ""
         },
         {
@@ -1494,16 +1494,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.86,
+          "score": 0.96,
           "passed": true,
-          "details": "Instrumentation: 0.86 (structured-output, typed-interface)",
+          "details": "Instrumentation: 0.96 (logging, structured-output, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.93,
+          "score": 0.99,
           "passed": true,
-          "details": "Control signals: kill-switch",
+          "details": "Control signals: kill-switch, remediation, threshold-gated",
           "recommendation": ""
         },
         {
@@ -1578,15 +1578,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of n_stroke)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.69
+      "inspection_latency_ms": 4.9
     },
     {
       "component": "supervisor",
       "source_file": "engine/supervisor.py",
-      "source_lines": 438,
+      "source_lines": 442,
       "wave": 4,
       "focus": "quality",
-      "composite_score": 0.9768,
+      "composite_score": 0.9856,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1642,7 +1642,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=5, class_count=4, lines=216)",
+          "details": "Score: 1.00 (fn_count=5, class_count=4, lines=214)",
           "recommendation": ""
         },
         {
@@ -1661,9 +1661,9 @@
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 1.0,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: rollback, circuit-breaker, config-gated, threshold-gated",
           "recommendation": ""
         },
         {
@@ -1675,9 +1675,9 @@
         },
         {
           "name": "Resilience",
-          "score": 0.88,
+          "score": 0.92,
           "passed": true,
-          "details": "Error handling: context-manager",
+          "details": "Error handling: fallback/retry, context-manager",
           "recommendation": ""
         },
         {
@@ -1738,15 +1738,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of supervisor)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.47
+      "inspection_latency_ms": 4.99
     },
     {
       "component": "conversation",
       "source_file": "engine/conversation.py",
-      "source_lines": 1499,
+      "source_lines": 1507,
       "wave": 5,
       "focus": "accuracy",
-      "composite_score": 0.9768,
+      "composite_score": 0.9893,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1802,7 +1802,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=8, class_count=4, lines=215)",
+          "details": "Score: 1.00 (fn_count=7, class_count=4, lines=217)",
           "recommendation": ""
         },
         {
@@ -1814,16 +1814,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.86,
+          "score": 0.96,
           "passed": true,
-          "details": "Instrumentation: 0.86 (structured-output, typed-interface)",
+          "details": "Instrumentation: 0.96 (logging, structured-output, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 1.0,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: rollback, circuit-breaker, config-gated, threshold-gated",
           "recommendation": ""
         },
         {
@@ -1898,7 +1898,7 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of conversation)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.68
+      "inspection_latency_ms": 4.63
     },
     {
       "component": "config",
@@ -1906,7 +1906,7 @@
       "source_lines": 213,
       "wave": 5,
       "focus": "accuracy",
-      "composite_score": 0.9818,
+      "composite_score": 0.9837,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1981,9 +1981,9 @@
         },
         {
           "name": "Control",
-          "score": 0.97,
+          "score": 1.0,
           "passed": true,
-          "details": "Control signals: circuit-breaker, config-gated",
+          "details": "Control signals: circuit-breaker, config-gated, threshold-gated",
           "recommendation": ""
         },
         {
@@ -2058,15 +2058,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of config)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.28
+      "inspection_latency_ms": 4.54
     },
     {
       "component": "branch_executor",
       "source_file": "engine/branch_executor.py",
-      "source_lines": 632,
+      "source_lines": 636,
       "wave": 6,
       "focus": "quality",
-      "composite_score": 0.9837,
+      "composite_score": 0.9906,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -2122,7 +2122,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=9, class_count=5, lines=225)",
+          "details": "Score: 1.00 (fn_count=9, class_count=5, lines=224)",
           "recommendation": ""
         },
         {
@@ -2141,9 +2141,9 @@
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 0.97,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: rollback, threshold-gated",
           "recommendation": ""
         },
         {
@@ -2155,9 +2155,9 @@
         },
         {
           "name": "Resilience",
-          "score": 0.95,
+          "score": 0.99,
           "passed": true,
-          "details": "Error handling: try/except",
+          "details": "Error handling: try/except, fallback/retry",
           "recommendation": ""
         },
         {
@@ -2218,15 +2218,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of branch_executor)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.73
+      "inspection_latency_ms": 4.81
     },
     {
       "component": "mandate_executor",
       "source_file": "engine/mandate_executor.py",
-      "source_lines": 971,
+      "source_lines": 983,
       "wave": 6,
       "focus": "accuracy",
-      "composite_score": 0.9706,
+      "composite_score": 0.9837,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -2282,7 +2282,7 @@
           "name": "Quality",
           "score": 0.91,
           "passed": true,
-          "details": "Score: 0.91 (fn_count=0, class_count=0, lines=175)",
+          "details": "Score: 0.91 (fn_count=0, class_count=0, lines=176)",
           "recommendation": ""
         },
         {
@@ -2294,16 +2294,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.81,
+          "score": 0.96,
           "passed": true,
-          "details": "Instrumentation: 0.81 (typed-interface)",
+          "details": "Instrumentation: 0.96 (logging, timing, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 0.96,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: remediation, threshold-gated",
           "recommendation": ""
         },
         {
@@ -2378,15 +2378,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of mandate_executor)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.46
+      "inspection_latency_ms": 2.83
     },
     {
       "component": "model_garden",
       "source_file": "engine/model_garden.py",
-      "source_lines": 813,
+      "source_lines": 817,
       "wave": 6,
       "focus": "speed",
-      "composite_score": 0.9725,
+      "composite_score": 0.9868,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -2454,16 +2454,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.91,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.91 (structured-output, error-reporting, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 1.0,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: circuit-breaker, config-gated, threshold-gated",
           "recommendation": ""
         },
         {
@@ -2475,9 +2475,9 @@
         },
         {
           "name": "Resilience",
-          "score": 0.88,
+          "score": 0.92,
           "passed": true,
-          "details": "Error handling: raise",
+          "details": "Error handling: raise, fallback/retry",
           "recommendation": ""
         },
         {
@@ -2538,15 +2538,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of model_garden)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.71
+      "inspection_latency_ms": 2.7
     },
     {
       "component": "vector_store",
       "source_file": "engine/vector_store.py",
-      "source_lines": 305,
+      "source_lines": 312,
       "wave": 6,
       "focus": "speed",
-      "composite_score": 0.9787,
+      "composite_score": 0.9893,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -2614,16 +2614,16 @@
         },
         {
           "name": "Monitor",
-          "score": 0.89,
+          "score": 0.99,
           "passed": true,
-          "details": "Instrumentation: 0.89 (structured-output, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 0.99 (logging, structured-output, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 0.97,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: rollback, threshold-gated",
           "recommendation": ""
         },
         {
@@ -2698,15 +2698,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of vector_store)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.33
+      "inspection_latency_ms": 2.55
     },
     {
       "component": "daemon",
       "source_file": "engine/daemon.py",
-      "source_lines": 388,
+      "source_lines": 392,
       "wave": 6,
       "focus": "quality",
-      "composite_score": 0.98,
+      "composite_score": 0.9862,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -2762,7 +2762,7 @@
           "name": "Quality",
           "score": 0.96,
           "passed": true,
-          "details": "Score: 0.96 (fn_count=7, class_count=1, lines=192)",
+          "details": "Score: 0.96 (fn_count=7, class_count=1, lines=189)",
           "recommendation": ""
         },
         {
@@ -2781,9 +2781,9 @@
         },
         {
           "name": "Control",
-          "score": 0.9,
+          "score": 1.0,
           "passed": true,
-          "details": "Reversibility guard module responsible for validation.",
+          "details": "Control signals: rollback, circuit-breaker, config-gated, threshold-gated",
           "recommendation": ""
         },
         {
@@ -2858,14 +2858,11 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of daemon)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 5.36
+      "inspection_latency_ms": 2.45
     }
   ],
   "critical_components": [],
   "top_recommendations": [
-    "[Monitor] avg=0.905, weakest=mandate_executor (pass_rate=100%) — prioritize improvement",
-    "[Control] avg=0.912, weakest=tribunal (pass_rate=100%) — prioritize improvement",
-    "[Human Considering] avg=0.933, weakest=jit_booster (pass_rate=100%) — prioritize improvement",
-    "[Resilience] avg=0.948, weakest=tribunal (pass_rate=100%) — prioritize improvement"
+    "[Human Considering] avg=0.933, weakest=jit_booster (pass_rate=100%) — prioritize improvement"
   ]
 }

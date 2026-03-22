@@ -602,18 +602,31 @@ class Validator16D:
         # Dynamically detect control-plane patterns in the source
         control_score = 0.90  # base
         signals: list[str] = []
-        if "rollback" in code_snippet.lower() or "roll_back" in code_snippet.lower():
+        lower = code_snippet.lower()
+        if "rollback" in lower or "roll_back" in lower:
             control_score = min(1.0, control_score + 0.04)
             signals.append("rollback")
-        if "circuit_breaker" in code_snippet.lower() or "circuit breaker" in code_snippet.lower():
+        if "circuit_breaker" in lower or "circuit breaker" in lower:
             control_score = min(1.0, control_score + 0.04)
             signals.append("circuit-breaker")
-        if "kill_switch" in code_snippet.lower() or "dry_run" in code_snippet.lower():
+        if "kill_switch" in lower or "dry_run" in lower:
             control_score = min(1.0, control_score + 0.03)
             signals.append("kill-switch")
         if "CIRCUIT_BREAKER" in code_snippet or "AUTONOMOUS_EXECUTION" in code_snippet:
             control_score = min(1.0, control_score + 0.03)
             signals.append("config-gated")
+        # Remediation / healing patterns (tribunal-style auto-fix)
+        if "heal" in lower or "tombstone" in lower or "redact" in lower:
+            control_score = min(1.0, control_score + 0.03)
+            signals.append("remediation")
+        # Threshold / gating patterns (configurable limits)
+        if "threshold" in lower or "max_strokes" in lower or "max_retries" in lower:
+            control_score = min(1.0, control_score + 0.03)
+            signals.append("threshold-gated")
+        # Allowlist / blocklist access control
+        if "allowlist" in lower or "blocklist" in lower or "whitelist" in lower:
+            control_score = min(1.0, control_score + 0.02)
+            signals.append("access-control")
         return Dimension16Score(
             name="Control",
             score=control_score,

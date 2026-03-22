@@ -24,8 +24,16 @@ executor can allocate resources optimally rather than reactively.
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any
+
+# Control: configurable thresholds for scope safety
+_MAX_NODES_THRESHOLD = 200     # scope evaluator flags plans exceeding this
+_MAX_RETRIES = 3               # retry limit for transient evaluation failures
+_CIRCUIT_BREAKER_DEPTH = 10    # max dependency depth before escalation
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

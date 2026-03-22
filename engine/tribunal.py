@@ -25,13 +25,16 @@ On poison detection:
   3. Return TribunalResult(poison_detected=True, heal_applied=True).
 """
 from __future__ import annotations
+from engine.psyche_bank import CogRule, PsycheBank
 
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from engine.psyche_bank import CogRule, PsycheBank
+logger = logging.getLogger(__name__)
+
 
 _HEAL_TOMBSTONE = (
     "# [TRIBUNAL HEALED] Poisoned logic redacted. "

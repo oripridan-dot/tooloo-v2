@@ -29,8 +29,17 @@ Signal sources, in priority order:
 All network I/O is fully isolated here. Zero side effects on other engine modules.
 """
 from __future__ import annotations
+from engine.router import RouteResult
+from engine.model_garden import get_garden
+from engine.config import (
+    GEMINI_API_KEY,
+    MODEL_GARDEN_CACHE_TTL,
+    VERTEX_DEFAULT_MODEL,
+    _vertex_client as _vertex_client_cfg,
+)
 
 import json
+import logging
 import re
 import threading
 import time
@@ -40,16 +49,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from engine.config import (
-    GEMINI_API_KEY,
-    MODEL_GARDEN_CACHE_TTL,
-    VERTEX_DEFAULT_MODEL,
-)
-from engine.config import (
-    _vertex_client as _vertex_client_cfg,
-)
-from engine.model_garden import get_garden
-from engine.router import RouteResult
+logger = logging.getLogger(__name__)
+
 
 # ── Vertex AI client (primary - enterprise-grade Model Garden via unified SDK) ───────
 _vertex_client = _vertex_client_cfg
@@ -70,6 +71,15 @@ if GEMINI_API_KEY:
 # ── Boost constants ───────────────────────────────────────────────────────────
 BOOST_PER_SIGNAL: float = 0.0735   # each concrete signal adds 5 pp of confidence
 MAX_BOOST_DELTA: float = 0.3500    # cap: maximum +25 pp regardless of signal count
+
+# Control: configurable thresholds for JIT safety
+_MAX_RETRIES = 3                   # per-fetch retry ceiling
+_FETCH_TIMEOUT_THRESHOLD = 30      # seconds — triggers circuit-breaker fallback
+_CIRCUIT_BREAKER_FALLBACK = True   # rollback to structured catalogue on repeated failures
+
+# Timing: module-level perf_counter anchor for latency instrumentation
+_MODULE_INIT_T0 = time.perf_counter()
+
 _JIT_CACHE_FILE = "psyche_bank/jit_cache.json"
 _JIT_CACHE_PATH = Path(__file__).resolve().parents[1] / _JIT_CACHE_FILE
 _STANDARD_INTENTS = ["BUILD", "DEBUG", "AUDIT",

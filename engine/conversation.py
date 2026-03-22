@@ -41,7 +41,18 @@ Pipeline per turn:
     → ConversationResult (stored in session, returned to caller)
 """
 from __future__ import annotations
+from engine.buddy_cognition import (
+    CognitiveLens,
+    UserProfileStore,
+    UserProfile,
+    build_cognition_context,
+)
+from engine.buddy_cache import BuddyCache
+from engine.model_garden import get_garden
+from engine.router import RouteResult
+from engine.config import GEMINI_API_KEY, VERTEX_DEFAULT_MODEL, _vertex_client as _vertex_client_cfg
 
+import logging
 import re
 import time
 import uuid
@@ -49,16 +60,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
-from engine.config import GEMINI_API_KEY, VERTEX_DEFAULT_MODEL, _vertex_client as _vertex_client_cfg
-from engine.router import RouteResult
-from engine.model_garden import get_garden
-from engine.buddy_cache import BuddyCache
-from engine.buddy_cognition import (
-    CognitiveLens,
-    UserProfileStore,
-    UserProfile,
-    build_cognition_context,
-)
+logger = logging.getLogger(__name__)
+
+# Control: configurable thresholds for conversation safety
+_MAX_RETRIES = 3              # per-turn LLM call retry ceiling
+_CIRCUIT_BREAKER_THRESHOLD = 0.85  # confidence floor for response gating
+_MAX_TURNS_THRESHOLD = 100    # session rollback trigger
+
 
 if TYPE_CHECKING:
     from engine.jit_booster import JITBoostResult

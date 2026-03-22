@@ -45,8 +45,35 @@ All iteration state is immutable — each stroke starts fresh, enriched by the
 prior failure signal and (optionally) the healed work function.
 """
 from __future__ import annotations
+from engine.validator_16d import Validator16D
+from engine.tribunal import Engram, Tribunal, TribunalResult
+from engine.scope_evaluator import ScopeEvaluation, ScopeEvaluator
+from engine.router import LockedIntent, MandateRouter, RouteResult, compute_buddy_line
+from engine.refinement_supervisor import (
+    NODE_FAIL_THRESHOLD,
+    HealingReport,
+    RefinementSupervisor,
+)
+from engine.refinement import RefinementLoop, RefinementReport
+from engine.model_selector import ModelSelection, ModelSelector
+from engine.model_garden import get_garden
+from engine.meta_architect import MetaArchitect
+from engine.mcp_manager import MCPManager
+from engine.mandate_executor import make_live_work_fn
+from engine.jit_booster import JITBooster, JITBoostResult
+from engine.graph import TopologicalSorter
+from engine.executor import Envelope, ExecutionResult, JITExecutor
+from engine.dynamic_model_registry import (
+    FractalDAGExpander,
+    JIT16DBidder,
+    get_bidder,
+    get_dynamic_registry,
+)
+from engine.async_fluid_executor import AsyncEnvelope, AsyncExecutionResult, AsyncFluidExecutor
+from engine.config import AUTONOMOUS_CONFIDENCE_THRESHOLD, settings as _cfg
 
 import asyncio
+import logging
 import re
 import time
 import uuid
@@ -55,32 +82,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from engine.config import AUTONOMOUS_CONFIDENCE_THRESHOLD, settings as _cfg
-from engine.async_fluid_executor import AsyncEnvelope, AsyncExecutionResult, AsyncFluidExecutor
-from engine.dynamic_model_registry import (
-    FractalDAGExpander,
-    JIT16DBidder,
-    get_bidder,
-    get_dynamic_registry,
-)
-from engine.executor import Envelope, ExecutionResult, JITExecutor
-from engine.graph import TopologicalSorter
-from engine.jit_booster import JITBooster, JITBoostResult
-from engine.mandate_executor import make_live_work_fn
-from engine.mcp_manager import MCPManager
-from engine.meta_architect import MetaArchitect
-from engine.model_garden import get_garden
-from engine.model_selector import ModelSelection, ModelSelector
-from engine.refinement import RefinementLoop, RefinementReport
-from engine.refinement_supervisor import (
-    NODE_FAIL_THRESHOLD,
-    HealingReport,
-    RefinementSupervisor,
-)
-from engine.router import LockedIntent, MandateRouter, RouteResult, compute_buddy_line
-from engine.scope_evaluator import ScopeEvaluation, ScopeEvaluator
-from engine.tribunal import Engram, Tribunal, TribunalResult
-from engine.validator_16d import Validator16D
+logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Constants
