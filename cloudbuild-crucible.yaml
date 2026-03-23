@@ -1,26 +1,20 @@
 # cloudbuild-crucible.yaml
 # Serverless 5-cycle self-improvement crucible.
-# Triggered by trigger_cloud_crucible.py using RepoSource (no GCS bucket needed).
+# Single step so pip install persists into the run.
 steps:
   - name: 'python:3.11-slim'
-    id: 'install-deps'
+    id: 'crucible'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
+        set -e
+        echo "[*] Installing dependencies..."
         pip install --quiet --upgrade pip
         pip install --quiet -r requirements.txt
         pip install --quiet -e .
-        echo "[+] Dependencies installed"
-
-  - name: 'python:3.11-slim'
-    id: 'run-crucible'
-    entrypoint: 'bash'
-    waitFor: ['install-deps']
-    args:
-      - '-c'
-      - |
-        TOOLOO_LIVE_TESTS=1 python run_cycles.py --cycles 5
+        echo "[*] Starting 5-cycle TooLoo Crucible..."
+        python run_cycles.py --cycles 5
     env:
       - 'TOOLOO_LIVE_TESTS=1'
 
@@ -29,3 +23,4 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 timeout: '3600s'
+
