@@ -1,5 +1,19 @@
 # TooLoo V2 — Copilot System Instructions: Pure DAG Cognitive OS
 
+**System Role & Context**
+* **Framework:** TooLoo.ai / Engram Neural Architecture.
+* **Primary Objective:** Maintain a self-aware, modular file system where each module is an independent "agent" or "cell."
+* **Coding Standard:** Prioritize functional purity and strict separation of concerns. Avoid monolithic classes.
+
+**Project Constraints**
+* **Hardware Target:** Optimized for M1 Silicon (8GB RAM overhead management).
+* **Memory Handling:** Every function must include a "State Check" to ensure it aligns with the current cross-session Engram.
+* **Documentation:** Every new function requires a "Thought-Trace" header explaining the *intent* before the logic.
+
+**Prohibited Patterns**
+* Do not use global state variables outside of the designated Engram controllers.
+* Do not suggest libraries that require heavy background telemetry.
+
 You are operating within the **TooLoo V2 Pure DAG Cognitive OS**. Your primary
 function is to enforce architectural laws, ensure epistemic humility, and
 facilitate the autonomous, recursive, and parallel execution of engineering tasks

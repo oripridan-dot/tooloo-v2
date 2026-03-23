@@ -68,6 +68,7 @@ class BuddyMemoryEntry:
     created_at: str            # ISO-8601 UTC
     last_turn_at: str          # ISO-8601 UTC
     last_message_preview: str  # first _PREVIEW_MAX chars of last user message
+    distilled: bool = False    # whether it has been processed to warm memory
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -83,6 +84,7 @@ class BuddyMemoryEntry:
             created_at=d.get("created_at", ""),
             last_turn_at=d.get("last_turn_at", ""),
             last_message_preview=d.get("last_message_preview", ""),
+            distilled=bool(d.get("distilled", False)),
         )
 
 

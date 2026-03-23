@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import time
 import uuid
 from collections.abc import AsyncGenerator
@@ -53,6 +54,18 @@ from engine.config import (
 from engine.conversation import ConversationEngine, _FOLLOWUPS
 from engine.buddy_cognition import CognitiveLens
 from engine.buddy_memory import BuddyMemoryStore
+from engine.recursive_summarizer import RecursiveSummaryAgent
+from engine.cognitive_map import get_cognitive_map
+from engine.deep_introspector import get_deep_introspector
+from engine.bus import get_bus, BusEvent, NotificationBus
+from engine.stance import (
+    get_stance_engine,
+    get_active_stance,
+    set_active_stance,
+    CognitiveStanceEngine,
+    Stance,
+    StanceResult,
+)
 from engine.daemon import BackgroundDaemon
 from engine.engram_visual import VisualEngramGenerator
 from engine.executor import Envelope, JITExecutor
@@ -64,6 +77,7 @@ from engine.mcp_manager import MCPManager
 from engine.model_garden import get_garden
 from engine.model_selector import ModelSelector
 from engine.n_stroke import NStrokeEngine
+from engine.parallel_validation import FileChange, ParallelValidationPipeline
 from engine.psyche_bank import PsycheBank
 from engine.refinement import RefinementLoop
 from engine.refinement_supervisor import RefinementSupervisor
@@ -126,6 +140,39 @@ def _broadcast(event: dict[str, Any]) -> None:
 
 
 _daemon = BackgroundDaemon(_broadcast)
+
+# ── NotificationBus — register SSE broadcaster so all alerts reach the UI ────
+_notification_bus = get_bus()
+_notification_bus.register_broadcast(_broadcast)
+
+# Subscribe RefinementSupervisor to CRITICAL bus events so tribunal poison
+# flags automatically queue a healing task (agent-to-agent signalling).
+
+
+def _on_tribunal_critical(event: BusEvent) -> None:
+    """Internal subscriber: log CRITICAL Tribunal events to structured output."""
+    import logging as _logging
+    _logging.getLogger("studio.api.bus").critical(
+        "[CRITICAL-BUS] %s | source=%s | payload=%s",
+        event.message, event.source, event.payload,
+    )
+
+
+_notification_bus.subscribe("CRITICAL", _on_tribunal_critical)
+
+# ── CognitiveStanceEngine — process-level singleton ─────────────────────────
+_stance_engine = get_stance_engine()
+
+# ── CognitiveMap + ParallelValidationPipeline (after _broadcast) ───────────
+_cognitive_map = get_cognitive_map()          # builds on first call
+_cognitive_map.register_update_callback(_broadcast)  # SSE self_map_update
+_deep_introspector = get_deep_introspector()  # deep self-awareness engine
+_deep_introspector.register_update_callback(_broadcast)
+_parallel_validation = ParallelValidationPipeline(
+    broadcast_fn=_broadcast,
+    tribunal=_tribunal,
+    validator=_validator_16d,
+)
 
 
 # ── Sandbox + Roadmap singletons (after _broadcast so they can be wired) ─────
@@ -319,6 +366,7 @@ async def health() -> dict[str, Any]:
             "graph": f"{len(_graph.nodes())} nodes",
             "psyche_bank": f"{len(_bank.all_rules())} rules",
             "tribunal": "up",
+            "cognitive_dreamer": "up",
             "executor": "up",
             "jit_booster": "up",
             "engram_engine": "up",
@@ -337,6 +385,23 @@ async def health() -> dict[str, Any]:
         },
         "dora": dora,
     }
+
+
+@app.post("/v2/dream/force-cycle")
+async def force_dream_cycle() -> dict[str, Any]:
+    try:
+        report = await _daemon._dreamer.run_dream_cycle()
+        return {
+            "status": "success",
+            "report": {
+                "fused_concepts": report.fused_concepts,
+                "insight_extracted": report.insight_extracted,
+                "garbage_purged_count": report.garbage_purged_count,
+                "consolidated_count": report.consolidated_count
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @app.get("/v2/workspace/roots")
@@ -2545,3 +2610,339 @@ async def vlt_patch(req: VLTPatchRequest) -> dict[str, Any]:
         "patches_applied": len(validated_patches),
         "broadcast":       True,
     }
+
+
+# ── Cognitive Self-Map endpoints ──────────────────────────────────────────────
+
+@app.get("/v2/cognitive-map")
+async def cognitive_map_snapshot() -> dict[str, Any]:
+    """Return a live snapshot of the CognitiveMap DAG (nodes, edges, summary)."""
+    return _cognitive_map.to_dict()
+
+
+@app.get("/v2/cognitive-map/mermaid")
+async def cognitive_map_mermaid() -> dict[str, Any]:
+    """Return the live Mermaid diagram of engine component dependencies."""
+    return {
+        "mermaid": _cognitive_map.to_mermaid(),
+        "node_count": _cognitive_map.node_count(),
+    }
+
+
+@app.get("/v2/cognitive-map/context/{intent}")
+async def cognitive_map_context(intent: str, mandate: str = "") -> dict[str, Any]:
+    """Zero-shot workspace blueprint for a given intent."""
+    safe_intent = intent.upper()[:64]
+    safe_mandate = mandate[:512]
+    blueprint = _cognitive_map.relevant_context(safe_intent, safe_mandate)
+    nodes = [n.to_dict() for n in _cognitive_map.query_nodes(safe_intent)]
+    return {"intent": safe_intent, "blueprint": blueprint, "nodes": nodes}
+
+
+@app.post("/v2/cognitive-map/rebuild")
+async def cognitive_map_rebuild() -> dict[str, Any]:
+    """Force a full workspace rescan and rebuild the CognitiveMap."""
+    await asyncio.to_thread(_cognitive_map.rebuild)
+    _broadcast({
+        "type": "self_map_update",
+        "source": "manual_rebuild",
+        "node_count": _cognitive_map.node_count(),
+    })
+    return {"node_count": _cognitive_map.node_count(), "rebuilt": True}
+
+
+# ── Deep Introspection endpoints ──────────────────────────────────────────────
+
+
+@app.get("/v2/introspector")
+async def introspector_snapshot() -> dict[str, Any]:
+    """Full deep introspection snapshot: system health + all module health."""
+    return await asyncio.to_thread(_deep_introspector.to_dict)
+
+
+@app.get("/v2/introspector/health")
+async def introspector_system_health() -> dict[str, Any]:
+    """Break-glass system health dashboard (traffic-light status)."""
+    report = await asyncio.to_thread(_deep_introspector.system_health)
+    return report.to_dict()
+
+
+@app.get("/v2/introspector/module/{module_name}")
+async def introspector_module_health(module_name: str) -> dict[str, Any]:
+    """Per-module health deep dive."""
+    safe_name = re.sub(r"[^a-zA-Z0-9_]", "", module_name)[:64]
+    health = _deep_introspector.module_health(safe_name)
+    if health is None:
+        return {"error": f"Module '{safe_name}' not found", "modules": [
+            h.module_name for h in _deep_introspector.all_module_health()
+        ]}
+    return health.to_dict()
+
+
+@app.get("/v2/introspector/cross-refs")
+async def introspector_all_cross_refs() -> dict[str, Any]:
+    """All function-level cross-references grouped by target module."""
+    refs = await asyncio.to_thread(_deep_introspector.all_cross_refs)
+    total = sum(len(v) for v in refs.values())
+    return {"total_refs": total, "by_module": refs}
+
+
+@app.get("/v2/introspector/cross-refs/{module_name}")
+async def introspector_module_cross_refs(module_name: str) -> dict[str, Any]:
+    """Cross-references targeting a specific module's functions."""
+    safe_name = re.sub(r"[^a-zA-Z0-9_]", "", module_name)[:64]
+    refs = _deep_introspector.cross_refs(safe_name)
+    return {
+        "module": safe_name,
+        "ref_count": len(refs),
+        "refs": [r.to_dict() for r in refs],
+    }
+
+
+@app.get("/v2/introspector/dead-code")
+async def introspector_dead_code() -> dict[str, Any]:
+    """Public functions never referenced by other modules."""
+    dead = await asyncio.to_thread(_deep_introspector.dead_functions)
+    return {"dead_function_count": len(dead), "functions": dead}
+
+
+@app.get("/v2/introspector/knowledge-graph")
+async def introspector_knowledge_graph() -> dict[str, Any]:
+    """Semantic knowledge graph: module roles, layers, criticality."""
+    return await asyncio.to_thread(_deep_introspector.knowledge_graph)
+
+
+@app.get("/v2/introspector/cascade/{file_path:path}")
+async def introspector_cascade(file_path: str) -> dict[str, Any]:
+    """Predictive cascade analysis: failure risk if a file is modified."""
+    safe_path = file_path.replace("..", "").strip("/")[:256]
+    return await asyncio.to_thread(
+        _deep_introspector.cascade_analysis, safe_path
+    )
+
+
+@app.post("/v2/introspector/rebuild")
+async def introspector_rebuild() -> dict[str, Any]:
+    """Force a full deep introspection rebuild."""
+    await asyncio.to_thread(_deep_introspector.rebuild)
+    report = _deep_introspector.system_health()
+    _broadcast({
+        "type": "deep_introspection_update",
+        "source": "manual_rebuild",
+        "status": report.status,
+        "module_count": report.module_count,
+    })
+    return {
+        "rebuilt": True,
+        "status": report.status,
+        "module_count": report.module_count,
+        "avg_health": round(report.avg_health, 3),
+    }
+
+
+# ── Parallel Validation endpoint ──────────────────────────────────────────────
+
+class ParallelValidateRequest(BaseModel):
+    """Batch of file changes to validate concurrently (Tribunal + 16D + tests)."""
+    files: list[dict[str, Any]]
+    run_tests: bool = True
+
+
+@app.post("/v2/validate")
+async def parallel_validate(req: ParallelValidateRequest) -> dict[str, Any]:
+    """Fan-out Tribunal + 16D + tests concurrently for a batch of file changes.
+
+    Security: path values are validated inside ParallelValidationPipeline
+    (path-traversal guard). No eval/exec.
+    """
+    changes = [
+        FileChange(
+            path=f.get("path", ""),
+            content=f.get("content"),
+            component=f.get("component", ""),
+        )
+        for f in req.files
+        if isinstance(f.get("path"), str) and f["path"]
+    ]
+    if not changes:
+        raise HTTPException(
+            status_code=422, detail="No valid file paths provided")
+    report = await _parallel_validation.validate_changes(
+        changes, run_tests=req.run_tests
+    )
+    return report.to_dict()
+
+
+# ── NotificationBus endpoints ─────────────────────────────────────────────────
+
+@app.get("/v2/alerts")
+async def alerts_list(
+    level: str | None = None,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """Return recent alert history from the NotificationBus.
+
+    Query params:
+        level  — filter by INFO | INSIGHT | WARNING | CRITICAL (optional)
+        limit  — max events to return (default 50)
+    """
+    safe_limit = max(1, min(limit, 200))
+    safe_level = level.upper() if level else None
+    events = _notification_bus.history(level=safe_level, limit=safe_limit)
+    return {
+        "events": [e.to_dict() for e in events],
+        "stats": _notification_bus.stats(),
+    }
+
+
+@app.get("/v2/alerts/pending")
+async def alerts_pending() -> dict[str, Any]:
+    """Return all events that are awaiting user confirmation."""
+    return {
+        "pending": [e.to_dict() for e in _notification_bus.pending()],
+    }
+
+
+@app.post("/v2/alerts/confirm/{event_id}")
+async def alerts_confirm(event_id: str, accepted: bool = True) -> dict[str, Any]:
+    """Confirm or dismiss a bus event that requires human acknowledgement.
+
+    SSE: broadcasts a ``bus_confirm_response`` event with the result.
+    """
+    result = _notification_bus.confirm(event_id, accepted=accepted)
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Pending event '{event_id}' not found (already confirmed or expired)",
+        )
+    return result.to_dict()
+
+
+@app.post("/v2/alerts/dismiss/{event_id}")
+async def alerts_dismiss(event_id: str) -> dict[str, Any]:
+    """Silently remove a pending confirmation event without triggering on_confirm."""
+    removed = _notification_bus.dismiss(event_id)
+    if not removed:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Pending event '{event_id}' not found",
+        )
+    return {"event_id": event_id, "dismissed": True}
+
+
+@app.post("/v2/alerts/publish")
+async def alerts_publish(req: dict[str, Any]) -> dict[str, Any]:
+    """Manually publish a bus event (for testing or external system integration).
+
+    Security: level is constrained to the allowed set; message is plain text only.
+    """
+    level = str(req.get("level", "INFO")).upper()
+    if level not in ("INFO", "INSIGHT", "WARNING", "CRITICAL"):
+        level = "INFO"
+    message = str(req.get("message", ""))[:500]
+    source = str(req.get("source", "api"))[:64]
+    payload = req.get("payload", {})
+    if not isinstance(payload, dict):
+        payload = {}
+    requires_confirmation = bool(req.get("requires_confirmation", False))
+
+    event = BusEvent(
+        level=level,
+        source=source,
+        message=message,
+        payload=payload,
+        requires_confirmation=requires_confirmation,
+    )
+    _notification_bus.publish(event)
+    return {"published": True, "event_id": event.event_id, "level": event.level}
+
+
+# ── Cognitive Stance endpoints ────────────────────────────────────────────────
+
+@app.get("/v2/stance")
+async def stance_get() -> dict[str, Any]:
+    """Return the currently active Cognitive Stance."""
+    return get_active_stance().to_dict()
+
+
+class StanceOverrideRequest(BaseModel):
+    # IDEATION | DEEP_EXECUTION | SURGICAL_REPAIR | MAINTENANCE
+    stance: str
+    mandate_text: str = ""            # optional — used for confidence estimation
+
+
+@app.post("/v2/stance")
+async def stance_set(req: StanceOverrideRequest) -> dict[str, Any]:
+    """Override the active Cognitive Stance for current session.
+
+    This immediately propagates to the 16D Validator, ConversationEngine persona,
+    and the next NStroke execution preflight.  Broadcasting a ``stance_detected``
+    SSE event so the UI can reflect the change.
+    """
+    stance_upper = req.stance.upper()
+    try:
+        stance_enum = Stance(stance_upper)
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid stance '{req.stance}'. "
+            f"Valid values: {[s.value for s in Stance if s != Stance.UNKNOWN]}",
+        )
+
+    if req.mandate_text:
+        result = _stance_engine.detect(
+            mandate_text=req.mandate_text,
+            recent_intents=[stance_upper],
+        )
+    else:
+        from engine.stance import (
+            # type: ignore[attr-defined]
+            _STANCE_WEIGHTS, _STANCE_BUDDY_PERSONA, StanceResult
+        )
+        result = StanceResult(
+            stance=stance_enum,
+            confidence=1.0,
+            explanation=f"Manually set via POST /v2/stance",
+            dimension_weights=_STANCE_WEIGHTS[stance_enum],
+            buddy_persona=_STANCE_BUDDY_PERSONA[stance_enum],
+        )
+        set_active_stance(result)
+
+    _broadcast({
+        "type": "stance_detected",
+        "stance": result.stance.value,
+        "confidence": round(result.confidence, 3),
+        "explanation": result.explanation,
+        "source": "manual_override",
+    })
+    return result.to_dict()
+
+
+@app.post("/v2/stance/detect")
+async def stance_detect(req: dict[str, Any]) -> dict[str, Any]:
+    """Run automatic stance detection from mandate text + intent history.
+
+    Body: { "mandate_text": "...", "recent_intents": ["BUILD", "DEBUG"] }
+    """
+    mandate_text = str(req.get("mandate_text", ""))[:512]
+    recent_intents = [str(i) for i in req.get("recent_intents", [])][:10]
+    result = _stance_engine.detect(
+        mandate_text=mandate_text,
+        recent_intents=recent_intents,
+    )
+    _broadcast({
+        "type": "stance_detected",
+        "stance": result.stance.value,
+        "confidence": round(result.confidence, 3),
+        "explanation": result.explanation,
+    })
+    return result.to_dict()
+
+
+@app.post("/v2/memory/distill")
+async def distill_hot_memory() -> dict[str, Any]:
+    """Manually trigger the Recursive Summary Agent to distill Hot Memory into Warm Memory."""
+    agent = RecursiveSummaryAgent()
+    result = agent.distill_pending()
+    return result
+

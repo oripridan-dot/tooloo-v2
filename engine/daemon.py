@@ -9,6 +9,7 @@ from typing import Any
 
 from engine.calibration_engine import CalibrationEngine
 from engine.psyche_bank import PsycheBank
+from engine.recursive_summarizer import RecursiveSummaryAgent
 from engine.self_improvement import SelfImprovementEngine
 
 # Re-calibration interval (Ebbinghaus half-life rule: every 7 days)
@@ -46,6 +47,7 @@ class BackgroundDaemon:
         self.si_engine = SelfImprovementEngine()
         self._bank = PsycheBank()
         self._cal_engine = CalibrationEngine()
+        self._summarizer = RecursiveSummaryAgent()
         self.awaiting_approval: list[dict[str, Any]] = []
 
     async def start(self):
@@ -74,9 +76,15 @@ class BackgroundDaemon:
                              "msg": f"PsycheBank: purged {removed} expired rule(s)"})
         # 7-day auto-recalibration (Ebbinghaus rule)
         await self._maybe_recalibrate()
+        # Run recursive summary agent on Hot Memory
+        loop = asyncio.get_event_loop()
+        distill_result = await loop.run_in_executor(None, self._summarizer.distill_pending)
+        if distill_result.get("status") == "success" and distill_result.get("facts_extracted", 0) > 0:
+            self._broadcast(
+                {"type": "daemon_rt", "msg": f"RecursiveSummary: Transferred {distill_result.get('facts_extracted')} pure facts to Warm Memory"})
+
         self._broadcast(
             {"type": "daemon_rt", "msg": "Initiating background scan..."})
-        loop = asyncio.get_event_loop()
         report = await loop.run_in_executor(None, self.si_engine.run)
 
         for a in report.assessments:

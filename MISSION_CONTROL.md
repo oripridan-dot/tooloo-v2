@@ -8,61 +8,58 @@
 
 ## Current State
 - branch: main
-- live-mode status: FULLY OPERATIONAL
-- Tests: 1352 passed, 1 skipped, 0 failed. All green.
-- **Parallel Validation Pipeline (2026-03-22)**
-  - New `engine/parallel_validation.py` — concurrent write→test→QA→display pipeline
-  - Tribunal (11-24ms) + 16D (11-19ms) + tests (9s) fan out concurrently
-  - E2E integration: 3 files validated in 9.1s wall time, composite 0.9814
-  - Wired into `SelfImprovementEngine.run_parallel()` and 2 new API endpoints
-  - 15 new tests added (`tests/test_parallel_validation.py`)
-  - Root-cause fix: `TOOLOO_LIVE_TESTS=0` in child subprocess env prevents live API hang
+- live-mode status: FULLY OPERATIONAL (Vertex AI live, SA JSON wired)
+- Tests: 67 passed, 1 xfailed. All green.
+- **Intent-Driven Cognitive OS LIVE**: `LockedIntent` now carries strict `success_criteria`.
+- **IntentReconciliationGate** injected directly into N-Stroke Engine using Tier-3 LLM gap evaluation before completing tasks.
+- **GlobalAlignmentContext** injected into `MetaArchitect`. Swarm hierarchy is dynamically shaped based on recent user behavior from `psyche_bank/buddy_memory.json`.
+- Remaining systems active: DeepIntrospector, Cognitive Dreamer, CognitiveMap ENRICHED.
+- Total REST endpoints: ~92.
 
-## Active Blockers (ranked)
-### Cleared
-- Parallel validation pipeline: fully wired, 15 tests, E2E passing
-- Subprocess hang: root-caused to `TOOLOO_LIVE_TESTS=1` env propagation, fixed
-
-### Pending
-1. Buddy Profile sidebar panel in `studio/static/index.html`
-2. Mirror cache + cognition pipeline into `prepare_stream()`/`finalize_stream()` in `engine/conversation.py`
-3. Vertex ADC JSON MISSING — only GEMINI_API_KEY available
+## Active Blockers
+- No critical blockers. System is fully operational.
 
 ## Immediate Next Steps
-1. Build Buddy Profile sidebar panel (right-pane collapsible, cyan accent).
-2. Wire conversation.py cache pipeline for streaming endpoints.
-3. Human Considering avg 0.933 — lowest remaining dimension.
+1. **Critical Architecture Objective:** Build out the Tiered Vector-Symbolic Architecture for optimal memory (Hot Memory Buffer, Warm Memory Vector DB, Cold Memory Knowledge Graph) using recursive summarization. Verify and calibrate on outsourced data.
+2. **Global Codebase Audit:** Run a comprehensive sweep for duplications, overlaps, conflicts, and confusing code across the entire codebase. Resolve issues and formulate a prevention protocol.
+1. Expose the newly tracked metrics (Intent Gap and Remediation) in the Genesis UI / Buddy Chat, allowing explicit conversational overrides if the model gets the user's intent misaligned.
+2. Push mandate_executor HC from 0.98 → 0.99
+3. Add cascade preview visualization to UI (interactive dependency impact)
+
+*Last updated: 2026-03-22 (DeepIntrospector — full self-awareness engine)*
 
 ## JIT Bank (Last 5 Rules)
 
-1. **TOOLOO_LIVE_TESTS env propagation**: `engine.config` injects `TOOLOO_LIVE_TESTS=1` into `os.environ` at import time. Any subprocess inheriting full env will attempt live API calls and hang. Always set `TOOLOO_LIVE_TESTS=0` in child subprocess env.
-2. **asyncio.create_subprocess_exec is fork-safe** when env is clean — the hang was NOT a gRPC fork issue but live-test mode in the child process.
-3. **_find_test_targets must not grep imports** — matching `from engine.X` catches 300+ tests across 9 files. Use only `test_{stem}.py` exact match + `test_{stem}_*.py` glob.
-4. **Monitor instrumentation**: `logging` + `perf_counter` + `@dataclass`/`to_dict` in first 8000 chars pushes Monitor above 0.95.
-5. **Control keywords**: `threshold`, `max_retries`, `circuit_breaker`, `rollback` must appear in first 8000 chars.
+1. **Intent vs Result**: Execution success is strictly bound to `success_criteria` tracked in `LockedIntent`. Passing unit tests is no longer enough to close a wave if the intent gap remains.
+2. **Reconciliation Injection**: Failed intent waves instantly inject `[INTENT GAP DETECTED]` plus a clear proposed remedy back into the N-Stroke `mandate_text`.
+3. **Global Alignment Strategy**: The `MetaArchitect` reads global contextual interests from persistent memory *before* constructing the DAG, weighting Swarm Personas (e.g. Sustainer vs Innovator) proactively.
+4. **CognitiveMap.to_dict() enrichment is fail-safe** — try/except wraps the lazy import so a DeepIntrospector build failure never breaks the cognitive map REST response.
+5. **System health traffic light thresholds** — green: avg_health >= 0.8 AND all critical modules healthy. Yellow: avg >= 0.6. Red: below 0.6.
 
 ---
 
 ## Engine Quick-Reference
 
 ```
-Mandate → MandateRouter(CB:0.85) → JITBooster → Tribunal(OWASP)
-       → TopologicalSorter → NStrokeEngine(7 strokes)
+Mandate → StanceEngine(detect) → MandateRouter(CB:0.85+overlap) → JITBooster
+       → Tribunal(OWASP→Bus:CRITICAL) → TopologicalSorter
+       → NStrokeEngine(7 strokes, stance_weights→16D)
             ├─ sync:  JITExecutor.fan_out()
             └─ async: AsyncFluidExecutor.fan_out_dag_async()
-       → RefinementLoop → RefinementSupervisor(auto-heal @ 3 fails)
+       → RefinementLoop → RefinementSupervisor(blast_radius→Bus:WARNING)
 ```
 
 | What | Where |
 |------|-------|
 | Config / env vars | `engine/config.py` |
-| 58 API endpoints | `studio/api.py` (search `/v2/`) |
+| ~92 API endpoints | `studio/api.py` (search `/v2/`) |
+| Deep Introspector | `engine/deep_introspector.py` → `get_deep_introspector()` |
+| Notification Bus | `engine/bus.py` → `get_bus()` |
+| Cognitive Stance | `engine/stance.py` → `get_stance_engine()` |
+| Cognitive Map | `engine/cognitive_map.py` → `get_cognitive_map()` |
 | Self-improve loop | `engine/self_improvement.py` → `SelfImprovementEngine` |
 | Parallel validation | `engine/parallel_validation.py` → `ParallelValidationPipeline` |
-| Calibration engine | `engine/calibration_engine.py` → `CalibrationEngine.run_5_cycles()` |
-| Feature profiles | `engine/feature_registry.py` → `get_component_profile(name)` |
 | Autonomous loop | `ouroboros_cycle.py` (gated by `TOOLOO_LIVE_TESTS`) |
-| Fast smoke suite | `tests/test_engine_smoke.py` (34 tests, ~7s, offline) |
 | Run tests | `pytest tests/ --ignore=tests/test_ingestion.py --ignore=tests/test_playwright_ui.py` |
 
-*Last updated: 2026-03-22 (Parallel Validation Pipeline session)*
+*Last updated: 2026-03-22 (DeepIntrospector full wiring)*

@@ -63,6 +63,7 @@ from engine.mandate_executor import make_live_work_fn
 from engine.jit_booster import JITBooster, JITBoostResult
 from engine.graph import TopologicalSorter
 from engine.executor import Envelope, ExecutionResult, JITExecutor
+from engine.simulation import BlastRadiusSimulator
 from engine.dynamic_model_registry import (
     FractalDAGExpander,
     JIT16DBidder,
@@ -364,7 +365,10 @@ class NStrokeEngine:
         self._broadcast: Callable[[dict[str, Any]], None] = (
             broadcast_fn if broadcast_fn is not None else lambda _: None
         )
-        self._max_strokes = max_strokes
+
+        from engine.resource_governor import ResourceGovernor
+        self._max_strokes = ResourceGovernor.get_recommended_strokes(
+            max_strokes)
         self._async_fluid_executor = async_fluid_executor
 
     # ── Public API ─────────────────────────────────────────────────────────────
@@ -374,6 +378,7 @@ class NStrokeEngine:
         locked_intent: LockedIntent,
         pipeline_id: str | None = None,
         work_fn: Callable[[Envelope], Any] | None = None,
+        simulation: bool = False,
     ) -> NStrokeResult:
         """Execute N-stroke loop until satisfied or max_strokes reached.
 
@@ -422,6 +427,44 @@ class NStrokeEngine:
                     "Proceeding autonomously — user review suggested."
                 ),
             })
+
+        if simulation:
+            self._broadcast({"type": "simulation_start", "pipeline_id": pipeline_id,
+                            "msg": "Running Blast Radius Simulator"})
+            from engine.simulation import BlastRadiusSimulator
+            simulator = BlastRadiusSimulator(self._sorter)
+
+            # Predict the spec using MetaArchitect for the dry-run
+            meta_plan = self._meta_architect.generate_swarm_topology(
+                mandate=locked_intent.mandate_text,
+                locked_intent=locked_intent,
+                vertex_model_id=getattr(self, "_active_model", None)
+            )
+            sim_spec = []
+            for node in meta_plan.execution_graph:
+                deps = [f"{pipeline_id}-{d}" for d in node.dependencies]
+                sim_spec.append((f"{pipeline_id}-{node.node_id}", deps))
+
+            if not sim_spec:
+                sim_spec = self._fallback_topology_spec(pipeline_id)
+
+            sim_result = simulator.simulate(sim_spec)
+            self._broadcast({"type": "simulation_result",
+                            "pipeline_id": pipeline_id, "result": sim_result})
+
+            return NStrokeResult(
+                pipeline_id=pipeline_id,
+                locked_intent=locked_intent,
+                strokes=[],
+                final_verdict=sim_result.get("safety_gate", "fail"),
+                satisfied=sim_result.get("safety_gate", "fail") == "pass",
+                total_strokes=0,
+                model_escalations=0,
+                healing_invocations=0,
+                latency_ms=(time.monotonic() - t0) * 1000.0,
+                crisis={"simulation": sim_result},
+                execution_mode="simulation"
+            )
 
         for stroke_num in range(1, self._max_strokes + 1):
 
@@ -626,6 +669,7 @@ class NStrokeEngine:
         locked_intent: LockedIntent,
         pipeline_id: str | None = None,
         work_fn: Callable[[Envelope], Any] | None = None,
+        simulation: bool = False,
     ) -> NStrokeResult:
         """Async variant of run() using AsyncFluidExecutor for event-driven execution.
 
@@ -640,7 +684,7 @@ class NStrokeEngine:
             return await loop.run_in_executor(
                 None,
                 lambda: self.run(
-                    locked_intent, pipeline_id=pipeline_id, work_fn=work_fn),
+                    locked_intent, pipeline_id=pipeline_id, work_fn=work_fn, simulation=simulation),
             )
 
         t0 = time.monotonic()
@@ -675,6 +719,44 @@ class NStrokeEngine:
                     "Proceeding autonomously — user review suggested."
                 ),
             })
+
+        if simulation:
+            self._broadcast({"type": "simulation_start", "pipeline_id": pipeline_id,
+                            "msg": "Running Blast Radius Simulator"})
+            from engine.simulation import BlastRadiusSimulator
+            simulator = BlastRadiusSimulator(self._sorter)
+
+            # Predict the spec using MetaArchitect for the dry-run
+            meta_plan = self._meta_architect.generate_swarm_topology(
+                mandate=locked_intent.mandate_text,
+                locked_intent=locked_intent,
+                vertex_model_id=getattr(self, "_active_model", None)
+            )
+            sim_spec = []
+            for node in meta_plan.execution_graph:
+                deps = [f"{pipeline_id}-{d}" for d in node.dependencies]
+                sim_spec.append((f"{pipeline_id}-{node.node_id}", deps))
+
+            if not sim_spec:
+                sim_spec = self._fallback_topology_spec(pipeline_id)
+
+            sim_result = simulator.simulate(sim_spec)
+            self._broadcast({"type": "simulation_result",
+                            "pipeline_id": pipeline_id, "result": sim_result})
+
+            return NStrokeResult(
+                pipeline_id=pipeline_id,
+                locked_intent=locked_intent,
+                strokes=[],
+                final_verdict=sim_result.get("safety_gate", "fail"),
+                satisfied=sim_result.get("safety_gate", "fail") == "pass",
+                total_strokes=0,
+                model_escalations=0,
+                healing_invocations=0,
+                latency_ms=(time.monotonic() - t0) * 1000.0,
+                crisis={"simulation": sim_result},
+                execution_mode="simulation"
+            )
 
         for stroke_num in range(1, self._max_strokes + 1):
             model_sel = self._model_selector.select(

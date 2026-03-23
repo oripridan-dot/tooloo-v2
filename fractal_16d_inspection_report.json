@@ -1,12 +1,12 @@
 {
-  "inspection_id": "fractal-16d-ac43255a",
-  "timestamp": "2026-03-22T11:32:53.815379+00:00",
+  "inspection_id": "fractal-16d-c32b2529",
+  "timestamp": "2026-03-22T22:14:50.722479+00:00",
   "components_inspected": 17,
   "total_fractal_sub_tasks": 51,
-  "total_latency_ms": 57.52,
-  "avg_composite_score": 0.9843,
-  "min_composite_score": 0.975,
-  "max_composite_score": 0.9906,
+  "total_latency_ms": 84.06,
+  "avg_composite_score": 0.9905,
+  "min_composite_score": 0.9837,
+  "max_composite_score": 0.995,
   "autonomous_gate_pass_rate": 1.0,
   "tribunal_pass_rate": 1.0,
   "dimension_aggregates": [
@@ -44,11 +44,11 @@
     },
     {
       "name": "Human Considering",
-      "avg_score": 0.9329,
-      "min_score": 0.86,
-      "max_score": 0.98,
+      "avg_score": 0.9894,
+      "min_score": 0.98,
+      "max_score": 0.99,
       "pass_rate": 1.0,
-      "weakest_component": "jit_booster"
+      "weakest_component": "mandate_executor"
     },
     {
       "name": "Accuracy",
@@ -68,11 +68,11 @@
     },
     {
       "name": "Quality",
-      "avg_score": 0.9694,
-      "min_score": 0.87,
+      "avg_score": 0.9935,
+      "min_score": 0.91,
       "max_score": 1.0,
       "pass_rate": 1.0,
-      "weakest_component": "jit_booster"
+      "weakest_component": "mandate_executor"
     },
     {
       "name": "Speed",
@@ -84,11 +84,11 @@
     },
     {
       "name": "Monitor",
-      "avg_score": 0.98,
+      "avg_score": 0.9976,
       "min_score": 0.96,
       "max_score": 1.0,
       "pass_rate": 1.0,
-      "weakest_component": "tribunal"
+      "weakest_component": "mandate_executor"
     },
     {
       "name": "Control",
@@ -143,10 +143,10 @@
     {
       "component": "router",
       "source_file": "engine/router.py",
-      "source_lines": 845,
+      "source_lines": 892,
       "wave": 1,
       "focus": "accuracy",
-      "composite_score": 0.985,
+      "composite_score": 0.9937,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -179,9 +179,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.9,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -200,9 +200,9 @@
         },
         {
           "name": "Quality",
-          "score": 0.96,
+          "score": 1.0,
           "passed": true,
-          "details": "Score: 0.96 (fn_count=5, class_count=1, lines=209)",
+          "details": "Score: 1.00 (fn_count=5, class_count=2, lines=214)",
           "recommendation": ""
         },
         {
@@ -214,9 +214,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.99,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.99 (logging, structured-output, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, async-observable, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
@@ -298,15 +298,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of router)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 2.84
+      "inspection_latency_ms": 5.8
     },
     {
       "component": "tribunal",
       "source_file": "engine/tribunal.py",
-      "source_lines": 271,
+      "source_lines": 303,
       "wave": 1,
       "focus": "accuracy",
-      "composite_score": 0.9762,
+      "composite_score": 0.9843,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -339,9 +339,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -360,9 +360,9 @@
         },
         {
           "name": "Quality",
-          "score": 0.96,
+          "score": 1.0,
           "passed": true,
-          "details": "Score: 0.96 (fn_count=1, class_count=2, lines=219)",
+          "details": "Score: 1.00 (fn_count=3, class_count=2, lines=217)",
           "recommendation": ""
         },
         {
@@ -374,9 +374,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.96,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.96 (logging, structured-output, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, async-observable, typed-interface)",
           "recommendation": ""
         },
         {
@@ -458,15 +458,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of tribunal)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 2.52
+      "inspection_latency_ms": 5.67
     },
     {
       "component": "psyche_bank",
       "source_file": "engine/psyche_bank.py",
-      "source_lines": 202,
+      "source_lines": 212,
       "wave": 1,
       "focus": "quality",
-      "composite_score": 0.9856,
+      "composite_score": 0.9887,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -499,9 +499,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -522,7 +522,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=8, class_count=3, lines=202)",
+          "details": "Score: 1.00 (fn_count=10, class_count=3, lines=204)",
           "recommendation": ""
         },
         {
@@ -536,7 +536,7 @@
           "name": "Monitor",
           "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, async-observable, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
@@ -618,15 +618,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of psyche_bank)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 2.58
+      "inspection_latency_ms": 4.85
     },
     {
       "component": "jit_booster",
       "source_file": "engine/jit_booster.py",
-      "source_lines": 798,
+      "source_lines": 866,
       "wave": 2,
       "focus": "speed",
-      "composite_score": 0.9775,
+      "composite_score": 0.9937,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -659,9 +659,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.86,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -680,9 +680,9 @@
         },
         {
           "name": "Quality",
-          "score": 0.87,
+          "score": 0.98,
           "passed": true,
-          "details": "Score: 0.87 (fn_count=0, class_count=0, lines=142)",
+          "details": "Score: 0.98 (fn_count=4, class_count=1, lines=169)",
           "recommendation": ""
         },
         {
@@ -694,9 +694,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.98,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.98 (logging, structured-output, timing)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, timing, async-observable, typed-interface)",
           "recommendation": ""
         },
         {
@@ -778,15 +778,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of jit_booster)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 2.58
+      "inspection_latency_ms": 4.45
     },
     {
       "component": "executor",
       "source_file": "engine/executor.py",
-      "source_lines": 329,
+      "source_lines": 339,
       "wave": 2,
       "focus": "speed",
-      "composite_score": 0.9831,
+      "composite_score": 0.9862,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -819,9 +819,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -842,7 +842,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=7, class_count=4, lines=215)",
+          "details": "Score: 1.00 (fn_count=9, class_count=4, lines=215)",
           "recommendation": ""
         },
         {
@@ -856,7 +856,7 @@
           "name": "Monitor",
           "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, async-observable, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
@@ -938,15 +938,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of executor)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 3.56
+      "inspection_latency_ms": 4.43
     },
     {
       "component": "graph",
       "source_file": "engine/graph.py",
-      "source_lines": 196,
+      "source_lines": 205,
       "wave": 2,
       "focus": "speed",
-      "composite_score": 0.9868,
+      "composite_score": 0.99,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -979,9 +979,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -1002,7 +1002,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=13, class_count=5, lines=196)",
+          "details": "Score: 1.00 (fn_count=15, class_count=5, lines=205)",
           "recommendation": ""
         },
         {
@@ -1016,7 +1016,7 @@
           "name": "Monitor",
           "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, async-observable, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
@@ -1098,15 +1098,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of graph)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 2.58
+      "inspection_latency_ms": 4.87
     },
     {
       "component": "scope_evaluator",
       "source_file": "engine/scope_evaluator.py",
-      "source_lines": 169,
+      "source_lines": 182,
       "wave": 3,
       "focus": "quality",
-      "composite_score": 0.9843,
+      "composite_score": 0.99,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1139,9 +1139,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -1162,7 +1162,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=3, class_count=3, lines=169)",
+          "details": "Score: 1.00 (fn_count=5, class_count=3, lines=182)",
           "recommendation": ""
         },
         {
@@ -1174,9 +1174,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.96,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.96 (logging, structured-output, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, async-observable, typed-interface)",
           "recommendation": ""
         },
         {
@@ -1258,15 +1258,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of scope_evaluator)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 2.54
+      "inspection_latency_ms": 4.74
     },
     {
       "component": "refinement",
       "source_file": "engine/refinement.py",
-      "source_lines": 202,
+      "source_lines": 216,
       "wave": 3,
       "focus": "quality",
-      "composite_score": 0.9843,
+      "composite_score": 0.9881,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1299,9 +1299,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -1322,7 +1322,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=3, class_count=2, lines=202)",
+          "details": "Score: 1.00 (fn_count=5, class_count=2, lines=206)",
           "recommendation": ""
         },
         {
@@ -1334,9 +1334,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.99,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.99 (logging, structured-output, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, async-observable, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
@@ -1418,15 +1418,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of refinement)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 3.56
+      "inspection_latency_ms": 4.84
     },
     {
       "component": "n_stroke",
       "source_file": "engine/n_stroke.py",
-      "source_lines": 1793,
+      "source_lines": 1856,
       "wave": 4,
       "focus": "speed",
-      "composite_score": 0.975,
+      "composite_score": 0.9893,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1459,9 +1459,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.9,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -1480,9 +1480,9 @@
         },
         {
           "name": "Quality",
-          "score": 0.9,
+          "score": 1.0,
           "passed": true,
-          "details": "Score: 0.90 (fn_count=2, class_count=1, lines=193)",
+          "details": "Score: 1.00 (fn_count=4, class_count=2, lines=199)",
           "recommendation": ""
         },
         {
@@ -1494,9 +1494,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.96,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.96 (logging, structured-output, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, async-observable, typed-interface)",
           "recommendation": ""
         },
         {
@@ -1578,15 +1578,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of n_stroke)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 4.9
+      "inspection_latency_ms": 5.02
     },
     {
       "component": "supervisor",
       "source_file": "engine/supervisor.py",
-      "source_lines": 442,
+      "source_lines": 453,
       "wave": 4,
       "focus": "quality",
-      "composite_score": 0.9856,
+      "composite_score": 0.99,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1619,9 +1619,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -1642,7 +1642,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=5, class_count=4, lines=214)",
+          "details": "Score: 1.00 (fn_count=7, class_count=4, lines=216)",
           "recommendation": ""
         },
         {
@@ -1654,9 +1654,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.98,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.98 (sse-broadcast, structured-output, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (sse-broadcast, structured-output, async-observable, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
@@ -1738,15 +1738,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of supervisor)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 4.99
+      "inspection_latency_ms": 4.96
     },
     {
       "component": "conversation",
       "source_file": "engine/conversation.py",
-      "source_lines": 1507,
+      "source_lines": 1542,
       "wave": 5,
       "focus": "accuracy",
-      "composite_score": 0.9893,
+      "composite_score": 0.995,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1779,9 +1779,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -1802,7 +1802,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=7, class_count=4, lines=217)",
+          "details": "Score: 1.00 (fn_count=8, class_count=4, lines=220)",
           "recommendation": ""
         },
         {
@@ -1814,9 +1814,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.96,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.96 (logging, structured-output, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, async-observable, typed-interface)",
           "recommendation": ""
         },
         {
@@ -1898,15 +1898,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of conversation)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 4.63
+      "inspection_latency_ms": 4.84
     },
     {
       "component": "config",
       "source_file": "engine/config.py",
-      "source_lines": 213,
+      "source_lines": 231,
       "wave": 5,
       "focus": "accuracy",
-      "composite_score": 0.9837,
+      "composite_score": 0.9943,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -1939,9 +1939,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -1960,9 +1960,9 @@
         },
         {
           "name": "Quality",
-          "score": 0.92,
+          "score": 1.0,
           "passed": true,
-          "details": "Score: 0.92 (fn_count=2, class_count=1, lines=178)",
+          "details": "Score: 1.00 (fn_count=4, class_count=2, lines=185)",
           "recommendation": ""
         },
         {
@@ -1974,9 +1974,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.96,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.96 (logging, structured-output, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, async-observable, typed-interface)",
           "recommendation": ""
         },
         {
@@ -2058,15 +2058,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of config)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 4.54
+      "inspection_latency_ms": 4.64
     },
     {
       "component": "branch_executor",
       "source_file": "engine/branch_executor.py",
-      "source_lines": 636,
+      "source_lines": 646,
       "wave": 6,
       "focus": "quality",
-      "composite_score": 0.9906,
+      "composite_score": 0.9925,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -2099,9 +2099,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.96,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types, async-ux",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -2122,7 +2122,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=9, class_count=5, lines=224)",
+          "details": "Score: 1.00 (fn_count=10, class_count=5, lines=225)",
           "recommendation": ""
         },
         {
@@ -2218,12 +2218,12 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of branch_executor)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 4.81
+      "inspection_latency_ms": 5.02
     },
     {
       "component": "mandate_executor",
       "source_file": "engine/mandate_executor.py",
-      "source_lines": 983,
+      "source_lines": 992,
       "wave": 6,
       "focus": "accuracy",
       "composite_score": 0.9837,
@@ -2378,15 +2378,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of mandate_executor)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 2.83
+      "inspection_latency_ms": 4.91
     },
     {
       "component": "model_garden",
       "source_file": "engine/model_garden.py",
-      "source_lines": 817,
+      "source_lines": 826,
       "wave": 6,
       "focus": "speed",
-      "composite_score": 0.9868,
+      "composite_score": 0.99,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -2419,9 +2419,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -2442,7 +2442,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=4, class_count=3, lines=198)",
+          "details": "Score: 1.00 (fn_count=6, class_count=3, lines=200)",
           "recommendation": ""
         },
         {
@@ -2456,7 +2456,7 @@
           "name": "Monitor",
           "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, error-reporting, async-observable, typed-interface)",
           "recommendation": ""
         },
         {
@@ -2538,15 +2538,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of model_garden)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 2.7
+      "inspection_latency_ms": 5.01
     },
     {
       "component": "vector_store",
       "source_file": "engine/vector_store.py",
-      "source_lines": 312,
+      "source_lines": 321,
       "wave": 6,
       "focus": "speed",
-      "composite_score": 0.9893,
+      "composite_score": 0.9931,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -2579,9 +2579,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.94,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, structured-types",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -2602,7 +2602,7 @@
           "name": "Quality",
           "score": 1.0,
           "passed": true,
-          "details": "Score: 1.00 (fn_count=13, class_count=3, lines=227)",
+          "details": "Score: 1.00 (fn_count=14, class_count=3, lines=223)",
           "recommendation": ""
         },
         {
@@ -2614,9 +2614,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.99,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.99 (logging, structured-output, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (logging, structured-output, async-observable, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
@@ -2698,15 +2698,15 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of vector_store)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 2.55
+      "inspection_latency_ms": 4.71
     },
     {
       "component": "daemon",
       "source_file": "engine/daemon.py",
-      "source_lines": 392,
+      "source_lines": 430,
       "wave": 6,
       "focus": "quality",
-      "composite_score": 0.9862,
+      "composite_score": 0.995,
       "autonomous_gate_pass": true,
       "dimensions": [
         {
@@ -2739,9 +2739,9 @@
         },
         {
           "name": "Human Considering",
-          "score": 0.92,
+          "score": 0.99,
           "passed": true,
-          "details": "Signals: docstrings, type-hints, async-ux",
+          "details": "Signals: docstrings, type-hints, structured-types, class-methods, async-ux",
           "recommendation": ""
         },
         {
@@ -2760,9 +2760,9 @@
         },
         {
           "name": "Quality",
-          "score": 0.96,
+          "score": 1.0,
           "passed": true,
-          "details": "Score: 0.96 (fn_count=7, class_count=1, lines=189)",
+          "details": "Score: 1.00 (fn_count=8, class_count=2, lines=197)",
           "recommendation": ""
         },
         {
@@ -2774,9 +2774,9 @@
         },
         {
           "name": "Monitor",
-          "score": 0.97,
+          "score": 1.0,
           "passed": true,
-          "details": "Instrumentation: 0.97 (sse-broadcast, async-observable, lifecycle-methods, typed-interface)",
+          "details": "Instrumentation: 1.00 (sse-broadcast, structured-output, async-observable, lifecycle-methods, typed-interface)",
           "recommendation": ""
         },
         {
@@ -2858,11 +2858,9 @@
       "fractal_reason": "Node failed 2x (last error: Fractal inspection of daemon)",
       "tribunal_passed": true,
       "tribunal_details": "clean",
-      "inspection_latency_ms": 2.45
+      "inspection_latency_ms": 4.72
     }
   ],
   "critical_components": [],
-  "top_recommendations": [
-    "[Human Considering] avg=0.933, weakest=jit_booster (pass_rate=100%) — prioritize improvement"
-  ]
+  "top_recommendations": []
 }

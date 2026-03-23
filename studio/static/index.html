@@ -50,6 +50,7 @@
       --cyan-dim: rgba(0, 229, 255, 0.10);
       --cyan-glow: rgba(0, 229, 255, 0.30);
       --purple: #B388FF;
+      --purple-deep-dim: rgba(179, 136, 255, 0.25);
       --amber: #FFAB40;
       --danger: #FF4757;
       --success: #2ED573;
@@ -256,6 +257,7 @@
       flex-direction: column;
       backdrop-filter: blur(var(--glass-blur));
       overflow: hidden;
+      position: relative;
     }
 
     .buddy-header {
@@ -654,6 +656,167 @@
 
     .send-btn:active {
       transform: scale(0.94);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════
+   BUDDY PROFILE — SLIDE-OVER PANEL
+   ══════════════════════════════════════════════════════════════════════ */
+    #buddy-profile-panel {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      background: rgba(8, 8, 20, 0.96);
+      backdrop-filter: blur(var(--glass-blur));
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-y: auto;
+    }
+
+    #buddy-profile-panel.open {
+      transform: translateX(0);
+    }
+
+    .bp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .bp-header-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--cyan);
+      letter-spacing: 0.06em;
+    }
+
+    .bp-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .bp-close:hover {
+      color: var(--text);
+      background: var(--border);
+    }
+
+    .bp-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .bp-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .bp-card-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .bp-expertise-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      margin-top: 6px;
+    }
+
+    .bp-expertise-fill {
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--cyan));
+      transition: width 0.4s;
+    }
+
+    .bp-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .bp-value {
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .bp-muted {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .bp-goal {
+      font-size: 12px;
+      color: var(--text);
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bp-goal:last-child {
+      border-bottom: none;
+    }
+
+    .bp-chip {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 3px;
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+    }
+
+    .bp-cache-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 3px 0;
+    }
+
+    .bp-cache-row strong {
+      color: var(--text);
+    }
+
+    .bp-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--cyan);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .bp-toggle:hover {
+      background: var(--cyan-dim);
+      border-color: var(--cyan);
+    }
+
+    .bp-toggle.active {
+      background: var(--cyan-dim);
+      border-color: var(--cyan);
     }
 
     /* ══════════════════════════════════════════════════════════════════════
@@ -1187,6 +1350,11 @@
       color: var(--purple);
     }
 
+    .ev-k.dream_cycle {
+      color: var(--purple);
+      text-shadow: 0 0 8px var(--purple-deep-dim);
+    }
+
     .ev-k.healing_triggered {
       color: var(--amber);
     }
@@ -1285,6 +1453,7 @@
         <div class="buddy-title">
           <div class="buddy-icon">B</div>
           Buddy
+          <button class="bp-toggle" id="bp-toggle-btn" title="Cognitive Profile">👤 Profile</button>
         </div>
         <div class="buddy-status-row">
           <span class="live-dot"></span>
@@ -1343,6 +1512,59 @@
       <div class="buddy-input">
         <textarea id="msg-input" placeholder="What are you working on?" rows="1"></textarea>
         <button class="send-btn" id="send-btn" title="Send">↑</button>
+      </div>
+
+      <!-- ── BUDDY PROFILE SLIDE-OVER ── -->
+      <div id="buddy-profile-panel">
+        <div class="bp-header">
+          <span class="bp-header-title">COGNITIVE PROFILE</span>
+          <button class="bp-close" id="bp-close-btn" title="Close">✕</button>
+        </div>
+        <div class="bp-body" id="bp-body">
+          <div class="bp-card">
+            <div class="bp-card-title">EXPERTISE</div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;">
+              <span class="bp-label" id="bp-expertise-label">—</span>
+              <span class="bp-muted" id="bp-expertise-score">—</span>
+            </div>
+            <div class="bp-expertise-bar">
+              <div class="bp-expertise-fill" id="bp-expertise-fill" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="bp-card">
+            <div class="bp-card-title">PREFERRED STYLE</div>
+            <div class="bp-value" id="bp-style">—</div>
+          </div>
+          <div class="bp-card">
+            <div class="bp-card-title">ACTIVE GOALS <span class="bp-muted" id="bp-goals-count">(0)</span></div>
+            <div id="bp-goals-list"><span class="bp-muted">No active goals yet.</span></div>
+          </div>
+          <div class="bp-card">
+            <div class="bp-card-title">FREQUENT INTENTS</div>
+            <div id="bp-intents" style="display:flex;flex-wrap:wrap;gap:5px;"><span class="bp-muted">Not yet
+                observed.</span></div>
+          </div>
+          <div class="bp-card">
+            <div class="bp-card-title">KNOWLEDGE ANCHORS</div>
+            <div id="bp-anchors"><span class="bp-muted">None recorded.</span></div>
+          </div>
+          <div class="bp-card">
+            <div class="bp-card-title">CACHE LAYERS</div>
+            <div id="bp-cache">
+              <div class="bp-cache-row"><span>L1 Session (Jaccard)</span><strong id="bp-cache-l1">—</strong></div>
+              <div class="bp-cache-row"><span>L2 Process (fingerprint)</span><strong id="bp-cache-l2">—</strong></div>
+              <div class="bp-cache-row"><span>L3 Disk (24h)</span><strong id="bp-cache-l3">—</strong></div>
+              <div class="bp-cache-row" style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px;">
+                <span>Total Hits / Misses</span><strong id="bp-cache-totals">—</strong>
+              </div>
+            </div>
+          </div>
+          <div class="bp-card">
+            <div class="bp-card-title">SESSION INFO</div>
+            <div class="bp-cache-row"><span>Sessions</span><strong id="bp-sessions">—</strong></div>
+            <div class="bp-cache-row"><span>Last Updated</span><strong id="bp-last-updated">—</strong></div>
+          </div>
+        </div>
       </div>
 
     </aside>
@@ -1547,6 +1769,8 @@
         style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">MEMORY</button>
       <button class="ops-tab" data-tab="profile"
         style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">PROFILE</button>
+      <button class="ops-tab" data-tab="introspection"
+        style="padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:0.06em;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;cursor:pointer;">INTROSPECT</button>
     </div>
     <!-- Tab Content -->
     <div id="ops-content" style="flex:1;overflow-y:auto;padding:20px;font-size:13px;color:var(--text);">
@@ -1867,6 +2091,62 @@
           <div id="ops-profile-cache"
             style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono);font-size:11px;">
             Loading…</div>
+        </div>
+      </div>
+
+      <!-- INTROSPECTION -->
+      <div id="ops-tab-introspection" class="ops-tab-pane" style="display:none;">
+        <h3 style="font-size:11px;font-weight:700;letter-spacing:0.08em;margin:0 0 12px;color:var(--text-muted)">DEEP
+          INTROSPECTION</h3>
+        <p style="font-size:11px;color:var(--text-muted);margin:0 0 12px;">TooLoo's self-awareness engine. Health
+          scores, cross-references, dead code, knowledge graph, and cascade analysis.</p>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <button id="ops-introspection-refresh-btn"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">&#8635;
+            Refresh</button>
+          <button id="ops-introspection-rebuild-btn"
+            style="padding:6px 14px;font-size:11px;font-weight:700;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">&#9881;
+            Full Rebuild</button>
+        </div>
+        <!-- System Health Traffic Light -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">SYSTEM HEALTH</div>
+          <div id="ops-introspection-health"
+            style="display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;">
+            Loading&hellip;</div>
+        </div>
+        <!-- Module Health Grid -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">MODULE HEALTH (<span
+              id="ops-introspection-modcount">0</span> modules)</div>
+          <div id="ops-introspection-modules"
+            style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:300px;overflow-y:auto;">Loading&hellip;
+          </div>
+        </div>
+        <!-- Knowledge Graph Layers -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">KNOWLEDGE GRAPH LAYERS
+          </div>
+          <div id="ops-introspection-layers" style="display:flex;flex-direction:column;gap:6px;">Loading&hellip;</div>
+        </div>
+        <!-- Dead Code -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">DEAD CODE (<span
+              id="ops-introspection-deadcount">0</span> functions)</div>
+          <div id="ops-introspection-deadcode"
+            style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;font-family:var(--mono);font-size:11px;">
+            Loading&hellip;</div>
+        </div>
+
+        <!-- Cascade Preview Visualizer -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:6px;">CASCADE PREVIEW VISUALIZER</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <input type="text" id="ops-cascade-input" placeholder="e.g. engine/router.py" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:6px 10px;font-family:var(--mono);font-size:11px;">
+            <button id="ops-cascade-btn" style="padding:6px 14px;font-size:11px;font-weight:700;background:var(--magenta);color:#fff;border:none;border-radius:4px;cursor:pointer;">Analyze Risk</button>
+          </div>
+          <div id="ops-cascade-output" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:var(--mono);font-size:11px;">
+          </div>
         </div>
       </div>
 
@@ -2199,6 +2479,7 @@
       n_stroke_start: 'route', n_stroke_complete: 'refinement',
       // Engine events
       model_selected: 'route', self_improve: 'jit_boost',
+      dream_cycle: 'dream_cycle',
       buddy_chat_fast: 'conversation', scope: 'route', plan: 'route',
       // Background events
       auto_loop: 'execution', roadmap_run: 'execution',
@@ -2292,6 +2573,17 @@
             document.getElementById('cv-refine').textContent = pct + '%';
             document.getElementById('cb-refine').style.width = pct + '%';
             setTimeout(resetNodes, 2000);
+            break;
+          }
+
+          case 'dream_cycle': {
+            spawnNotif(`Cognitive Dream Insight: ${ev.insight}`, 'info', 6000);
+            const buddyPane = document.getElementById('buddy-pane');
+            if (buddyPane) {
+              const oldShadow = buddyPane.style.boxShadow;
+              buddyPane.style.boxShadow = '0 0 40px var(--purple-deep-dim)';
+              setTimeout(() => { buddyPane.style.boxShadow = oldShadow; }, 2000);
+            }
             break;
           }
 
@@ -3520,6 +3812,86 @@
             if (listEl) listEl.textContent = 'Error: ' + e.message;
           }
         },
+        introspection: async () => {
+          try {
+            const [healthRes, deadRes, kgRes] = await Promise.all([
+              fetch('/v2/introspector/health'),
+              fetch('/v2/introspector/dead-code'),
+              fetch('/v2/introspector/knowledge-graph'),
+            ]);
+            const health = await healthRes.json();
+            const dead = await deadRes.json();
+            const kg = await kgRes.json();
+
+            /* Traffic light */
+            const hEl = document.getElementById('ops-introspection-health');
+            if (hEl) {
+              const colors = { green: 'var(--success, #4caf50)', yellow: '#ff9800', red: 'var(--danger, #f44336)' };
+              const dot = '<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:' + (colors[health.status] || '#888') + ';"></span>';
+              hEl.innerHTML = dot +
+                '<div style="flex:1;">' +
+                '<div style="font-size:14px;font-weight:700;color:var(--text);">' + esc(health.status.toUpperCase()) + '</div>' +
+                '<div style="font-size:11px;color:var(--text-muted);">Avg: ' + esc(String(health.avg_health)) +
+                ' &middot; Modules: ' + esc(String(health.module_count)) +
+                ' &middot; Critical: ' + esc(String(health.critical_modules.healthy)) + '/' + esc(String(health.critical_modules.total)) +
+                ' &middot; Lines: ' + esc(String(health.total_lines_of_code)) + '</div>' +
+                (health.recommendations ? '<div style="margin-top:6px;font-size:10px;color:var(--text-muted);">' + health.recommendations.map(r => '&bull; ' + esc(r)).join('<br>') + '</div>' : '') +
+                '</div>';
+            }
+
+            /* Module grid */
+            const mEl = document.getElementById('ops-introspection-modules');
+            const mcEl = document.getElementById('ops-introspection-modcount');
+            if (mcEl) mcEl.textContent = String(kg.total_modules);
+            if (mEl && kg.modules) {
+              mEl.innerHTML = kg.modules.sort((a, b) => a.health_score - b.health_score).map(m => {
+                const hcolor = m.health_score >= 0.85 ? 'var(--success, #4caf50)' : m.health_score >= 0.7 ? '#ff9800' : 'var(--danger, #f44336)';
+                return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;">' +
+                  '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+                  '<span style="font-size:11px;font-weight:700;color:var(--text);">' + esc(m.module) + '</span>' +
+                  '<span style="font-size:11px;font-weight:700;color:' + hcolor + ';">' + esc(String(m.health_score)) + '</span>' +
+                  '</div>' +
+                  '<div style="font-size:10px;color:var(--text-muted);">' + esc(m.role || '') + '</div>' +
+                  '<div style="display:flex;gap:6px;margin-top:4px;">' +
+                  '<span style="font-size:9px;padding:1px 6px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text-muted);">' + esc(m.layer) + '</span>' +
+                  (m.critical ? '<span style="font-size:9px;padding:1px 6px;background:var(--danger, #f44336);color:#fff;border-radius:3px;">CRITICAL</span>' : '') +
+                  '</div></div>';
+              }).join('');
+            }
+
+            /* Knowledge graph layers */
+            const lEl = document.getElementById('ops-introspection-layers');
+            if (lEl && kg.layers) {
+              lEl.innerHTML = Object.entries(kg.layers).map(([layer, info]) =>
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;display:flex;justify-content:space-between;align-items:center;">' +
+                '<div><span style="font-size:11px;font-weight:700;color:var(--text);">' + esc(layer.toUpperCase()) + '</span>' +
+                '<span style="font-size:10px;color:var(--text-muted);margin-left:8px;">' + esc(String(info.module_count)) + ' modules</span></div>' +
+                '<span style="font-size:11px;font-weight:700;color:' + (info.avg_health >= 0.85 ? 'var(--success, #4caf50)' : '#ff9800') + ';">' + esc(String(info.avg_health)) + '</span>' +
+                '</div>'
+              ).join('');
+            }
+
+            /* Dead code */
+            const dcEl = document.getElementById('ops-introspection-deadcode');
+            const dccEl = document.getElementById('ops-introspection-deadcount');
+            if (dccEl) dccEl.textContent = String(dead.dead_function_count);
+            if (dcEl && dead.functions) {
+              if (dead.functions.length === 0) {
+                dcEl.innerHTML = '<span style="color:var(--text-muted)">No dead code detected.</span>';
+              } else {
+                dcEl.innerHTML = dead.functions.slice(0, 30).map(f =>
+                  '<div style="padding:2px 0;color:var(--text-muted);">' +
+                  '<span style="color:var(--accent);">' + esc(f.module) + '</span>.' +
+                  '<span style="color:var(--text);">' + esc(f.function) + '</span>' +
+                  '</div>'
+                ).join('');
+              }
+            }
+          } catch (e) {
+            const hEl = document.getElementById('ops-introspection-health');
+            if (hEl) hEl.textContent = 'Error: ' + e.message;
+          }
+        },
       };
 
       /* Wire buttons */
@@ -3544,277 +3916,397 @@
         loaders.profile();
       });
 
-      document.getElementById('ops-si-run-btn').addEventListener('click', async () => {
-        const el = document.getElementById('ops-si-output');
-        if (el) el.textContent = 'Running self-improvement cycle\u2026';
+      document.getElementById('ops-introspection-refresh-btn').addEventListener('click', () => loaders.introspection());
+      document.getElementById('ops-introspection-rebuild-btn').addEventListener('click', async () => {
+        const hEl = document.getElementById('ops-introspection-health');
+        if (hEl) hEl.innerHTML = 'Rebuilding&hellip;';
         try {
-          const d = await (await fetch('/v2/self-improve', { method: 'POST' })).json();
-          if (el) el.textContent = JSON.stringify(d, null, 2);
-        } catch (e) { if (el) el.textContent = 'Error: ' + e.message; }
+          await fetch('/v2/introspector/rebuild', { method: 'POST' });
+          spawnNotif('Deep introspection rebuilt.', 'info', 2500);
+          loaders.introspection();
+        } catch (e) { if (hEl) hEl.textContent = 'Error: ' + e.message; }
       });
+      const d = await(await fetch('/v2/self-improve', { method: 'POST' })).json();
+      if (el) el.textContent = JSON.stringify(d, null, 2);
+    } catch (e) { if (el) el.textContent = 'Error: ' + e.message; }
+    });
 
-      document.getElementById('ops-daemon-start').addEventListener('click', async () => {
-        await fetch('/v2/daemon/start', { method: 'POST' });
-        spawnNotif('Daemon started.', 'info', 2000);
-        loaders.daemon();
-      });
-      document.getElementById('ops-daemon-stop').addEventListener('click', async () => {
-        await fetch('/v2/daemon/stop', { method: 'POST' });
-        spawnNotif('Daemon stopped.', 'info', 2000);
-        loaders.daemon();
-      });
-      document.getElementById('ops-daemon-refresh').addEventListener('click', () => loaders.daemon());
+    document.getElementById('ops-daemon-start').addEventListener('click', async () => {
+      await fetch('/v2/daemon/start', { method: 'POST' });
+      spawnNotif('Daemon started.', 'info', 2000);
+      loaders.daemon();
+    });
+    document.getElementById('ops-daemon-stop').addEventListener('click', async () => {
+      await fetch('/v2/daemon/stop', { method: 'POST' });
+      spawnNotif('Daemon stopped.', 'info', 2000);
+      loaders.daemon();
+    });
+    document.getElementById('ops-daemon-refresh').addEventListener('click', () => loaders.daemon());
 
-      document.getElementById('ops-kb-refresh').addEventListener('click', () => loaders.knowledge());
-      document.getElementById('ops-kb-ingest').addEventListener('click', async () => {
-        spawnNotif('Full re-ingest triggered\u2026', 'info', 2000);
-        await fetch('/v2/knowledge/ingest/full', { method: 'POST' });
-        loaders.knowledge();
-      });
+    document.getElementById('ops-kb-refresh').addEventListener('click', () => loaders.knowledge());
+    document.getElementById('ops-kb-ingest').addEventListener('click', async () => {
+      spawnNotif('Full re-ingest triggered\u2026', 'info', 2000);
+      await fetch('/v2/knowledge/ingest/full', { method: 'POST' });
+      loaders.knowledge();
+    });
 
-      document.getElementById('ops-roadmap-refresh').addEventListener('click', () => loaders.roadmap());
-      document.getElementById('ops-roadmap-run').addEventListener('click', async () => {
-        spawnNotif('Roadmap run triggered\u2026', 'info', 2000);
-        await fetch('/v2/roadmap/run', { method: 'POST' });
-      });
+    document.getElementById('ops-roadmap-refresh').addEventListener('click', () => loaders.roadmap());
+    document.getElementById('ops-roadmap-run').addEventListener('click', async () => {
+      spawnNotif('Roadmap run triggered\u2026', 'info', 2000);
+      await fetch('/v2/roadmap/run', { method: 'POST' });
+    });
 
-      document.getElementById('ops-sandbox-refresh').addEventListener('click', () => loaders.sandbox());
-      document.getElementById('ops-branch-refresh').addEventListener('click', () => loaders.branch());
+    document.getElementById('ops-sandbox-refresh').addEventListener('click', () => loaders.sandbox());
+    document.getElementById('ops-branch-refresh').addEventListener('click', () => loaders.branch());
 
-      document.getElementById('ops-al-start').addEventListener('click', async () => {
-        await fetch('/v2/auto-loop/start', { method: 'POST' });
-        spawnNotif('Auto-loop started.', 'info', 2000);
-        loaders.autoloop();
-      });
-      document.getElementById('ops-al-stop').addEventListener('click', async () => {
-        await fetch('/v2/auto-loop/stop', { method: 'POST' });
-        spawnNotif('Auto-loop stopped.', 'info', 2000);
-        loaders.autoloop();
-      });
-      document.getElementById('ops-al-status').addEventListener('click', () => loaders.autoloop());
+    document.getElementById('ops-al-start').addEventListener('click', async () => {
+      await fetch('/v2/auto-loop/start', { method: 'POST' });
+      spawnNotif('Auto-loop started.', 'info', 2000);
+      loaders.autoloop();
+    });
+    document.getElementById('ops-al-stop').addEventListener('click', async () => {
+      await fetch('/v2/auto-loop/stop', { method: 'POST' });
+      spawnNotif('Auto-loop stopped.', 'info', 2000);
+      loaders.autoloop();
+    });
+    document.getElementById('ops-al-status').addEventListener('click', () => loaders.autoloop());
 
-      /* ── New: Engram ── */
-      document.getElementById('ops-engram-refresh').addEventListener('click', () => loaders.engram());
-      document.getElementById('ops-engram-generate').addEventListener('click', async () => {
-        spawnNotif('Generating engram…', 'info', 1500);
-        try {
-          await fetch('/v2/engram/generate', { method: 'POST' });
-          loaders.engram();
-        } catch (e) { spawnNotif('Engram error: ' + e.message, 'warn', 3000); }
-      });
+    /* ── New: Engram ── */
+    document.getElementById('ops-engram-refresh').addEventListener('click', () => loaders.engram());
+    document.getElementById('ops-engram-generate').addEventListener('click', async () => {
+      spawnNotif('Generating engram…', 'info', 1500);
+      try {
+        await fetch('/v2/engram/generate', { method: 'POST' });
+        loaders.engram();
+      } catch (e) { spawnNotif('Engram error: ' + e.message, 'warn', 3000); }
+    });
 
-      /* ── New: MCP ── */
-      document.getElementById('ops-mcp-refresh').addEventListener('click', () => loaders.mcp());
+    /* ── New: MCP ── */
+    document.getElementById('ops-mcp-refresh').addEventListener('click', () => loaders.mcp());
 
-      /* ── New: Status ── */
-      document.getElementById('ops-status-refresh').addEventListener('click', () => loaders.status());
-      document.getElementById('ops-status-async').addEventListener('click', async () => {
-        try {
-          const d = await (await fetch('/v2/async-exec/status')).json();
-          const el = document.getElementById('ops-status-output');
-          const asyncReady = d && (d.async_fluid_executor === 'up' || d.status === 'up');
-          const badge = asyncReady
-            ? '\u2705 ASYNC N-STROKE: READY\n\n'
-            : '\u26a0\ufe0f ASYNC N-STROKE: executor not live (fallback to sync)\n\n';
-          if (el) el.textContent = badge + JSON.stringify(d, null, 2);
-        } catch (e) {
-          const el = document.getElementById('ops-status-output');
-          if (el) el.textContent = 'Error: ' + e.message;
-        }
-      });
-      document.getElementById('ops-status-async-toggle').addEventListener('click', function () {
-        const on = this.dataset.async === '1';
-        this.dataset.async = on ? '0' : '1';
-        this.textContent = '\u26a1 Async N-Stroke: ' + (on ? 'OFF' : 'ON');
-        this.style.background = on ? 'transparent' : '#00ffe040';
-        // Store toggle state globally so sendMsg() can pick it up
-        window._nStrokeAsync = !on;
-        spawnNotif('N-Stroke async mode: ' + (on ? 'OFF (sync)' : 'ON (async_fluid)'), 'info', 2000);
-      });
-
-      document.getElementById('ops-run-async-nstroke').addEventListener('click', async () => {
-        const mandate = document.getElementById('ops-async-mandate-input').value.trim();
-        if (!mandate) { spawnNotif('Enter a mandate first', 'warn', 2000); return; }
+    /* ── New: Status ── */
+    document.getElementById('ops-status-refresh').addEventListener('click', () => loaders.status());
+    document.getElementById('ops-status-async').addEventListener('click', async () => {
+      try {
+        const d = await (await fetch('/v2/async-exec/status')).json();
         const el = document.getElementById('ops-status-output');
-        if (el) el.textContent = '⚡ Running async N-Stroke…';
-        try {
-          const res = await fetch('/v2/n-stroke/async', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              intent: 'BUILD',
-              confidence: 0.95,
-              value_statement: mandate,
-              mandate_text: mandate,
-              max_strokes: 2,
-            }),
-          });
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const d = await res.json();
-          const summary = [
-            'execution_mode : ' + (d.execution_mode || d.result?.execution_mode || '?'),
-            'final_verdict  : ' + (d.result?.final_verdict || '?'),
-            'total_strokes  : ' + (d.result?.total_strokes ?? '?'),
-            'latency_ms     : ' + (d.latency_ms ?? '?') + ' ms',
-            '',
-            JSON.stringify(d, null, 2),
-          ].join('\n');
-          if (el) el.textContent = summary;
-        } catch (e) {
-          if (el) el.textContent = 'Error: ' + e.message;
-        }
-      });
-
-      document.getElementById('ops-run-benchmark').addEventListener('click', async () => {
+        const asyncReady = d && (d.async_fluid_executor === 'up' || d.status === 'up');
+        const badge = asyncReady
+          ? '\u2705 ASYNC N-STROKE: READY\n\n'
+          : '\u26a0\ufe0f ASYNC N-STROKE: executor not live (fallback to sync)\n\n';
+        if (el) el.textContent = badge + JSON.stringify(d, null, 2);
+      } catch (e) {
         const el = document.getElementById('ops-status-output');
-        if (el) el.textContent = '⏱ Running benchmark…';
-        try {
-          const d = await (await fetch('/v2/n-stroke/benchmark')).json();
-          const out = [
-            '⏱ SYNC vs ASYNC BENCHMARK',
-            'sync_ms      : ' + d.sync_ms,
-            'async_ms     : ' + d.async_ms,
-            'delta_ms     : ' + d.delta_ms,
-            'faster       : ' + d.faster,
-            '',
-            JSON.stringify(d, null, 2),
-          ].join('\n');
-          if (el) el.textContent = out;
-        } catch (e) {
-          if (el) el.textContent = 'Benchmark error: ' + e.message;
-        }
-      });
+        if (el) el.textContent = 'Error: ' + e.message;
+      }
+    });
+    document.getElementById('ops-status-async-toggle').addEventListener('click', function () {
+      const on = this.dataset.async === '1';
+      this.dataset.async = on ? '0' : '1';
+      this.textContent = '\u26a1 Async N-Stroke: ' + (on ? 'OFF' : 'ON');
+      this.style.background = on ? 'transparent' : '#00ffe040';
+      // Store toggle state globally so sendMsg() can pick it up
+      window._nStrokeAsync = !on;
+      spawnNotif('N-Stroke async mode: ' + (on ? 'OFF (sync)' : 'ON (async_fluid)'), 'info', 2000);
+    });
 
-      /* ── New: VLT ── */
-      document.getElementById('ops-vlt-demo').addEventListener('click', () => loaders.vlt());
-      document.getElementById('ops-vlt-audit').addEventListener('click', async () => {
-        try {
-          const demo = await (await fetch('/v2/vlt/demo')).json();
-          const d = await (await fetch('/v2/vlt/audit', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tree: demo.tree || demo }),
-          })).json();
-          const el = document.getElementById('ops-vlt-output');
-          if (el) el.textContent = JSON.stringify(d, null, 2);
-        } catch (e) {
-          const el = document.getElementById('ops-vlt-output');
-          if (el) el.textContent = 'Error: ' + e.message;
-        }
-      });
-      document.getElementById('ops-vlt-render').addEventListener('click', async () => {
-        try {
-          const demo = await (await fetch('/v2/vlt/demo')).json();
-          const d = await (await fetch('/v2/vlt/render', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tree: demo.tree || demo }),
-          })).json();
-          const el = document.getElementById('ops-vlt-output');
-          if (el) el.textContent = JSON.stringify(d, null, 2);
-          spawnNotif('VLT rendered.', 'info', 1800);
-        } catch (e) {
-          const el = document.getElementById('ops-vlt-output');
-          if (el) el.textContent = 'Error: ' + e.message;
-        }
-      });
+    document.getElementById('ops-run-async-nstroke').addEventListener('click', async () => {
+      const mandate = document.getElementById('ops-async-mandate-input').value.trim();
+      if (!mandate) { spawnNotif('Enter a mandate first', 'warn', 2000); return; }
+      const el = document.getElementById('ops-status-output');
+      if (el) el.textContent = '⚡ Running async N-Stroke…';
+      try {
+        const res = await fetch('/v2/n-stroke/async', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            intent: 'BUILD',
+            confidence: 0.95,
+            value_statement: mandate,
+            mandate_text: mandate,
+            max_strokes: 2,
+          }),
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const d = await res.json();
+        const summary = [
+          'execution_mode : ' + (d.execution_mode || d.result?.execution_mode || '?'),
+          'final_verdict  : ' + (d.result?.final_verdict || '?'),
+          'total_strokes  : ' + (d.result?.total_strokes ?? '?'),
+          'latency_ms     : ' + (d.latency_ms ?? '?') + ' ms',
+          '',
+          JSON.stringify(d, null, 2),
+        ].join('\n');
+        if (el) el.textContent = summary;
+      } catch (e) {
+        if (el) el.textContent = 'Error: ' + e.message;
+      }
+    });
 
-      /* ── New: Self-Improve Apply ── */
-      document.getElementById('ops-si-apply-btn').addEventListener('click', async () => {
-        const input = document.getElementById('ops-si-apply-input');
-        const out = document.getElementById('ops-si-apply-output');
-        if (!input || !input.value.trim()) { if (out) out.textContent = 'Enter suggestion text first.'; return; }
-        if (out) out.textContent = 'Applying…';
-        try {
-          const d = await (await fetch('/v2/self-improve/apply', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ suggestion: input.value.trim() }),
-          })).json();
-          if (out) out.textContent = JSON.stringify(d, null, 2);
-        } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
-      });
+    document.getElementById('ops-run-benchmark').addEventListener('click', async () => {
+      const el = document.getElementById('ops-status-output');
+      if (el) el.textContent = '⏱ Running benchmark…';
+      try {
+        const d = await (await fetch('/v2/n-stroke/benchmark')).json();
+        const out = [
+          '⏱ SYNC vs ASYNC BENCHMARK',
+          'sync_ms      : ' + d.sync_ms,
+          'async_ms     : ' + d.async_ms,
+          'delta_ms     : ' + d.delta_ms,
+          'faster       : ' + d.faster,
+          '',
+          JSON.stringify(d, null, 2),
+        ].join('\n');
+        if (el) el.textContent = out;
+      } catch (e) {
+        if (el) el.textContent = 'Benchmark error: ' + e.message;
+      }
+    });
 
-      /* ── New: Knowledge Query ── */
-      document.getElementById('ops-kb-query-btn').addEventListener('click', async () => {
-        const input = document.getElementById('ops-kb-query-input');
-        const result = document.getElementById('ops-kb-query-result');
-        if (!input || !input.value.trim()) return;
-        if (result) { result.style.display = ''; result.textContent = 'Querying…'; }
-        try {
-          const d = await (await fetch('/v2/knowledge/query', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic: input.value.trim(), top_k: 5 }),
-          })).json();
-          if (result) result.textContent = JSON.stringify(d, null, 2);
-        } catch (e) { if (result) result.textContent = 'Error: ' + e.message; }
-      });
+    /* ── New: VLT ── */
+    document.getElementById('ops-vlt-demo').addEventListener('click', () => loaders.vlt());
+    document.getElementById('ops-vlt-audit').addEventListener('click', async () => {
+      try {
+        const demo = await (await fetch('/v2/vlt/demo')).json();
+        const d = await (await fetch('/v2/vlt/audit', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tree: demo.tree || demo }),
+        })).json();
+        const el = document.getElementById('ops-vlt-output');
+        if (el) el.textContent = JSON.stringify(d, null, 2);
+      } catch (e) {
+        const el = document.getElementById('ops-vlt-output');
+        if (el) el.textContent = 'Error: ' + e.message;
+      }
+    });
+    document.getElementById('ops-vlt-render').addEventListener('click', async () => {
+      try {
+        const demo = await (await fetch('/v2/vlt/demo')).json();
+        const d = await (await fetch('/v2/vlt/render', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tree: demo.tree || demo }),
+        })).json();
+        const el = document.getElementById('ops-vlt-output');
+        if (el) el.textContent = JSON.stringify(d, null, 2);
+        spawnNotif('VLT rendered.', 'info', 1800);
+      } catch (e) {
+        const el = document.getElementById('ops-vlt-output');
+        if (el) el.textContent = 'Error: ' + e.message;
+      }
+    });
 
-      /* ── New: Roadmap Add Item + Similar ── */
-      document.getElementById('ops-roadmap-add-btn').addEventListener('click', async () => {
-        const title = document.getElementById('ops-roadmap-item-title');
-        const desc = document.getElementById('ops-roadmap-item-desc');
-        const out = document.getElementById('ops-roadmap-add-result');
-        if (!title || !title.value.trim()) { if (out) out.textContent = 'Title is required.'; return; }
-        if (out) out.textContent = 'Adding…';
-        try {
-          const d = await (await fetch('/v2/roadmap/item', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: title.value.trim(), description: desc?.value.trim() || title.value.trim(), priority: 'medium' }),
-          })).json();
-          if (out) out.textContent = JSON.stringify(d, null, 2);
-          if (d.accepted) { title.value = ''; if (desc) desc.value = ''; loaders.roadmap(); }
-        } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
-      });
-      document.getElementById('ops-roadmap-similar-btn').addEventListener('click', async () => {
-        const title = document.getElementById('ops-roadmap-item-title');
-        const out = document.getElementById('ops-roadmap-add-result');
-        if (!title || !title.value.trim()) { if (out) out.textContent = 'Enter title to check similarity.'; return; }
-        try {
-          const d = await (await fetch('/v2/roadmap/similar?q=' + encodeURIComponent(title.value.trim()) + '&top_k=3')).json();
-          if (out) out.textContent = JSON.stringify(d, null, 2);
-        } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
-      });
+    /* ── New: Self-Improve Apply ── */
+    document.getElementById('ops-si-apply-btn').addEventListener('click', async () => {
+      const input = document.getElementById('ops-si-apply-input');
+      const out = document.getElementById('ops-si-apply-output');
+      if (!input || !input.value.trim()) { if (out) out.textContent = 'Enter suggestion text first.'; return; }
+      if (out) out.textContent = 'Applying…';
+      try {
+        const d = await (await fetch('/v2/self-improve/apply', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ suggestion: input.value.trim() }),
+        })).json();
+        if (out) out.textContent = JSON.stringify(d, null, 2);
+      } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
+    });
 
-      /* ── New: Sandbox Spawn ── */
-      document.getElementById('ops-sandbox-spawn').addEventListener('click', async () => {
-        const input = document.getElementById('ops-sandbox-mandate');
-        const out = document.getElementById('ops-sandbox-spawn-result');
-        if (!input || !input.value.trim()) { if (out) out.textContent = 'Enter mandate first.'; return; }
-        if (out) out.textContent = 'Spawning sandbox…';
-        try {
-          const d = await (await fetch('/v2/sandbox/spawn', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ feature_mandate: input.value.trim() }),
-          })).json();
-          if (out) out.textContent = JSON.stringify(d, null, 2);
-          input.value = '';
-          loaders.sandbox();
-        } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
-      });
+    /* ── New: Knowledge Query ── */
+    document.getElementById('ops-kb-query-btn').addEventListener('click', async () => {
+      const input = document.getElementById('ops-kb-query-input');
+      const result = document.getElementById('ops-kb-query-result');
+      if (!input || !input.value.trim()) return;
+      if (result) { result.style.display = ''; result.textContent = 'Querying…'; }
+      try {
+        const d = await (await fetch('/v2/knowledge/query', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic: input.value.trim(), top_k: 5 }),
+        })).json();
+        if (result) result.textContent = JSON.stringify(d, null, 2);
+      } catch (e) { if (result) result.textContent = 'Error: ' + e.message; }
+    });
 
-      /* ── New: Branch Create ── */
-      document.getElementById('ops-branch-create').addEventListener('click', async () => {
-        const btype = document.getElementById('ops-branch-type')?.value || 'fork';
-        const mandate = document.getElementById('ops-branch-mandate');
-        const out = document.getElementById('ops-branch-create-result');
-        if (!mandate || !mandate.value.trim()) { if (out) out.textContent = 'Enter mandate first.'; return; }
-        if (out) out.textContent = 'Creating branch…';
-        try {
-          const d = await (await fetch('/v2/branch', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ branches: [{ branch_type: btype, mandate_text: mandate.value.trim(), intent: 'BUILD' }] }),
-          })).json();
-          if (out) out.textContent = JSON.stringify(d, null, 2);
-          mandate.value = '';
-          loaders.branch();
-        } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
-      });
+    /* ── New: Roadmap Add Item + Similar ── */
+    document.getElementById('ops-roadmap-add-btn').addEventListener('click', async () => {
+      const title = document.getElementById('ops-roadmap-item-title');
+      const desc = document.getElementById('ops-roadmap-item-desc');
+      const out = document.getElementById('ops-roadmap-add-result');
+      if (!title || !title.value.trim()) { if (out) out.textContent = 'Title is required.'; return; }
+      if (out) out.textContent = 'Adding…';
+      try {
+        const d = await (await fetch('/v2/roadmap/item', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title.value.trim(), description: desc?.value.trim() || title.value.trim(), priority: 'medium' }),
+        })).json();
+        if (out) out.textContent = JSON.stringify(d, null, 2);
+        if (d.accepted) { title.value = ''; if (desc) desc.value = ''; loaders.roadmap(); }
+      } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
+    });
+    document.getElementById('ops-roadmap-similar-btn').addEventListener('click', async () => {
+      const title = document.getElementById('ops-roadmap-item-title');
+      const out = document.getElementById('ops-roadmap-add-result');
+      if (!title || !title.value.trim()) { if (out) out.textContent = 'Enter title to check similarity.'; return; }
+      try {
+        const d = await (await fetch('/v2/roadmap/similar?q=' + encodeURIComponent(title.value.trim()) + '&top_k=3')).json();
+        if (out) out.textContent = JSON.stringify(d, null, 2);
+      } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
+    });
 
-      /* Escape key closes panel */
-      document.addEventListener('keydown', e => { if (e.key === 'Escape' && panel.style.display !== 'none') close(); });
+    /* ── New: Sandbox Spawn ── */
+    document.getElementById('ops-sandbox-spawn').addEventListener('click', async () => {
+      const input = document.getElementById('ops-sandbox-mandate');
+      const out = document.getElementById('ops-sandbox-spawn-result');
+      if (!input || !input.value.trim()) { if (out) out.textContent = 'Enter mandate first.'; return; }
+      if (out) out.textContent = 'Spawning sandbox…';
+      try {
+        const d = await (await fetch('/v2/sandbox/spawn', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feature_mandate: input.value.trim() }),
+        })).json();
+        if (out) out.textContent = JSON.stringify(d, null, 2);
+        input.value = '';
+        loaders.sandbox();
+      } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
+    });
 
-      return { open, close, showTab, loaders };
-    })();
+    /* ── New: Branch Create ── */
+    document.getElementById('ops-branch-create').addEventListener('click', async () => {
+      const btype = document.getElementById('ops-branch-type')?.value || 'fork';
+      const mandate = document.getElementById('ops-branch-mandate');
+      const out = document.getElementById('ops-branch-create-result');
+      if (!mandate || !mandate.value.trim()) { if (out) out.textContent = 'Enter mandate first.'; return; }
+      if (out) out.textContent = 'Creating branch…';
+      try {
+        const d = await (await fetch('/v2/branch', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ branches: [{ branch_type: btype, mandate_text: mandate.value.trim(), intent: 'BUILD' }] }),
+        })).json();
+        if (out) out.textContent = JSON.stringify(d, null, 2);
+        mandate.value = '';
+        loaders.branch();
+      } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
+    });
+
+    /* Escape key closes panel */
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && panel.style.display !== 'none') close(); });
+
+    return { open, close, showTab, loaders };
+    }) ();
     /* Expose for inline onclick handlers in daemon approvals */
     window.OpsPanel = OpsPanel;
+
+    /* ══════════════════════════════════════════════════════════════════════
+       BUDDY PROFILE PANEL — Slide-over loader
+       ══════════════════════════════════════════════════════════════════════ */
+    (() => {
+      const panel = document.getElementById('buddy-profile-panel');
+      const toggleBtn = document.getElementById('bp-toggle-btn');
+      const closeBtn = document.getElementById('bp-close-btn');
+      if (!panel || !toggleBtn) return;
+
+      let _open = false;
+      function toggle() { _open ? close() : open(); }
+      function open() {
+        _open = true;
+        panel.classList.add('open');
+        toggleBtn.classList.add('active');
+        loadProfile();
+      }
+      function close() {
+        _open = false;
+        panel.classList.remove('open');
+        toggleBtn.classList.remove('active');
+      }
+
+      async function loadProfile() {
+        try {
+          const [pd, cd] = await Promise.all([
+            fetch('/v2/buddy/profile').then(r => r.json()),
+            fetch('/v2/buddy/cache/stats').then(r => r.json()),
+          ]);
+          const p = pd.profile || {};
+
+          // Expertise
+          const score = p.expertise_score || 0;
+          const pct = Math.round(score * 100);
+          const labelEl = document.getElementById('bp-expertise-label');
+          const scoreEl = document.getElementById('bp-expertise-score');
+          const fillEl = document.getElementById('bp-expertise-fill');
+          if (labelEl) labelEl.textContent = esc(pd.expertise_label || 'Unknown');
+          if (scoreEl) scoreEl.textContent = pct + ' / 100';
+          if (fillEl) fillEl.style.width = pct + '%';
+
+          // Style
+          const styleEl = document.getElementById('bp-style');
+          if (styleEl) styleEl.textContent = esc(p.preferred_style || '\u2014');
+
+          // Goals
+          const goals = p.active_goals || [];
+          const goalsCountEl = document.getElementById('bp-goals-count');
+          const goalsListEl = document.getElementById('bp-goals-list');
+          if (goalsCountEl) goalsCountEl.textContent = '(' + goals.length + ')';
+          if (goalsListEl) {
+            if (!goals.length) {
+              goalsListEl.innerHTML = '<span class="bp-muted">No active goals yet.</span>';
+            } else {
+              goalsListEl.innerHTML = goals.map(g =>
+                '<div class="bp-goal">' + esc(g) + '</div>'
+              ).join('');
+            }
+          }
+
+          // Intents
+          const intents = p.frequent_intents || [];
+          const intentsEl = document.getElementById('bp-intents');
+          if (intentsEl) {
+            if (!intents.length) {
+              intentsEl.innerHTML = '<span class="bp-muted">Not yet observed.</span>';
+            } else {
+              intentsEl.innerHTML = intents.map(i =>
+                '<span class="bp-chip">' + esc(i) + '</span>'
+              ).join('');
+            }
+          }
+
+          // Knowledge anchors
+          const anchors = p.knowledge_anchors || [];
+          const anchorsEl = document.getElementById('bp-anchors');
+          if (anchorsEl) {
+            if (!anchors.length) {
+              anchorsEl.innerHTML = '<span class="bp-muted">None recorded.</span>';
+            } else {
+              anchorsEl.innerHTML = anchors.slice(0, 5).map(a =>
+                '<div class="bp-goal">' + esc(a) + '</div>'
+              ).join('');
+            }
+          }
+
+          // Cache stats
+          const sizes = cd.sizes || {};
+          const stats = cd;
+          const l1El = document.getElementById('bp-cache-l1');
+          const l2El = document.getElementById('bp-cache-l2');
+          const l3El = document.getElementById('bp-cache-l3');
+          const totalsEl = document.getElementById('bp-cache-totals');
+          if (l1El) l1El.textContent = (sizes.l1 || 0) + ' entries';
+          if (l2El) l2El.textContent = (sizes.l2 || 0) + ' entries';
+          if (l3El) l3El.textContent = (sizes.l3 || 0) + ' entries';
+          if (totalsEl) totalsEl.textContent = (stats.hits || 0) + ' / ' + (stats.misses || 0);
+
+          // Session info
+          const sessEl = document.getElementById('bp-sessions');
+          const updEl = document.getElementById('bp-last-updated');
+          if (sessEl) sessEl.textContent = String(p.session_count || 0);
+          if (updEl) updEl.textContent = p.last_updated ? new Date(p.last_updated).toLocaleString() : '\u2014';
+        } catch (e) {
+          const body = document.getElementById('bp-body');
+          if (body) body.innerHTML = '<div class="bp-card" style="color:var(--danger);">Error loading profile: ' + esc(e.message) + '</div>';
+        }
+      }
+
+      toggleBtn.addEventListener('click', toggle);
+      if (closeBtn) closeBtn.addEventListener('click', close);
+      document.addEventListener('keydown', e => { if (e.key === 'Escape' && _open) close(); });
+    })();
   </script>
 </body>
 

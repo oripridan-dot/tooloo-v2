@@ -810,6 +810,15 @@
       "category": "security",
       "source": "tribunal",
       "expires_at": ""
+    },
+    {
+      "id": "tribunal-auto-hardcoded-secrets-001",
+      "description": "Auto-captured by Tribunal during heal: hardcoded-secrets",
+      "pattern": "hardcoded-secrets",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": ""
     }
   ]
 }

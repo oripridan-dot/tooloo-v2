@@ -67,7 +67,7 @@ if str(_ROOT) not in sys.path:
 import engine.jit_booster as _jib_mod  # noqa: E402
 
 _LIVE_MODE: bool = os.environ.get(
-    "TOOLOO_LIVE_TESTS", "").lower() in ("1", "true", "yes")
+    "TOOLOO_LIVE_TESTS", "1").lower() in ("1", "true", "yes")
 if not _LIVE_MODE:
     _jib_mod._vertex_client = None
     _jib_mod._gemini_client = None
