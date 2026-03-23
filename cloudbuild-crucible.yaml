@@ -9,10 +9,13 @@ steps:
       - '-c'
       - |
         set -e
-        echo "[*] Installing dependencies..."
-        pip install --quiet --upgrade pip
-        pip install --quiet -r requirements.txt
-        pip install --quiet -e .
+        echo "[*] Installing system deps..."
+        apt-get update -qq && apt-get install -y -qq git build-essential
+
+        echo "[*] Installing Python dependencies from pyproject.toml..."
+        pip install --quiet --upgrade pip setuptools wheel
+        pip install --quiet -e ".[dev]"
+
         echo "[*] Starting 5-cycle TooLoo Crucible..."
         python run_cycles.py --cycles 5
     env:
@@ -20,7 +23,8 @@ steps:
 
 options:
   machineType: 'E2_HIGHCPU_8'
-  logging: CLOUD_LOGGING_ONLY
+  logging: GCS_ONLY
 
 timeout: '3600s'
+
 
