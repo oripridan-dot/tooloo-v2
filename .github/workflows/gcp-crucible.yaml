@@ -1,35 +1,57 @@
-name: GCP Crucible Execution
+name: TooLoo V2 — Cloud Crucible (5 Rounds)
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Manual trigger allowed
+  workflow_dispatch:
+    inputs:
+      cycles:
+        description: 'Number of self-improvement cycles to run'
+        required: false
+        default: '5'
 
 jobs:
-  build-and-run:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+  crucible:
+    name: Self-Improvement Crucible
+    runs-on: ubuntu-latest   # 2-core / 7 GB RAM — free tier
+    timeout-minutes: 60
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Google Auth
-      id: auth
-      uses: google-github-actions/auth@v2
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
 
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v2
-      with:
-        version: '>= 363.0.0'
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
 
-    - name: Submit Cloud Build Execution
-      run: |
-        # Submitting the build strictly into GCP Cloud Build environment
-        # This executes the 5-round crucible remotely!
-        gcloud builds submit --config=cloudbuild-job.yaml .
+      - name: Authenticate to Google Cloud (Vertex AI)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Run 5-cycle Crucible
+        env:
+          TOOLOO_LIVE_TESTS: '1'
+          GOOGLE_CLOUD_PROJECT: too-loo-zi8g7e
+        run: |
+          CYCLES=${{ github.event.inputs.cycles || '5' }}
+          echo "[*] Starting ${CYCLES}-cycle TooLoo crucible on GitHub Actions runner..."
+          python run_cycles.py --cycles ${CYCLES}
+
+      - name: Upload crucible report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crucible-report-${{ github.run_id }}
+          path: cycle_run_report.json
+          if-no-files-found: warn
+
