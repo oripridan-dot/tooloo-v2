@@ -286,7 +286,7 @@ class AIBank(KnowledgeBank):
             KnowledgeEntry(
                 id="ai_tools_vector_dbs",
                 title="Vector Databases: Pgvector vs Dedicated Stores",
-                body="pgvector (PostgreSQL extension) covers 80% of RAG use cases with HNSW indexing and hybrid search. For scale (>10M vectors) or multimodal: Weaviate, Qdrant, or Pinecone. Embed with text-embedding-3-large (OpenAI) or Gemini text-embedding-004 (best multilingual). Cohere Embed v3 leads on retrieval benchmarks.",
+                body="pgvector (PostgreSQL extension) covers 80% of RAG use cases with HNSW indexing and hybrid search. For scale (>10M vectors) or multimodal: Weaviate, Qdrant, or Pinecone. Embed with text-embedding-3-large (OpenAI) or Gemini gemini-embedding-001 (best multilingual). Cohere Embed v3 leads on retrieval benchmarks.",
                 domain="tools_ecosystem",
                 tags=["vector-DB", "pgvector", "Qdrant",
                       "embeddings", "RAG", "HNSW"],

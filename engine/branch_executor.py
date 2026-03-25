@@ -100,6 +100,15 @@ class BranchResult:
     spawned_at: str = field(
         default_factory=lambda: datetime.now(UTC).isoformat())
 
+    def __post_init__(self):
+        import inspect
+        if inspect.iscoroutine(self.tribunal):
+            raise TypeError(f"BranchResult.tribunal for {self.branch_id} is a coroutine! It must be awaited.")
+        if inspect.iscoroutine(self.scope):
+            raise TypeError(f"BranchResult.scope for {self.branch_id} is a coroutine! It must be awaited.")
+        if inspect.iscoroutine(self.refinement):
+            raise TypeError(f"BranchResult.refinement for {self.branch_id} is a coroutine! It must be awaited.")
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "branch_id": self.branch_id,
@@ -351,10 +360,9 @@ class BranchExecutor:
                 if best and isinstance(best.output, dict):
                     parent_context = str(best.output.get("output", ""))[:400]
 
-        # Run the pipeline in a thread (CPU-bound LLM calls)
-        loop = asyncio.get_event_loop()
+        # Run the pipeline (Now fully async for Ouroboros 2.1 parity)
         result = await asyncio.wait_for(
-            loop.run_in_executor(None, self._pipeline, spec, parent_context),
+            self._pipeline(spec, parent_context),
             timeout=timeout,
         )
 
@@ -417,8 +425,8 @@ class BranchExecutor:
 
         return result
 
-    def _pipeline(self, spec: BranchSpec, parent_context: str = "") -> BranchResult:
-        """Synchronous branch pipeline — runs inside thread pool (Law 17)."""
+    async def _pipeline(self, spec: BranchSpec, parent_context: str = "") -> BranchResult:
+        """Async branch pipeline — aligned with 16D telemetry (Law 17)."""
         t0 = time.monotonic()
 
         # 1. Build RouteResult from spec
@@ -441,13 +449,14 @@ class BranchExecutor:
         mandate_body = spec.mandate_text
         if parent_context:
             mandate_body = f"{mandate_body}\n\n[parent-context]: {parent_context}"
-        tribunal = self._tribunal.evaluate(Engram(
+        engram = Engram(
             slug=f"branch-{spec.branch_id}",
             intent=spec.intent,
             logic_body=spec.mandate_text,
             domain="backend",
             mandate_level="L2",
-        ))
+        )
+        tribunal = await self._tribunal.evaluate(engram)
 
         # 4. Build DAG — mandatory AUDIT + DESIGN in waves 1-2, IMPLEMENT last
         dag_nodes = [
@@ -464,7 +473,7 @@ class BranchExecutor:
         ]
 
         # 5. Scope evaluate
-        scope = self._scope.evaluate(waves, spec.intent)
+        scope = await self._scope.evaluate(waves, intent=jit.intent)
 
         # 6. Build envelopes with injected JIT signals + parent context
         envelopes = [
@@ -496,7 +505,7 @@ class BranchExecutor:
             jit_signals=jit.signals,
         )
 
-        exec_results = self._executor.fan_out_dag(
+        exec_results = await self._executor.fan_out_dag(
             effective_work_fn,
             envelopes,
             dependency_map,
@@ -604,7 +613,8 @@ class BranchExecutor:
         )
         dummy_refine = RefinementReport(
             total=0, succeeded=0, failed=0,
-            success_rate=0.0, avg_latency_ms=0.0, p50_latency_ms=0.0, p90_latency_ms=0.0,
+            success_rate=0.0, avg_latency_ms=0.0, p50_latency_ms=0.0,
+            median_latency_ms=0.0, p90_latency_ms=0.0,
             slow_nodes=[], failed_nodes=[spec.branch_id],
             recommendations=["Pipeline error — retry with corrected mandate"],
             rerun_advised=False, verdict="fail",

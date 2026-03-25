@@ -35,7 +35,7 @@ _ROLLBACK_ON_CORRUPT = True   # auto-rollback corrupted document insertions
 logger = logging.getLogger(__name__)
 
 # ── Gemini Embedding Backend ──────────────────────────────────────────────────
-# Optional: if google-genai + GEMINI_API_KEY are available, use text-embedding-004
+# Optional: if google-genai + GEMINI_API_KEY are available, use gemini-embedding-001
 # for dense semantic similarity.  Falls back to TF-IDF on any failure.
 
 _gemini_embed_client = None
@@ -48,11 +48,11 @@ try:
 except Exception:
     pass
 
-_EMBED_MODEL = "models/text-embedding-004"
+_EMBED_MODEL = "models/gemini-embedding-001"
 
 
 def _get_embedding(text: str) -> list[float] | None:
-    """Call Gemini text-embedding-004. Returns None on any failure."""
+    """Call Gemini gemini-embedding-001. Returns None on any failure."""
     if _gemini_embed_client is None:
         return None
     try:
@@ -204,7 +204,7 @@ class VectorStore:
         results: list[SearchResult] = []
         for doc in self._docs.values():
             if query_embedding is not None and doc.embedding is not None:
-                # Dense semantic similarity (Gemini text-embedding-004)
+                # Dense semantic similarity (Gemini gemini-embedding-001)
                 score = _cosine_dense(query_embedding, doc.embedding)
             else:
                 # Fallback: TF-IDF sparse cosine

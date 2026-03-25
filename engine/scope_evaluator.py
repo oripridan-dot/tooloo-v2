@@ -54,6 +54,7 @@ class ScopeEvaluation:
     recommended_workers: int    # threads to allocate for this plan
     strategy: str               # "serial" | "parallel" | "deep-parallel"
     risk_surface: int           # estimated nodes likely to hit tribunal
+    intent: str                 # intent being evaluated — Law 17 audit
     scope_summary: str          # human-readable one-liner
 
     def to_dict(self) -> dict[str, Any]:
@@ -354,6 +355,7 @@ class ScopeEvaluator:
                 recommended_workers=1,
                 strategy=strategy,
                 risk_surface=calculated_risk_surface,
+                intent=intent,
                 scope_summary="Serial (single node)",
             )
 
@@ -442,6 +444,7 @@ class ScopeEvaluator:
             recommended_workers=recommended_workers,
             strategy=strategy,
             risk_surface=calculated_risk_surface,
+            intent=intent,
             scope_summary=scope_summary,
         )
 

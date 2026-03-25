@@ -22,6 +22,8 @@ dependencies = [
     "opentelemetry-api>=1.28",
     "opentelemetry-sdk>=1.28",
     "opentelemetry-exporter-otlp>=1.28",
+    "eth-typing>=5.1.0",
+    "rlp>=4.0.1",
     "psutil>=5.9",
     "google-cloud-firestore>=2.16",
     "websockets>=16.0",
@@ -34,6 +36,7 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.25",
     "pytest-timeout>=2.3",
+    "hypothesis>=6.100",
     "ruff>=0.15",
 ]
 

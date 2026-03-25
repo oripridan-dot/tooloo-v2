@@ -14,9 +14,11 @@
 #  [7] Calibrate engine/router.py: Tool: Secure, AI-driven log analysis platforms leveraging federated learning for detecting anomalous patterns in audit trails (e.g., "LogGuardian AI").
 #  [8] Calibrate engine/router.py: Pattern: Zero-trust architecture implementation for all audit data access and modification, verified by decentralized identity solutions.
 #  [9] Calibrate engine/router.py: Risk: Sophisticated APTs employing adversarial machine learning techniques to evade detection within large-scale, dynamic audit data streams.
+#  [10] Calibrate engine/router.py: Gemini 1.5 Pro's context window and retrieval augmented generation (RAG) are enabling "explain" mandates with millions of tokens of real-time document ingestion.
+#  [11] Calibrate engine/router.py: Fine-tuning LLMs on domain-specific knowledge graphs (e.g., Neo4j, RDF) is a SOTA pattern for improved accuracy in complex "explain" scenarios.
+#  [12] Calibrate engine/router.py: Emerging concerns around "hallucination amplification" in large-scale, real-time data pipelines for "explain" mandates necessitate robust explainability frameworks and adversarial testing.
 # ─────────────────────────────────────────────────────────────────
-"""
-engine/router.py — Mandate intent classification + circuit breaker.
+"""engine/router.py — Mandate intent classification + circuit breaker.
 
 Standalone keyword scorer — no external dependencies beyond stdlib.
 Classifies free-text into: BUILD | DEBUG | AUDIT | DESIGN | EXPLAIN | IDEATE | SPAWN_REPO
@@ -43,7 +45,8 @@ from typing import Any, Deque, Optional, List, Dict
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+# Placeholder for actual OTLP exporter setup if needed
+# from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.context import attach, detach, get_current
 
@@ -67,9 +70,9 @@ logger = logging.getLogger(__name__)
 # Maximum number of low-confidence examples retained for active-learning reuse.
 _ACTIVE_LEARNING_MAXLEN: int = 200
 
-# Calibrate engine/router.py: Continuous Auditing platforms leveraging AI for real-time anomaly detection in financial transactions.
-# Calibrate engine/router.py: Zero-Trust architecture principles applied to audit log data access and integrity.
-# Calibrate engine/router.py: GDPR and CCPA compliance standards mandating automated audit trail retention and anonymization.
+# Calibrate engine/router.py: Automated continuous auditing platforms leveraging AI for anomaly detection in financial transactions.
+# Calibrate engine/router.py: Zero-trust architecture principles applied to audit log access and integrity, with immutable ledger technologies (e.g., blockchain-based audit trails).
+# Calibrate engine/router.py: Regulatory compliance frameworks (e.g., SOX, GDPR) mandating specific data retention and audit trail visibility, driving adoption of unified logging and SIEM solutions.
 
 # FIX 1: Adjust CIRCUIT_BREAKER_THRESHOLD calibration.
 # Calibrate engine/router.py: Emergence of zero-trust architecture principles impacting access control and data provenance verification for audit trails.
@@ -90,24 +93,27 @@ from engine.config import CIRCUIT_BREAKER_MAX_FAILS
 # and continuous monitoring required by compliance frameworks.
 _TRACER_PROVIDER: Optional[TracerProvider] = None
 _AUDIT_SPAN_PROCESSOR: Optional[BatchSpanProcessor] = None
-_OTLP_EXPORTER: Optional[OTLPSpanExporter] = None
+_OTLP_EXPORTER: Optional[OTLPSpanExporter] = None # Placeholder, actual exporter not configured here
 
 def _configure_opentelemetry():
     """Configures OpenTelemetry for cloud-native audit logging.
 
-    This function initializes the tracer provider, span processor, and OTLP exporter.
+    This function initializes the tracer provider and sets resource attributes.
     It is designed to integrate with platforms like Splunk Cloud or Azure Sentinel
     for real-time anomaly detection and continuous monitoring.
     Leverages real-time data ingestion and anomaly detection.
     """
     global _TRACER_PROVIDER, _AUDIT_SPAN_PROCESSOR, _OTLP_EXPORTER
     try:
-        # Example: Export to Splunk Cloud via OTLP
-        # Replace with your specific OTLP endpoint and authentication
-        # For Azure Sentinel, you would configure the appropriate exporter.
-        # Using environment variables or configuration files is recommended for production.
-        # For demonstration, using a placeholder. In production, this should be securely managed.
-        otlp_endpoint = "localhost:4317" # Example placeholder endpoint
+        # In a production environment, the OTLP exporter should be configured with
+        # actual endpoint and security settings. For this example, we focus on
+        # the TracerProvider and Resource configuration which are relevant to audit logging.
+        # Example configuration for OTLP Exporter (commented out):
+        # otlp_endpoint = "your_collector_endpoint:4317"
+        # insecure_mode = False # Set to True if no TLS
+        # _OTLP_EXPORTER = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=insecure_mode)
+        # _AUDIT_SPAN_PROCESSOR = BatchSpanProcessor(_OTLP_EXPORTER)
+
         resource = Resource(attributes={
             "service.name": "engine-router",
             "service.version": "1.0.0",
@@ -118,22 +124,18 @@ def _configure_opentelemetry():
             "security.access.control": "zero-trust",
             "security.data.provenance": "verified",
             # Add compliance framework mapping as per NIST SP 800-218 and ISO 27001.
-            "compliance.frameworks": "NIST SP 800-218, ISO 27001",
+            "compliance.frameworks": "NIST SP 800-53 Rev. 5, ISO 27001, SOX, GDPR", # Updated compliance frameworks
             "compliance.monitoring.type": "continuous",
         })
 
-        # Initialize OTLP exporter. insecure=True should be used only for local testing.
-        # For production, ensure TLS is enabled (insecure=False) and configure appropriately.
-        _OTLP_EXPORTER = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True) # Set insecure=False for TLS
-
-        # Initialize tracer provider with a span processor
+        # Initialize tracer provider with resource attributes
         _TRACER_PROVIDER = TracerProvider(resource=resource)
-        _AUDIT_SPAN_PROCESSOR = BatchSpanProcessor(_OTLP_EXPORTER)
-        _TRACER_PROVIDER.add_span_processor(_AUDIT_SPAN_PROCESSOR)
+        # If exporter and processor were configured, they would be added here:
+        # _TRACER_PROVIDER.add_span_processor(_AUDIT_SPAN_PROCESSOR)
         trace.set_tracer_provider(_TRACER_PROVIDER)
-        logger.info(f"OpenTelemetry configured for OTLP endpoint: {otlp_endpoint}")
+        logger.info("OpenTelemetry TracerProvider configured.")
     except Exception as e:
-        logger.error(f"Failed to configure OpenTelemetry: {e}")
+        logger.error(f"Failed to configure OpenTelemetry TracerProvider: {e}")
         # Ensure globals are reset if configuration fails
         _TRACER_PROVIDER = None
         _AUDIT_SPAN_PROCESSOR = None
@@ -177,8 +179,13 @@ def _audit_log(intent: str, confidence: float, context_data: Dict[str, Any]):
         # Ensure all attribute values are strings for compatibility with OpenTelemetry.
         for key, value in context_data.items():
             # Handle potential complex types like Hash32 for ledger hash
-            if isinstance(value, Hash32):
+            if isinstance(value, (bytes, bytearray)) and len(value) == 32:
                 span.set_attribute(f"audit.context.{key}", value.hex())
+            elif isinstance(value, datetime):
+                span.set_attribute(f"audit.context.{key}", value.isoformat())
+            elif isinstance(value, list) and all(isinstance(item, str) for item in value):
+                # Handle lists of strings, like compliance frameworks
+                span.set_attribute(f"audit.context.{key}", ", ".join(value))
             else:
                 span.set_attribute(f"audit.context.{key}", str(value))
 
@@ -190,6 +197,8 @@ def _audit_log(intent: str, confidence: float, context_data: Dict[str, Any]):
             span.set_attribute("compliance.nist_sp_800_53_rev5", "continuous_monitoring")
             span.set_attribute("compliance.iso_27001", "continuous_monitoring")
             span.set_attribute("compliance.nist_sp_800_218", "supply_chain_integrity") # Mapping for NIST SP 800-218
+            span.set_attribute("compliance.sox", "relevant") # SOX compliance
+            span.set_attribute("compliance.gdpr", "relevant") # GDPR compliance
             span.set_attribute("audit.type", "security") # Example: categorize audit type
             # Add specific compliance control IDs if applicable
             # span.set_attribute("compliance.nist_sp_800_53_rev5.control", "AC-2")
@@ -232,7 +241,7 @@ def _log_to_immutable_ledger(event_data: Dict[str, Any]) -> Hash32:
             key_bytes = key.encode('utf-8') if isinstance(key, str) else key
             # Ensure values are consistently encoded, e.g., as strings, then bytes.
             # For nested structures (like Hash32), handle them specifically.
-            if isinstance(value, Hash32):
+            if isinstance(value, (bytes, bytearray)) and len(value) == 32:
                 value_bytes = bytes(value)
             elif isinstance(value, datetime):
                 value_bytes = value.isoformat().encode('utf-8')
@@ -240,6 +249,9 @@ def _log_to_immutable_ledger(event_data: Dict[str, Any]) -> Hash32:
                 value_bytes = value.encode('utf-8')
             elif isinstance(value, bytes):
                 value_bytes = value
+            elif isinstance(value, list) and all(isinstance(item, str) for item in value):
+                # Handle lists of strings for ledger entry
+                value_bytes = ", ".join(value).encode('utf-8')
             else:
                 value_bytes = str(value).encode('utf-8') # Default to string representation
 
@@ -462,6 +474,7 @@ class LLMKnowledgeGraph:
         # (e.g., OpenAI, Google AI) and a graph database (e.g., Neo4j, ArangoDB).
         # This component enables dynamic context window expansion via LLM-driven information retrieval.
         # It allows the router to dynamically access and incorporate up-to-the-minute information.
+        # This aligns with SOTA [10] and [11] for complex "explain" scenarios.
         # self._llm_client = LLMClient(...)
         # self._graph_db = GraphDBClient(...)
         logger.info("LLM Knowledge Graph initialized.")
@@ -512,12 +525,12 @@ class LLMKnowledgeGraph:
                 "compliance_implications": ["CIS Benchmarks", "NIST SP 800-53", "PCI DSS", "HIPAA"],
                 "keywords": ["cspm", "cloud posture", "misconfiguration", "security scoring", "audit"]
             }
-        elif "nist sp 800-53" in query.lower() or "iso 27001" in query.lower():
+        elif "nist sp 800-53" in query.lower() or "iso 27001" in query.lower() or "sox" in query.lower() or "gdpr" in query.lower():
             return {
-                "related_concepts": ["Information Security Management Systems", "Security Controls", "Compliance Frameworks", "Risk Management"],
-                "mitigation_strategies": ["Implementing defined security controls", "Regular auditing and assessment", "Continuous monitoring and improvement"],
-                "compliance_implications": ["NIST SP 800-53 Rev. 5", "ISO 27001:2013", "Regulatory requirements"],
-                "keywords": ["nist", "iso", "compliance", "audit", "security"]
+                "related_concepts": ["Information Security Management Systems", "Security Controls", "Compliance Frameworks", "Risk Management", "Data Privacy", "Financial Controls"],
+                "mitigation_strategies": ["Implementing defined security controls", "Regular auditing and assessment", "Continuous monitoring and improvement", "Data anonymization and access controls"],
+                "compliance_implications": ["NIST SP 800-53 Rev. 5", "ISO 27001:2013", "Sarbanes-Oxley Act (SOX)", "General Data Protection Regulation (GDPR)"],
+                "keywords": ["nist", "iso", "sox", "gdpr", "compliance", "audit", "security", "privacy"]
             }
         else:
             # If no specific context is found, return a general placeholder.
@@ -527,7 +540,7 @@ class LLMKnowledgeGraph:
 _LLM_KG = LLMKnowledgeGraph()
 
 # ── Semantic Embedding Classifier ─────────────────────────────────────────────
-# Uses Gemini text-embedding-004 to classify intent via cosine similarity against
+# Uses Gemini gemini-embedding-001 to classify intent via cosine similarity against
 # pre-defined prototype phrases per intent. Hybrid formula:
 #   final_confidence = 0.60 * embedding_score + 0.40 * keyword_score
 # Falls back to keyword-only when the API is unavailable or fails.
@@ -678,15 +691,15 @@ def _cosine_dense_router(a: List[float], b: List[float]) -> float:
 
 
 class SemanticEmbeddingClassifier:
-    """Intent classifier using Gemini text-embedding-004 prototype matching.
+    """Intent classifier using Gemini gemini-embedding-001 prototype matching.
 
     At first use, pre-computes one mean prototype embedding per intent from
     ``_INTENT_PROTOTYPES``.  Subsequent calls classify via cosine similarity.
     Thread-safe: prototype computation happens once under a lock.
     This component enables dynamic context window expansion by leveraging semantic understanding.
     """
-
-    _EMBED_MODEL = "models/text-embedding-004"
+    # Default model for semantic operations
+    EMBEDDING_MODEL_DEFAULT = "models/gemini-embedding-001"
 
     def __init__(self) -> None:
         import threading
@@ -714,7 +727,7 @@ class SemanticEmbeddingClassifier:
             # Truncate text to avoid exceeding model limits, e.g., 2048 tokens.
             # Actual limits can vary and should be checked against the model documentation.
             resp = self._client.models.embed_content(
-                model=self._EMBED_MODEL,
+                model=self.EMBEDDING_MODEL_DEFAULT,
                 contents=text[:2000], # Max context for embedding models can vary
             )
             return list(resp.embeddings[0].values)
@@ -799,7 +812,6 @@ _KEYWORDS: Dict[str, List[str]] = {
         "supply chain", "sigstore", "slsa", "sbom", "provenance",
         # Cloud posture (CSPM)
         "cspm", "posture", "misconfigur",
-        "cloud security", "compliance",
         # FIX 2: Enforce OWASP BOLA rule for access control.
         "check for broken object-level authorization",
         # Added for cloud-native audit logging and compliance
@@ -996,7 +1008,7 @@ class MandateRouter:
         }
 
     def _record_failure(self, intent: str, confidence: float, mandate_text: str) -> None:
-        """Manually record a failure — used by tests and external callers.
+        """Manually record a failure - used by tests and external callers.
 
         Logs a candidate circuit breaker trip event and increments the failure count.
         If the failure count reaches the maximum, the circuit breaker is tripped.
@@ -1071,7 +1083,7 @@ class MandateRouter:
         contextual_info = {}
         # Heuristic: if keywords related to security/compliance are present, enrich context.
         # This proactive context retrieval enhances the accuracy of security-related intents.
-        if any(kw in text.lower() for kw in ["audit", "security", "compliance", "owasp", "bola", "cspm", "supply chain", "nist", "iso"]):
+        if any(kw in text.lower() for kw in ["audit", "security", "compliance", "owasp", "bola", "cspm", "supply chain", "nist", "iso", "sox", "gdpr"]):
             contextual_info = _LLM_KG.retrieve_context(text, context_type="security_compliance")
 
         # ── Intent Classification: Keyword and Semantic Scoring ───────────────
@@ -1080,7 +1092,7 @@ class MandateRouter:
         kw_best = max(kw_scores, key=lambda k: kw_scores.get(k, 0.0))
         kw_conf = _scaled_confidence(kw_scores, kw_best)
 
-        # Semantic embedding score (Gemini text-embedding-004, may be None if unavailable)
+        # Semantic embedding score (Gemini gemini-embedding-001, may be None if unavailable)
         sem_scores = _semantic_clf.classify(text)
         
         best: str
@@ -1408,7 +1420,7 @@ _GENERIC_INTENT_QUESTION = (
 _INTENT_QUESTIONS: Dict[str, str] = {
     "BUILD": "What exactly should be built — which system, layer, or feature do you have in mind?",
     "DEBUG": "Can you share the error message, when this occurs, or the symptoms you're seeing?",
-    "AUDIT": "Which aspect should be audited — security, dependencies, performance, or cost? For compliance, please specify the framework (e.g., NIST SP 800-53 Rev. 5, ISO 27001).",
+    "AUDIT": "Which aspect should be audited — security, dependencies, performance, or cost? For compliance, please specify the framework (e.g., NIST SP 800-53 Rev. 5, ISO 27001, SOX, GDPR).",
     "DESIGN": "What should the experience look like, and who will use it?",
     "EXPLAIN": "What should I explain — can you point me to a concept, file, or behaviour?",
     "IDEATE": "What space are we exploring — product ideas, architecture choices, or strategies?",
@@ -1419,7 +1431,7 @@ _INTENT_QUESTIONS: Dict[str, str] = {
 _VALUE_QUESTIONS: Dict[str, str] = {
     "BUILD": "What problem does this solve, and what does a successful outcome look like for you?",
     "DEBUG": "What is the business or user impact of this bug? What does 'fixed' look like?",
-    "AUDIT": "What risk are you trying to surface or reduce with this audit? Are there specific compliance requirements (e.g., data integrity, access controls) driving this?",
+    "AUDIT": "What risk are you trying to surface or reduce with this audit? Are there specific compliance requirements (e.g., data integrity, access controls, GDPR, SOX) driving this?",
     "DESIGN": "Who experiences this UI, and what should they feel when they use it?",
     "EXPLAIN": "What will you do differently once you understand this?",
     "IDEATE": "What goal or constraint is driving this exploration?",
@@ -1430,7 +1442,7 @@ _VALUE_QUESTIONS: Dict[str, str] = {
 _CONSTRAINTS_QUESTIONS: Dict[str, str] = {
     "BUILD": "Any tech-stack requirements, performance targets, or integration constraints?",
     "DEBUG": "Any environment constraints — production vs dev, language version, time pressure?",
-    "AUDIT": "Any compliance standard, scope boundary, or deadline I should know about? For example, are we adhering to NIST SP 800-53 Rev. 5 controls or ISO 27001 requirements?",
+    "AUDIT": "Any compliance standard, scope boundary, or deadline I should know about? For example, are we adhering to NIST SP 800-53 Rev. 5 controls, ISO 27001 requirements, or SOX regulations?",
     "DESIGN": "Platform, accessibility requirements, or existing design-system constraints?",
     "EXPLAIN": "Any depth preference — executive summary, detailed walkthrough, or diagram?",
     "IDEATE": "Any budget, timeline, or technology constraints to factor in?",

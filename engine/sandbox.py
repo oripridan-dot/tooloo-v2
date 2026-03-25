@@ -31,6 +31,8 @@ Broadcast:
 """
 from __future__ import annotations
 
+import asyncio
+import logging
 import threading
 import time
 import uuid
@@ -241,7 +243,7 @@ class SandboxOrchestrator:
 
     # ── Core execution ────────────────────────────────────────────────────────
 
-    def run_sandbox(
+    async def run_sandbox(
         self,
         feature_text: str,
         feature_title: str = "",
@@ -314,7 +316,7 @@ class SandboxOrchestrator:
             domain="sandbox",
             mandate_level="L2",
         )
-        tribunal_result = self._tribunal.evaluate(engram)
+        tribunal_result = await self._tribunal.evaluate(engram)
 
         # 5. Build 6-node isolated DAG plan
         spec: list[tuple[str, list[str]]] = [
@@ -328,7 +330,7 @@ class SandboxOrchestrator:
         plan = self._sorter.sort(spec)
 
         # 6. Scope evaluation
-        scope = self._scope_evaluator.evaluate(plan, intent=route.intent)
+        scope = await self._scope_evaluator.evaluate(plan, intent=route.intent)
 
         # 7. Fan-out execution (isolated sub-workers)
         envelopes = [
@@ -349,7 +351,7 @@ class SandboxOrchestrator:
         )
 
         # 8. Refinement
-        refinement = self._refinement_loop.evaluate(exec_results)
+        refinement = await self._refinement_loop.evaluate(exec_results)
 
         # 9. Dimension scoring
         dim_scores = self._score_dimensions(
@@ -422,39 +424,34 @@ class SandboxOrchestrator:
         })
         return report
 
-    def run_parallel(
+    async def run_parallel(
         self,
         features: list[dict[str, str]],
     ) -> list[SandboxReport]:
-        """Fan-out up to max_workers sandboxes in parallel.
-
-        Each entry in ``features`` should contain:
-          text            — feature description (required)
-          title           — feature title (optional)
-          roadmap_item_id — linked roadmap item ID (optional)
+        """Fan-out concurrent sandboxes up to max_workers.
+        
+        Args:
+           features: List of feature specifications.
         """
-        envelopes = [
-            Envelope(
-                mandate_id=f"sb-{uuid.uuid4().hex[:8]}",
-                intent="BUILD",
-                domain="sandbox",
-                metadata=feat,
+        # Run each sandbox as a concurrent task
+        tasks = [
+            self.run_sandbox(
+                feature_text=feat.get("text", ""),
+                feature_title=feat.get("title", ""),
+                roadmap_item_id=feat.get("roadmap_item_id"),
+                sandbox_id=f"sb-{uuid.uuid4().hex[:8]}",
             )
             for feat in features
         ]
-
-        def _work(env: Envelope) -> SandboxReport:
-            return self.run_sandbox(
-                feature_text=env.metadata.get("text", ""),
-                feature_title=env.metadata.get("title", ""),
-                roadmap_item_id=env.metadata.get("roadmap_item_id"),
-                sandbox_id=env.mandate_id,
-            )
-
-        results = self._outer_executor.fan_out(
-            _work, envelopes, max_workers=self._max_workers,
-        )
-        return [r.output for r in results if r.success and r.output is not None]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        # Filter out errors and return valid reports
+        reports: list[SandboxReport] = []
+        for i, res in enumerate(results):
+            if isinstance(res, SandboxReport):
+                reports.append(res)
+            else:
+                logger.error(f"Sandbox {i} failed with error: {res}")
+        return reports
 
     # ── Scoring helpers ───────────────────────────────────────────────────────
 

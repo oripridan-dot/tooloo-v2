@@ -55,11 +55,19 @@ _MANDATE_EXECUTION_LATENCY_HISTOGRAM = Histogram(
 class AssistantAPIManager:
     """Manages interactions with OpenAI's Assistant API for persistent state and context."""
 
-    def __init__(self, api_key: str, client: Optional[httpx.AsyncClient] = None):
+    def __init__(
+        self,
+        api_key: str,
+        mcp: Any,
+        tribunal: Any,
+        client: Optional[httpx.AsyncClient] = None,
+    ):
         self.api_key = api_key
+        self.mcp = mcp
+        self.tribunal = tribunal
         self.base_url = "https://api.openai.com/v1"
         self.client = client or httpx.AsyncClient(
-            headers={"Authorization": f"Bearer {self.api_key}"}
+            headers={"Authorization": f"Bearer {self.api_key}", "OpenAI-Beta": "assistants=v2"}
         )
         # Cache for assistants, threads, and messages to manage state
         self._assistants: Dict[str, str] = {}  # {domain: assistant_id}
@@ -72,50 +80,43 @@ class AssistantAPIManager:
         if domain in self._assistants:
             return self._assistants[domain]
 
-        # Tool integration for GANs/RL for dynamic ideation theme generation:
-        # Define tools that the assistant can use, e.g., for trend analysis or content generation.
+        # Tool integration for MCP tools and GANs/RL for dynamic ideation theme generation:
+        # Fetch dynamic tools from MCPManager
+        mcp_tools = []
+        if self.mcp:
+            for spec in self.mcp.manifest():
+                mcp_tools.append({
+                    "type": "function",
+                    "function": {
+                        "name": spec.name,
+                        "description": spec.description,
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                p["name"]: {"type": p["type"], "description": p["description"]}
+                                for p in spec.parameters
+                            },
+                            "required": [p["name"] for p in spec.parameters],
+                        }
+                    }
+                })
+
         assistant_config = {
             "name": f"TooLoo Ideation Assistant ({domain})",
             "instructions": (
-                "You are a highly creative AI assistant designed to help users brainstorm and develop ideas. "
-                "Leverage your tools for dynamic ideation theme generation and suggestion refinement based on "
-                "real-time trend analysis. Maintain context across multiple turns. "
-                "Be mindful of potential biases and avoid generating harmful content. "
-                "Use the provided tools to enhance ideation. If you need to identify trends, use `generate_ideation_theme`. "
-                "If you need to refine an idea based on feedback or trends, use `refine_suggestion`."
+                "You are an autonomous agent using the Choice-Architecture pattern. "
+                "You have access to a suite of MCP tools for interacting with the workspace. "
+                "Always favor tool use over generating code for the user to run. "
+                "Before calling a tool, ensure the parameters are exact. "
+                "If a tool fails, analyze the error and refine your approach."
             ),
             "model": self._model,
             "tools": [
                 {"type": "code_interpreter"},
                 {"type": "retrieval"},
-                # Tool definition for GANs/RL for dynamic ideation theme generation and suggestion refinement
-                {"type": "function", "function": {
-                    "name": "generate_ideation_theme",
-                    "description": "Generates new ideation themes using GANs based on trends. Requires keywords and optionally a trend data source.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "keywords": {"type": "array", "items": {"type": "string"}},
-                            "trend_data_source": {"type": "string", "enum": ["twitter", "news_api", "google_trends"], "description": "Source for trend analysis data."}
-                        },
-                        "required": ["keywords"]
-                    }
-                }},
-                {"type": "function", "function": {
-                    "name": "refine_suggestion",
-                    "description": "Refines a given suggestion based on feedback or trend analysis using RL. Requires the suggestion and optionally feedback or trend context.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "suggestion": {"type": "string"},
-                            "feedback": {"type": "string"},
-                            "trend_context": {"type": "string"}
-                        },
-                        "required": ["suggestion"]
-                    }
-                }}
+                *mcp_tools,
             ],
-            "temperature": 0.7, # Higher temperature for creative tasks
+            "temperature": 0.7,
             "top_p": 1.0,
         }
 
@@ -190,12 +191,51 @@ class AssistantAPIManager:
             run_id = run_response.json()["id"]
             logger.info(f"Started run {run_id} for thread {thread_id} (mandate: {mandate_id})")
 
-            # Polling for run completion
+            # Polling for run completion or action requirements
             while True:
                 await asyncio.sleep(1) # Wait before polling
                 status_response = await self.client.get(f"{self.base_url}/assistants/threads/{thread_id}/runs/{run_id}")
                 status_response.raise_for_status()
                 run_status = status_response.json()
+
+                if run_status["status"] == "requires_action":
+                    tool_calls = run_status["required_action"]["submit_tool_outputs"]["tool_calls"]
+                    tool_outputs = []
+                    for tool_call in tool_calls:
+                        call_id = tool_call["id"]
+                        fn_name = tool_call["function"]["name"]
+                        fn_args = json.loads(tool_call["function"]["arguments"])
+
+                        # Step 1: Tribunal Audit
+                        # Check for poison patterns in arguments before execution
+                        is_safe = True
+                        if self.tribunal:
+                            str_args = json.dumps(fn_args)
+                            audit_result = self.tribunal.evaluate_logic(str_args)
+                            if audit_result.poison_detected:
+                                logger.warning(f"Tribunal blocked tool call {fn_name}: poison detected in arguments.")
+                                tool_outputs.append({
+                                    "tool_call_id": call_id,
+                                    "output": f"Error: Security violation detected by Tribunal for args: {str_args}"
+                                })
+                                is_safe = False
+
+                        if is_safe:
+                            # Step 2: MCP Execution
+                            logger.info(f"Executing MCP tool {fn_name} for mandate {mandate_id}")
+                            mcp_result = self.mcp.call(fn_name, **fn_args)
+                            tool_outputs.append({
+                                "tool_call_id": call_id,
+                                "output": json.dumps(mcp_result.to_dict())
+                            })
+
+                    # Submit tool outputs back to the run
+                    submit_response = await self.client.post(
+                        f"{self.base_url}/assistants/threads/{thread_id}/runs/{run_id}/submit_tool_outputs",
+                        json={"tool_outputs": tool_outputs}
+                    )
+                    submit_response.raise_for_status()
+                    continue
 
                 if run_status["status"] in ["completed", "failed", "cancelled", "expired"]:
                     logger.info(f"Run {run_id} for thread {thread_id} finished with status: {run_status['status']}")
@@ -208,8 +248,9 @@ class AssistantAPIManager:
                 message_list = messages_response.json()["data"]
                 if message_list:
                     latest_message = message_list[0]
+                    content_text = latest_message["content"][0]["text"]["value"]
                     # Update local message cache
-                    self._messages.setdefault(thread_id, []).append({"role": latest_message["role"], "content": latest_message["content"][0]["text"]["value"]})
+                    self._messages.setdefault(thread_id, []).append({"role": latest_message["role"], "content": content_text})
                     return latest_message
                 else:
                     logger.warning(f"Run {run_id} completed but no messages found for thread {thread_id}.")
@@ -233,14 +274,14 @@ class AssistantAPIManager:
 # In a production system, this should be managed more robustly (e.g., dependency injection).
 _assistant_api_manager: Optional[AssistantAPIManager] = None
 
-def get_assistant_api_manager() -> AssistantAPIManager:
+def get_assistant_api_manager(mcp: Any, tribunal: Any) -> AssistantAPIManager:
     """Lazily initializes and returns the Assistant API Manager."""
     global _assistant_api_manager
     if _assistant_api_manager is None:
         api_key = settings.OPENAI_API_KEY
         if not api_key:
             raise ValueError("OPENAI_API_KEY not configured in settings.")
-        _assistant_api_manager = AssistantAPIManager(api_key=api_key)
+        _assistant_api_manager = AssistantAPIManager(api_key=api_key, mcp=mcp, tribunal=tribunal)
         logger.info("Assistant API Manager initialized.")
     return _assistant_api_manager
 
@@ -295,7 +336,7 @@ class UserActivityMonitor:
     def __init__(self):
         self.subscribers: List[Callable[[Dict[str, Any]], None]] = []
 
-    def subscribe(self, callback: Callable[[Dict[str, Any]], None]) -> None:
+    def subscribe(self, callback: Callable[[Dict[str, Any]], Any]) -> None:
         """Subscribes a callback function to receive user activity events."""
         self.subscribers.append(callback)
 
@@ -455,7 +496,7 @@ class DoraMetrics:
         return {
             "throughput": self.throughput,
             "lead_time_ms": round(self.lead_time_ms, 2) if self.lead_time_ms is not None else None,
-            "change_failure_rate": round(self.change_failure_rate, 4),
+            "change_failure_rate": round(self.change_failure_rate, 4) if self.change_failure_rate is not None else 0.0,
             "mttr_ms": round(self.mttr_ms, 2) if self.mttr_ms is not None else None,
             "executor_context": settings.executor_context.to_dict() if hasattr(settings, 'executor_context') else {}
         }
@@ -499,9 +540,11 @@ class JITExecutor:
 
     _MAX_HIST_ENTRIES = 4096
 
-    def __init__(self, max_workers: Optional[int] = None) -> None:
+    def __init__(self, mcp_manager: Any, tribunal: Any, max_workers: Optional[int] = None) -> None:
         # FIX 1: Replace ThreadPoolExecutor with asyncio.TaskGroup for modern Python concurrency.
         # The underlying execution mechanism is now async.
+        self._mcp = mcp_manager
+        self._tribunal = tribunal
         self._max_workers_config = max_workers
         self._latency_histogram: list[float] = []
         self._failed_latencies: list[float] = []  # DORA: MTTR proxy
@@ -511,7 +554,7 @@ class JITExecutor:
         self.mandates: list[Envelope] = []  # Initialize mandates for adaptive worker count
 
         # Initialize event listeners for context updates (Pattern: Event-driven)
-        _user_activity_monitor.subscribe(self._handle_user_activity_event)
+        _user_activity_monitor.subscribe(self._handle_user_activity_event)  # type: ignore
 
     async def _handle_user_activity_event(self, event_data: Dict[str, Any]) -> None:
         """Handles incoming user activity events to update context."""
@@ -535,7 +578,7 @@ class JITExecutor:
 
         if current_mandate_envelope:
             try:
-                api_manager = get_assistant_api_manager()
+                api_manager = get_assistant_api_manager(self._mcp, self._tribunal)
                 # Convert event data to a human-readable string or structured format
                 content_update = f"User Activity Update ({event_type}): {json.dumps(data)}"
                 await api_manager.add_message(mandate_id, current_mandate_envelope.domain, "system", content_update)
@@ -563,7 +606,7 @@ class JITExecutor:
         # EXECUTION: fan out and collect results
         # FIX 1: Use asyncio.TaskGroup for modern Python concurrency.
         async with asyncio.TaskGroup() as tg:
-            tasks = [tg.create_task(self._run_async(work_fn, env)) for env in envelopes]
+            tasks = [tg.create_task(self._run_async(work_fn, env, self._mcp, self._tribunal)) for env in envelopes]
             # TaskGroup automatically awaits all its children, so explicit gather is not strictly needed.
             # However, we keep it here for clarity on collecting results in order.
 
@@ -660,7 +703,7 @@ class JITExecutor:
                 # Ensure node is truly ready and not blocked by failed parents
                 if unresolved.get(node_id, 0) == 0 and not failed_parents.get(node_id):
                     # FIX 1: Create tasks using tg.create_task
-                    task = tg.create_task(self._run_async(work_fn, env_by_id[node_id]))
+                    task = tg.create_task(self._run_async(work_fn, env_by_id[node_id], self._mcp, self._tribunal))
                     running[task] = node_id
                 else:
                     # If a node was added to ready but later found to be blocked,
@@ -744,7 +787,7 @@ class JITExecutor:
                             tasks_to_remove.append(task)
 
                     for task in tasks_to_remove:
-                        del running[task]
+                        running.pop(task, None)
 
                 except asyncio.CancelledError:
                     # If the TaskGroup is cancelled, we should exit.
@@ -908,7 +951,7 @@ class JITExecutor:
                     _MANDATE_EXECUTION_LATENCY_HISTOGRAM.observe(latency)
             overflow = len(self._latency_histogram) - self._MAX_HIST_ENTRIES
             if overflow > 0:
-                del self._latency_histogram[:overflow]
+                self._latency_histogram = self._latency_histogram[overflow:]
 
     def _record_results(self, results: list[ExecutionResult]) -> None:
         """Update DORA counters from a completed fan-out batch."""
@@ -937,6 +980,8 @@ class JITExecutor:
     async def _run_async(
         work_fn: Callable[[Envelope], Any],
         env: Envelope,
+        mcp: Any,
+        tribunal: Any,
     ) -> ExecutionResult:
         """Executes a single work function for a given envelope and returns an ExecutionResult."""
         start_time = time.perf_counter()
@@ -946,7 +991,7 @@ class JITExecutor:
             # that should leverage the Assistant API.
             # The `ideate_with_assistant` function name is a convention for tasks using the Assistant API.
             if hasattr(work_fn, '__name__') and work_fn.__name__ == "ideate_with_assistant":
-                api_manager = get_assistant_api_manager()
+                api_manager = get_assistant_api_manager(mcp, tribunal)
                 # Pass relevant envelope data to the Assistant API manager
                 # The "intent" is crucial for guiding the assistant.
                 assistant_response = await api_manager.run_and_get_response(

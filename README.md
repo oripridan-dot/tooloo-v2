@@ -1,11 +1,9 @@
 # TooLoo V2 — Pure DAG Cognitive OS
 
-**Version 2.1** · `feature/autonomous-self-improvement`
+**Version 2.2** · `feature/autonomous-agentic-mcp`
 
-TooLoo V2 is a self-building autonomous intelligence engine. Every request flows
-through a deterministic Directed Acyclic Graph (DAG) of cognitive processes — scoped,
-executed, and refined without human intervention. The system monitors its own code,
-generates improvement prescriptions via live LLM analysis, and applies them autonomously.
+TooLoo V2 is a self-building autonomous intelligence engine with full agentic capabilities via the Model Context Protocol (MCP). Every request flows
+through a deterministic Directed Acyclic Graph (DAG) of cognitive processes — scoped, executed, rigorously audited by an internal Tribunal, and refined without human intervention. The system monitors its own code, generates improvement prescriptions, and executes them via secure sandboxed tools.
 
 ---
 
@@ -54,6 +52,14 @@ Mandate (natural language)
 | 6 | `mandate_executor` | LLM-powered DAG node work-function factory |
 | 6 | `model_garden` | 4-tier multi-provider model selector + consensus |
 | 6 | `daemon` | Background ROI-scoring + autonomous proposal daemon |
+| 7 | `gateway` | FastAPI Gateway providing External routing, Auth, SSE Streaming |
+| 7 | `mcp_manager` | Dynamic Model Context Protocol tool execution + manifest bridge |
+
+### Externals / Interactivity
+| Module | Role |
+|--------|------|
+| `src/sdk/` | Python SDK (`TooLooClient`) for remote execution & SSE streaming |
+| `src/api/` | FastAPI REST Gateway (`/v2/execute`, `/v2/stream`) |
 
 ### Supporting Modules
 
@@ -110,8 +116,14 @@ TOOLOO_LIVE_TESTS=1 python3 run_cycles.py --cycles 3
 # Ouroboros autonomous cycle
 python3 ouroboros_cycle.py --dry-run --components engine/router.py,engine/tribunal.py
 
-# Training camp (4-phase autonomous gauntlet)
-python3 training_camp.py --phase all --dry-run
+# Run API Gateway
+uvicorn src.api.main:app
+
+# Test the Python SDK
+python3 scripts/sdk_demo.py
+
+# Run Agentic MCP Adversarial Training (Stage 2)
+python3 scripts/adversarial_tool_training.py
 ```
 
 ---

@@ -209,7 +209,7 @@ class SOTAIngestionEngine:
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
-    def run_full_ingestion(self) -> IngestionReport:
+    async def run_full_ingestion(self) -> IngestionReport:
         """Run all ingestion targets. Returns consolidated report."""
         report = IngestionReport()
         use_gemini = (_gemini_client is not None) or (
@@ -221,7 +221,7 @@ class SOTAIngestionEngine:
             try:
                 signals = self._fetch_signals(
                     bank_id, domain, query, count, use_gemini)
-                added, skipped_dup, skipped_poison = self._ingest_signals(
+                added, skipped_dup, skipped_poison = await self._ingest_signals(
                     signals, bank_id, domain
                 )
                 report.entries_added += added
@@ -235,11 +235,11 @@ class SOTAIngestionEngine:
         report.completed_at = datetime.now(UTC).isoformat()
         return report
 
-    def ingest_single(self, bank_id: str, domain: str, signals: list[str]) -> IngestionReport:
+    async def ingest_single(self, bank_id: str, domain: str, signals: list[str]) -> IngestionReport:
         """Ingest a list of raw signal strings into a specific bank/domain."""
         report = IngestionReport(source="manual")
         report.targets_attempted = len(signals)
-        added, skipped_dup, skipped_poison = self._ingest_signals(
+        added, skipped_dup, skipped_poison = await self._ingest_signals(
             signals, bank_id, domain)
         report.entries_added = added
         report.entries_skipped_duplicate = skipped_dup
@@ -348,7 +348,7 @@ class SOTAIngestionEngine:
             sota_level="sota_2026",
         )
 
-    def _is_poisoned(self, entry: KnowledgeEntry) -> bool:
+    async def _is_poisoned(self, entry: KnowledgeEntry) -> bool:
         """Basic poison guard — Tribunal integration when available."""
         if self._tribunal is None:
             # Fallback: check for obvious injection patterns
@@ -373,12 +373,12 @@ class SOTAIngestionEngine:
                 slug=entry.title,
                 text=entry.body,
             )
-            result = self._tribunal.evaluate(engram)
+            result = await self._tribunal.evaluate(engram)
             return result.poisoned
         except Exception:
             return False
 
-    def _ingest_signals(
+    async def _ingest_signals(
         self, signals: list[str], bank_id: str, domain: str
     ) -> tuple[int, int, int]:
         """Ingest signals into the bank. Returns (added, skipped_dup, skipped_poison)."""
@@ -387,7 +387,7 @@ class SOTAIngestionEngine:
             if not signal.strip():
                 continue
             entry = self._make_entry(signal, bank_id, domain)
-            if self._is_poisoned(entry):
+            if await self._is_poisoned(entry):
                 skipped_poison += 1
                 continue
             result = self._manager.ingest(entry, bank_id)

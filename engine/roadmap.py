@@ -106,7 +106,7 @@ _INITIAL_ITEMS: list[dict[str, Any]] = [
         "title": "Google Cloud and Vertex AI Integration",
         "description": (
             "Use Google Cloud and Vertex AI optimally: Vertex Agent Builder, "
-            "Gemini 2.x model garden, text-embedding-004 for vector operations, "
+            "Gemini 2.x model garden, gemini-embedding-001 for vector operations, "
             "Vertex AI Pipelines for orchestration, Cloud Spanner for graph queries."
         ),
         "priority": "high",

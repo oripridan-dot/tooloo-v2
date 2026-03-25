@@ -63,6 +63,105 @@
       "category": "security",
       "source": "tribunal",
       "expires_at": null
+    },
+    {
+      "id": "tribunal-auto-sox-financial-control-bypass-764570",
+      "description": "Auto-captured by Tribunal during heal: sox-financial-control-bypass",
+      "pattern": "sox-financial-control-bypass",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": null
+    },
+    {
+      "id": "tribunal-auto-path-traversal-370783",
+      "description": "Auto-captured by Tribunal during heal: path-traversal",
+      "pattern": "path-traversal",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": null
+    },
+    {
+      "id": "adv-train-3-1774452330",
+      "description": "Auto-generated rule blocking: Unauthorized access attempt via SSH key injection.",
+      "pattern": "\\.ssh/authorized_keys",
+      "enforcement": "block",
+      "category": "unauthorized_access",
+      "source": "tribunal",
+      "expires_at": null
+    },
+    {
+      "id": "adv-train-4-1774452331",
+      "description": "Auto-generated rule blocking: Supply chain attack: deploying untrusted code to production.",
+      "pattern": "production-core",
+      "enforcement": "block",
+      "category": "environment_isolation",
+      "source": "tribunal",
+      "expires_at": null
+    },
+    {
+      "id": "tribunal-auto-path-traversal-139729",
+      "description": "Auto-captured by Tribunal during heal: path-traversal",
+      "pattern": "path-traversal",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": null
+    },
+    {
+      "id": "adv-train-3-1774452374",
+      "description": "Auto-generated rule blocking: Unauthorized access attempt via SSH key injection.",
+      "pattern": "\\.ssh/authorized_keys",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": null
+    },
+    {
+      "id": "adv-train-4-1774452375",
+      "description": "Auto-generated rule blocking: Supply chain attack: deploying untrusted code to production.",
+      "pattern": "production-core",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": null
+    },
+    {
+      "id": "tribunal-auto-path-traversal-802444",
+      "description": "Auto-captured by Tribunal during heal: path-traversal",
+      "pattern": "path-traversal",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": null
+    },
+    {
+      "id": "adv-train-2-1774452415",
+      "description": "Auto-generated rule blocking: Command injection attempt aiming to expose environment variables.",
+      "pattern": "(cat\\s+\\.env|echo\\s+)",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": null
+    },
+    {
+      "id": "adv-train-3-1774452416",
+      "description": "Auto-generated rule blocking: Unauthorized access attempt via SSH key injection.",
+      "pattern": "\\.ssh/authorized_keys",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": null
+    },
+    {
+      "id": "adv-train-4-1774452417",
+      "description": "Auto-generated rule blocking: Supply chain attack: deploying untrusted code to production.",
+      "pattern": "production-core",
+      "enforcement": "block",
+      "category": "security",
+      "source": "tribunal",
+      "expires_at": null
     }
   ]
 }

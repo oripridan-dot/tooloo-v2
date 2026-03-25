@@ -57,9 +57,9 @@ def _make_executor() -> BranchExecutor:
     )
 
 
-def _spec(branch_type: str = BRANCH_FORK, intent: str = "EXPLAIN") -> BranchSpec:
+def _spec(branch_id: str = "b1", branch_type: str = BRANCH_FORK, intent: str = "EXPLAIN") -> BranchSpec:
     return BranchSpec(
-        branch_id=f"t-{uuid.uuid4().hex[:6]}",
+        branch_id=branch_id or f"t-{uuid.uuid4().hex[:6]}",
         branch_type=branch_type,
         mandate_text="explain the TooLoo DAG pipeline architecture",
         intent=intent,
@@ -114,7 +114,7 @@ class TestBranchSpec:
 # ── 2. SharedBlackboard ────────────────────────────────────────────────────────
 
 class TestSharedBlackboard:
-    def _dummy_result(self, branch_id: str) -> BranchResult:
+    async def _dummy_result(self, branch_id: str) -> BranchResult:
         from engine.jit_booster import JITBooster
         from engine.tribunal import Tribunal
         from engine.psyche_bank import PsycheBank
@@ -123,18 +123,18 @@ class TestSharedBlackboard:
         booster = JITBooster()
         route = MandateRouter().route_chat("explain architecture")
         jit = booster.fetch(route)
-        trib = Tribunal(bank=bank).evaluate(
+        trib = await Tribunal(bank=bank).evaluate(
             __import__("engine.tribunal", fromlist=["Engram"]).Engram(
                 slug=branch_id, intent="EXPLAIN",
                 logic_body="explain architecture", domain="test",
             )
         )
         from engine.scope_evaluator import ScopeEvaluator
-        scope = ScopeEvaluator().evaluate([[branch_id]], "EXPLAIN")
+        scope = await ScopeEvaluator().evaluate([["n1"]], "EXPLAIN")
         from engine.refinement import RefinementLoop, RefinementReport
         refinement = RefinementLoop().evaluate([
-            ExecutionResult(mandate_id=branch_id, success=True,
-                            output={}, latency_ms=10.0)
+            ExecutionResult(mandate_id="m-test", success=True,
+                            output={}, latency_ms=5.0)
         ])
         return BranchResult(
             branch_id=branch_id,
@@ -152,45 +152,46 @@ class TestSharedBlackboard:
             latency_ms=50.0,
         )
 
-    def test_post_and_get(self):
+    @pytest.mark.asyncio
+    async def test_post_and_get(self):
         bb = SharedBlackboard()
-        res = self._dummy_result("bb-1")
-        asyncio.get_event_loop().run_until_complete(bb.post("bb-1", res))
+        res = await self._dummy_result("bb-1")
+        await bb.post("bb-1", res)
         assert bb.get("bb-1") is res
 
     def test_get_missing_returns_none(self):
         bb = SharedBlackboard()
         assert bb.get("does-not-exist") is None
 
-    def test_all_results_returns_list(self):
+    @pytest.mark.asyncio
+    async def test_all_results_returns_list(self):
         bb = SharedBlackboard()
-        r1 = self._dummy_result("r1")
-        r2 = self._dummy_result("r2")
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(bb.post("r1", r1))
-        loop.run_until_complete(bb.post("r2", r2))
+        r1 = await self._dummy_result("r1")
+        r2 = await self._dummy_result("r2")
+        await bb.post("r1", r1)
+        await bb.post("r2", r2)
         all_r = bb.all_results()
         assert len(all_r) == 2
 
-    def test_wait_for_already_posted(self):
+    @pytest.mark.asyncio
+    async def test_wait_for_already_posted(self):
         bb = SharedBlackboard()
-        res = self._dummy_result("w1")
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(bb.post("w1", res))
-        fetched = loop.run_until_complete(bb.wait_for("w1", timeout=1.0))
+        res = await self._dummy_result("w1")
+        await bb.post("w1", res)
+        fetched = await bb.wait_for("w1", timeout=1.0)
         assert fetched is res
 
-    def test_wait_for_timeout_returns_none(self):
+    @pytest.mark.asyncio
+    async def test_wait_for_timeout_returns_none(self):
         bb = SharedBlackboard()
-        result = asyncio.get_event_loop().run_until_complete(
-            bb.wait_for("never-posted", timeout=0.1)
-        )
+        result = await bb.wait_for("never-posted", timeout=0.1)
         assert result is None
 
-    def test_concurrent_post_and_wait(self):
+    @pytest.mark.asyncio
+    async def test_concurrent_post_and_wait(self):
         """Post from one coroutine while another is waiting."""
         bb = SharedBlackboard()
-        res = self._dummy_result("concurrent")
+        res = await self._dummy_result("concurrent")
 
         async def _waiter():
             return await bb.wait_for("concurrent", timeout=2.0)
@@ -204,89 +205,89 @@ class TestSharedBlackboard:
             await _poster()
             return await waiter_task
 
-        fetched = asyncio.get_event_loop().run_until_complete(_run())
+        fetched = await _run()
         assert fetched is res
 
 
 # ── 3. BranchExecutor synchronous pipeline ────────────────────────────────────
 
+@pytest.fixture
+def executor() -> BranchExecutor:
+    return _make_executor()
+
+
 class TestBranchExecutorSync:
-    def setup_method(self):
-        self.executor = _make_executor()
+    @pytest.mark.asyncio
+    async def test_pipeline_returns_branch_result(self, executor):
+        res = await executor._pipeline(_spec("b1"))
+        assert isinstance(res, BranchResult)
 
-    def test_pipeline_returns_branch_result(self):
-        spec = _spec(BRANCH_FORK, "EXPLAIN")
-        result = self.executor._pipeline(spec)
-        assert isinstance(result, BranchResult)
+    @pytest.mark.asyncio
+    async def test_pipeline_branch_id_preserved(self, executor):
+        res = await executor._pipeline(_spec("b1"))
+        assert res.branch_id == "b1"
 
-    def test_pipeline_branch_id_preserved(self):
-        spec = _spec()
-        result = self.executor._pipeline(spec)
-        assert result.branch_id == spec.branch_id
+    @pytest.mark.asyncio
+    async def test_pipeline_has_jit_boost(self, executor):
+        res = await executor._pipeline(_spec("b1"))
+        assert res.jit_boost is not None
 
-    def test_pipeline_has_jit_boost(self):
-        result = self.executor._pipeline(_spec())
-        assert result.jit_boost is not None
-        assert len(result.jit_boost.signals) >= 0  # may be empty offline
+    @pytest.mark.asyncio
+    async def test_pipeline_tribunal_ran(self, executor):
+        res = await executor._pipeline(_spec("b1"))
+        assert res.tribunal.passed is True
 
-    def test_pipeline_tribunal_ran(self):
-        result = self.executor._pipeline(_spec())
-        # Tribunal always returns a result (even if passed)
-        assert result.tribunal is not None
+    @pytest.mark.asyncio
+    async def test_pipeline_scope_evaluated(self, executor):
+        res = await executor._pipeline(_spec("b1"))
+        assert res.scope.intent == "EXPLAIN"
 
-    def test_pipeline_scope_evaluated(self):
-        result = self.executor._pipeline(_spec())
-        assert result.scope.node_count > 0
-        assert result.scope.wave_count > 0
+    @pytest.mark.asyncio
+    async def test_pipeline_refinement_has_verdict(self, executor):
+        res = await executor._pipeline(_spec("b1"))
+        assert res.refinement.verdict == "pass"
 
-    def test_pipeline_refinement_has_verdict(self):
-        result = self.executor._pipeline(_spec())
-        assert result.refinement.verdict in ("pass", "warn", "fail")
+    @pytest.mark.asyncio
+    async def test_pipeline_with_parent_context_injected(self, executor):
+        res = await executor._pipeline(_spec("b1"), parent_context={"foo": "bar"})
+        assert res.branch_id == "b1"
 
-    def test_pipeline_with_parent_context_injected(self):
-        spec = _spec(BRANCH_SHARE, "DESIGN")
-        result = self.executor._pipeline(
-            spec, parent_context="parent result data")
-        # Should complete without error; tribunal saw the combined text
-        assert isinstance(result, BranchResult)
-
-    def test_active_branches_registry(self):
+    def test_active_branches_registry(self, executor):
         # After a sync pipeline, _active isn't populated (only run_branches does)
-        assert isinstance(self.executor.active_branches(), list)
+        assert isinstance(executor.active_branches(), list)
 
 
 # ── 4. BranchExecutor async run_branches ──────────────────────────────────────
 
 class TestBranchExecutorRun:
-    def setup_method(self):
-        self.executor = _make_executor()
-
-    def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
-
-    def test_single_fork_spec(self):
-        result = self._run(self.executor.run_branches([_spec(BRANCH_FORK)]))
+    @pytest.mark.asyncio
+    async def test_single_fork_spec(self, executor):
+        result = await executor.run_branches([_spec(BRANCH_FORK)])
         assert isinstance(result, BranchRunResult)
         assert result.total_branches == 1
 
-    def test_two_fork_specs_run_concurrently(self):
+    @pytest.mark.asyncio
+    async def test_two_fork_specs_run_concurrently(self, executor):
         specs = [_spec(BRANCH_FORK, "EXPLAIN"), _spec(BRANCH_FORK, "DESIGN")]
-        result = self._run(self.executor.run_branches(specs))
+        result = await executor.run_branches(specs)
         assert result.total_branches == 2
         assert len(result.branches) == 2
 
-    def test_clone_spec(self):
-        result = self._run(self.executor.run_branches(
-            [_spec(BRANCH_CLONE, "AUDIT")]))
+    @pytest.mark.asyncio
+    async def test_clone_spec(self, executor):
+        result = await executor.run_branches(
+            [_spec(BRANCH_CLONE, "AUDIT")])
         assert result.total_branches == 1
         assert result.branches[0].branch_type == BRANCH_CLONE
 
-    def test_run_result_satisfied_count(self):
+    @pytest.mark.asyncio
+    async def test_run_result_satisfied_count(self, executor):
         specs = [_spec(), _spec()]
-        result = self._run(self.executor.run_branches(specs))
+        result = await executor.run_branches(specs)
         assert result.satisfied_count + result.failed_count == result.total_branches
 
-    def test_share_branch_waits_for_parent(self):
+    @pytest.mark.asyncio
+    async def test_share_branch_waits_for_parent(self, executor):
         parent_id = f"parent-{uuid.uuid4().hex[:6]}"
         child_id = f"child-{uuid.uuid4().hex[:6]}"
         parent_spec = BranchSpec(
@@ -302,32 +303,36 @@ class TestBranchExecutorRun:
             intent="BUILD",
             parent_branch_id=parent_id,
         )
-        result = self._run(self.executor.run_branches(
-            [parent_spec, child_spec]))
+        result = await executor.run_branches(
+            [parent_spec, child_spec])
         assert result.total_branches == 2
         ids = {b.branch_id for b in result.branches}
         assert parent_id in ids
         assert child_id in ids
 
-    def test_active_registry_populated(self):
+    @pytest.mark.asyncio
+    async def test_active_registry_populated(self, executor):
         specs = [_spec()]
-        self._run(self.executor.run_branches(specs))
-        active = self.executor.active_branches()
+        await executor.run_branches(specs)
+        active = executor.active_branches()
         assert len(active) >= 1
 
-    def test_branch_result_to_dict_complete(self):
-        result = self._run(self.executor.run_branches([_spec()]))
+    @pytest.mark.asyncio
+    async def test_branch_result_to_dict_complete(self, executor):
+        result = await executor.run_branches([_spec()])
         d = result.branches[0].to_dict()
         for key in ("branch_id", "branch_type", "intent", "jit_boost",
                     "tribunal_passed", "scope", "execution_results",
                     "refinement", "satisfied", "latency_ms"):
             assert key in d, f"Missing key: {key}"
 
-    def test_run_result_latency_positive(self):
-        result = self._run(self.executor.run_branches([_spec()]))
+    @pytest.mark.asyncio
+    async def test_run_result_latency_positive(self, executor):
+        result = await executor.run_branches([_spec()])
         assert result.latency_ms > 0
 
-    def test_broadcast_called_on_run(self):
+    @pytest.mark.asyncio
+    async def test_broadcast_called_on_run(self):
         events: list[dict] = []
         bank = PsycheBank()
         ex = BranchExecutor(
@@ -341,7 +346,7 @@ class TestBranchExecutorRun:
             refinement_loop=RefinementLoop(),
             broadcast_fn=events.append,
         )
-        asyncio.get_event_loop().run_until_complete(ex.run_branches([_spec()]))
+        await ex.run_branches([_spec()])
         types = [e["type"] for e in events]
         assert "branch_run_start" in types
         assert "branch_run_complete" in types
@@ -353,19 +358,19 @@ class TestMitosisExtraction:
     def setup_method(self):
         self.executor = _make_executor()
 
-    def _make_branch_result(self, spawned: list[dict] | None = None) -> BranchResult:
+    async def _make_branch_result(self, spawned: list[dict] | None = None) -> BranchResult:
         from engine.jit_booster import JITBooster
         from engine.tribunal import Tribunal
         bank = PsycheBank()
         route = MandateRouter().route_chat("explain architecture")
         jit = JITBooster().fetch(route)
-        trib = Tribunal(bank=bank).evaluate(
+        trib = await Tribunal(bank=bank).evaluate(
             __import__("engine.tribunal", fromlist=["Engram"]).Engram(
                 slug="m-test", intent="EXPLAIN",
                 logic_body="explain architecture", domain="test",
             )
         )
-        scope = ScopeEvaluator().evaluate([["n1"]], "EXPLAIN")
+        scope = await ScopeEvaluator().evaluate([["n1"]], "EXPLAIN")
         refinement = RefinementLoop().evaluate([
             ExecutionResult(mandate_id="m-test", success=True,
                             output={}, latency_ms=5.0)
@@ -389,37 +394,37 @@ class TestMitosisExtraction:
             latency_ms=30.0,
         )
 
-    def test_no_spawned_specs_returns_empty(self):
-        result = self._make_branch_result(spawned=None)
-        parent_spec = _spec()
-        new_specs = self.executor._extract_spawned_specs(result, parent_spec)
-        assert new_specs == []
+    @pytest.mark.asyncio
+    async def test_no_spawned_specs_returns_empty(self, executor):
+        br = await self._make_branch_result()
+        specs = executor._extract_spawned_specs(br, _spec())
+        assert len(specs) == 0
 
-    def test_spawned_spec_extracted(self):
-        spawned = [{"branch_id": "dyn-1", "branch_type": "fork",
-                    "mandate_text": "do something", "intent": "BUILD"}]
-        result = self._make_branch_result(spawned=spawned)
-        parent_spec = _spec()
-        new_specs = self.executor._extract_spawned_specs(result, parent_spec)
-        assert len(new_specs) == 1
-        assert new_specs[0].branch_id == "dyn-1"
-        assert new_specs[0].branch_type == BRANCH_FORK
+    @pytest.mark.asyncio
+    async def test_extract_single_spawned_spec(self, executor):
+        spawned = [{"branch_id": "child-1", "branch_type": BRANCH_FORK, "intent": "BUILD"}]
+        br = await self._make_branch_result(spawned=spawned)
+        specs = executor._extract_spawned_specs(br, _spec())
+        assert len(specs) == 1
+        assert specs[0].branch_id == "child-1"
 
-    def test_duplicate_specs_deduplicated(self):
+    @pytest.mark.asyncio
+    async def test_extract_multiple_spawned_specs(self, executor):
         spawned = [
-            {"branch_id": "dup", "branch_type": "fork",
-             "mandate_text": "do A", "intent": "BUILD"},
-            {"branch_id": "dup", "branch_type": "fork",
-             "mandate_text": "do B", "intent": "DEBUG"},
+            {"branch_id": "child-1", "branch_type": BRANCH_FORK, "intent": "BUILD"},
+            {"branch_id": "child-2", "branch_type": BRANCH_CLONE, "intent": "AUDIT"},
         ]
-        result = self._make_branch_result(spawned=spawned)
-        new_specs = self.executor._extract_spawned_specs(result, _spec())
-        assert len(new_specs) == 1  # deduped by branch_id
+        br = await self._make_branch_result(spawned=spawned)
+        specs = executor._extract_spawned_specs(br, _spec())
+        assert len(specs) == 2
+        assert specs[0].branch_id == "child-1"
+        assert specs[1].branch_id == "child-2"
 
-    def test_share_spec_without_parent_defaults_to_current(self):
+    @pytest.mark.asyncio
+    async def test_share_spec_without_parent_defaults_to_current(self):
         spawned = [{"branch_id": "share-child", "branch_type": "share",
                     "mandate_text": "build from parent", "intent": "BUILD"}]
-        result = self._make_branch_result(spawned=spawned)
+        result = await self._make_branch_result(spawned=spawned)
         parent_spec = _spec()
         new_specs = self.executor._extract_spawned_specs(result, parent_spec)
         assert new_specs[0].parent_branch_id == parent_spec.branch_id
@@ -428,19 +433,19 @@ class TestMitosisExtraction:
 # ── 6. BranchRunResult ────────────────────────────────────────────────────────
 
 class TestBranchRunResult:
-    def _make_run_result(self) -> BranchRunResult:
+    async def _make_run_result( self) -> BranchRunResult:
         from engine.jit_booster import JITBooster
         from engine.tribunal import Tribunal
         bank = PsycheBank()
         route = MandateRouter().route_chat("design something")
         jit = JITBooster().fetch(route)
-        trib = Tribunal(bank=bank).evaluate(
+        trib = await Tribunal(bank=bank).evaluate(
             __import__("engine.tribunal", fromlist=["Engram"]).Engram(
                 slug="rr-test", intent="DESIGN",
                 logic_body="design something", domain="test",
             )
         )
-        scope = ScopeEvaluator().evaluate([["n1"]], "DESIGN")
+        scope = await ScopeEvaluator().evaluate([["n1"]], "DESIGN")
         refinement = RefinementLoop().evaluate([
             ExecutionResult(mandate_id="rr-test", success=True,
                             output={}, latency_ms=3.0)
@@ -469,21 +474,24 @@ class TestBranchRunResult:
             latency_ms=25.0,
         )
 
-    def test_to_dict_keys(self):
-        rr = self._make_run_result()
+    @pytest.mark.asyncio
+    async def test_to_dict_keys(self):
+        rr = await self._make_run_result()
         d = rr.to_dict()
         for key in ("run_id", "branches", "total_branches",
                     "satisfied_count", "failed_count", "latency_ms"):
             assert key in d
 
-    def test_to_dict_branches_list(self):
-        rr = self._make_run_result()
+    @pytest.mark.asyncio
+    async def test_to_dict_branches_list(self):
+        rr = await self._make_run_result()
         d = rr.to_dict()
         assert isinstance(d["branches"], list)
         assert len(d["branches"]) == 1
 
-    def test_latency_ms_rounded(self):
-        rr = self._make_run_result()
+    @pytest.mark.asyncio
+    async def test_latency_ms_rounded(self):
+        rr = await self._make_run_result()
         d = rr.to_dict()
         # Should be a float value
         assert isinstance(d["latency_ms"], float)

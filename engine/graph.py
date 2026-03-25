@@ -717,6 +717,18 @@ class CognitiveGraph:
         with self._lock:
             return self._g.copy()
 
+    def to_json_data(self) -> Dict[str, Any]:
+        """Serializes the graph to a JSON-compatible dictionary using node-link format."""
+        with self._lock:
+            return nx.node_link_data(self._g)
+
+    @classmethod
+    def from_json_data(cls, data: Dict[str, Any]) -> CognitiveGraph:
+        """Creates a CognitiveGraph instance from serialized JSON data."""
+        instance = cls()
+        instance._g = nx.node_link_graph(data)
+        return instance
+
 
 # ── Sorter ─────────────────────────────────────────────────────────────────────
 

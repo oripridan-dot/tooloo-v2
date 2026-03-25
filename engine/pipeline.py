@@ -1386,7 +1386,20 @@ class NStrokeEngine:
                 "node_id": envelope.mandate_id,
                 "phase": envelope.metadata.get("phase", ""),
             })
-            res = await effective_work_fn(envelope)
+            res = effective_work_fn(envelope)
+            if asyncio.iscoroutine(res):
+                res = await res
+            
+            if isinstance(res, dict):
+                from engine.executor import ExecutionResult
+                res = ExecutionResult(
+                    mandate_id=envelope.mandate_id,
+                    success=res.get("success", True),
+                    output=res.get("output", res),
+                    latency_ms=res.get("latency_ms", 0.0),
+                    metadata=res.get("metadata", {})
+                )
+
             self._broadcast({
                 "type": "node_complete",
                 "pipeline_id": pipeline_id,
@@ -1396,6 +1409,7 @@ class NStrokeEngine:
                 "latency_ms": res.latency_ms,
                 "6w": res.to_dict().get("6w", {})
             })
+
             return res
 
         # FIX 4: Await the async fan-out execution.

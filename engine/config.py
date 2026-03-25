@@ -6,16 +6,16 @@ This module provides a unified, typed Settings object and initializes the
 OpenAI Assistant API, Vertex AI, and Gemini clients.
 
 Features:
-- **SOTA Tool:** OpenAI's "Assistant API" with fine-tuned GPT-4 for persistent state management and context window expansion, enabling continuous ideation threads.
-- **Pattern:** Event-driven architecture leveraging webhooks from user activity monitoring systems (e.g., IDE integrations) to trigger context updates for ongoing ideation sessions.
-- **Risk:** Data drift in fine-tuned models due to evolving user ideation patterns, requiring proactive monitoring and retraining strategies to maintain relevance.
+- **SOTA Tool:** Generative Adversarial Networks (GANs) integrated with Reinforcement Learning (RL) for dynamic ideation theme generation and suggestion refinement based on real-time trend analysis. This integration aims to produce novel and relevant ideation content by leveraging generative models trained on diverse datasets and refined through feedback loops.
+- **Pattern:** Federated Learning for ideation data aggregation, preserving user privacy while enabling collaborative, distributed ideation across multiple datasets and organizations. This ensures that ideation models learn from a broad spectrum of user inputs without compromising individual data confidentiality.
+- **Risk:** Amplification of existing biases or generation of novel, unintended harmful content through insufficiently diverse training data or adversarial manipulation of ideation prompts. This includes robust configurations for data diversity, bias mitigation techniques, adversarial prompt defense, and proactive data drift monitoring to ensure responsible and safe ideation generation.
 """
 import os
 import logging
 import time
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, List
 
 # Configure logging early
 logger = logging.getLogger(__name__)
@@ -43,12 +43,37 @@ class Settings:
     anthropic_vertex_region: str = field(default=os.getenv("ANTHROPIC_VERTEX_REGION", ""))
 
     # --- Model Configurations ---
+    # GAN/RL integrated models for ideation theme generation, enhanced with trend analysis.
+    ideation_theme_model: str = field(default=os.getenv("IDEATION_THEME_MODEL", "gan_rl_ideation_v1"))
+    suggestion_refinement_model: str = field(default=os.getenv("SUGGESTION_REFINEMENT_MODEL", "gan_rl_refinement_v1"))
     vertex_default_model: str = field(default=os.getenv("VERTEX_DEFAULT_MODEL", "gemini-2.0-flash-lite"))
     gemini_model: str = field(default=os.getenv("GEMINI_MODEL", "gemini-2.0-flash-lite"))
     image_gen_model: str = field(default=os.getenv("IMAGE_GEN_MODEL", "gemini-2.5-flash-image"))
     local_slm_model: str = field(default=os.getenv("LOCAL_SLM_MODEL", "local/llama-3.2-3b-instruct"))
     local_slm_endpoint: str = field(default=os.getenv("LOCAL_SLM_ENDPOINT", "http://127.0.0.1:11434/api/generate"))
     model_garden_cache_ttl: int = field(default=int(os.getenv("MODEL_GARDEN_CACHE_TTL", "3600"))) # Cache time-to-live in seconds
+
+    # --- Federated Learning Configuration ---
+    # Settings for federated learning data aggregation and privacy preservation.
+    # Enables collaborative ideation across distributed datasets.
+    federated_learning_enabled: bool = field(default=str(os.getenv("FEDERATED_LEARNING_ENABLED", "false")).lower() == "true")
+    federated_learning_aggregator_endpoint: Optional[str] = field(default=os.getenv("FEDERATED_LEARNING_AGGREGATOR_ENDPOINT"))
+    federated_learning_model_update_interval: int = field(default=int(os.getenv("FEDERATED_LEARNING_MODEL_UPDATE_INTERVAL", "3600"))) # In seconds
+    federated_learning_client_sampling_rate: float = field(default=float(os.getenv("FEDERATED_LEARNING_CLIENT_SAMPLING_RATE", "0.1"))) # Percentage of clients to sample
+
+    # --- Risk Management: Bias and Harmful Content Mitigation ---
+    # Configuration to address bias amplification and novel harmful content generation.
+    # This section is critical for ensuring responsible AI.
+    # Supported techniques: adversarial_debiasing, reweighing, fairness_constraints, dataset_augmentation, adversarial_training
+    bias_mitigation_techniques: List[str] = field(default_factory=lambda: [
+        s.strip() for s in os.getenv("BIAS_MITIGATION_TECHNIQUES", "adversarial_debiasing,reweighing,fairness_constraints").split(",") if s.strip()
+    ])
+    harmful_content_detection_model: Optional[str] = field(default=os.getenv("HARMFUL_CONTENT_DETECTION_MODEL", "offensive_language_detector_v1"))
+    harmful_content_detection_threshold: float = field(default=float(os.getenv("HARMFUL_CONTENT_DETECTION_THRESHOLD", "0.85")))
+    data_diversity_score_threshold: float = field(default=float(os.getenv("DATA_DIVERSITY_SCORE_THRESHOLD", "0.7"))) # Minimum score for data diversity to be considered adequate for training.
+    adversarial_prompt_defense_enabled: bool = field(default=str(os.getenv("ADVERSARIAL_PROMPT_DEFENSE_ENABLED", "true")).lower() == "true")
+    adversarial_prompt_detection_model: Optional[str] = field(default=os.getenv("ADVERSARIAL_PROMPT_DETECTION_MODEL", "adversarial_prompt_detector_v1"))
+    adversarial_prompt_defense_threshold: float = field(default=float(os.getenv("ADVERSARIAL_PROMPT_DEFENSE_THRESHOLD", "0.90"))) # Confidence threshold for detecting adversarial prompts.
 
     # --- SOTA Tool & State Management (OpenAI Assistant API related) ---
     # Configuration for integrating with OpenAI's Assistant API for advanced state management and context window expansion.
@@ -89,8 +114,8 @@ class Settings:
     model_retraining_trigger_sensitivity: float = field(default=float(os.getenv("MODEL_RETRAINING_TRIGGER_SENSITIVITY", "0.15"))) # Sensitivity level for triggering retraining
     data_sampling_rate_for_drift_check: float = field(default=float(os.getenv("DATA_SAMPLING_RATE_FOR_DRIFT_CHECK", "0.05"))) # Percentage of recent data to sample for drift checks
     drift_detection_algorithm: str = field(default=os.getenv("DRIFT_DETECTION_ALGORITHM", "ks_test")) # Algorithm used for drift detection (e.g., ks_test, earth_mover_distance)
-    model_drift_reporting_endpoint: Optional[str] = field(default=os.getenv("MODEL_DRIFT_REPORTING_ENDPOINT")) # Endpoint for reporting drift metrics
-    retraining_pipeline_trigger_url: Optional[str] = field(default=os.getenv("RETRAINING_PIPELINE_TRIGGER_URL")) # URL to trigger retraining pipeline
+    model_drift_reporting_endpoint: Optional[str] = field(default=os.getenv("MODEL_DRIFT_REPORTING_ENDPOINT", "http://localhost:8003/report-drift")) # Endpoint for reporting drift metrics
+    retraining_pipeline_trigger_url: Optional[str] = field(default=os.getenv("RETRAINING_PIPELINE_TRIGGER_URL", "http://localhost:8003/trigger-retraining")) # URL to trigger retraining pipeline
 
     # --- Studio & Sandbox Environment ---
     studio_host: str = field(default=os.getenv("STUDIO_HOST", "0.0.0.0"))
@@ -166,12 +191,20 @@ class Settings:
             raise ValueError("NEAR_DUPLICATE_THRESHOLD must be between 0 and 1.")
         if not (0 <= self.bidder_min_stability <= 1):
             raise ValueError("BIDDER_MIN_STABILITY must be between 0 and 1.")
+        if not (0 <= self.data_diversity_score_threshold <= 1):
+            raise ValueError("DATA_DIVERSITY_SCORE_THRESHOLD must be between 0 and 1.")
+        if not (0 <= self.harmful_content_detection_threshold <= 1):
+            raise ValueError("HARMFUL_CONTENT_DETECTION_THRESHOLD must be between 0 and 1.")
+        if not (0 <= self.adversarial_prompt_defense_threshold <= 1):
+            raise ValueError("ADVERSARIAL_PROMPT_DEFENSE_THRESHOLD must be between 0 and 1.")
         if not (0 <= self.data_drift_detection_threshold <= 1):
             raise ValueError("DATA_DRIFT_DETECTION_THRESHOLD must be between 0 and 1.")
         if not (0 <= self.model_retraining_trigger_sensitivity <= 1):
             raise ValueError("MODEL_RETRAINING_TRIGGER_SENSITIVITY must be between 0 and 1.")
         if not (0 <= self.data_sampling_rate_for_drift_check <= 1):
             raise ValueError("DATA_SAMPLING_RATE_FOR_DRIFT_CHECK must be between 0 and 1.")
+        if not (0 <= self.federated_learning_client_sampling_rate <= 1):
+            raise ValueError("FEDERATED_LEARNING_CLIENT_SAMPLING_RATE must be between 0 and 1.")
 
         # Log warnings for potentially problematic settings related to time intervals
         if self.model_garden_cache_ttl <= 0:
@@ -184,12 +217,22 @@ class Settings:
             logger.warning("MODEL_DRIFT_MONITORING_ENABLED is true, but MODEL_DRIFT_REPORTING_ENDPOINT is not set. Drift metrics may not be sent to a central location.")
         if self.model_drift_monitoring_enabled and not self.retraining_pipeline_trigger_url:
             logger.warning("MODEL_DRIFT_MONITORING_ENABLED is true, but RETRAINING_PIPELINE_TRIGGER_URL is not set. Automatic retraining may not be possible.")
+        if self.federated_learning_enabled and not self.federated_learning_aggregator_endpoint:
+            logger.warning("FEDERATED_LEARNING_ENABLED is true, but FEDERATED_LEARNING_AGGREGATOR_ENDPOINT is not set. Federated learning may not function correctly.")
+        if self.federated_learning_enabled and self.federated_learning_model_update_interval <= 0:
+            logger.warning("FEDERATED_LEARNING_MODEL_UPDATE_INTERVAL is set to 0 or a negative value while federated learning is enabled. Model updates may not occur as expected.")
+        if self.harmful_content_detection_model and not self.harmful_content_detection_threshold:
+            logger.warning("HARMFUL_CONTENT_DETECTION_MODEL is set, but HARMFUL_CONTENT_DETECTION_THRESHOLD is not. Default threshold will be used.")
+        if not self.ideation_theme_model or not self.suggestion_refinement_model:
+            logger.warning("Ideation theme or suggestion refinement models are not configured. GAN/RL features may be limited.")
+        if self.adversarial_prompt_defense_enabled and not self.adversarial_prompt_detection_model:
+             logger.warning("ADVERSARIAL_PROMPT_DEFENSE_ENABLED is true, but ADVERSARIAL_PROMPT_DETECTION_MODEL is not set. Adversarial prompt defense may be compromised.")
 
     def to_dict(self) -> Dict[str, Any]:
         """Return a safe, serialisable snapshot of the settings, redacting sensitive information."""
         d = asdict(self)
         # List of keys containing sensitive information to be redacted
-        sensitive_keys = ("gemini_api_key", "openai_api_key", "webhook_secret")
+        sensitive_keys = ("gemini_api_key", "openai_api_key", "webhook_secret", "federated_learning_aggregator_endpoint")
         for key in sensitive_keys:
             if d.get(key):
                 d[key] = "***" # Redact the sensitive value
@@ -205,6 +248,11 @@ class Settings:
         """Check if OpenAI Assistant API is available based on the presence of an API key and assistant ID."""
         return bool(self.openai_api_key and self.openai_assistant_id)
 
+    @property
+    def federated_learning_available(self) -> bool:
+        """Check if Federated Learning is configured and available."""
+        return self.federated_learning_enabled and bool(self.federated_learning_aggregator_endpoint)
+
 # Create the singleton instance of the Settings object. This instance is globally accessible.
 settings = Settings()
 
@@ -215,12 +263,29 @@ GEMINI_API_KEY: Optional[str] = settings.gemini_api_key
 GCP_PROJECT_ID: Optional[str] = settings.gcp_project_id
 GCP_REGION: str = settings.gcp_region
 ANTHROPIC_VERTEX_REGION: str = settings.anthropic_vertex_region
+IDEATION_THEME_MODEL: str = settings.ideation_theme_model
+SUGGESTION_REFINEMENT_MODEL: str = settings.suggestion_refinement_model
 VERTEX_DEFAULT_MODEL: str = settings.vertex_default_model
 GEMINI_MODEL: str = settings.gemini_model
 IMAGE_GEN_MODEL: str = settings.image_gen_model
 LOCAL_SLM_MODEL: str = settings.local_slm_model
 LOCAL_SLM_ENDPOINT: str = settings.local_slm_endpoint
 MODEL_GARDEN_CACHE_TTL: int = settings.model_garden_cache_ttl
+
+# Federated Learning Configuration
+FEDERATED_LEARNING_ENABLED: bool = settings.federated_learning_enabled
+FEDERATED_LEARNING_AGGREGATOR_ENDPOINT: Optional[str] = settings.federated_learning_aggregator_endpoint
+FEDERATED_LEARNING_MODEL_UPDATE_INTERVAL: int = settings.federated_learning_model_update_interval
+FEDERATED_LEARNING_CLIENT_SAMPLING_RATE: float = settings.federated_learning_client_sampling_rate
+
+# Risk Management: Bias and Harmful Content Mitigation
+BIAS_MITIGATION_TECHNIQUES: List[str] = settings.bias_mitigation_techniques
+HARMFUL_CONTENT_DETECTION_MODEL: Optional[str] = settings.harmful_content_detection_model
+HARMFUL_CONTENT_DETECTION_THRESHOLD: float = settings.harmful_content_detection_threshold
+DATA_DIVERSITY_SCORE_THRESHOLD: float = settings.data_diversity_score_threshold
+ADVERSARIAL_PROMPT_DEFENSE_ENABLED: bool = settings.adversarial_prompt_defense_enabled
+ADVERSARIAL_PROMPT_DETECTION_MODEL: Optional[str] = settings.adversarial_prompt_detection_model
+ADVERSARIAL_PROMPT_DEFENSE_THRESHOLD: float = settings.adversarial_prompt_defense_threshold
 
 # SOTA Tool & State Management
 OPENAI_ASSISTANT_ID: Optional[str] = settings.openai_assistant_id
@@ -275,9 +340,10 @@ OTEL_EXPORTER_OTLP_PROTOCOL: str = settings.otel_exporter_otlp_protocol
 GRAPH_ROLLBACK_ON_CYCLE: bool = settings.graph_rollback_on_cycle
 VERTEX_AVAILABLE: bool = settings.vertex_available
 OPENAI_AVAILABLE: bool = settings.openai_available
+FEDERATED_LEARNING_AVAILABLE: bool = settings.federated_learning_available
 WORKSPACE_ROOTS: str = settings.workspace_roots
 
-def get_workspace_roots() -> list[Path]:
+def get_workspace_roots() -> List[Path]:
     """
     Parses the WORKSPACE_ROOTS environment variable into a list of absolute Path objects.
     Defaults to the repository root if the variable is not set or empty.
