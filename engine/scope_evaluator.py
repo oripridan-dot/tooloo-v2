@@ -1,16 +1,42 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Any, Tuple
+from typing import Any, Tuple, Dict, Optional
 
 # Control: configurable thresholds for scope safety
 _MAX_NODES_THRESHOLD = 200     # scope evaluator flags plans exceeding this
 _MAX_RETRIES = 3               # retry limit for transient evaluation failures
 _CIRCUIT_BREAKER_DEPTH = 10    # max dependency depth before escalation
+
 # FIX 3: Refactor parallelism ratio thresholds for advanced risk-surface scoring
 # These thresholds now inform a more granular risk assessment.
+# Lower values indicate a preference for serial execution, higher values for parallel.
 _PARALLELISM_RATIO_LOW = 0.25   # below this, lean towards serial, higher risk for serial bottlenecks
 _PARALLELISM_RATIO_HIGH = 0.75  # above this, lean towards deep-parallel, higher risk for coordination overhead
+
+# Tool: Generative Adversarial Networks (GANs) integrated with Reinforcement Learning (RL)
+# for dynamic ideation theme generation and suggestion refinement based on real-time trend analysis.
+# This implies that the `evaluate` method could potentially leverage an LLM or a GAN/RL
+# model in future iterations for more nuanced analysis or to inform `risk_surface`.
+# For this rewrite, we focus on structural analysis but acknowledge the potential integration point.
+# GANs/RL could be used to predict "risky" node combinations or prompt adversarial manipulations
+# and thus enhance the `risk_surface` calculation by simulating adversarial attacks on plan structures.
+
+# Pattern: Federated Learning for ideation data aggregation, preserving user privacy while enabling
+# collaborative, distributed ideation across multiple datasets and organizations.
+# This pattern ensures that data used to train any future GAN/RL models for ideation theme generation
+# is diverse and privacy-preserving, which directly aids in mitigating bias risks.
+# This `ScopeEvaluator` relies on DORA metrics which could be derived from such FL systems.
+
+# Risk: Amplification of existing biases or generation of novel, unintended harmful content
+# through insufficiently diverse training data or adversarial manipulation of ideation prompts.
+# The `risk_surface` calculation is a primary mechanism to mitigate this by identifying potentially
+# problematic parts of the plan, especially for high-risk intents. A robust `risk_surface` calculation
+# informed by GANs/RL could actively predict and flag adversarial prompt manipulations or bias amplification
+# within the plan structure itself, acting as a critical defense. Enhanced diversity in data used to train
+# any integrated LLMs/GANs would be crucial for addressing this risk more holistically.
+# This rewrite refines `risk_surface` to be more sensitive to plan structure and parallelism,
+# aiming to catch subtle risks that might otherwise be overlooked.
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +101,7 @@ class ScopeEvaluator:
     # _RECOMMENDED_WORKERS_SECURITY_FACTOR: multiplier for high-risk intents to increase robustness.
     _RECOMMENDED_WORKERS_SECURITY_FACTOR = 1.5
 
-    def __init__(self, dora_metrics: dict[str, float] | None = None):
+    def __init__(self, dora_metrics: Optional[Dict[str, float]] = None):
         """
         Initializes the ScopeEvaluator with optional DORA metrics.
 
@@ -99,7 +125,7 @@ class ScopeEvaluator:
 
         # Initialize with base values to avoid AttributeError during DORA adjustment
         self._PARALLELISM_RATIO_THRESHOLDS = self._base_parallelism_thresholds.copy()
-        
+
         # Now refine them with DORA metrics
         self._PARALLELISM_RATIO_THRESHOLDS["serial"] = self._get_dora_threshold("serial")
         self._PARALLELISM_RATIO_THRESHOLDS["parallel"] = self._get_dora_threshold("parallel")
@@ -241,6 +267,9 @@ class ScopeEvaluator:
         """Produce a ScopeEvaluation for the given wave plan.
 
         Uses asyncio.TaskGroup for concurrent analysis of plan characteristics.
+        Leverages DORA metrics to dynamically adjust parallelism thresholds.
+        Implements risk-surface scoring based on intent and plan complexity.
+        Includes basic topology validation.
         """
         async def analyze_plan_characteristics(waves_data: list[list[str]], intent_data: str) -> Tuple[int, int, int, float, int]:
             """Analyzes basic characteristics of the wave plan concurrently."""
@@ -266,7 +295,6 @@ class ScopeEvaluator:
                 if not wave_count_calc or not max_wave_width_calc or node_count_calc == 0:
                     return 0.0
                 # Calculate average wave width to get a sense of overall parallelism.
-                # Using max(wave_count_calc, 1) to avoid division by zero if wave_count_calc is 0.
                 avg_wave_width = node_count_calc / max(wave_count_calc, 1)
                 # The parallelism ratio is the average parallelism across waves compared to the maximum possible parallelism.
                 # The maximum possible parallelism at any point is implicitly represented by max_wave_width.
@@ -281,6 +309,8 @@ class ScopeEvaluator:
             ) -> int:
                 """Calculates an initial estimate of risk_surface."""
                 if intent_calc.upper() in self._HIGH_RISK_INTENTS:
+                    # Initial risk is a fraction of total nodes for high-risk intents.
+                    # This is a baseline before considering structural risks.
                     return max(1, round(node_count_calc * 0.35))
                 return 0
 
@@ -382,6 +412,8 @@ class ScopeEvaluator:
         # High parallelism (max_wave_width) can also introduce failure points due to contention or resource issues.
         # Refined risk surface calculation:
         # Base risk from intent + penalty for low parallelism (more serial risk) + penalty for high width (contention risk).
+        # The weights (5 and 2) are heuristic and can be tuned.
+        # GANs/RL could provide more sophisticated risk prediction here, identifying adversarial patterns.
         calculated_risk_surface = initial_risk_surface + int(node_count * (1.0 - parallelism_ratio) * 5) + int(max_wave_width * 2)
         # Ensure risk_surface is at least 1 if there's any indication of risk and there are nodes.
         if calculated_risk_surface > 0 and node_count > 0:

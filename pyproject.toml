@@ -21,6 +21,7 @@ dependencies = [
     "python-multipart>=0.0.9",
     "opentelemetry-api>=1.28",
     "opentelemetry-sdk>=1.28",
+    "opentelemetry-exporter-otlp>=1.28",
     "psutil>=5.9",
     "google-cloud-firestore>=2.16",
     "websockets>=16.0",

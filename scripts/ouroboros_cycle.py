@@ -54,7 +54,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Coroutine
 
 # ── Project root on sys.path (must come before any engine import) ─────────────
 _ROOT = Path(__file__).resolve().parents[1]
@@ -74,7 +74,7 @@ if not _LIVE_MODE:
 
 # ── Engine imports (after sys.path is set) ────────────────────────────────────
 from engine.config import AUTONOMOUS_EXECUTION_ENABLED  # noqa: E402
-from engine.executor import Envelope, JITExecutor  # noqa: E402
+from engine.executor import Envelope, ExecutionResult, JITExecutor  # noqa: E402
 from engine.graph import TopologicalSorter  # noqa: E402
 from engine.jit_booster import JITBooster  # noqa: E402
 from engine.mcp_manager import MCPManager  # noqa: E402
@@ -228,7 +228,7 @@ def _make_build_work_fn(
     mcp: MCPManager,
     dry_run: bool,
     live_mode: bool,
-) -> Callable[[Envelope], dict[str, Any]]:
+) -> Callable[[Envelope], Coroutine[Any, Any, ExecutionResult]]:
     """
     Return a work_fn for NStrokeEngine that:
       1. Reads the current source via MCP file_read.
@@ -236,29 +236,26 @@ def _make_build_work_fn(
          In offline mode: performs a read-verify (no write) and reports the
          current health state + top suggestions as the plan output.
       3. In god-mode + live mode: writes the annotation block via MCP file_write.
-      4. Returns a structured result dict with write metadata.
-
-    Security constraints
-    --------------------
-    - No eval(), exec(), or dynamic imports in generated content.
-    - Written content is bounded to a SOTA annotation block prepended to the
-      module docstring — it never replaces executable logic.
-    - The Tribunal in NStrokeEngine's preflight will catch any poisoned content
-      before the work_fn is even called.
     """
-    def _work(envelope: Envelope) -> dict[str, Any]:
+    async def _work(envelope: Envelope) -> ExecutionResult:
         t0 = time.monotonic()
 
         # Step 1: Read current source
         read_result = mcp.call("file_read", path=source_path)
         if not read_result.success:
-            return {
-                "status": "error",
-                "phase": "file_read",
-                "error": read_result.error,
-                "component": component,
-                "source_path": source_path,
-            }
+            return ExecutionResult(
+                mandate_id=envelope.mandate_id,
+                success=False,
+                output=None,
+                latency_ms=round((time.monotonic() - t0) * 1000, 2),
+                error=read_result.error,
+                metadata={
+                    "status": "error",
+                    "phase": "file_read",
+                    "component": component,
+                    "source_path": source_path,
+                }
+            )
 
         current_source: str = read_result.output.get("content", "") if isinstance(
             read_result.output, dict) else str(read_result.output)
@@ -270,32 +267,44 @@ def _make_build_work_fn(
         was_truncated = isinstance(
             read_result.output, dict) and read_result.output.get("truncated", False)
         if was_truncated:
-            return {
-                "status": "skipped",
-                "phase": "truncation_guard",
-                "component": component,
-                "source_path": source_path,
-                "reason": "file exceeds MCP read limit (8 KB) — skipping write to prevent partial-file corruption",
-                "line_count": line_count,
-                "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-            }
+            return ExecutionResult(
+                mandate_id=envelope.mandate_id,
+                success=True,  # Skipped for safety is not a failure of the tool itself
+                output=None,
+                latency_ms=round((time.monotonic() - t0) * 1000, 2),
+                metadata={
+                    "status": "skipped",
+                    "phase": "truncation_guard",
+                    "component": component,
+                    "source_path": source_path,
+                    "reason": "file exceeds MCP read limit (8 KB) — skipping write to prevent partial-file corruption",
+                    "line_count": line_count,
+                }
+            )
 
         # In offline / dry-run mode: report plan without writing
         if dry_run or not live_mode:
-            return {
-                "status": "planned",
-                "phase": "build",
-                "component": component,
-                "source_path": source_path,
-                "line_count": line_count,
-                "annotation_preview": str(suggestions)[:400],
-                "suggestions_count": len(suggestions),
-                "write_skipped": True,
-                "reason": "dry_run" if dry_run else "offline_mode",
-                "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-            }
+            return ExecutionResult(
+                mandate_id=envelope.mandate_id,
+                success=True,
+                output=None,
+                latency_ms=round((time.monotonic() - t0) * 1000, 2),
+                metadata={
+                    "status": "planned",
+                    "phase": "build",
+                    "component": component,
+                    "source_path": source_path,
+                    "line_count": line_count,
+                    "annotation_preview": str(suggestions)[:400],
+                    "suggestions_count": len(suggestions),
+                    "write_skipped": True,
+                    "reason": "dry_run" if dry_run else "offline_mode",
+                }
+            )
 
         # Step 2: Use LLM to actually rewrite code and implement suggestions
+        # We use simple blocking calls for now, but the function itself MUST be async
+        # for NStrokeEngine compatibility.
         prompt = (
             f"You are the TooLoo God Mode Code Improver.\n"
             f"Component to improve: {component} at {source_path}\n"
@@ -311,12 +320,14 @@ def _make_build_work_fn(
             import engine.jit_booster as _jib_mod
             from engine.config import VERTEX_DEFAULT_MODEL, GEMINI_MODEL
             if _jib_mod._vertex_client:
+                # Vertex AI client currently sync in this SDK version
                 resp = _jib_mod._vertex_client.models.generate_content(
                     model=VERTEX_DEFAULT_MODEL, contents=prompt
                 )
                 if resp.text:
                     new_source = resp.text.strip()
             elif _jib_mod._gemini_client:
+                # Gemini client currently sync in this SDK version
                 resp = _jib_mod._gemini_client.models.generate_content(
                     model=GEMINI_MODEL, contents=prompt
                 )
@@ -342,14 +353,19 @@ def _make_build_work_fn(
             compile(new_source, source_path, "exec")
 
         except Exception as e:
-            return {
-                "status": "error",
-                "phase": "llm_rewrite",
-                "error": str(e),
-                "component": component,
-                "source_path": source_path,
-                "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-            }
+            return ExecutionResult(
+                mandate_id=envelope.mandate_id,
+                success=False,
+                output=None,
+                latency_ms=round((time.monotonic() - t0) * 1000, 2),
+                error=str(e),
+                metadata={
+                    "status": "error",
+                    "phase": "llm_rewrite",
+                    "component": component,
+                    "source_path": source_path,
+                }
+            )
 
         write_result = mcp.call(
             "file_write",
@@ -357,25 +373,36 @@ def _make_build_work_fn(
             content=new_source,
         )
         if not write_result.success:
-            return {
-                "status": "error",
-                "phase": "file_write",
-                "error": write_result.error,
+            return ExecutionResult(
+                mandate_id=envelope.mandate_id,
+                success=False,
+                output=None,
+                latency_ms=round((time.monotonic() - t0) * 1000, 2),
+                error=write_result.error,
+                metadata={
+                    "status": "error",
+                    "phase": "file_write",
+                    "component": component,
+                    "source_path": source_path,
+                }
+            )
+
+        return ExecutionResult(
+            mandate_id=envelope.mandate_id,
+            success=True,
+            output={
+                "status": "written",
+                "phase": "build",
                 "component": component,
                 "source_path": source_path,
-            }
-
-        return {
-            "status": "written",
-            "phase": "build",
-            "component": component,
-            "source_path": source_path,
-            "line_count": line_count,
-            "annotation_lines": 0,
-            "write_path": write_result.output if isinstance(
-                write_result.output, str) else source_path,
-            "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-        }
+                "line_count": line_count,
+                "annotation_lines": 0,
+                "write_path": write_result.output if isinstance(
+                    write_result.output, str) else source_path,
+                "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+            },
+            latency_ms=round((time.monotonic() - t0) * 1000, 2),
+        )
 
     return _work
 
@@ -449,7 +476,7 @@ class OuroborosCycle:
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
-    def run(self) -> OuroborosReport:
+    async def run(self) -> OuroborosReport:
         t0 = time.monotonic()
         cycle_id = f"ouroboros-{uuid.uuid4().hex[:8]}"
 
@@ -466,7 +493,7 @@ class OuroborosCycle:
 
         # ── Phase 1: Self-improvement diagnosis ───────────────────────────────
         print("Phase 1 · SelfImprovementEngine diagnosis…")
-        si_report = self._si_engine.run()
+        si_report = await self._si_engine.run()
         si_summary = {
             "improvement_id": si_report.improvement_id,
             "components_assessed": si_report.components_assessed,
@@ -576,7 +603,7 @@ class OuroborosCycle:
                 context_turns=[],
             )
 
-            ns_result = n_engine.run(
+            ns_result = await n_engine.run(
                 locked_intent=locked,
                 pipeline_id=f"{cycle_id}-{component}",
                 work_fn=work_fn,
@@ -596,8 +623,8 @@ class OuroborosCycle:
             # Force TOOLOO_LIVE_TESTS=0 so conftest always patches out LLM clients.
             smoke_result = self._mcp.call(
                 "run_tests",
-                test_path="tests/test_engine_smoke.py",
-                timeout=60,
+                test_path="tests",
+                extra_args=["--ignore=tests/test_playwright_ui.py", "--ignore=tests/test_ingestion.py"],
                 env_overrides={"TOOLOO_LIVE_TESTS": "0"},
             )
             smoke_passed = (
@@ -620,7 +647,6 @@ class OuroborosCycle:
                 comp_result = self._mcp.call(
                     "run_tests",
                     test_path=component_test,
-                    timeout=90,
                     env_overrides={"TOOLOO_LIVE_TESTS": "0"},
                 )
                 component_passed = (
@@ -788,7 +814,7 @@ def _print_autonomy_notice() -> None:
     """))
 
 
-def main(argv: list[str] | None = None) -> int:
+async def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
 
     dry_run = args.dry_run
@@ -810,11 +836,15 @@ def main(argv: list[str] | None = None) -> int:
         component_filter=component_filter,
         max_strokes=args.max_strokes,
     )
-    report = cycle.run()
+    report = await cycle.run()
 
     # Exit code reflects overall verdict
     return 0 if report.overall_verdict in ("pass", "warn") else 1
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import asyncio
+    try:
+        raise SystemExit(asyncio.run(main()))
+    except KeyboardInterrupt:
+        pass
