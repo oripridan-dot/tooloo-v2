@@ -50,6 +50,16 @@ class BackgroundDaemon:
         self._summarizer = RecursiveSummaryAgent()
         self.awaiting_approval: list[dict[str, Any]] = []
 
+        # Cognitive Dreamer — noctural optimization and memory consolidation
+        from engine.cognitive_dreamer import CognitiveDreamer
+        from engine.vector_store import get_vector_store
+        from engine.model_garden import get_garden
+        self._dreamer = CognitiveDreamer(
+            vector_store=get_vector_store(),
+            psyche_bank=self._bank,
+            model_garden=get_garden()
+        )
+
     async def start(self):
         self.active = True
         self._broadcast({"type": "daemon_status", "status": "started"})

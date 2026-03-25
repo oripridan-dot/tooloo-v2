@@ -28,7 +28,7 @@ from engine.graph import TopologicalSorter
 from engine.jit_booster import JITBooster
 from engine.mcp_manager import MCPManager
 from engine.model_selector import ModelSelector
-from engine.n_stroke import MAX_STROKES, NStrokeEngine, NStrokeResult
+from engine.pipeline import MAX_STROKES, NStrokeEngine, NStrokeResult
 from engine.psyche_bank import PsycheBank
 from engine.refinement import RefinementLoop
 from engine.refinement_supervisor import RefinementSupervisor

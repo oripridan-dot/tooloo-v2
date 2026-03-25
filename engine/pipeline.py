@@ -1,48 +1,31 @@
-# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
-# Cycle: 2026-03-20T20:01:58.820851+00:00
-# Component: n_stroke  Source: engine/n_stroke.py
-# Improvement signals from JIT SOTA booster:
-#  [1] Optimise engine/n_stroke.py: OWASP Top 10 2025 edition promotes Broken Object-
-#     Level Authorisation to the #1 priority
-#  [2] Optimise engine/n_stroke.py: OSS supply-chain audits (Sigstore + Rekor
-#     transparency log) are required in regulated environments
-#  [3] Optimise engine/n_stroke.py: CSPM tools (Wiz, Orca, Prisma Cloud) provide
-#     real-time cloud posture scoring in 2026
-# ─────────────────────────────────────────────────────────────────
 """
-engine/n_stroke.py — N-Stroke Autonomous Cognitive Loop.
+engine/pipeline.py — Unified Execution Pipeline.
 
-Generalises TwoStrokeEngine to N strokes with three key additions:
+THE single execution engine for all TooLoo mandates.  Consolidates the former
+``supervisor.py`` (TwoStrokeEngine) and ``n_stroke.py`` (NStrokeEngine) into
+one module.  ``TwoStrokeEngine`` is now an alias for ``NStrokeEngine`` with
+``max_strokes=3``.
 
-  1. **Dynamic model selection** — ModelSelector escalates the model tier
-     on each failed stroke, from Flash → Flash-Exp → Pro → Pro-Thinking.
+Key capabilities:
+  1. **Dynamic model selection** — escalates model tier on failures
+  2. **MCP tool injection** — full tool manifest in every stroke context
+  3. **Autonomous healing** — auto-repairs nodes that fail 3+ times
+  4. **3-phase pipeline** — Blueprint → Dry-Run → Execute
+  5. **Async fluid execution** — event-driven node firing for low latency
 
-  2. **MCP tool injection** — MCPManager's full tool manifest is injected
-     into every stroke's execution context so nodes can invoke file_read,
-     web_lookup, code_analyze, run_tests, and read_error autonomously.
+Pipeline per stroke::
 
-  3. **Autonomous healing** — RefinementSupervisor triggers when any node
-     accumulates >= NODE_FAIL_THRESHOLD failures. It pauses the loop, heals
-     via MCP + SOTA signals, then resumes with a corrected work function.
+    PreflightSupervisor  → model_select + JIT SOTA + Tribunal
+    Process 1 (Catalyst) → DAG plan + scope eval + MCP manifest inject
+    MidflightSupervisor  → JIT pass 2 + Tribunal rescan
+    Process 2 (Crucible) → JITExecutor fan_out + MCP tools
+    Satisfaction Gate    → RefinementLoop verdict → loop or exit
 
-Pipeline per stroke:
-
-  [PreflightSupervisor]  → model_select + JIT SOTA + Tribunal
-        ↓ SSE: preflight
-  [Process 1 — Catalyst] → DAG plan + scope eval + MCP manifest inject
-        ↓ SSE: plan
-  [MidflightSupervisor]  → JIT pass 2 + Tribunal rescan
-        ↓ SSE: midflight
-  [Process 2 — Crucible] → JITExecutor fan_out, MCP tools in env metadata
-        ↓ SSE: execution
-  [Satisfaction Gate]    → RefinementLoop verdict
-        ↓ SSE: satisfaction_gate
-        ↓ fail: increment stroke, escalate model, inject failure signal
-        ↓ any node fails 3+ times: RefinementSupervisor heals before retry
-
-The loop terminates on ``verdict == "pass"`` or when MAX_STROKES is reached.
-All iteration state is immutable — each stroke starts fresh, enriched by the
-prior failure signal and (optionally) the healed work function.
+Backwards compatibility:
+  - ``TwoStrokeEngine`` = ``NStrokeEngine``  (alias)
+  - ``TwoStrokeResult``  = ``NStrokeResult`` (alias)
+  - ``TwoStrokeIteration`` = ``StrokeRecord`` (alias)
+  - ``MAX_ITERATIONS`` = 3 (old constant from supervisor.py)
 """
 from __future__ import annotations
 from engine.validator_16d import Validator16D
@@ -72,6 +55,11 @@ from engine.dynamic_model_registry import (
 )
 from engine.async_fluid_executor import AsyncEnvelope, AsyncExecutionResult, AsyncFluidExecutor
 from engine.config import AUTONOMOUS_CONFIDENCE_THRESHOLD, settings as _cfg
+from engine.dependency_analyzer import DependencyAnalyzer
+from engine.intent_analyzer import IntentAnalyzer
+from engine.cognitive import CognitiveCoordinate, SystemAgency, ExecutionIntent
+from engine.kv_store import get_kv_store
+from engine.vector_store import VectorStore
 
 import asyncio
 import logging
@@ -81,7 +69,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -220,6 +208,7 @@ class StrokeRecord:
     active_phase: str = PHASE_EXECUTE       # which phase this stroke represents
     confidence_proof: dict[str, Any] = field(default_factory=dict)
     divergence_metrics: dict[str, Any] = field(default_factory=dict)
+    cascade_preview: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -242,6 +231,7 @@ class StrokeRecord:
             "active_phase": self.active_phase,
             "confidence_proof": self.confidence_proof,
             "divergence_metrics": self.divergence_metrics,
+            "cascade_preview": self.cascade_preview,
         }
 
 
@@ -370,15 +360,83 @@ class NStrokeEngine:
         self._max_strokes = ResourceGovernor.get_recommended_strokes(
             max_strokes)
         self._async_fluid_executor = async_fluid_executor
+        
+        self._dep_analyzer = DependencyAnalyzer()
+        self._dep_analyzer.build_graph_from_workspace()
+        
+        # Initialize VectorStore for metadata indexing
+        self._cognitive_vector_store = VectorStore()
+        self._kv_store = get_kv_store()
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
-    def run(
+    def antigravity_execution(
+        self,
+        where: str,
+        what: str,
+        how: str,
+        why: ExecutionIntent,
+        who: SystemAgency,
+        payload: dict,
+    ) -> Any:
+        """
+        The central choke point for system execution and memory logging.
+        Enforces the 6W schema before any action is permitted.
+        """
+        try:
+            # 1. ENFORCEMENT: Attempt to build the Cognitive Coordinate
+            coordinate = CognitiveCoordinate(
+                where=where,
+                what= what,
+                how=how,
+                why=why,
+                who=who,
+                raw_payload=payload
+            )
+        except Exception as e:
+            # If the schema fails, block execution.
+            err_msg = f"Antigravity Execution Blocked: Invalid 6W Schema Context.\nDetails: {e}"
+            logger.error(err_msg)
+            raise RuntimeError(err_msg)
+
+        # 2. VERIFICATION & ROUTING: The schema passed and generated a secure Hash
+        self.verify_and_route_memory(coordinate)
+
+        # 3. EXECUTE: Proceed with the actual system operation
+        # In this implementation, the "execution" is usually handled by the caller
+        # but we return the coordinate for tracking.
+        return coordinate
+
+    def verify_and_route_memory(self, coordinate: CognitiveCoordinate):
+        """
+        Splits the 6W metadata from the heavy payload to keep the Vector DB blazingly fast.
+        """
+        if not coordinate.hash_id:
+            raise SystemError("Verification Failed: Hash ID missing.")
+
+        # 1. Prepare lightweight metadata for Vector DB (The Search Index)
+        metadata = coordinate.to_metadata()
+        
+        # Index in VectorStore
+        # We use 'what' as the text for semantic search
+        self._cognitive_vector_store.add(
+            doc_id=coordinate.hash_id,
+            text=coordinate.what,
+            metadata=metadata
+        )
+        logger.info(f"Antigravity: Verified & Indexed Metadata for: {coordinate.hash_id}")
+
+        # 2. Prepare heavy payload for Key-Value Store (The Absolute Truth)
+        self._kv_store.set(coordinate.hash_id, coordinate.raw_payload)
+        logger.info(f"Antigravity: Saved Heavy Payload to KV Store under Hash: {coordinate.hash_id}")
+
+    async def run(
         self,
         locked_intent: LockedIntent,
         pipeline_id: str | None = None,
         work_fn: Callable[[Envelope], Any] | None = None,
         simulation: bool = False,
+        use_cognitive_middleware: bool = True,
     ) -> NStrokeResult:
         """Execute N-stroke loop until satisfied or max_strokes reached.
 
@@ -409,6 +467,47 @@ class NStrokeEngine:
             # generation quality with latency and change-failure-rate metrics.
             "model_id": getattr(self, "_active_model", None),
         })
+
+        # ── 0. Intent Math Analyzer & Cognitive Middleware ───────────────────────
+        analyzer = IntentAnalyzer()
+        score, action = analyzer.analyze(locked_intent.mandate_text)
+        
+        cognitive_state = None
+        if use_cognitive_middleware:
+            from engine.cognitive_middleware import CognitiveMiddleware
+            middleware = CognitiveMiddleware()
+            cognitive_state = middleware.analyze_mandate(locked_intent.mandate_text, model_id=getattr(self, "_active_model", None))
+            
+            self._broadcast({
+                "type": "cognitive_state_generated",
+                "pipeline_id": pipeline_id,
+                "cognitive_state": cognitive_state.model_dump()
+            })
+        
+        self._broadcast({
+            "type": "intent_math_calculated",
+            "pipeline_id": pipeline_id,
+            "intent_score": round(score, 3),
+            "action_category": action,
+            "mandate": locked_intent.mandate_text
+        })
+        
+        if action == "LISTEN":
+            self._broadcast({"type": "info", "msg": "Passive intent detected mathematically. Entering LISTEN mode. Bypassing execution."})
+            return NStrokeResult(
+                pipeline_id=pipeline_id,
+                locked_intent=locked_intent,
+                strokes=[],
+                final_verdict="pass",
+                satisfied=True,
+                total_strokes=0,
+                model_escalations=0,
+                healing_invocations=0,
+                latency_ms=(time.monotonic() - t0) * 1000.0,
+                execution_mode="sync",
+            )
+        elif action == "COLLABORATE":
+            self._broadcast({"type": "info", "msg": "Exploratory intent detected mathematically. COLLABORATE mode active."})
 
         # ── Law 20 (Amended) — advisory consultation gate ─────────────────────
         # Broadcast a consultation_recommended signal when confidence is below
@@ -550,8 +649,25 @@ class NStrokeEngine:
                     f"Reapproach with corrections."
                 )
 
-            # ── 4. Execute one full stroke ────────────────────────────────────
-            stroke_record = self._run_stroke(
+            # ── 3b. Antigravity Gatekeeper Enforcement ────────────────────────
+            # Log the intent to run a stroke
+            self.antigravity_execution(
+                where=f"pipeline.stroke_{stroke_num}",
+                what=f"Executing Stroke {stroke_num} for intent: {locked_intent.intent}",
+                how="NStrokeEngine._run_stroke",
+                why=ExecutionIntent.CODE_GENERATION,
+                who=SystemAgency.EXECUTOR,
+                payload={
+                    "pipeline_id": pipeline_id,
+                    "stroke_num": stroke_num,
+                    "model": model_sel.model,
+                    "intent": locked_intent.intent,
+                    "prior_failure_signal": prior_failure_signal,
+                }
+            )
+
+            # ── 4. Execute (Async variant) ────────────────────────────────────
+            stroke_record = await self._run_stroke(
                 locked_intent=locked_intent,
                 pipeline_id=pipeline_id,
                 stroke_num=stroke_num,
@@ -559,6 +675,7 @@ class NStrokeEngine:
                 prior_failure_signal=prior_failure_signal,
                 work_fn=current_work_fn,
                 healing_report=healing_report,
+                cognitive_state=cognitive_state,
             )
             strokes.append(stroke_record)
 
@@ -611,10 +728,25 @@ class NStrokeEngine:
             if stroke_record.satisfied:
                 break
 
-        # ── Final result ──────────────────────────────────────────────────────
+        # ── 5c. Antigravity Finalization ──────────────────────────────────────
         last = strokes[-1] if strokes else None
         final_verdict = last.refinement.verdict if last else "fail"
         satisfied = last.satisfied if last else False
+
+        self.antigravity_execution(
+            where=f"pipeline.complete",
+            what=f"Pipeline {pipeline_id} execution complete",
+            how="NStrokeEngine.run result assembly",
+            why=ExecutionIntent.CALIBRATION if satisfied else ExecutionIntent.ERROR_CORRECTION,
+            who=SystemAgency.EXECUTOR,
+            payload={
+                "pipeline_id": pipeline_id,
+                "satisfied": satisfied,
+                "total_strokes": len(strokes)
+            }
+        )
+
+        # ── Final result ──────────────────────────────────────────────────────
 
         # ── No Dead Ends Protocol: crisis synthesis on exhaustion ─────────────
         # When the loop exits without satisfaction (all MAX_STROKES consumed
@@ -670,6 +802,7 @@ class NStrokeEngine:
         pipeline_id: str | None = None,
         work_fn: Callable[[Envelope], Any] | None = None,
         simulation: bool = False,
+        use_cognitive_middleware: bool = True,
     ) -> NStrokeResult:
         """Async variant of run() using AsyncFluidExecutor for event-driven execution.
 
@@ -680,11 +813,12 @@ class NStrokeEngine:
         no ``AsyncFluidExecutor`` is injected.
         """
         if self._async_fluid_executor is None:
-            loop = asyncio.get_event_loop()
-            return await loop.run_in_executor(
-                None,
-                lambda: self.run(
-                    locked_intent, pipeline_id=pipeline_id, work_fn=work_fn, simulation=simulation),
+            return await self.run(
+                locked_intent,
+                pipeline_id=pipeline_id,
+                work_fn=work_fn,
+                simulation=simulation,
+                use_cognitive_middleware=use_cognitive_middleware
             )
 
         t0 = time.monotonic()
@@ -705,6 +839,47 @@ class NStrokeEngine:
             "model_id": getattr(self, "_active_model", None),
             "mode": "async_fluid",
         })
+
+        # ── 0. Intent Math Analyzer ───────────────────────────────────────────
+        analyzer = IntentAnalyzer()
+        score, action = analyzer.analyze(locked_intent.mandate_text)
+
+        cognitive_state = None
+        if use_cognitive_middleware:
+            from engine.cognitive_middleware import CognitiveMiddleware
+            middleware = CognitiveMiddleware()
+            cognitive_state = middleware.analyze_mandate(locked_intent.mandate_text, model_id=getattr(self, "_active_model", None))
+    
+            self._broadcast({
+                "type": "cognitive_state_generated",
+                "pipeline_id": pipeline_id,
+                "cognitive_state": cognitive_state.model_dump()
+            })
+        
+        self._broadcast({
+            "type": "intent_math_calculated",
+            "pipeline_id": pipeline_id,
+            "intent_score": round(score, 3),
+            "action_category": action,
+            "mandate": locked_intent.mandate_text
+        })
+        
+        if action == "LISTEN":
+            self._broadcast({"type": "info", "msg": "Passive intent detected mathematically. Entering LISTEN mode. Bypassing execution."})
+            return NStrokeResult(
+                pipeline_id=pipeline_id,
+                locked_intent=locked_intent,
+                strokes=[],
+                final_verdict="pass",
+                satisfied=True,
+                total_strokes=0,
+                model_escalations=0,
+                healing_invocations=0,
+                latency_ms=(time.monotonic() - t0) * 1000.0,
+                execution_mode="async_fluid",
+            )
+        elif action == "COLLABORATE":
+            self._broadcast({"type": "info", "msg": "Exploratory intent detected mathematically. COLLABORATE mode active."})
 
         if locked_intent.confidence < AUTONOMOUS_CONFIDENCE_THRESHOLD:
             self._broadcast({
@@ -832,6 +1007,22 @@ class NStrokeEngine:
                     f"Reapproach with corrections."
                 )
 
+            # ── 3b. Antigravity Gatekeeper Enforcement (Async) ────────────────
+            self.antigravity_execution(
+                where=f"pipeline.async.stroke_{stroke_num}",
+                what=f"Executing Async Stroke {stroke_num} for intent: {locked_intent.intent}",
+                how="NStrokeEngine._run_stroke_async",
+                why=ExecutionIntent.CODE_GENERATION,
+                who=SystemAgency.EXECUTOR,
+                payload={
+                    "pipeline_id": pipeline_id,
+                    "stroke_num": stroke_num,
+                    "model": model_sel.model,
+                    "intent": locked_intent.intent,
+                    "prior_failure_signal": prior_failure_signal
+                }
+            )
+
             stroke_record = await self._run_stroke_async(
                 locked_intent=locked_intent,
                 pipeline_id=pipeline_id,
@@ -840,6 +1031,7 @@ class NStrokeEngine:
                 prior_failure_signal=prior_failure_signal,
                 work_fn=current_work_fn,
                 healing_report=healing_report,
+                cognitive_state=cognitive_state,
             )
             strokes.append(stroke_record)
 
@@ -864,6 +1056,20 @@ class NStrokeEngine:
 
             if stroke_record.satisfied:
                 break
+
+        # ── 5c. Antigravity Finalization (Async) ──────────────────────────────
+        self.antigravity_execution(
+            where=f"pipeline.async.complete",
+            what=f"Pipeline {pipeline_id} async execution complete",
+            how="NStrokeEngine.run_async result assembly",
+            why=ExecutionIntent.CALIBRATION if satisfied else ExecutionIntent.ERROR_CORRECTION,
+            who=SystemAgency.EXECUTOR,
+            payload={
+                "pipeline_id": pipeline_id,
+                "satisfied": satisfied,
+                "total_strokes": len(strokes)
+            }
+        )
 
         last = strokes[-1] if strokes else None
         final_verdict = last.refinement.verdict if last else "fail"
@@ -912,7 +1118,7 @@ class NStrokeEngine:
 
     # ── Private: single stroke execution ──────────────────────────────────────
 
-    def _run_stroke(
+    async def _run_stroke(
         self,
         locked_intent: LockedIntent,
         pipeline_id: str,
@@ -921,6 +1127,7 @@ class NStrokeEngine:
         prior_failure_signal: str,
         work_fn: Callable[[Envelope], Any],
         healing_report: HealingReport | None,
+        cognitive_state=None,
     ) -> StrokeRecord:
         t0 = time.monotonic()
         mandate_id = f"{pipeline_id}-s{stroke_num}"
@@ -942,7 +1149,8 @@ class NStrokeEngine:
             route, vertex_model_id=model_sel.vertex_model_id)
         self._router.apply_jit_boost(route, preflight_jit.boosted_confidence)
 
-        preflight_tribunal = self._tribunal.evaluate(Engram(
+        # FIX 4: Await the preflight Tribunal evaluation.
+        preflight_tribunal = await self._tribunal.evaluate(Engram(
             slug=f"{mandate_id}-preflight",
             intent=intent,
             logic_body=locked_intent.mandate_text,
@@ -1004,8 +1212,8 @@ class NStrokeEngine:
                     "action_type": inferred_action,
                     "cognitive_profile": None,
                 }
-
-        scope = self._scope.evaluate(waves, intent)
+        # FIX 4: Await the async scope evaluation.
+        scope = await self._scope.evaluate(waves, intent)
 
         # Inject MCP tool manifest
         mcp_tools = self._mcp.manifest()
@@ -1027,7 +1235,8 @@ class NStrokeEngine:
         # ── Mid-Flight Supervisor ─────────────────────────────────────────────
         midflight_jit = self._booster.fetch(
             route, vertex_model_id=model_sel.vertex_model_id)
-        self._tribunal.evaluate(Engram(
+        # FIX 5: Await the midflight Tribunal evaluation.
+        await self._tribunal.evaluate(Engram(
             slug=f"{mandate_id}-midflight",
             intent=intent,
             logic_body=f"midflight check: {locked_intent.mandate_text[:200]}",
@@ -1090,9 +1299,15 @@ class NStrokeEngine:
                 intent=intent,
                 jit_signals=preflight_jit.signals,
                 vertex_model_id=model_sel.vertex_model_id,
+                cognitive_state=cognitive_state.model_dump() if cognitive_state else None,
             )
         inferred_file_path = _infer_workspace_file_target(
             locked_intent.mandate_text)
+
+        # Get cascade preview
+        cascade_preview = {}
+        if inferred_file_path:
+            cascade_preview = self._dep_analyzer.get_downstream_dependencies(inferred_file_path)
 
         node_model_map: dict[str, str] = {}
         node_provider_map: dict[str, str] = {}
@@ -1163,8 +1378,29 @@ class NStrokeEngine:
 
         dependency_map = {node_id: deps for node_id, deps in dynamic_spec}
 
-        execution_results = self._executor.fan_out_dag(
-            effective_work_fn,
+        async def broadcasting_work_fn(envelope: Envelope) -> ExecutionResult:
+            self._broadcast({
+                "type": "node_start",
+                "pipeline_id": pipeline_id,
+                "stroke": stroke_num,
+                "node_id": envelope.mandate_id,
+                "phase": envelope.metadata.get("phase", ""),
+            })
+            res = await effective_work_fn(envelope)
+            self._broadcast({
+                "type": "node_complete",
+                "pipeline_id": pipeline_id,
+                "stroke": stroke_num,
+                "node_id": envelope.mandate_id,
+                "success": res.success,
+                "latency_ms": res.latency_ms,
+                "6w": res.to_dict().get("6w", {})
+            })
+            return res
+
+        # FIX 4: Await the async fan-out execution.
+        execution_results = await self._executor.fan_out_dag(
+            broadcasting_work_fn,
             envelopes,
             dependency_map,
             max_workers=scope.recommended_workers,
@@ -1242,6 +1478,7 @@ class NStrokeEngine:
             active_phase=PHASE_EXECUTE,
             confidence_proof=confidence_proof,
             divergence_metrics=divergence_metrics,
+            cascade_preview=cascade_preview,
         )
 
     async def _run_stroke_async(
@@ -1253,6 +1490,7 @@ class NStrokeEngine:
         prior_failure_signal: str,
         work_fn: Callable[[Envelope], Any],
         healing_report: HealingReport | None,
+        cognitive_state=None,
     ) -> StrokeRecord:
         """Async variant of _run_stroke() that uses AsyncFluidExecutor.fan_out_dag_async().
 
@@ -1280,7 +1518,8 @@ class NStrokeEngine:
             route, vertex_model_id=model_sel.vertex_model_id)
         self._router.apply_jit_boost(route, preflight_jit.boosted_confidence)
 
-        preflight_tribunal = self._tribunal.evaluate(Engram(
+        # FIX 4: Await the preflight Tribunal evaluation.
+        preflight_tribunal = await self._tribunal.evaluate(Engram(
             slug=f"{mandate_id}-preflight",
             intent=intent,
             logic_body=locked_intent.mandate_text,
@@ -1339,7 +1578,8 @@ class NStrokeEngine:
                 node_specs[node_id] = {
                     "action_type": inferred_action, "cognitive_profile": None}
 
-        scope = self._scope.evaluate(waves, intent)
+        # FIX 4: Await the async scope evaluation.
+        scope = await self._scope.evaluate(waves, intent)
 
         mcp_tools = self._mcp.manifest()
         tool_names = [t.name for t in mcp_tools]
@@ -1360,7 +1600,8 @@ class NStrokeEngine:
         # ── Mid-Flight Supervisor ─────────────────────────────────────────────
         midflight_jit = self._booster.fetch(
             route, vertex_model_id=model_sel.vertex_model_id)
-        self._tribunal.evaluate(Engram(
+        # FIX 5: Await the midflight Tribunal evaluation.
+        await self._tribunal.evaluate(Engram(
             slug=f"{mandate_id}-midflight",
             intent=intent,
             logic_body=f"midflight check: {locked_intent.mandate_text[:200]}",
@@ -1412,9 +1653,15 @@ class NStrokeEngine:
                 intent=intent,
                 jit_signals=preflight_jit.signals,
                 vertex_model_id=model_sel.vertex_model_id,
+                cognitive_state=cognitive_state.model_dump() if cognitive_state else None,
             )
         inferred_file_path = _infer_workspace_file_target(
             locked_intent.mandate_text)
+
+        # Get cascade preview
+        cascade_preview = {}
+        if inferred_file_path:
+            cascade_preview = self._dep_analyzer.get_downstream_dependencies(inferred_file_path)
 
         node_model_map: dict[str, str] = {}
         node_provider_map: dict[str, str] = {}
@@ -1600,6 +1847,7 @@ class NStrokeEngine:
             active_phase=PHASE_EXECUTE,
             confidence_proof=confidence_proof,
             divergence_metrics=divergence_metrics,
+            cascade_preview=cascade_preview,
         )
 
     @staticmethod
@@ -1673,7 +1921,7 @@ class NStrokeEngine:
 
     # ── Cognitive Swarm: 16D synthesis ────────────────────────────────────────
 
-    def _synthesize_swarm_output(
+    async def _synthesize_swarm_output(
         self,
         swarm_results: list[ExecutionResult],
         mandate: str,
@@ -1700,7 +1948,7 @@ class NStrokeEngine:
             elif result.output is not None:
                 raw_output = str(result.output)
 
-            v16d = self._validator_16d.validate(
+            v16d = await self._validator_16d.validate(
                 mandate_id=result.mandate_id,
                 intent="BUILD",
                 code_snippet=raw_output[:2000] if raw_output else None,
@@ -1872,3 +2120,82 @@ class NStrokeEngine:
             ),
             "actionable_choices": choices[:3],
         }
+
+
+# ---------------------------------------------------------------------------
+# Backwards compatibility — TwoStrokeEngine aliases
+# ---------------------------------------------------------------------------
+# ``supervisor.py`` defined TwoStrokeEngine as a 3-iteration loop.  All code
+# importing from engine.supervisor now gets these aliases through the re-export
+# shim so nothing breaks.
+
+MAX_ITERATIONS: int = 3  # legacy constant from supervisor.py
+
+# The old DTOs map directly onto the N-stroke equivalents.
+TwoStrokeIteration = StrokeRecord
+TwoStrokeResult = NStrokeResult
+
+
+class TwoStrokeEngine(NStrokeEngine):
+    """Legacy two-stroke engine — alias for NStrokeEngine(max_strokes=3).
+
+    Accepts the same constructor signature as the old TwoStrokeEngine from
+    ``engine/supervisor.py``.  Extra keyword arguments accepted by NStrokeEngine
+    (mcp_manager, model_selector, refinement_supervisor) are injected with
+    lightweight defaults so existing callers don't need to change.
+    """
+
+    def __init__(
+        self,
+        router: MandateRouter,
+        booster: JITBooster,
+        tribunal: Tribunal,
+        sorter: TopologicalSorter,
+        executor: JITExecutor,
+        scope_evaluator: ScopeEvaluator,
+        refinement_loop: RefinementLoop,
+        broadcast_fn: Callable[[dict[str, Any]], None] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        # Provide lightweight defaults for N-stroke-only deps
+        from engine.mcp_manager import MCPManager
+        from engine.model_selector import ModelSelector
+        from engine.refinement_supervisor import RefinementSupervisor
+
+        super().__init__(
+            router=router,
+            booster=booster,
+            tribunal=tribunal,
+            sorter=sorter,
+            executor=executor,
+            scope_evaluator=scope_evaluator,
+            refinement_loop=refinement_loop,
+            mcp_manager=kwargs.get("mcp_manager", MCPManager()),
+            model_selector=kwargs.get("model_selector", ModelSelector()),
+            refinement_supervisor=kwargs.get(
+                "refinement_supervisor", RefinementSupervisor()),
+            broadcast_fn=broadcast_fn,
+            max_strokes=MAX_ITERATIONS,  # cap at 3
+            async_fluid_executor=kwargs.get("async_fluid_executor"),
+        )
+
+    async def run(
+        self,
+        locked_intent: LockedIntent,
+        pipeline_id: str | None = None,
+        max_iterations: int = 3,
+        work_fn: Callable[[Envelope], Any] | None = None,
+        simulation: bool = False,
+    ) -> NStrokeResult:
+        """Legacy shim for TwoStrokeEngine.run."""
+        old_max = self._max_strokes
+        self._max_strokes = min(max_iterations, 3)
+        try:
+            return await super().run(
+                locked_intent=locked_intent,
+                pipeline_id=pipeline_id,
+                work_fn=work_fn,
+                simulation=simulation,
+            )
+        finally:
+            self._max_strokes = old_max

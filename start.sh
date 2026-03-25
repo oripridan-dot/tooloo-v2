@@ -2,14 +2,14 @@
 # start.sh — Launch TooLoo V2 on port 8000 with auto-restart on crash.
 # Usage: bash start.sh
 set -euo pipefail
-PORT="${TOOLOO_PORT:-8000}"
+PORT="${STUDIO_PORT:-8002}"
 LOGFILE="${TOOLOO_LOG:-/tmp/tooloo.log}"
 MAX_RESTARTS=99
 count=0
 echo "[TooLoo] Starting on port $PORT  →  log: $LOGFILE"
 while [ $count -lt $MAX_RESTARTS ]; do
   echo "[TooLoo] Launch attempt $((count+1))  $(date -u +%H:%M:%S)" >> "$LOGFILE"
-  python -m uvicorn studio.api:app \
+  ./.venv/bin/python3 -m uvicorn studio.api:app \
     --host 0.0.0.0 \
     --port "$PORT" \
     --workers 1 \

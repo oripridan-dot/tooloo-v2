@@ -95,7 +95,7 @@ from engine.graph import TopologicalSorter                           # noqa: E40
 from engine.jit_booster import JITBooster                           # noqa: E402
 from engine.mcp_manager import MCPManager                           # noqa: E402
 from engine.model_selector import ModelSelector                     # noqa: E402
-from engine.n_stroke import NStrokeEngine                           # noqa: E402
+from engine.pipeline import NStrokeEngine                           # noqa: E402
 from engine.psyche_bank import PsycheBank                           # noqa: E402
 from engine.refinement import RefinementLoop                        # noqa: E402
 from engine.refinement_supervisor import RefinementSupervisor       # noqa: E402

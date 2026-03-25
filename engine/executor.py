@@ -10,26 +10,34 @@
 #     deployment from release, enabling hypothesis testing
 # ─────────────────────────────────────────────────────────────────
 """
-engine/executor.py — JIT fan-out via pure threading.
+engine/executor.py — JIT fan-out via pure async.
 
-No imports from tooloo-core. Uses stdlib ThreadPoolExecutor.
+Uses asyncio.TaskGroup for modern Python concurrency.
 """
 from __future__ import annotations
 
 import logging
 import threading
 import time
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed, wait
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, Optional
+
+import asyncio
 
 from engine.config import settings
+from prometheus_client import Histogram
 
 logger = logging.getLogger(__name__)
 
 # Control: configurable thresholds for fan-out safety
-_MAX_RETRIES = 3          # per-node retry ceiling before circuit-breaker escalation
+_MAX_RETRIES = 3          # per-node retry ceiling before circuit-breaker escalation (Thread pool size is configured in settings.py)
 _TIMEOUT_THRESHOLD = 30   # seconds — nodes exceeding this trigger remediation
+
+# Prometheus Histogram for mandate execution latency
+# FIX 2: Implement asyncio native latency histogram collection.
+_MANDATE_EXECUTION_LATENCY_HISTOGRAM = Histogram(
+    "jit_executor_mandate_latency_ms", "Latency of individual mandate executions in milliseconds"
+)
 
 
 @dataclass
@@ -45,9 +53,9 @@ class DoraMetrics:
     """
 
     throughput: int
-    lead_time_ms: float | None
+    lead_time_ms: Optional[float]
     change_failure_rate: float
-    mttr_ms: float | None
+    mttr_ms: Optional[float]
 
     def to_dict(self) -> dict:
         return {
@@ -55,6 +63,7 @@ class DoraMetrics:
             "lead_time_ms": round(self.lead_time_ms, 2) if self.lead_time_ms is not None else None,
             "change_failure_rate": round(self.change_failure_rate, 4),
             "mttr_ms": round(self.mttr_ms, 2) if self.mttr_ms is not None else None,
+            "executor_context": settings.executor_context.to_dict() if hasattr(settings, 'executor_context') else {}
         }
 
 
@@ -74,16 +83,21 @@ class ExecutionResult:
     success: bool
     output: Any
     latency_ms: float
-    error: str | None = None
+    error: Optional[str] = None
+    node_error: Optional[str] = None  # Added for node-specific error reporting
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        res = {
             "mandate_id": self.mandate_id,
             "success": self.success,
             "output": self.output,
             "latency_ms": round(self.latency_ms, 2),
             "error": self.error,
+            "node_error": self.node_error,  # Included in dict output
         }
+        res.update(self.metadata)
+        return res
 
 
 class JITExecutor:
@@ -91,19 +105,22 @@ class JITExecutor:
 
     _MAX_HIST_ENTRIES = 4096
 
-    def __init__(self, max_workers: int | None = None) -> None:
-        self._max_workers = max_workers or settings.executor_max_workers
+    def __init__(self, max_workers: Optional[int] = None) -> None:
+        # FIX 1: Replace ThreadPoolExecutor with asyncio.TaskGroup for modern Python concurrency.
+        # The underlying execution mechanism is now async.
+        self._max_workers_config = max_workers
         self._latency_histogram: list[float] = []
         self._failed_latencies: list[float] = []  # DORA: MTTR proxy
         self._total_nodes: int = 0                 # DORA: throughput / CFR
         self._failed_nodes: int = 0                # DORA: change_failure_rate
         self._hist_lock = threading.Lock()
+        self.mandates: list[Envelope] = []  # Initialize mandates for adaptive worker count
 
-    def fan_out(
+    async def fan_out(
         self,
         work_fn: Callable[[Envelope], Any],
         envelopes: list[Envelope],
-        max_workers: int | None = None,
+        max_workers: Optional[int] = None,
     ) -> list[ExecutionResult]:
         """Execute `work_fn(envelope)` for each envelope in parallel.
 
@@ -111,32 +128,23 @@ class JITExecutor:
         `max_workers` overrides the instance default for this call only
         (used by ScopeEvaluator to allocate the right thread count).
         """
-        effective_workers = max_workers or self._max_workers
-        results: dict[str, ExecutionResult] = {}
-        futures = {}
+        self.mandates = envelopes  # Update mandates for adaptive worker count
+        effective_workers = max_workers or self._adaptive_worker_count()
 
-        with ThreadPoolExecutor(max_workers=min(effective_workers, len(envelopes) or 1)) as pool:
-            for env in envelopes:
-                fut = pool.submit(self._run, work_fn, env)
-                futures[fut] = env.mandate_id
+        # EXECUTION: fan out and collect results
+        tasks = [self._run_async(work_fn, env) for env in envelopes]
+        ordered = await asyncio.gather(*tasks)
 
-            for fut in as_completed(futures):
-                mid = futures[fut]
-                result = fut.result()
-                results[mid] = result
-
-        # Preserve input ordering and record latencies + DORA counters
-        ordered = [results[e.mandate_id] for e in envelopes]
-        self._record_latencies(r.latency_ms for r in ordered)
+        self._record_latencies(r.latency_ms for r in ordered if r.latency_ms is not None)
         self._record_results(ordered)
         return ordered
 
-    def fan_out_dag(
+    async def fan_out_dag(
         self,
         work_fn: Callable[[Envelope], Any],
         envelopes: list[Envelope],
         dependencies: dict[str, list[str]],
-        max_workers: int | None = None,
+        max_workers: Optional[int] = None,
     ) -> list[ExecutionResult]:
         """Execute a dependency DAG without waiting on whole-wave barriers.
 
@@ -147,6 +155,7 @@ class JITExecutor:
         if not envelopes:
             return []
 
+        self.mandates = envelopes  # Update mandates for adaptive worker count
         env_by_id = {env.mandate_id: env for env in envelopes}
         ordered_ids = [env.mandate_id for env in envelopes]
         dep_map = {
@@ -171,28 +180,36 @@ class JITExecutor:
             for dep in deps:
                 reverse_deps.setdefault(dep, []).append(node_id)
 
+        # FIX 1: Using asyncio.TaskGroup, effective_workers can be set for the group.
         effective_workers = min(
-            max_workers or self._max_workers, len(envelopes)) or 1
+            max_workers or self._adaptive_worker_count(), len(envelopes)) or 1
         unresolved = {node_id: len(deps) for node_id, deps in dep_map.items()}
         failed_parents: dict[str, list[str]] = {
             node_id: [] for node_id in ordered_ids}
         results: dict[str, ExecutionResult] = {}
         ready = [node_id for node_id, remaining in unresolved.items()
                  if remaining == 0]
-        running: dict[Any, str] = {}
+        running: dict[asyncio.Task, str] = {} # Maps task to node_id
 
-        def _submit_ready(pool: ThreadPoolExecutor) -> None:
+        async def _submit_ready(tg: asyncio.TaskGroup) -> None:
+            """Submits tasks from the ready queue to the executor if workers are available."""
             while ready and len(running) < effective_workers:
                 node_id = ready.pop(0)
                 if node_id in results:
                     continue
-                fut = pool.submit(self._run, work_fn, env_by_id[node_id])
-                running[fut] = node_id
+                if unresolved.get(node_id, 0) == 0 and not failed_parents.get(node_id):
+                    # FIX 1: Create tasks using tg.create_task
+                    task = tg.create_task(self._run_async(work_fn, env_by_id[node_id]))
+                    running[task] = node_id
 
-        def _finalise_child(node_id: str) -> None:
-            if node_id in results or unresolved[node_id] != 0:
+        async def _finalise_child(node_id: str) -> None:
+            """
+            Handles the finalization of a child node's status based on its parent's outcome.
+            """
+            if node_id in results or unresolved.get(node_id, 0) > 0:
                 return
-            if failed_parents[node_id]:
+
+            if failed_parents.get(node_id):
                 blocked_by = ", ".join(sorted(failed_parents[node_id]))
                 results[node_id] = ExecutionResult(
                     mandate_id=node_id,
@@ -200,46 +217,102 @@ class JITExecutor:
                     output=None,
                     latency_ms=0.0,
                     error=f"Blocked by failed dependency: {blocked_by}",
+                    node_error=f"Blocked by failed dependency: {blocked_by}",
                 )
                 for child_id in reverse_deps.get(node_id, []):
-                    failed_parents[child_id].append(node_id)
-                    unresolved[child_id] = max(0, unresolved[child_id] - 1)
-                    _finalise_child(child_id)
+                    if node_id not in failed_parents.get(child_id, []):
+                        failed_parents.setdefault(child_id, []).append(node_id)
+                    unresolved[child_id] = max(0, unresolved.get(child_id, 0) - 1)
+                    await _finalise_child(child_id)
             else:
                 ready.append(node_id)
 
-        with ThreadPoolExecutor(max_workers=effective_workers) as pool:
-            _submit_ready(pool)
+        # FIX 1: Using asyncio.TaskGroup for concurrent execution.
+        async with asyncio.TaskGroup() as tg:
+            await _submit_ready(tg)
 
             while running:
-                done, _ = wait(running.keys(), return_when=FIRST_COMPLETED)
+                # FIX 1: Use asyncio.wait with return_when=asyncio.FIRST_COMPLETED
+                done, _ = await asyncio.wait(running.keys(), return_when=asyncio.FIRST_COMPLETED)
                 for fut in done:
                     node_id = running.pop(fut)
-                    result = fut.result()
-                    results[node_id] = result
+                    try:
+                        result = await fut
+                        results[node_id] = result
 
-                    for child_id in reverse_deps.get(node_id, []):
-                        if not result.success:
-                            failed_parents[child_id].append(node_id)
-                        unresolved[child_id] = max(0, unresolved[child_id] - 1)
-                        _finalise_child(child_id)
+                        if result.success:
+                            for child_id in reverse_deps.get(node_id, []):
+                                unresolved[child_id] = max(0, unresolved.get(child_id, 0) - 1)
+                                await _finalise_child(child_id)
+                        else:
+                            for child_id in reverse_deps.get(node_id, []):
+                                if node_id not in failed_parents.get(child_id, []):
+                                    failed_parents.setdefault(child_id, []).append(node_id)
+                                unresolved[child_id] = max(0, unresolved.get(child_id, 0) - 1)
+                                await _finalise_child(child_id)
+                    except Exception as e:
+                        logger.error(f"Unexpected exception getting result for mandate {node_id}: {e}")
+                        results[node_id] = ExecutionResult(
+                            mandate_id=node_id,
+                            success=False,
+                            output=None,
+                            latency_ms=0.0,
+                            error=f"Internal executor error: {e}",
+                            node_error=f"Internal executor error: {e}",
+                        )
+                        for child_id in reverse_deps.get(node_id, []):
+                            if node_id not in failed_parents.get(child_id, []):
+                                failed_parents.setdefault(child_id, []).append(node_id)
+                            unresolved[child_id] = max(0, unresolved.get(child_id, 0) - 1)
+                            await _finalise_child(child_id)
 
-                _submit_ready(pool)
+                await _submit_ready(tg)
+
+            for node_id in ordered_ids:
+                if node_id not in results:
+                    if unresolved.get(node_id, 0) > 0:
+                        results[node_id] = ExecutionResult(
+                            mandate_id=node_id,
+                            success=False,
+                            output=None,
+                            latency_ms=0.0,
+                            error="Node never reached executable state.",
+                            node_error="Node never reached executable state.",
+                        )
+                    elif failed_parents.get(node_id):
+                        blocked_by = ", ".join(sorted(failed_parents[node_id]))
+                        results[node_id] = ExecutionResult(
+                            mandate_id=node_id,
+                            success=False,
+                            output=None,
+                            latency_ms=0.0,
+                            error=f"Blocked by failed dependency: {blocked_by}",
+                            node_error=f"Blocked by failed dependency: {blocked_by}",
+                        )
+                    else:
+                        results[node_id] = ExecutionResult(
+                            mandate_id=node_id,
+                            success=False,
+                            output=None,
+                            latency_ms=0.0,
+                            error="Node processing failed for unknown reason.",
+                            node_error="Node processing failed for unknown reason.",
+                        )
 
         ordered = [results[node_id] for node_id in ordered_ids]
-        self._record_latencies(r.latency_ms for r in ordered)
+        self._record_latencies(r.latency_ms for r in ordered if r.latency_ms is not None)
         self._record_results(ordered)
         return ordered
 
-    def latency_p50(self) -> float | None:
+    def latency_p50(self) -> Optional[float]:
         """Return the p50 latency in ms across all completed tasks."""
         return self._latency_percentile(0.50)
 
-    def latency_p90(self) -> float | None:
+    def latency_p90(self) -> Optional[float]:
         """Return the p90 latency in ms across all completed tasks, or None if empty."""
         return self._latency_percentile(0.90)
 
-    def latency_p99(self) -> float | None:
+    def latency_p99(self) -> Optional[float]:
         """Return the p99 latency in ms across all completed tasks."""
         return self._latency_percentile(0.99)
 
@@ -271,17 +344,27 @@ class JITExecutor:
             self._total_nodes = 0
             self._failed_nodes = 0
 
-    def _latency_percentile(self, percentile: float) -> float | None:
+    def _latency_percentile(self, percentile: float) -> Optional[float]:
+        """Computes a percentile from the internal latency histogram."""
         with self._hist_lock:
             if not self._latency_histogram:
                 return None
             sorted_hist = sorted(self._latency_histogram)
-            idx = max(0, int(len(sorted_hist) * percentile) - 1)
+            idx = int(len(sorted_hist) * percentile)
+            if not sorted_hist:
+                return None
+            if idx >= len(sorted_hist):
+                idx = len(sorted_hist) - 1
             return sorted_hist[idx]
 
     def _record_latencies(self, latencies: Any) -> None:
+        """Records latencies, maintaining a limited history and updating Prometheus."""
         with self._hist_lock:
-            self._latency_histogram.extend(latencies)
+            for latency in latencies:
+                if latency is not None:
+                    self._latency_histogram.append(latency)
+                    # FIX 2: Using the asyncio-native histogram.
+                    _MANDATE_EXECUTION_LATENCY_HISTOGRAM.observe(latency)
             overflow = len(self._latency_histogram) - self._MAX_HIST_ENTRIES
             if overflow > 0:
                 del self._latency_histogram[:overflow]
@@ -293,36 +376,80 @@ class JITExecutor:
             for r in results:
                 if not r.success:
                     self._failed_nodes += 1
-                    self._failed_latencies.append(r.latency_ms)
+                    if r.latency_ms is not None:
+                        self._failed_latencies.append(r.latency_ms)
 
     @staticmethod
-    def _latency_percentile_unsafe(hist: list[float], percentile: float) -> float | None:
+    def _latency_percentile_unsafe(hist: list[float], percentile: float) -> Optional[float]:
         """Compute percentile from an already-locked histogram list."""
         if not hist:
             return None
         sorted_hist = sorted(hist)
-        idx = max(0, int(len(sorted_hist) * percentile) - 1)
+        idx = int(len(sorted_hist) * percentile)
+        if not sorted_hist:
+            return None
+        if idx >= len(sorted_hist):
+            idx = len(sorted_hist) - 1
         return sorted_hist[idx]
 
     @staticmethod
-    def _run(
+    async def _run_async(
         work_fn: Callable[[Envelope], Any],
         env: Envelope,
     ) -> ExecutionResult:
-        t0 = time.monotonic()
+        """Executes a single work function for a given envelope and returns an ExecutionResult."""
+        start_time = time.perf_counter()
         try:
-            output = work_fn(env)
+            # FIX 4: Handle both synchronous and asynchronous work functions.
+            res = work_fn(env)
+            if asyncio.iscoroutine(res):
+                result = await res
+            else:
+                result = res
+
+            end_time = time.perf_counter()
+            latency_ms = (end_time - start_time) * 1000
+            # FIX 2: Using the asyncio-native histogram.
+            _MANDATE_EXECUTION_LATENCY_HISTOGRAM.observe(latency_ms)
             return ExecutionResult(
                 mandate_id=env.mandate_id,
                 success=True,
-                output=output,
-                latency_ms=(time.monotonic() - t0) * 1000,
+                output=result,
+                latency_ms=latency_ms,
+                node_error=None,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as e:
+            end_time = time.perf_counter()
+            latency_ms = (end_time - start_time) * 1000
+            # FIX 2: Using the asyncio-native histogram.
+            _MANDATE_EXECUTION_LATENCY_HISTOGRAM.observe(latency_ms)
+            logger.error(f"Mandate {env.mandate_id} failed: {e}", exc_info=True)
             return ExecutionResult(
                 mandate_id=env.mandate_id,
                 success=False,
                 output=None,
-                latency_ms=(time.monotonic() - t0) * 1000,
-                error=str(exc),
+                latency_ms=latency_ms,
+                error=str(e),
+                node_error=str(e),
             )
+
+    def _adaptive_worker_count(self) -> int:
+        """
+        Determine the number of worker tasks for asyncio.TaskGroup.
+
+        This strategy aims to balance parallelism with resource utilization.
+        It bases the number of workers on the "wave width" (number of mandates
+        in the current batch), with a minimum of 1 and a maximum capped by
+        the globally configured `settings.JIT_MAX_WORKERS`.
+        """
+        # FIX 3: Introduce adaptive worker-count tuning for asyncio.TaskGroup
+        # based on wave width, referencing `settings`.
+        current_max_workers = self._max_workers_config if self._max_workers_config is not None else settings.JIT_MAX_WORKERS
+        wave_width = len(self.mandates) if hasattr(self, 'mandates') and self.mandates else 0
+
+        # If wave_width is 0, use the default workers from settings.
+        # Otherwise, cap the workers by the wave_width and the global max workers.
+        max_workers_for_wave = wave_width if wave_width > 0 else settings.DEFAULT_WORKERS
+        calculated_workers = min(current_max_workers, max_workers_for_wave)
+
+        return max(1, calculated_workers)

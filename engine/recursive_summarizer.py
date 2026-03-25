@@ -18,10 +18,15 @@ import logging
 from dataclasses import asdict
 from typing import Any
 
+from pathlib import Path
 from engine.buddy_memory import BuddyMemoryStore
 from engine.psyche_bank import PsycheBank, CogRule
 from engine.model_garden import get_garden
 from engine.firestore_memory import ColdMemoryFirestore
+from engine.vector_store import VectorStore
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_CALIBRATION_PROOF_PATH = _REPO_ROOT / "psyche_bank" / "calibration_proof.json"
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +36,30 @@ class RecursiveSummaryAgent:
 
     def __init__(self, batch_size: int = 5) -> None:
         self.buddy_store = BuddyMemoryStore()
-        # Initialise PsycheBank pointing to a specific 'pure_facts' store
-        # to separate it from the main forbidden_patterns bank, or use the global one.
         self.psyche_bank = PsycheBank()
         self.garden = get_garden()
         self.batch_size = batch_size
         self.cold_memory = ColdMemoryFirestore()
+        self.vector_store = VectorStore(dup_threshold=0.95)
+        self.calibration_context = self._load_calibration_context()
+
+    def _load_calibration_context(self) -> str:
+        """Load the latest 16D calibration proof to guide distillation."""
+        if not _CALIBRATION_PROOF_PATH.exists():
+            return "No calibration data available."
+        try:
+            data = json.loads(_CALIBRATION_PROOF_PATH.read_text(encoding="utf-8"))
+            metrics = data.get("system_metrics", {})
+            summary = data.get("summary", "").split("\n\n")[0] # Get the first block
+            return (
+                f"SYSTEM CALIBRATION CONTEXT (Run {data.get('run_id')}):\n"
+                f"- Overall Alignment: {metrics.get('alignment_after', 0.0):.4f}\n"
+                f"- Mean 16D Gain: +{metrics.get('system_16d_gain', 0.0)*100:.2f}pp\n"
+                f"- Critical Focus: {summary}\n"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to load calibration context: {e}")
+            return "Error loading calibration data."
 
     def distill_pending(self) -> dict[str, Any]:
         """Find non-distilled memory entries and extract pure facts."""
@@ -65,14 +88,16 @@ class RecursiveSummaryAgent:
             "You are the Recursive Summary Agent for the TooLoo V2 Cognitive OS.\n"
             "Your task is to analyze the following recent user conversation summaries (Hot Memory) "
             "and distill them into standalone 'pure facts' for long-term Warm Memory.\n\n"
+            f"{self.calibration_context}\n\n"
             "Rules:\n"
             "1. Extract concrete knowledge: technical stack, user preferences, API choices, or project goals.\n"
-            "2. Ignore ephemeral chatter or immediate tool errors that are already resolved.\n"
-            "3. Output a strictly valid JSON array of objects, where each object has:\n"
+            "2. Prioritize facts that address the 'Critical Focus' areas identified in the calibration context.\n"
+            "3. Ignore ephemeral chatter or immediate tool errors that are already resolved.\n"
+            "4. Output a strictly valid JSON array of objects, where each object has:\n"
             "   - 'id': A short snake_case slug (e.g. 'user_prefers_rust')\n"
             "   - 'description': One-sentence factual summary\n"
             "   - 'confidence': float 0.0 to 1.0\n"
-            "4. If no long-term facts are worth keeping, return an empty array [].\n\n"
+            "5. If no long-term facts are worth keeping, return an empty array [].\n\n"
             f"Hot Memory Batch:\n{json.dumps(payload, indent=2)}\n\n"
             "Return ONLY the JSON array."
         )
@@ -101,6 +126,11 @@ class RecursiveSummaryAgent:
                 if not desc:
                     continue
 
+                # Vector-Symbolic Integrity Check: Ensure fact doesn't collide with existing semantic memory
+                if self._fact_collides_with_warm_memory(desc):
+                    logger.info(f"Skipping fact candidate '{fid}' due to high semantic similarity with existing Warm Memory.")
+                    continue
+
                 # Store in PsycheBank as category class 'pure_fact'
                 rule = CogRule(
                     id=fid,
@@ -124,6 +154,26 @@ class RecursiveSummaryAgent:
                     }
                 )
 
+            # Also distill the raw summary into the warm vector store for semantic search
+            for entry in batch:
+                doc_text = (
+                    f"Summary of a past session:\n"
+                    f"Key Topics: {', '.join(entry.key_topics)}\n"
+                    f"Summary: {entry.summary}\n"
+                    f"Final User Message Snippet: {entry.last_message_preview}"
+                )
+                metadata = {
+                    "session_id": entry.session_id,
+                    "created_at": entry.created_at,
+                    "last_turn_at": entry.last_turn_at,
+                    "turn_count": entry.turn_count,
+                }
+                was_added = self.vector_store.add(
+                    doc_id=entry.session_id, text=doc_text, metadata=metadata
+                )
+                if was_added:
+                    logger.info(f"Distilled summary for {entry.session_id} into warm vector store.")
+
             # Mark processed entries as distilled and save back
             for e in batch:
                 e.distilled = True
@@ -138,3 +188,11 @@ class RecursiveSummaryAgent:
         except Exception as e:
             logger.error(f"RecursiveSummaryAgent failed: {e}")
             return {"status": "error", "error": str(e)}
+
+    def _fact_collides_with_warm_memory(self, description: str) -> bool:
+        """Check if a new fact is semantically redundant via VectorStore search."""
+        results = self.vector_store.search(description, top_k=1)
+        if not results:
+            return False
+        # If similarity is extremely high (e.g., > 0.98), consider it a collision
+        return results[0].score > 0.98

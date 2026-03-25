@@ -33,14 +33,28 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
-from engine.config import GEMINI_API_KEY, GEMINI_MODEL, VERTEX_DEFAULT_MODEL
-from engine.config import _vertex_client as _vertex_client_cfg
+from engine.config import (
+    GEMINI_API_KEY,
+    GEMINI_MODEL,
+    VERTEX_DEFAULT_MODEL,
+    _vertex_client as _vertex_client_cfg,
+)
 from engine.executor import Envelope, JITExecutor
 from engine.graph import TopologicalSorter
 from engine.jit_booster import JITBooster
+
+# ── LLM Clients (patched by tests/conftest.py) ───────────────────────────────
+_vertex_client = _vertex_client_cfg
+_gemini_client = None
+if GEMINI_API_KEY:
+    try:
+        from google import genai as _genai_mod  # type: ignore[import-untyped]
+        _gemini_client = _genai_mod.Client(api_key=GEMINI_API_KEY)
+    except Exception:  # pragma: no cover
+        pass
 from engine.mcp_manager import MCPManager
 from engine.meta_architect import MetaArchitect
-from engine.n_stroke import NStrokeEngine
+from engine.pipeline import NStrokeEngine
 from engine.psyche_bank import PsycheBank
 from engine.refinement import RefinementLoop
 from engine.router import LockedIntent, MandateRouter
@@ -112,8 +126,8 @@ _COMPONENT_SOURCE: dict[str, str] = {
     "graph":            "engine/graph.py",
     "scope_evaluator":  "engine/scope_evaluator.py",
     "refinement":       "engine/refinement.py",
-    "n_stroke":         "engine/n_stroke.py",
-    "supervisor":       "engine/supervisor.py",
+    "n_stroke":         "engine/pipeline.py",
+    "supervisor":       "engine/pipeline.py",
     "conversation":     "engine/conversation.py",
     "config":           "engine/config.py",
     # Wave 6 — advanced execution layer
@@ -528,7 +542,7 @@ class SelfImprovementEngine:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
-    def run(
+    async def run(
         self,
         optimization_focus: str | None = None,
         run_regression_gate: bool = True,
@@ -573,7 +587,7 @@ class SelfImprovementEngine:
             for c in _COMPONENTS
         }
 
-        all_results = self._executor.fan_out_dag(
+        all_results = await self._executor.fan_out_dag(
             self._assess_component,
             envelopes,
             dependency_map,
@@ -608,7 +622,7 @@ class SelfImprovementEngine:
 
         # ── Phase 2: Regression Gate ─────────────────────────────────────────
         if run_regression_gate:
-            regression_passed, regression_details = self._run_regression_gate(
+            regression_passed, regression_details = await self._run_regression_gate(
                 improvement_id
             )
         else:
@@ -690,7 +704,7 @@ class SelfImprovementEngine:
                          f"# TooLoo V2 Architecture\n\n{diagram}\n")
         return diagram
 
-    def _run_regression_gate(
+    async def _run_regression_gate(
         self, improvement_id: str
     ) -> tuple[bool, str]:
         """Legacy static regression gate — delegates to _run_fluid_crucible.
@@ -698,12 +712,12 @@ class SelfImprovementEngine:
         Preserved for API compatibility.  All validation is now routed through
         the Fluid Cognitive Crucible (Law 8) instead of a bare MCPManager call.
         """
-        return self._run_fluid_crucible(
+        return await self._run_fluid_crucible(
             component_name=f"full-cycle-{improvement_id}",
             source_code="",
         )
 
-    def _run_fluid_crucible(
+    async def _run_fluid_crucible(
         self, component_name: str, source_code: str  # noqa: ARG002
     ) -> tuple[bool, str]:
         """The Fluid Cognitive Crucible (Law 8 — Dynamic Validation).
@@ -764,7 +778,7 @@ class SelfImprovementEngine:
         )
 
         # ── 4. Execute the Fluid ReAct Testing Loop ───────────────────────────
-        result = self._get_n_stroke().run(
+        result = await self._get_n_stroke().run(
             locked_intent=locked_intent,
             pipeline_id=f"crucible-{component_name}",
         )
@@ -779,7 +793,7 @@ class SelfImprovementEngine:
             f"Crucible failed to converge: {result.final_verdict}. {crisis_str}"
         )
 
-    def _implement_top_assessments(
+    async def _implement_top_assessments(
         self, assessments: list[ComponentAssessment], improvement_id: str
     ) -> None:
         """Autonomously implement the highest value SOTA suggestions using NStroke."""
@@ -833,11 +847,11 @@ class SelfImprovementEngine:
             # ── Execute NStroke ────────────────────────────────────
             # Try/except to ensure one failure doesn't halt the next
             try:
-                self._get_n_stroke().run(
+                await self._get_n_stroke().run(
                     locked_intent=locked_intent,
                     pipeline_id=f"impl-{improvement_id}-{component_name}",
                 )
-            except Exception as e:
+            except Exception:
                 pass
 
     def _get_n_stroke(self) -> NStrokeEngine:
@@ -901,7 +915,7 @@ class SelfImprovementEngine:
             for c in _COMPONENTS
         ]
 
-    def _assess_component(self, env: Envelope) -> ComponentAssessment:
+    async def _assess_component(self, env: Envelope) -> ComponentAssessment:
         """Full pipeline assessment for one component (runs inside a thread).
 
         Pipeline:
@@ -935,7 +949,7 @@ class SelfImprovementEngine:
             domain="self-improvement",
             mandate_level="L1",
         )
-        tribunal_result = self._tribunal.evaluate(engram)
+        tribunal_result = await self._tribunal.evaluate(engram)
 
         # 4. Micro-wave plan for this component (recon → analyse → improve)
         micro_spec: list[tuple[str, list[str]]] = [
@@ -946,7 +960,7 @@ class SelfImprovementEngine:
         micro_waves = self._sorter.sort(micro_spec)
 
         # 5. Scope evaluation for the component's micro-plan
-        scope = self._scope_evaluator.evaluate(
+        scope = await self._scope_evaluator.evaluate(
             micro_waves, intent=route.intent)
 
         # 6. LLM deep analysis — read source + call Vertex AI for concrete suggestions
@@ -963,7 +977,7 @@ class SelfImprovementEngine:
                 # ── Speculative ghost race: 3 concurrent LLM strategies ──────
                 # The first ghost to return a valid suggestion set wins;
                 # the losers are cancelled to free compute resources.
-                suggestions = self._run_speculative_race(
+                suggestions = await self._assess_via_speculative_race(
                     component=component_name,
                     description=comp["description"],
                     mandate=mandate_with_focus,
@@ -971,12 +985,11 @@ class SelfImprovementEngine:
                     source=source_snippet,
                 )
             else:
-                suggestions = self._analyze_with_llm(
-                    component=component_name,
-                    description=comp["description"],
-                    mandate=mandate_with_focus,
-                    signals=jit_result.signals,
-                    source=source_snippet,
+                suggestions = await asyncio.to_thread(  # type: ignore
+                    lambda: self._analyze_with_llm(
+                        component_name, comp["description"], mandate_with_focus,
+                        jit_result.signals, source_snippet
+                    )
                 )
         else:
             suggestions = self._derive_suggestions(
@@ -1057,9 +1070,10 @@ class SelfImprovementEngine:
         """
         async def _ghost(directive: str) -> list[str]:
             ghost_mandate = f"{mandate}\n\n{directive}"
-            return await asyncio.to_thread(
-                self._analyze_with_llm,
-                component, description, ghost_mandate, signals, source,
+            return await asyncio.to_thread(  # type: ignore
+                lambda: self._analyze_with_llm(
+                    component, description, ghost_mandate, signals, source
+                )
             )
 
         tasks = [
@@ -1092,10 +1106,8 @@ class SelfImprovementEngine:
 
     # ── Asyncio-parallel Ouroboros (BranchExecutor-style fan-out) ─────────────
 
-    async def _run_ouroboros_async(
-        self,
-        broadcast_fn: Callable[[dict[str, Any]], None],
-        improvement_id: str,
+    async def _run_ouroboros(
+        self, improvement_id: str, broadcast_fn: Callable[[dict[str, Any]], None]
     ) -> list[ComponentAssessment]:
         """Wave-ordered asyncio fan-out for component assessment.
 
@@ -1141,7 +1153,7 @@ class SelfImprovementEngine:
 
             results = await asyncio.gather(
                 *(
-                    asyncio.to_thread(self._assess_component, env)
+                    self._assess_component(env)
                     for env in wave_envs
                 ),
                 return_exceptions=True,
@@ -1177,7 +1189,7 @@ class SelfImprovementEngine:
 
         return assessments
 
-    def run_via_branches(
+    async def run_via_branches(
         self,
         broadcast_fn: Callable[[dict[str, Any]], None] | None = None,
         optimization_focus: str | None = None,
@@ -1212,17 +1224,11 @@ class SelfImprovementEngine:
         arch_diagram = self._generate_arch_diagram()
 
         # Phase 1: Asyncio fan-out over all 17 components (wave-ordered)
-        loop = asyncio.new_event_loop()
-        try:
-            assessments = loop.run_until_complete(
-                self._run_ouroboros_async(_broadcast, improvement_id)
-            )
-        finally:
-            loop.close()
+        assessments = await self._run_ouroboros(improvement_id, _broadcast)
 
         # Phase 2: Regression Gate
         if run_regression_gate:
-            regression_passed, regression_details = self._run_regression_gate(
+            regression_passed, regression_details = await self._run_regression_gate(
                 improvement_id
             )
         else:
@@ -1261,7 +1267,7 @@ class SelfImprovementEngine:
 
     # ── Parallel Validation (write + test + QA + display concurrently) ────────
 
-    def run_parallel(
+    async def run_parallel(
         self,
         broadcast_fn: Callable[[dict[str, Any]], None] | None = None,
         optimization_focus: str | None = None,
@@ -1294,31 +1300,23 @@ class SelfImprovementEngine:
         arch_diagram = self._generate_arch_diagram()
 
         # Phase 1: Component assessments (wave-ordered, async fan-out)
-        loop = asyncio.new_event_loop()
-        try:
-            assessments = loop.run_until_complete(
-                self._run_ouroboros_async(_broadcast, improvement_id)
+        assessments = await self._run_ouroboros(improvement_id, _broadcast)
+        
+        # Phase 2: Parallel validation of all component source files
+        pipeline = ParallelValidationPipeline(
+            broadcast_fn=_broadcast,
+            tribunal=self._tribunal,
+            validator=Validator16D(),
+        )
+        changes = [
+            FileChange(
+                path=_COMPONENT_SOURCE.get(a.component, ""),
+                component=a.component,
             )
-
-            # Phase 2: Parallel validation of all component source files
-            pipeline = ParallelValidationPipeline(
-                broadcast_fn=_broadcast,
-                tribunal=self._tribunal,
-                validator=Validator16D(),
-            )
-            changes = [
-                FileChange(
-                    path=_COMPONENT_SOURCE.get(a.component, ""),
-                    component=a.component,
-                )
-                for a in assessments
-                if _COMPONENT_SOURCE.get(a.component)
-            ]
-            validation_report = loop.run_until_complete(
-                pipeline.validate_changes(changes, pipeline_id=improvement_id)
-            )
-        finally:
-            loop.close()
+            for a in assessments
+            if _COMPONENT_SOURCE.get(a.component)
+        ]
+        validation_report = await pipeline.validate_changes(changes, pipeline_id=improvement_id)
 
         # Phase 3: Refinement using BOTH assessment + validation results
         from engine.executor import ExecutionResult as _ER
@@ -1552,7 +1550,6 @@ class SelfImprovementEngine:
             "outputs, execution speed, and structural robustness."
         )
 
-    @staticmethod
     @staticmethod
     def _score_improvement_value(
         component: str,

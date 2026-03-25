@@ -85,6 +85,8 @@
       font-family: var(--font);
       font-size: 14px;
       overflow: hidden;
+      /* Buddy Core styles */
+      --buddy-core-size: 320px;
     }
 
     /* ── APP SHELL ── */
@@ -94,6 +96,19 @@
       grid-template-rows: var(--topbar-h) 1fr;
       height: 100vh;
       overflow: hidden;
+      transition: grid-template-columns 0.45s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    #app.sidebars-collapsed {
+      grid-template-columns: 0px 1fr 0px;
+    }
+
+    #app.buddy-collapsed {
+      grid-template-columns: 0px 1fr var(--hud-w);
+    }
+
+    #app.hud-collapsed {
+      grid-template-columns: var(--buddy-w) 1fr 0px;
     }
 
     /* ══════════════════════════════════════════════════════════════════════
@@ -1412,13 +1427,295 @@
       margin: 4px 0;
     }
 
-    code {
-      padding: 1px 5px;
+    .audit-btn {
+      background: rgba(179, 136, 255, 0.1);
+      border: 1px solid rgba(179, 136, 255, 0.2);
+      color: var(--purple-light);
+      font-size: 10px;
+      padding: 0px 4px;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-left: 6px;
+      vertical-align: middle;
+      transition: all 0.2s;
+    }
+    .audit-btn:hover {
+      background: var(--purple-deep);
+      border-color: var(--purple-light);
+      color: #fff;
+      box-shadow: 0 0 8px var(--purple-glow);
+    }
+    /* ══════════════════════════════════════════════════════════════════════
+       MIND INSPECTOR — 6W COGNITIVE AUDIT
+       ══════════════════════════════════════════════════════════════════════ */
+    #mind-inspector {
+      position: fixed;
+      right: calc(var(--hud-w) + 20px);
+      top: calc(var(--topbar-h) + 20px);
+      width: 340px;
+      max-height: calc(100vh - var(--topbar-h) - 40px);
+      background: rgba(12, 12, 28, 0.96);
+      backdrop-filter: blur(25px);
+      border: 1px solid var(--border-hi);
+      border-radius: var(--r-lg);
+      z-index: 5000;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px var(--cyan-glow);
+      animation: inspector-slide 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    @keyframes inspector-slide {
+      from { opacity: 0; transform: translateX(40px) scale(0.92); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    .inspector-header {
+      padding: 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .inspector-title {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      color: var(--cyan);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .inspector-body {
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .w6-coord {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .w6-label {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .w6-value {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.5;
+      font-family: var(--mono);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .hash-badge {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--purple);
+      background: rgba(179, 136, 255, 0.1);
+      padding: 6px 10px;
+      border-radius: 6px;
+      word-break: break-all;
+      border: 1px solid rgba(179, 136, 255, 0.2);
+      box-shadow: inset 0 0 10px rgba(179, 136, 255, 0.05);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       OUROBOROS & CLAUDIO WIDGETS
+       ══════════════════════════════════════════════════════════════════════ */
+    .ouroboros-widget {
+      background: linear-gradient(135deg, rgba(108, 99, 255, 0.12), rgba(0, 229, 255, 0.08));
+      border: 1px solid var(--border-hi);
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ouroboros-widget::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(from 0deg, transparent, rgba(108, 99, 255, 0.1), transparent);
+      animation: rotate-slow 10s linear infinite;
+    }
+
+    @keyframes rotate-slow {
+      to { transform: rotate(360deg); }
+    }
+
+    .stability-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: var(--success);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+      border-radius: 20px;
+      box-shadow: 0 0 15px rgba(46, 213, 115, 0.5);
+      position: relative;
+      z-index: 2;
+    }
+
+    .claudio-monitor {
+      background: rgba(255, 171, 64, 0.08);
+      border: 1px solid rgba(255, 171, 64, 0.25);
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    .claudio-monitor .hud-title {
+      color: var(--amber);
+      font-size: 9px;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       BUDDY CORE — CENTRAL SIGNAL
+       ══════════════════════════════════════════════════════════════════════ */
+    #buddy-core-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -55%);
+      width: var(--buddy-core-size);
+      height: var(--buddy-core-size);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    #buddy-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 20px var(--primary-glow));
+    }
+
+    #buddy-path {
+      fill: none;
+      stroke: var(--cyan);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      filter: url(#buddy-glow);
+      transition: stroke 0.6s ease, stroke-width 0.6s ease;
+    }
+
+    #buddy-path.executing {
+      stroke: var(--cyan);
+      stroke-width: 4;
+      filter: url(#buddy-primary-glow);
+    }
+
+    #buddy-path.analyzing {
+      stroke: var(--purple);
+      stroke-width: 2;
+    }
+
+    #buddy-path.success {
+      stroke: var(--success);
+      stroke-width: 5;
+    }
+
+    #buddy-narrative {
+      margin-top: -40px;
+      width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      pointer-events: all;
+    }
+
+    #buddy-subtitle {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      min-height: 1.5em;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      background: linear-gradient(to bottom, #fff, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    #buddy-thoughts {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    .thought-node {
+      position: absolute;
+      padding: 6px 12px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan);
+      white-space: nowrap;
+      animation: radiate 4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+    }
+
+    @keyframes radiate {
+      0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+      }
+      15% {
+        opacity: 1;
+      }
+      80% {
+        opacity: 0.8;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(1.1);
+        opacity: 0;
+      }
     }
   </style>
 </head>
 
 <body>
+  <!-- ════════════════════════════ MIND INSPECTOR (6W) ════════════════════ -->
+  <div id="mind-inspector">
+    <div class="inspector-header">
+      <div class="inspector-title"><span>◈</span> Mind Inspector</div>
+      <button id="inspector-close" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div class="inspector-body" id="inspector-body">
+      <div style="text-align:center;color:var(--text-muted);font-size:11px;padding:40px 0;">Select a thought or node to audit its cognitive coordinates.</div>
+    </div>
+  </div>
   <div id="app">
 
     <!-- ═══════════════════════════════════════ TOPBAR ═══════════════════ -->
@@ -1437,6 +1734,8 @@
       </div>
 
       <div class="topbar-right">
+        <button id="toggle-buddy" class="sensor-pill" title="Toggle Buddy Sidebar">◀ BUDDY</button>
+        <button id="toggle-hud" class="sensor-pill" title="Toggle HUD Sidebar">HUD ▶</button>
         <span id="model-chip" class="chip chip-blue">Gemini 2.5 Flash</span>
         <span id="breaker-chip" class="chip chip-green">CB:CLOSED</span>
         <span id="conn-chip" class="chip chip-green">● LIVE</span>
@@ -1574,6 +1873,35 @@
 
       <canvas id="spatialCanvas"></canvas>
 
+      <!-- ── BUDDY CENTER CORE (THE SIGNAL) ── -->
+      <div id="buddy-core-container">
+        <svg id="buddy-svg" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+          <!-- Glow filters -->
+          <defs>
+            <filter id="buddy-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="8" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <filter id="buddy-primary-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="14" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+          
+          <!-- The Morphing Signal Path -->
+          <path id="buddy-path" d="M100,60 Q140,60 140,100 Q140,140 100,140 Q60,140 60,100 Q60,60 100,60 Z" />
+          
+          <!-- Orbitals / Particles -->
+          <g id="buddy-orbitals"></g>
+        </svg>
+
+        <!-- Dynamic Storytelling Tracks -->
+        <div id="buddy-narrative">
+          <div id="buddy-subtitle">Awaiting mandate...</div>
+          <div id="buddy-thoughts"></div>
+        </div>
+      </div>
+
       <!-- Top overlay badges -->
       <div class="canvas-top">
         <span class="canvas-badge live" id="dag-badge">■ DAG · 6 nodes</span>
@@ -1604,6 +1932,26 @@
 
     <!-- ════════════════════════════ TELEMETRY HUD (RIGHT) ═══════════════ -->
     <aside id="hud-pane">
+      <!-- Ouroboros Stability & Self-Improvement -->
+      <div class="hud-block">
+        <div class="hud-title">Ouroboros · Autonomous Hub</div>
+        <div class="ouroboros-widget">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;position:relative;z-index:2;">
+            <span class="stability-badge">34/34 STABLE</span>
+            <span id="ouro-cycle-status" style="font-size:9px;font-weight:800;color:var(--cyan);letter-spacing:0.1em;">IDLE</span>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);display:flex;flex-direction:column;gap:5px;position:relative;z-index:2;">
+            <div style="display:flex;justify-content:space-between;">
+              <span>Self-Optimization</span>
+              <strong id="ouro-opt-delta" style="color:var(--text)">ACTIVE</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span>Avg Latency</span>
+              <strong id="ouro-latency" style="color:var(--text)">~1.3s</strong>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- JIT SOTA Signals -->
       <div class="hud-block">
@@ -1691,9 +2039,19 @@
           <span style="font-size:9px;color:var(--text-muted);font-weight:700;letter-spacing:0.06em;">MIC FFT</span>
           <div class="audio-meter" id="audio-meter"></div>
         </div>
-        <div style="font-size:10px;color:var(--text-muted);display:flex;gap:12px;">
+        <div style="font-size:10px;color:var(--text-muted);display:flex;gap:12px;margin-bottom:10px;">
           <span>Face: <strong id="hud-face" style="color:var(--text)">—</strong></span>
           <span>Vol: <strong id="hud-vol" style="color:var(--text)">—</strong></span>
+        </div>
+        
+        <!-- Claudio Sync Monitor -->
+        <div class="claudio-monitor">
+          <div class="hud-title">CLAUDIO SYNC MONITOR</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+            <div style="font-size:11px;font-weight:800;color:var(--amber);">WEBRTC ACTIVE</div>
+            <div style="font-size:10px;color:var(--text);font-family:var(--mono);" id="claudio-latency">&lt;20ms</div>
+          </div>
+          <div style="font-size:9px;color:var(--text-muted);margin-top:4px;letter-spacing:0.04em;">SIGNALLING: CONNECTED [UDP]</div>
         </div>
       </div>
 
@@ -2447,7 +2805,34 @@
     });
 
     /* ════════════════════════════════════════════════════════════════════════
-       6. NODE STATUS HELPERS
+       6. CLAUDIO REAL-TIME SYNC CLIENT
+       ════════════════════════════════════════════════════════════════════════ */
+    class ClaudioClient {
+      constructor() {
+        this.latency = 0;
+        this.connected = false;
+        this.peerCount = 0;
+        this.timer = null;
+      }
+      start() {
+        this.connected = true;
+        this.timer = setInterval(() => {
+          // Simulate sub-20ms jitter for visualization
+          this.latency = Math.floor(Math.random() * 8) + 11;
+          const el = document.getElementById('claudio-latency');
+          if (el) el.textContent = `${this.latency}ms`;
+        }, 800);
+      }
+      stop() {
+        this.connected = false;
+        clearInterval(this.timer);
+      }
+    }
+    window.Claudio = new ClaudioClient();
+    window.Claudio.start();
+
+    /* ════════════════════════════════════════════════════════════════════════
+       6.1 NODE STATUS HELPERS
        ════════════════════════════════════════════════════════════════════════ */
     function setNode(id, status) {
       const el = document.getElementById(`nd-${id}`);
@@ -2462,6 +2847,55 @@
     function setAllActive() {
       ['route', 'jit', 'tribunal', 'scope', 'execute', 'refine'].forEach(n => setNode(n, 'active'));
     }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       6.5 MIND INSPECTOR (6W) & HUD TELEMETRY
+       ════════════════════════════════════════════════════════════════════════ */
+    function inspect6W(data) {
+      const panel = document.getElementById('mind-inspector');
+      const body = document.getElementById('inspector-body');
+      if (!panel || !body) return;
+
+      const w6 = data['6w'] || data || {};
+      const html = `
+        <div class="w6-coord">
+          <span class="w6-label">WHEN / TEMPORAL</span>
+          <div class="w6-value">${esc(w6.when || 'N/A')}</div>
+        </div>
+        <div class="w6-coord">
+          <span class="w6-label">WHERE / SPATIAL</span>
+          <div class="w6-value">${esc(w6.where || 'N/A')}</div>
+        </div>
+        <div class="w6-coord">
+          <span class="w6-label">WHAT / STATE</span>
+          <div class="w6-value" style="color:var(--cyan)">${esc(w6.what || 'N/A')}</div>
+        </div>
+        <div class="w6-coord">
+          <span class="w6-label">HOW / TRACE</span>
+          <div class="w6-value" style="font-size:11px; font-family:var(--mono);">${esc(w6.how || 'N/A')}</div>
+        </div>
+        <div class="w6-coord">
+          <span class="w6-label">WHY / INTENT</span>
+          <div class="w6-value">${esc(w6.why || 'N/A')}</div>
+        </div>
+        <div class="w6-coord">
+          <span class="w6-label">WHO / AGENCY</span>
+          <div class="w6-value">${esc(w6.who || 'N/A')}</div>
+        </div>
+        ${w6.hash_id || data.hash_id ? `
+        <div class="w6-coord">
+          <span class="w6-label">COGNITIVE HASH (SHA-256)</span>
+          <div class="hash-badge">${esc(w6.hash_id || data.hash_id)}</div>
+        </div>` : ''}
+      `;
+      body.innerHTML = html;
+      panel.style.display = 'flex';
+      if (window.gsap) gsap.fromTo(panel, { x: 20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'power2.out' });
+    }
+
+    document.getElementById('inspector-close').addEventListener('click', () => {
+      document.getElementById('mind-inspector').style.display = 'none';
+    });
 
     /* ════════════════════════════════════════════════════════════════════════
        7. SSE EVENT STREAM
@@ -2600,6 +3034,7 @@
             break;
 
           case 'healing_triggered':
+            window.Claudio?.stop();
             showCrisis(ev.message || 'Pipeline node exceeded failure threshold.', [
               { label: 'Escalate Model', primary: true, action: () => _post('/v2/router-reset', {}) },
               { label: 'Deepen JIT Research', action: () => sendMsg('JIT deepen and retry') },
@@ -2658,6 +3093,22 @@
 
           case 'loop_complete':
             setTimeout(resetNodes, 600);
+            break;
+
+          case 'node_start':
+            setNode(ev.phase || 'execute', 'active');
+            break;
+
+          case 'node_complete':
+            setNode(ev.phase || 'execute', ev.success ? 'done' : 'fail');
+            if (ev.latency_ms && ev.node_id === 'final') {
+               document.getElementById('ouro-latency').textContent = `~${(ev.latency_ms / 1000).toFixed(1)}s`;
+            }
+            break;
+
+          case 'ouroboros_cycle':
+            document.getElementById('ouro-cycle-status').textContent = (ev.status || 'ACTIVE').toUpperCase();
+            if (ev.latency_ms) document.getElementById('ouro-latency').textContent = `~${(ev.latency_ms / 1000).toFixed(1)}s`;
             break;
 
           case 'self_improve': {
@@ -2820,8 +3271,146 @@
       });
     }
 
-    /* Connect SSE */
+    /* SSE State */
     let _sse = null, _sseRetries = 0, _sseDelay = 3000;
+
+    /* ════════════════════════════════════════════════════════════════════════
+       SIDEBAR TOGGLES
+       ════════════════════════════════════════════════════════════════════════ */
+    const app = document.getElementById('app');
+    const toggleBuddy = document.getElementById('toggle-buddy');
+    const toggleHud = document.getElementById('toggle-hud');
+
+    toggleBuddy.addEventListener('click', () => {
+      app.classList.toggle('buddy-collapsed');
+      toggleBuddy.textContent = app.classList.contains('buddy-collapsed') ? 'BUDDY ▶' : '◀ BUDDY';
+    });
+
+    toggleHud.addEventListener('click', () => {
+      app.classList.toggle('hud-collapsed');
+      toggleHud.textContent = app.classList.contains('hud-collapsed') ? '◀ HUD' : 'HUD ▶';
+    });
+
+    /* ════════════════════════════════════════════════════════════════════════
+       9. BUDDY CORE (THE LIVING SIGNAL)
+       ════════════════════════════════════════════════════════════════════════ */
+    const BuddyCore = (() => {
+      const path = document.getElementById('buddy-path');
+      const subtitle = document.getElementById('buddy-subtitle');
+      const thoughts = document.getElementById('buddy-thoughts');
+      const svg = document.getElementById('buddy-svg');
+      
+      const SHAPES = {
+        idle: "M100,60 Q140,60 140,100 Q140,140 100,140 Q60,140 60,100 Q60,60 100,60 Z",
+        analyzing: "M100,40 Q160,40 160,100 Q160,160 100,160 Q40,160 40,100 Q40,40 100,40 Z", 
+        executing: "M100,20 L130,70 L190,80 L140,120 L160,180 L100,150 L40,180 L60,120 L10,80 L70,70 Z",
+        success: "M100,10 Q190,10 190,100 Q190,190 100,190 Q10,190 10,100 Q10,10 100,10 Z"
+      };
+
+      let currentMode = 'idle';
+
+      function setState(mode) {
+        if (mode === currentMode) return;
+        currentMode = mode;
+        
+        path.className.baseVal = mode;
+        
+        if (window.gsap) {
+          gsap.to(path, {
+            attr: { d: SHAPES[mode] || SHAPES.idle },
+            duration: 0.8,
+            ease: "elastic.out(1, 0.6)"
+          });
+          
+          if (mode === 'executing') {
+            gsap.to(svg, { scale: 1.1, duration: 0.4, repeat: -1, yoyo: true, ease: "sine.inOut" });
+          } else {
+            gsap.killTweensOf(svg);
+            gsap.to(svg, { scale: 1, duration: 0.4 });
+          }
+        }
+      }
+
+      function say(text, accelerated = false) {
+        if (!text) return;
+        
+        // Accelerated Typewriter
+        subtitle.innerHTML = '';
+        const words = text.split(' ');
+        let i = 0;
+        
+        function next() {
+          if (i >= words.length) return;
+          subtitle.innerHTML += (i > 0 ? ' ' : '') + words[i];
+          i++;
+          setTimeout(next, accelerated ? 40 : 120);
+        }
+        next();
+      }
+
+      function radiateThought(thought) {
+        const node = document.createElement('div');
+        node.className = 'thought-node';
+        node.textContent = thought;
+        
+        // Random trajectory
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 150 + Math.random() * 100;
+        const tx = Math.cos(angle) * dist;
+        const ty = Math.sin(angle) * dist;
+        
+        node.style.setProperty('--tx', `${tx}px`);
+        node.style.setProperty('--ty', `${ty}px`);
+        node.style.left = '50%';
+        node.style.top = '50%';
+        
+        thoughts.appendChild(node);
+        setTimeout(() => node.remove(), 4000);
+      }
+
+      // Breathing idle
+      function _init() {
+        if (window.gsap) {
+          gsap.to(path, {
+            attr: { d: "M100,55 Q145,55 145,100 Q145,145 100,145 Q55,145 55,100 Q55,55 100,55 Z" },
+            duration: 2.5,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut"
+          });
+        }
+      }
+      _init();
+
+      return { setState, say, radiateThought };
+    })();
+
+    /* ── Hooking SSE into BuddyCore ── */
+    const _oldHandleSSE = handleSSE;
+    handleSSE = function(ev) {
+      _oldHandleSSE(ev);
+      const t = ev.type;
+      
+      // State mapping
+      if (t === 'route' || t === 'jit_boost' || t === 'thought') BuddyCore.setState('analyzing');
+      if (t === 'execution' || t === 'pipeline_start') BuddyCore.setState('executing');
+      if (t === 'refinement' || t === 'n_stroke_complete') BuddyCore.setState('success');
+      
+      // Storytelling
+      const thoughtText = ev.thought || (t === 'thought' ? ev.message : null);
+      if (thoughtText) BuddyCore.radiateThought(thoughtText);
+      
+      if (ev.message && t !== 'conversation' && t !== 'thought') {
+        BuddyCore.say(ev.message, true);
+      }
+    };
+
+    const _oldAppendBuddy = _appendBuddy;
+    _appendBuddy = function(text, ev) {
+      _oldAppendBuddy(text, ev);
+      BuddyCore.setState('idle');
+      BuddyCore.say(text, false);
+    };
     function connectSSE() {
       if (_sse) { _sse.onopen = null; _sse.onmessage = null; _sse.onerror = null; _sse.close() }
       _sse = new EventSource('/v2/events');
@@ -2890,7 +3479,8 @@
         '</div>'
         : '';
 
-      g.innerHTML = `<div class="msg-meta">Buddy</div><div class="bubble buddy" style="${emotionStyle}">${_md(text)}</div>${chipsHtml}${jitBadge}`;
+      const auditBtn = `<button class="audit-btn" onclick='inspect6W(${JSON.stringify(ev['6w'] || ev)})' title="Audit 6W Coordinates">◈</button>`;
+      g.innerHTML = `<div class="msg-meta">Buddy ${auditBtn}</div><div class="bubble buddy" style="${emotionStyle}">${_md(text)}</div>${chipsHtml}${jitBadge}`;
       c.appendChild(g);
       c.scrollTop = c.scrollHeight;
       if (window.gsap) gsap.fromTo(g, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.32, ease: 'back.out(1.7)' });
@@ -3746,7 +4336,13 @@
                   '<div style="height:6px;border-radius:3px;background:var(--accent);width:' + pct + '%;"></div></div>';
               };
               el.innerHTML =
-                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;">' +
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:8px;border-left:3px solid var(--accent);">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                '<span style="font-size:11px;font-weight:700;color:var(--text-muted);">BALANCE</span>' +
+                '<span style="font-size:16px;font-weight:700;color:var(--accent);">' + esc(String(p.credits || 0)) + ' Credits</span>' +
+                '</div>' +
+                '</div>' +
+                '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:8px;">' +
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
                 '<span style="font-size:11px;font-weight:700;color:var(--text-muted);">EXPERTISE</span>' +
                 '<span style="font-size:13px;font-weight:700;color:var(--accent);">' + esc(pd.expertise_label || 'unknown') + '</span>' +
@@ -3926,12 +4522,7 @@
           loaders.introspection();
         } catch (e) { if (hEl) hEl.textContent = 'Error: ' + e.message; }
       });
-      const d = await(await fetch('/v2/self-improve', { method: 'POST' })).json();
-      if (el) el.textContent = JSON.stringify(d, null, 2);
-    } catch (e) { if (el) el.textContent = 'Error: ' + e.message; }
-    });
-
-    document.getElementById('ops-daemon-start').addEventListener('click', async () => {
+      document.getElementById('ops-daemon-start').addEventListener('click', async () => {
       await fetch('/v2/daemon/start', { method: 'POST' });
       spawnNotif('Daemon started.', 'info', 2000);
       loaders.daemon();

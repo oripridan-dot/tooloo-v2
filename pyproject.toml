@@ -23,6 +23,9 @@ dependencies = [
     "opentelemetry-sdk>=1.28",
     "psutil>=5.9",
     "google-cloud-firestore>=2.16",
+    "websockets>=16.0",
+    "prometheus-client>=0.24.1",
+    "numpy>=2.4.3",
 ]
 
 [project.optional-dependencies]

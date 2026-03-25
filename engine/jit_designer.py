@@ -55,17 +55,17 @@ _EQ_PALETTE: dict[str, str] = {
 
 # ── Animation styles: intent × emotional_state → animation ───────────────────
 _ANIMATION_MAP: dict[tuple[str, str], str] = {
-    ("BUILD",   "excited"):    "spring_pop",
-    ("BUILD",   "neutral"):    "cascade",
-    ("DEBUG",   "frustrated"): "slide_in",
-    ("DEBUG",   "neutral"):    "cascade",
+    ("BUILD",   "excited"):    "morph",
+    ("BUILD",   "neutral"):    "morph",
+    ("DEBUG",   "frustrated"): "morph",
+    ("DEBUG",   "neutral"):    "morph",
     ("DESIGN",  "excited"):    "morph",
-    ("DESIGN",  "neutral"):    "fade_up",
-    ("IDEATE",  "excited"):    "spring_pop",
-    ("IDEATE",  "uncertain"):  "cascade",
-    ("EXPLAIN", "uncertain"):  "slide_in",
-    ("EXPLAIN", "neutral"):    "fade_up",
-    ("AUDIT",   "neutral"):    "cascade",
+    ("DESIGN",  "neutral"):    "morph",
+    ("IDEATE",  "excited"):    "morph",
+    ("IDEATE",  "uncertain"):  "morph",
+    ("EXPLAIN", "uncertain"):  "morph",
+    ("EXPLAIN", "neutral"):    "morph",
+    ("AUDIT",   "neutral"):    "morph",
 }
 
 # ── Confidence visual tier ─────────────────────────────────────────────────────
@@ -316,13 +316,9 @@ class JITDesigner:
             or "fade_up"
         )
 
-        # Layout: two column when response is long and we have structured content
+        # Layout: spatial_float for the new centered Buddy experience
         word_count = len(response_text.split())
-        layout_hint = (
-            "two_column"
-            if component_type in {"storybook_cards", "comparison_table"} and word_count > 80
-            else "single_column"
-        )
+        layout_hint = "spatial_float" if word_count < 150 else "two_column"
 
         emphasis_words = _extract_emphasis_words(response_text)
         confidence_visual = _confidence_tier(confidence)

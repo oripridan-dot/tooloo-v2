@@ -179,6 +179,9 @@ class UserProfile:
     # Effective analogies/explanations discovered for this user (max 20)
     knowledge_anchors: list[dict[str, str]] = field(default_factory=list)
 
+    # Total credits available for processing (synced with billing)
+    credits: float = 0.0
+
     # Number of sessions contributing to this profile
     session_count: int = 0
 
@@ -193,6 +196,7 @@ class UserProfile:
             "active_goals": self.active_goals,
             "completed_goals": self.completed_goals,
             "knowledge_anchors": self.knowledge_anchors,
+            "credits": self.credits,
             "session_count": self.session_count,
             "last_updated": self.last_updated,
         }
@@ -206,6 +210,7 @@ class UserProfile:
             active_goals=list(d.get("active_goals", [])),
             completed_goals=list(d.get("completed_goals", [])),
             knowledge_anchors=list(d.get("knowledge_anchors", [])),
+            credits=float(d.get("credits", 0.0)),
             session_count=int(d.get("session_count", 0)),
             last_updated=str(d.get("last_updated", "")),
         )
@@ -504,6 +509,13 @@ class UserProfileStore:
                     self._save()
                     return True
         return False
+
+    def top_up_credits(self, amount: float) -> float:
+        """Add credits to the user profile and return the new total."""
+        with self._lock:
+            self._profile.credits += amount
+            self._save()
+            return self._profile.credits
 
     def increment_session_count(self) -> None:
         """Increment the session counter. Call once per new session."""

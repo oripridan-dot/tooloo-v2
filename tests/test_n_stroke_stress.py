@@ -39,7 +39,7 @@ from engine.model_selector import (
     TIER_3_MODEL,
     TIER_4_MODEL,
 )
-from engine.n_stroke import MAX_STROKES, NStrokeEngine, NStrokeResult, StrokeRecord
+from engine.pipeline import MAX_STROKES, NStrokeEngine, NStrokeResult, StrokeRecord
 from engine.psyche_bank import PsycheBank
 from engine.refinement import RefinementLoop
 from engine.refinement_supervisor import (
@@ -49,7 +49,7 @@ from engine.refinement_supervisor import (
 )
 from engine.router import LockedIntent, MandateRouter
 from engine.scope_evaluator import ScopeEvaluator
-from engine.supervisor import TwoStrokeEngine
+from engine.pipeline import TwoStrokeEngine
 from engine.tribunal import Tribunal
 
 

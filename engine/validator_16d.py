@@ -126,7 +126,7 @@ class Validator16D:
     def __init__(self) -> None:
         self.garden = get_garden()
 
-    def validate(
+    async def validate(
         self,
         mandate_id: str,
         intent: str,
@@ -168,22 +168,22 @@ class Validator16D:
 
         # Validate each dimension
         dims = [
-            self._validate_roi(cost_usd, intent),
-            self._validate_safety(code_snippet),
-            self._validate_security(code_snippet, mandate_id),
-            self._validate_legal(code_snippet),
-            self._validate_human_considering(code_snippet),
-            self._validate_accuracy(test_pass_rate),
-            self._validate_efficiency(code_snippet),
-            self._validate_quality(code_snippet),
-            self._validate_speed(latency_p50_ms, latency_p90_ms),
-            self._validate_monitor(code_snippet),
-            self._validate_control(code_snippet),
-            self._validate_honesty(),
-            self._validate_resilience(code_snippet),
-            self._validate_financial_awareness(cost_usd),
-            self._validate_convergence(),
-            self._validate_reversibility(code_snippet),
+            await self._validate_roi(cost_usd, intent),
+            await self._validate_safety(code_snippet),
+            await self._validate_security(code_snippet, mandate_id),
+            await self._validate_legal(code_snippet),
+            await self._validate_human_considering(code_snippet),
+            await self._validate_accuracy(test_pass_rate),
+            await self._validate_efficiency(code_snippet),
+            await self._validate_quality(code_snippet),
+            await self._validate_speed(latency_p50_ms, latency_p90_ms),
+            await self._validate_monitor(code_snippet),
+            await self._validate_control(code_snippet),
+            await self._validate_honesty(),
+            await self._validate_resilience(code_snippet),
+            await self._validate_financial_awareness(cost_usd),
+            await self._validate_convergence(),
+            await self._validate_reversibility(code_snippet),
         ]
 
         result.dimensions = dims
@@ -215,7 +215,7 @@ class Validator16D:
 
     # ── Individual Dimension Validators ────────────────────────────────────
 
-    def _validate_roi(self, cost_usd: float, intent: str) -> Dimension16Score:
+    async def _validate_roi(self, cost_usd: float, intent: str) -> Dimension16Score:
         """ROI: Is this change worth the token spend?"""
         # Heuristic: low-intent (BLOCKED) should cost almost nothing
         # Complex intent (BUILD, DESIGN) justifies higher spend
@@ -238,7 +238,7 @@ class Validator16D:
             recommendation="Consider cheaper model tier or parallel processing" if cost_usd > budget_limit else "",
         )
 
-    def _validate_safety(self, code_snippet: str | None) -> Dimension16Score:
+    async def _validate_safety(self, code_snippet: str | None) -> Dimension16Score:
         """Safety: No memory leaks, deadlocks, resource exhaustion?"""
         if not code_snippet:
             # No code = no safety issues detectable; score matches the critical threshold.
@@ -293,7 +293,7 @@ class Validator16D:
         "# check",
     )
 
-    def _validate_security(self, code_snippet: str | None, mandate_id: str = "") -> Dimension16Score:
+    async def _validate_security(self, code_snippet: str | None, mandate_id: str = "") -> Dimension16Score:
         """Security: Cryptographically sound? No PII leaks? Auth boundaries?"""
         if not code_snippet:
             return Dimension16Score(
@@ -341,7 +341,7 @@ class Validator16D:
             recommendation="Run Tribunal OWASP scan before deployment" if security_issues else "",
         )
 
-    def _validate_legal(self, code_snippet: str | None) -> Dimension16Score:
+    async def _validate_legal(self, code_snippet: str | None) -> Dimension16Score:
         """Legal: IP, licensing, compliance (GDPR, SOX)?"""
         # Simplified: check for known copyrighted patterns or GPL markers
         if not code_snippet:
@@ -365,7 +365,7 @@ class Validator16D:
             recommendation="Review licensing before merging to production" if legal_risks else "",
         )
 
-    def _validate_human_considering(self, code_snippet: str | None) -> Dimension16Score:
+    async def _validate_human_considering(self, code_snippet: str | None) -> Dimension16Score:
         """Human Considering: WCAG, inclusivity, UX respect, developer ergonomics?"""
         if not code_snippet:
             return Dimension16Score(
@@ -415,7 +415,7 @@ class Validator16D:
             details=f"Signals: {', '.join(signals)}" if signals else "Limited accessibility/ergonomics",
         )
 
-    def _validate_accuracy(self, test_pass_rate: float) -> Dimension16Score:
+    async def _validate_accuracy(self, test_pass_rate: float) -> Dimension16Score:
         """Accuracy: Tests pass? Specification compliance?"""
         return Dimension16Score(
             name="Accuracy",
@@ -425,7 +425,7 @@ class Validator16D:
             recommendation="Reduce pass threshold or fix failing tests" if test_pass_rate < 0.9 else "",
         )
 
-    def _validate_efficiency(self, code_snippet: str | None) -> Dimension16Score:
+    async def _validate_efficiency(self, code_snippet: str | None) -> Dimension16Score:
         """Efficiency: No algorithmic regression? O(n) vs. O(n²)?"""
         if not code_snippet:
             return Dimension16Score(
@@ -465,7 +465,7 @@ class Validator16D:
             details=f"Concerns: {', '.join(efficiency_concerns) if efficiency_concerns else 'None detected'}",
         )
 
-    def _validate_quality(self, code_snippet: str | None) -> Dimension16Score:
+    async def _validate_quality(self, code_snippet: str | None) -> Dimension16Score:
         """Quality: Maintainability, complexity, coupling?"""
         if not code_snippet:
             return Dimension16Score(
@@ -511,7 +511,7 @@ class Validator16D:
             details=f"Score: {quality_score:.2f} (fn_count={fn_count}, class_count={class_count}, lines={len(lines)})",
         )
 
-    def _validate_speed(self, latency_p50_ms: float, latency_p90_ms: float) -> Dimension16Score:
+    async def _validate_speed(self, latency_p50_ms: float, latency_p90_ms: float) -> Dimension16Score:
         """Speed: p50/p90 latency within SLO?"""
         # Target: p50 < 1000ms, p90 < 2000ms
         speed_score = 1.0
@@ -528,7 +528,7 @@ class Validator16D:
             recommendation="Optimize or cache if above SLO" if speed_score < 0.85 else "",
         )
 
-    def _validate_monitor(self, code_snippet: str | None) -> Dimension16Score:
+    async def _validate_monitor(self, code_snippet: str | None) -> Dimension16Score:
         """Monitor: Observability hooks, metrics, tracing?"""
         if not code_snippet:
             return Dimension16Score(
@@ -590,7 +590,7 @@ class Validator16D:
             details=f"Instrumentation: {instrumentation:.2f} ({', '.join(signals) if signals else 'none detected'})",
         )
 
-    def _validate_control(self, code_snippet: str | None) -> Dimension16Score:
+    async def _validate_control(self, code_snippet: str | None) -> Dimension16Score:
         """Control: Rollback capability, kill switches, circuit breakers?"""
         if not code_snippet:
             return Dimension16Score(
@@ -637,7 +637,7 @@ class Validator16D:
             ),
         )
 
-    def _validate_honesty(self) -> Dimension16Score:
+    async def _validate_honesty(self) -> Dimension16Score:
         """Honesty: Confidence calibration, no overclaiming?"""
         # This dimension is subjective and enforced by the confidence gate itself
         return Dimension16Score(
@@ -647,7 +647,7 @@ class Validator16D:
             details="Composite confidence gate enforces epistemic humility.",
         )
 
-    def _validate_resilience(self, code_snippet: str | None) -> Dimension16Score:
+    async def _validate_resilience(self, code_snippet: str | None) -> Dimension16Score:
         """Resilience: Graceful error handling, recovery?"""
         if not code_snippet:
             return Dimension16Score(
@@ -691,7 +691,7 @@ class Validator16D:
             details=f"Error handling: {', '.join(s for s in signals if s) or 'base-safe'}",
         )
 
-    def _validate_financial_awareness(self, cost_usd: float) -> Dimension16Score:
+    async def _validate_financial_awareness(self, cost_usd: float) -> Dimension16Score:
         """Financial Awareness: Budget-aware, cost-efficient routing?"""
         # Score: 1.0 if using cheap models (Tier 0/1), 0.9 if Tier 2, 0.7 if Tier 3/4 regularly
         if cost_usd < 0.01:
@@ -711,14 +711,16 @@ class Validator16D:
             recommendation="Use Tier 0/1 models for this task" if score < 0.85 else "",
         )
 
-    def _validate_convergence(self) -> Dimension16Score:
+    async def _validate_convergence(self) -> Dimension16Score:
         """Convergence ⭐: Healing loop approaching 'done'?"""
         # Estimate convergence from the Psyche Bank rule count:
         # More accumulated rules = more learning = higher convergence.
         try:
             from engine.psyche_bank import PsycheBank
             pb = PsycheBank()
-            rule_count = len(pb.all_rules())
+            await pb.__ainit__() # Ensure initialized
+            pb_rules = await pb.all_rules()
+            rule_count = len(pb_rules)
             # 5 rules = baseline (0.90), each additional rule adds +0.01 up to 1.0
             convergence_score = min(1.0, 0.90 + max(0, rule_count - 5) * 0.01)
         except Exception:
@@ -730,7 +732,7 @@ class Validator16D:
             details=f"Convergence score: {convergence_score:.2f} (psyche-bank rule count drives this)",
         )
 
-    def _validate_reversibility(self, code_snippet: str | None) -> Dimension16Score:
+    async def _validate_reversibility(self, code_snippet: str | None) -> Dimension16Score:
         """Reversibility ⭐: Atomic state rollback capability?"""
         # This is enforced by transactional file system module
         return Dimension16Score(

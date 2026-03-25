@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -76,7 +76,7 @@ from engine.mandate_executor import make_live_work_fn
 from engine.mcp_manager import MCPManager
 from engine.model_garden import get_garden
 from engine.model_selector import ModelSelector
-from engine.n_stroke import NStrokeEngine
+from engine.pipeline import NStrokeEngine
 from engine.parallel_validation import FileChange, ParallelValidationPipeline
 from engine.psyche_bank import PsycheBank
 from engine.refinement import RefinementLoop
@@ -92,7 +92,7 @@ from engine.sandbox import SandboxOrchestrator
 from engine.scope_evaluator import ScopeEvaluator
 from engine.self_improvement import SelfImprovementEngine
 from engine.sota_ingestion import SOTAIngestionEngine
-from engine.supervisor import TwoStrokeEngine
+from engine.pipeline import TwoStrokeEngine
 from engine.tribunal import Engram, Tribunal
 from engine.validator_16d import Validator16D
 from engine.async_fluid_executor import AsyncFluidExecutor
@@ -333,6 +333,81 @@ app = FastAPI(title="TooLoo V2 Governor Dashboard",
 
 # ── Routes ───────────────────────────────────────────────────────────────────
 
+# Wire extracted route modules
+from studio.routes import introspection as _introspection_routes
+from studio.routes import buddy as _buddy_routes
+from studio.routes import pipeline as _pipeline_routes
+from studio.routes import sandbox as _sandbox_routes
+
+def __create_n_stroke(max_strokes: int):
+    from engine.pipeline import NStrokeEngine as _NSE
+    return _NSE(
+        router=_router,
+        booster=_jit_booster,
+        tribunal=_tribunal,
+        sorter=_sorter,
+        executor=_executor,
+        scope_evaluator=_scope_evaluator,
+        refinement_loop=_refinement_loop,
+        mcp_manager=_mcp_manager,
+        model_selector=_model_selector,
+        refinement_supervisor=_refinement_supervisor,
+        broadcast_fn=_broadcast,
+        max_strokes=max_strokes,
+        async_fluid_executor=_async_fluid_executor,
+    )
+
+_introspection_routes.set_broadcast(_broadcast)
+_buddy_routes.init(
+    buddy_memory=_buddy_memory,
+    conversation_engine=_conversation_engine,
+    broadcast_fn=_broadcast,
+)
+_pipeline_routes.init(
+    intent_discovery=_intent_discovery,
+    supervisor=_supervisor,
+    n_stroke_engine=_n_stroke_engine,
+    async_fluid_executor=_async_fluid_executor,
+    branch_executor=_branch_executor,
+    mcp_manager=_mcp_manager,
+    broadcast_fn=_broadcast,
+    create_n_stroke_fn=__create_n_stroke,
+)
+_sandbox_routes.init(
+    sandbox_orchestrator=_sandbox_orchestrator,
+    roadmap=_roadmap,
+    broadcast_fn=_broadcast,
+)
+
+app.include_router(_introspection_routes.router)
+app.include_router(_buddy_routes.router)
+app.include_router(_pipeline_routes.router)
+app.include_router(_sandbox_routes.router)
+from studio.routes import knowledge as _knowledge_routes
+from studio.routes import vlt as _vlt_routes
+from studio.routes import core as _core_routes
+from studio.routes import studio as _studio_routes
+
+_knowledge_routes.init(
+    bank_manager=_bank_manager,
+    sota_ingestion=_sota_ingestion,
+    broadcast_fn=_broadcast,
+)
+_vlt_routes.init(
+    broadcast_fn=_broadcast,
+)
+_core_routes.init(
+    parallel_validation=_parallel_validation,
+    notification_bus=_notification_bus,
+    stance_engine=_stance_engine,
+    broadcast_fn=_broadcast,
+)
+
+app.include_router(_knowledge_routes.router)
+app.include_router(_vlt_routes.router)
+app.include_router(_core_routes.router)
+app.include_router(_studio_routes.router)
+
 app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 
 
@@ -364,7 +439,7 @@ async def health() -> dict[str, Any]:
         "components": {
             "router": "up",
             "graph": f"{len(_graph.nodes())} nodes",
-            "psyche_bank": f"{len(_bank.all_rules())} rules",
+            "psyche_bank": f"{len(await _bank.all_rules())} rules",
             "tribunal": "up",
             "cognitive_dreamer": "up",
             "executor": "up",
@@ -443,23 +518,6 @@ class BuddyChatRequest(BaseModel):
 class BuddyListenRequest(BaseModel):
     text: str = Field(default="", max_length=2000)
     session_id: str = ""  # optional — enables context-aware suggestions
-
-
-class PipelineRequest(BaseModel):
-    text: str
-    session_id: str = ""
-    max_iterations: int = 3
-
-
-class LockedIntentRequest(BaseModel):
-    """Directly supply a pre-confirmed intent instead of using the discovery loop."""
-    intent: str
-    confidence: float
-    value_statement: str
-    constraint_summary: str = ""
-    mandate_text: str
-    session_id: str = ""
-    max_iterations: int = 3
 
 
 # ── Buddy Chat fast-path ─────────────────────────────────────────────────────
@@ -837,101 +895,8 @@ async def buddy_listen(req: BuddyListenRequest) -> dict[str, Any]:
     return result
 
 
-# ── Buddy Memory endpoints ────────────────────────────────────────────────────
-
-
-@app.get("/v2/buddy/memory")
-async def get_buddy_memory(limit: int = 10) -> dict[str, Any]:
-    """Return the *limit* most recently saved conversation memory entries."""
-    limit = max(1, min(limit, 50))
-    entries = _buddy_memory.recent(limit=limit)
-    return {
-        "count": len(entries),
-        "total_stored": _buddy_memory.entry_count(),
-        "entries": [e.to_dict() for e in entries],
-    }
-
-
-@app.post("/v2/buddy/memory/save/{session_id}")
-async def save_buddy_memory(session_id: str) -> dict[str, Any]:
-    """Explicitly persist the named in-progress session to BuddyMemoryStore."""
-    entry = _conversation_engine.save_session_to_memory(session_id)
-    if entry is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Session not found or had fewer than 2 user turns.",
-        )
-    _broadcast({"type": "buddy_memory_saved", "session_id": session_id})
-    return {"saved": True, "session_id": session_id, "entry": entry.to_dict()}
-
-
-# ── Buddy Cognitive Profile & Cache endpoints ─────────────────────────────────
-# Research basis: UserProfile (buddy_cognition.py) tracks expertise, goals, and
-# learning style across sessions. BuddyCache (buddy_cache.py) provides 3-layer
-# semantic caching to eliminate redundant LLM calls and reduce response latency.
-
-
-@app.get("/v2/buddy/profile")
-async def get_buddy_profile() -> dict[str, Any]:
-    """Return the user's persistent cognitive profile.
-
-    Includes expertise score (0.0–1.0), expertise tier label, preferred
-    learning style, active cross-session goals, completed goals, and the
-    most recent knowledge anchors (effective explanations for this user).
-    """
-    profile = _conversation_engine.get_user_profile()
-    return {
-        "profile": profile.to_dict(),
-        "expertise_label": profile.expertise_label(),
-    }
-
-
-@app.get("/v2/buddy/goals")
-async def get_buddy_goals() -> dict[str, Any]:
-    """Return the user's active and completed cross-session goals."""
-    profile = _conversation_engine.get_user_profile()
-    return {
-        "active_goals": profile.active_goals,
-        "completed_goals": profile.completed_goals,
-        "active_count": len(profile.active_goals),
-        "completed_count": len(profile.completed_goals),
-    }
-
-
-@app.post("/v2/buddy/goals/complete")
-async def complete_buddy_goal(payload: dict[str, Any]) -> dict[str, Any]:
-    """Mark the best-matching active goal as completed.
-
-    Body: {"goal_text": "the goal to complete"}
-    Uses substring fuzzy matching — does not need to be an exact string.
-    """
-    goal_text = str(payload.get("goal_text", "")).strip()
-    if not goal_text:
-        raise HTTPException(status_code=422, detail="goal_text is required.")
-    completed = _conversation_engine.complete_goal(goal_text)
-    _broadcast({"type": "buddy_goal_completed",
-               "goal": goal_text, "found": completed})
-    return {"completed": completed, "goal_text": goal_text}
-
-
-@app.get("/v2/buddy/cache/stats")
-async def get_buddy_cache_stats() -> dict[str, Any]:
-    """Return 3-layer cache hit/miss statistics with per-layer descriptions.
-
-    Useful for monitoring latency optimisation from semantic caching.
-    Layer 1: in-session Jaccard similarity cache.
-    Layer 2: process-scoped exact-fingerprint cache (TTL=1h).
-    Layer 3: persistent disk knowledge cache (TTL=24h).
-    """
-    return _conversation_engine.get_cache_stats()
-
-
-@app.post("/v2/buddy/cache/invalidate")
-async def invalidate_buddy_cache() -> dict[str, Any]:
-    """Clear all 3 cache layers. Use for testing or after major content updates."""
-    _conversation_engine.invalidate_cache()
-    _broadcast({"type": "buddy_cache_invalidated"})
-    return {"invalidated": True, "layers_cleared": ["l1_semantic", "l2_process", "l3_persistent"]}
+# ── Buddy Memory / Profile / Goals / Cache endpoints ─────────────────────────
+# MOVED to studio/routes/buddy.py — included via app.include_router() above.
 
 
 # ── Buddy conversation modes catalogue ──────────────────────────────────────
@@ -1082,137 +1047,6 @@ async def intent_clarify(req: IntentClarifyRequest) -> dict[str, Any]:
 async def clear_intent_session(session_id: str) -> dict[str, Any]:
     cleared = _intent_discovery.clear_session(session_id)
     return {"session_id": session_id, "cleared": cleared}
-
-
-# ── Two-Stroke Pipeline endpoint ──────────────────────────────────────────────
-
-@app.post("/v2/pipeline")
-async def run_pipeline(req: PipelineRequest) -> dict[str, Any]:
-    """THE singular execution pipeline.
-
-    Runs intent discovery until locked, then fires the Two-Stroke Engine:
-      Pre-Flight → Process 1 → Mid-Flight → Process 2 → Satisfaction Gate → loop.
-    """
-    t0 = time.monotonic()
-    session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
-    pipeline_id = f"pipe-{uuid.uuid4().hex[:8]}"
-
-    # 1. Intent Discovery — run until locked (or return discovery result if not yet locked)
-    discovery = _intent_discovery.discover(req.text, session_id)
-
-    _broadcast({
-        "type": "intent_clarification" if not discovery.locked else "intent_locked",
-        "session_id": session_id,
-        "pipeline_id": pipeline_id,
-        "result": discovery.to_dict(),
-    })
-
-    if not discovery.locked:
-        # Not ready to execute — return the clarifying question to the client.
-        return {
-            "pipeline_id": pipeline_id,
-            "session_id": session_id,
-            "locked": False,
-            "clarification_question": discovery.clarification_question,
-            "clarification_type": discovery.clarification_type,
-            "intent_hint": discovery.intent_hint,
-            "confidence": discovery.confidence,
-            "turn_count": discovery.turn_count,
-            "result": None,
-            "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-        }
-
-    # 2. Intent locked — run the Two-Stroke Engine.
-    locked_intent = discovery.locked_intent
-    if locked_intent is None:
-        return {
-            "pipeline_id": pipeline_id,
-            "session_id": session_id,
-            "locked": False,
-            "clarification_question": "Intent lock was expected but missing. Please retry.",
-            "clarification_type": "intent",
-            "intent_hint": discovery.intent_hint,
-            "confidence": discovery.confidence,
-            "turn_count": discovery.turn_count,
-            "result": None,
-            "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-        }
-
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(
-        None,
-        lambda: _supervisor.run(
-            locked_intent,
-            pipeline_id=pipeline_id,
-            max_iterations=req.max_iterations,
-        ),
-    )
-
-    latency_ms = round((time.monotonic() - t0) * 1000, 2)
-    return {
-        "pipeline_id": pipeline_id,
-        "session_id": session_id,
-        "locked": True,
-        "clarification_question": "",
-        "clarification_type": "",
-        "intent_hint": discovery.intent_hint,
-        "confidence": discovery.confidence,
-        "turn_count": discovery.turn_count,
-        "result": result.to_dict(),
-        "latency_ms": latency_ms,
-    }
-
-
-@app.post("/v2/pipeline/direct")
-async def run_pipeline_direct(req: LockedIntentRequest) -> dict[str, Any]:
-    """Run the Two-Stroke Engine with a pre-confirmed LockedIntent.
-
-    Skips the intent-discovery loop — useful for programmatic callers that
-    already hold a locked intent from a previous discovery session.
-    """
-    t0 = time.monotonic()
-    session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
-    pipeline_id = f"pipe-{uuid.uuid4().hex[:8]}"
-    locked = LockedIntent(
-        intent=req.intent,
-        confidence=req.confidence,
-        value_statement=req.value_statement,
-        constraint_summary=req.constraint_summary,
-        mandate_text=req.mandate_text,
-        context_turns=[],
-        locked_at=datetime.now(UTC).isoformat(),
-    )
-
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(
-        None,
-        lambda: _supervisor.run(
-            locked,
-            pipeline_id=pipeline_id,
-            max_iterations=req.max_iterations,
-        ),
-    )
-
-    return {
-        "pipeline_id": pipeline_id,
-        "session_id": session_id,
-        "result": result.to_dict(),
-        "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-    }
-
-
-class SandboxSpawnRequest(BaseModel):
-    feature_text: str
-    feature_title: str = ""
-    roadmap_item_id: str | None = None
-
-
-class RoadmapItemRequest(BaseModel):
-    title: str
-    description: str
-    priority: str = "medium"
-    deps: list[str] = []
-    evaluation_dimensions: list[str] = []
 
 
 @app.post("/v2/mandate")
@@ -1454,7 +1288,7 @@ async def dag_snapshot() -> dict[str, Any]:
 
 @app.get("/v2/psyche-bank")
 async def psyche_bank_rules() -> dict[str, Any]:
-    return _bank.to_dict()
+    return await _bank.to_dict()
 
 
 @app.get("/v2/router-status")
@@ -1789,233 +1623,6 @@ async def self_improve_apply(req: SelfImproveApplyRequest) -> dict[str, Any]:
         }
 
 
-# ── N-Stroke pipeline endpoints ───────────────────────────────────────────────
-
-
-class NStrokeRequest(BaseModel):
-    """Request body for /v2/n-stroke.
-
-    Requires a pre-confirmed LockedIntent.  To build one via multi-turn
-    discovery first, use /v2/intent/clarify then pass the locked_intent here.
-    """
-    intent: str
-    confidence: float
-    value_statement: str
-    constraint_summary: str = ""
-    mandate_text: str
-    session_id: str = ""
-    max_strokes: int = 7
-
-
-@app.post("/v2/n-stroke")
-async def run_n_stroke(req: NStrokeRequest) -> dict[str, Any]:
-    """N-Stroke Autonomous Cognitive Loop.
-
-    Runs the full N-stroke pipeline:
-      PreflightSupervisor → Process 1 → MidflightSupervisor →
-      Process 2 → Satisfaction Gate → (loop with model escalation if needed)
-
-    Features vs /v2/pipeline:
-      - Dynamic model selection (Flash → Pro-Thinking on failures)
-      - MCP tool manifest injected into every stroke's execution context
-      - RefinementSupervisor autonomous healing on 3+ node failures
-      - Loops up to max_strokes (default 7, vs 3 for two-stroke)
-
-    SSE events: n_stroke_start · model_selected · healing_triggered ·
-                preflight · plan · midflight · execution ·
-                satisfaction_gate · n_stroke_complete
-    """
-    t0 = time.monotonic()
-    pipeline_id = f"ns-{uuid.uuid4().hex[:8]}"
-    session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
-
-    locked = LockedIntent(
-        intent=req.intent,
-        confidence=req.confidence,
-        value_statement=req.value_statement,
-        constraint_summary=req.constraint_summary,
-        mandate_text=req.mandate_text,
-        context_turns=[],
-        locked_at=datetime.now(UTC).isoformat(),
-    )
-
-    loop = asyncio.get_event_loop()
-    # Honour max_strokes override
-    engine = _n_stroke_engine
-    if req.max_strokes != 7:
-        from engine.n_stroke import NStrokeEngine as _NSE
-        engine = _NSE(
-            router=_router,
-            booster=_jit_booster,
-            tribunal=_tribunal,
-            sorter=_sorter,
-            executor=_executor,
-            scope_evaluator=_scope_evaluator,
-            refinement_loop=_refinement_loop,
-            mcp_manager=_mcp_manager,
-            model_selector=_model_selector,
-            refinement_supervisor=_refinement_supervisor,
-            broadcast_fn=_broadcast,
-            max_strokes=req.max_strokes,
-            async_fluid_executor=_async_fluid_executor,
-        )
-
-    result = await loop.run_in_executor(
-        None,
-        lambda: engine.run(locked, pipeline_id=pipeline_id),
-    )
-
-    return {
-        "pipeline_id": pipeline_id,
-        "session_id": session_id,
-        "result": result.to_dict(),
-        "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-    }
-
-
-@app.post("/v2/n-stroke/async")
-async def run_n_stroke_async(req: NStrokeRequest) -> dict[str, Any]:
-    """N-Stroke Autonomous Cognitive Loop — async fluid execution variant.
-
-    Identical to POST /v2/n-stroke but uses AsyncFluidExecutor.fan_out_dag_async()
-    for Process 2 execution.  Each DAG node fires the instant its individual
-    dependencies resolve, eliminating wave-level stalls.
-
-    Expected latency improvement: 25-40% on DAGs with 6+ nodes and non-trivial
-    dependency fan-out structures (diamond shapes, multiple parallel branches).
-
-    Response includes ``"execution_mode": "async_fluid"`` in execution SSE events.
-    """
-    t0 = time.monotonic()
-    pipeline_id = f"ns-async-{uuid.uuid4().hex[:8]}"
-    session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
-
-    locked = LockedIntent(
-        intent=req.intent,
-        confidence=req.confidence,
-        value_statement=req.value_statement,
-        constraint_summary=req.constraint_summary,
-        mandate_text=req.mandate_text,
-        context_turns=[],
-        locked_at=datetime.now(UTC).isoformat(),
-    )
-
-    engine = _n_stroke_engine
-    if req.max_strokes != 7:
-        from engine.n_stroke import NStrokeEngine as _NSE
-        engine = _NSE(
-            router=_router,
-            booster=_jit_booster,
-            tribunal=_tribunal,
-            sorter=_sorter,
-            executor=_executor,
-            scope_evaluator=_scope_evaluator,
-            refinement_loop=_refinement_loop,
-            mcp_manager=_mcp_manager,
-            model_selector=_model_selector,
-            refinement_supervisor=_refinement_supervisor,
-            broadcast_fn=_broadcast,
-            max_strokes=req.max_strokes,
-            async_fluid_executor=_async_fluid_executor,
-        )
-
-    result = await engine.run_async(locked, pipeline_id=pipeline_id)
-
-    return {
-        "pipeline_id": pipeline_id,
-        "session_id": session_id,
-        "result": result.to_dict(),
-        "execution_mode": "async_fluid",
-        "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-    }
-
-
-@app.get("/v2/n-stroke/benchmark")
-async def n_stroke_benchmark() -> dict[str, Any]:
-    """Run one sync stroke and one async stroke on a fixed short mandate.
-
-    Returns timing comparison so clients can decide which execution path is
-    faster for their deployment.  Both strokes use max_strokes=1 to keep
-    the benchmark short.
-    """
-    import time as _time
-    _mandate = "benchmark build create implement generate"
-    _locked = LockedIntent(
-        intent="BUILD",
-        confidence=0.95,
-        value_statement=_mandate,
-        constraint_summary="benchmark only",
-        mandate_text=_mandate,
-        context_turns=[],
-        locked_at=datetime.now(UTC).isoformat(),
-    )
-
-    # --- sync stroke ---
-    _engine_sync = NStrokeEngine(
-        router=_router,
-        booster=_jit_booster,
-        tribunal=_tribunal,
-        sorter=_sorter,
-        executor=_executor,
-        scope_evaluator=_scope_evaluator,
-        refinement_loop=_refinement_loop,
-        mcp_manager=_mcp_manager,
-        model_selector=_model_selector,
-        refinement_supervisor=_refinement_supervisor,
-        broadcast_fn=_broadcast,
-        max_strokes=1,
-    )
-    _t_sync = _time.monotonic()
-    _res_sync = _engine_sync.run(_locked, pipeline_id="bench-sync")
-    sync_ms = round((_time.monotonic() - _t_sync) * 1000, 2)
-
-    # --- async stroke ---
-    _engine_async = NStrokeEngine(
-        router=_router,
-        booster=_jit_booster,
-        tribunal=_tribunal,
-        sorter=_sorter,
-        executor=_executor,
-        scope_evaluator=_scope_evaluator,
-        refinement_loop=_refinement_loop,
-        mcp_manager=_mcp_manager,
-        model_selector=_model_selector,
-        refinement_supervisor=_refinement_supervisor,
-        broadcast_fn=_broadcast,
-        max_strokes=1,
-        async_fluid_executor=_async_fluid_executor,
-    )
-    _t_async = _time.monotonic()
-    _res_async = await _engine_async.run_async(_locked, pipeline_id="bench-async")
-    async_ms = round((_time.monotonic() - _t_async) * 1000, 2)
-
-    delta_ms = round(sync_ms - async_ms, 2)
-    faster = "async_fluid" if async_ms < sync_ms else "sync"
-    return {
-        "sync_ms": sync_ms,
-        "async_ms": async_ms,
-        "delta_ms": delta_ms,
-        "faster": faster,
-        "sync_verdict": _res_sync.final_verdict,
-        "async_verdict": _res_async.final_verdict,
-    }
-
-
-@app.get("/v2/mcp/tools")
-async def mcp_tool_manifest() -> dict[str, Any]:
-    """Return the complete MCP tool manifest.
-
-    Each entry describes one registered tool with its URI, name,
-    description, and parameter schema.  The manifest is static for the
-    lifetime of the process — tools are registered at import time.
-    """
-    tools = _mcp_manager.manifest()
-    return {
-        "tool_count": len(tools),
-        "tools": [t.to_dict() for t in tools],
-    }
-
-
 @app.get("/v2/events")
 async def sse_stream() -> StreamingResponse:
     q: asyncio.Queue[str] = asyncio.Queue(maxsize=100)
@@ -2051,131 +1658,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-# ── Sandbox endpoints ────────────────────────────────────────────────────────
-
-@app.post("/v2/sandbox/spawn")
-async def spawn_sandbox(req: SandboxSpawnRequest) -> dict[str, Any]:
-    """Spawn one isolated sandbox for a single feature mandate.
-
-    Runs the full pipeline: VectorDedup → Router → JIT → Tribunal →
-    Scope → Execute → Refine → 9-Dimension Scoring → ReadinessGate.
-    """
-    t0 = time.monotonic()
-    report = _sandbox_orchestrator.run_sandbox(
-        feature_text=req.feature_text,
-        feature_title=req.feature_title,
-        roadmap_item_id=req.roadmap_item_id,
-    )
-    return {
-        "sandbox_id": report.sandbox_id,
-        "state": report.state,
-        "report": report.to_dict(),
-        "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-    }
-
-
-@app.get("/v2/sandbox")
-async def list_sandboxes() -> dict[str, Any]:
-    """Return all sandbox reports from the orchestrator registry."""
-    reports = _sandbox_orchestrator.all_reports()
-    return {
-        "total": len(reports),
-        "proven": sum(1 for r in reports if r.state == "proven"),
-        "failed": sum(1 for r in reports if r.state == "failed"),
-        "blocked": sum(1 for r in reports if r.state == "blocked"),
-        "duplicate": sum(1 for r in reports if r.state == "duplicate"),
-        "reports": [r.to_dict() for r in reports],
-        "vector_store": _sandbox_orchestrator.vector_store_summary(),
-        "graph": _sandbox_orchestrator.graph_summary(),
-    }
-
-
-@app.get("/v2/sandbox/{sandbox_id}")
-async def get_sandbox(sandbox_id: str) -> dict[str, Any]:
-    """Get one sandbox report by ID."""
-    report = _sandbox_orchestrator.get_report(sandbox_id)
-    if report is None:
-        return {"error": "sandbox not found", "sandbox_id": sandbox_id}
-    return report.to_dict()
-
-
-# ── Roadmap endpoints ─────────────────────────────────────────────────────────
-
-@app.get("/v2/roadmap")
-async def get_roadmap() -> dict[str, Any]:
-    """Return full roadmap report: items, wave plan, status/priority distribution."""
-    return _roadmap.get_report().to_dict()
-
-
-@app.post("/v2/roadmap/item")
-async def add_roadmap_item(req: RoadmapItemRequest) -> dict[str, Any]:
-    """Add a new item to the roadmap (near-duplicates are rejected automatically)."""
-    item = _roadmap.add_item(
-        title=req.title,
-        description=req.description,
-        priority=req.priority,
-        deps=req.deps,
-        evaluation_dimensions=req.evaluation_dimensions or [],
-    )
-    if item is None:
-        return {"accepted": False, "reason": "near-duplicate detected — item rejected"}
-    return {"accepted": True, "item": item.to_dict()}
-
-
-@app.post("/v2/roadmap/run")
-async def run_roadmap_sandboxes() -> dict[str, Any]:
-    """Run ALL roadmap items as parallel sandboxes (up to max=25 concurrent).
-
-    Each item's description becomes the sandbox feature mandate.
-    Proven results update the roadmap item scores and status automatically.
-    All progress is broadcast via SSE 'sandbox' events in real-time.
-    """
-    t0 = time.monotonic()
-    items = _roadmap.all_items()
-    features = [
-        {
-            "text": item.description,
-            "title": item.title,
-            "roadmap_item_id": item.id,
-        }
-        for item in items
-    ]
-    reports = _sandbox_orchestrator.run_parallel(features)
-    # Write sandbox scores back to roadmap
-    for r in reports:
-        if r.roadmap_item_id:
-            _roadmap.update_item_scores(
-                item_id=r.roadmap_item_id,
-                impact_score=r.impact_score,
-                difficulty_score=r.difficulty_score,
-                readiness_score=r.readiness_score,
-                timeline_days=r.timeline_days,
-                status=r.state if r.state in (
-                    "proven", "failed", "blocked") else "sandbox",
-                sandbox_id=r.sandbox_id,
-                notes=r.recommendations[:2] if r.recommendations else [],
-            )
-    _broadcast({"type": "roadmap_run", "reports": [
-               r.to_dict() for r in reports]})
-    latency_ms = round((time.monotonic() - t0) * 1000, 2)
-    return {
-        "total": len(reports),
-        "proven": sum(1 for r in reports if r.state == "proven"),
-        "failed": sum(1 for r in reports if r.state == "failed"),
-        "blocked": sum(1 for r in reports if r.state == "blocked"),
-        "reports": [r.to_dict() for r in reports],
-        "latency_ms": latency_ms,
-    }
-
-
-@app.get("/v2/roadmap/similar")
-async def roadmap_similar(q: str = "", top_k: int = 3) -> dict[str, Any]:
-    """Find roadmap items semantically similar to a query string."""
-    if not q:
-        return {"results": []}
-    return {"query": q, "results": _roadmap.find_similar(q, top_k=top_k)}
 
 
 # ── Auto-improvement loop endpoints ──────────────────────────────────────────
@@ -2260,113 +1742,6 @@ async def system_status() -> dict[str, Any]:
     }
 
 
-# ── Roadmap promote endpoint ──────────────────────────────────────────────────
-
-@app.post("/v2/roadmap/{item_id}/promote")
-async def promote_roadmap_item(item_id: str) -> dict[str, Any]:
-    """Promote a proven roadmap item — marks it as promoted and broadcasts."""
-    item = _roadmap.get_item(item_id)
-    if not item:
-        return {"promoted": False, "reason": "item not found"}
-    updated = _roadmap.update_item_scores(
-        item_id=item_id,
-        impact_score=item.impact_score,
-        difficulty_score=item.difficulty_score,
-        readiness_score=item.readiness_score,
-        timeline_days=item.timeline_days,
-        status="promoted",
-    )
-    if not updated:
-        return {"promoted": False, "reason": "update failed"}
-    _broadcast({"type": "roadmap_promote",
-               "item_id": item_id, "title": item.title})
-    return {"promoted": True, "item_id": item_id, "title": item.title}
-
-
-# ── Branch Executor endpoints ─────────────────────────────────────────────────
-
-_VALID_BRANCH_TYPES = {BRANCH_FORK, BRANCH_CLONE, BRANCH_SHARE}
-
-
-class BranchSpecRequest(BaseModel):
-    """One branch specification for /v2/branch."""
-    branch_id: str = ""
-    branch_type: str = BRANCH_FORK
-    mandate_text: str
-    intent: str = "BUILD"
-    target: str = ""
-    parent_branch_id: str | None = None
-    metadata: dict = {}
-
-
-class BranchRequest(BaseModel):
-    branches: list[BranchSpecRequest]
-    timeout: float = 120.0
-
-
-@app.post("/v2/branch")
-async def run_branches(req: BranchRequest) -> dict[str, Any]:
-    """Run a set of branched parallel autonomous processes.
-
-    Each branch spec describes an independent (FORK/CLONE) or dependent
-    (SHARE) pipeline segment.  All branches execute concurrently; SHARE
-    branches wait for their parent to post a result first.
-
-    Branch types:
-      - ``fork``  — independent parallel paths from a parent context
-      - ``clone`` — identical logic applied to multiple targets
-      - ``share`` — waits for parent branch result, inherits context
-
-    SSE events: branch_run_start · branch_spawned · branch_complete ·
-                branch_run_complete
-    """
-    t0 = time.monotonic()
-
-    # Validate and build BranchSpec list (input validation boundary)
-    specs: list[BranchSpec] = []
-    for i, s in enumerate(req.branches):
-        branch_type = s.branch_type.lower() if s.branch_type else BRANCH_FORK
-        if branch_type not in _VALID_BRANCH_TYPES:
-            return {
-                "error": f"Invalid branch_type '{s.branch_type}'. "
-                f"Must be one of: {sorted(_VALID_BRANCH_TYPES)}",
-                "branch_index": i,
-            }
-        intent = s.intent.upper() if s.intent else "BUILD"
-        specs.append(BranchSpec(
-            branch_id=s.branch_id or f"b-{uuid.uuid4().hex[:8]}",
-            branch_type=branch_type,
-            mandate_text=s.mandate_text,
-            intent=intent,
-            target=s.target,
-            parent_branch_id=s.parent_branch_id,
-            metadata=s.metadata,
-        ))
-
-    run_result = await _branch_executor.run_branches(specs, timeout=req.timeout)
-
-    _broadcast({"type": "branch_run_complete",
-                "run_id": run_result.run_id,
-                "satisfied": run_result.satisfied_count,
-                "failed": run_result.failed_count})
-
-    return {
-        "run_id": run_result.run_id,
-        "result": run_result.to_dict(),
-        "latency_ms": round((time.monotonic() - t0) * 1000, 2),
-    }
-
-
-@app.get("/v2/branches")
-async def list_branches() -> dict[str, Any]:
-    """Return status snapshot of all known branch processes."""
-    branches = _branch_executor.active_branches()
-    return {
-        "total": len(branches),
-        "branches": branches,
-    }
-
-
 @app.get("/v2/daemon/status")
 async def get_daemon_status():
     return {
@@ -2397,552 +1772,10 @@ async def approve_daemon_proposal(proposal_id: str):
     return res
 
 
-# ── Knowledge Banks ────────────────────────────────────────────────────────────
+# ── Cognitive Map + Deep Introspection endpoints ─────────────────────────────
+# MOVED to studio/routes/introspection.py — included via app.include_router() above.
 
 
-@app.get("/v2/knowledge/health")
-async def knowledge_health() -> dict[str, Any]:
-    """Return health summary for all knowledge banks."""
-    return _bank_manager.health()
+# Session state: phase, history, current prototype HTML, iteration count
 
-
-@app.get("/v2/knowledge/dashboard")
-async def knowledge_dashboard() -> dict[str, Any]:
-    """Full dashboard dict for the Knowledge Banks UI panel."""
-    return _bank_manager.dashboard()
-
-
-@app.get("/v2/knowledge/{bank_id}")
-async def get_knowledge_bank(bank_id: str) -> dict[str, Any]:
-    """Return all entries for a specific bank (design/code/ai/bridge)."""
-    bank = _bank_manager.get_bank(bank_id)
-    if bank is None:
-        return {"error": f"Unknown bank: {bank_id}", "valid_ids": list(_bank_manager.all_banks())}
-    return {
-        "bank_id": bank_id,
-        "bank_name": bank.bank_name,
-        "domains": bank.domains,
-        "entries": [e.to_dict() for e in bank.all_entries()],
-    }
-
-
-@app.get("/v2/knowledge/{bank_id}/signals")
-async def get_bank_signals(bank_id: str, domain: str = "", n: int = 5) -> dict[str, Any]:
-    """Return top-N signal strings from a bank, optionally filtered by domain."""
-    bank = _bank_manager.get_bank(bank_id)
-    if bank is None:
-        return {"error": f"Unknown bank: {bank_id}"}
-    return {"bank_id": bank_id, "domain": domain, "signals": bank.get_signals(domain, n)}
-
-
-class KnowledgeQueryRequest(BaseModel):
-    topic: str
-    context: str = ""
-    n_per_bank: int = 3
-
-
-@app.post("/v2/knowledge/query")
-async def query_knowledge(req: KnowledgeQueryRequest) -> dict[str, Any]:
-    """Cross-bank semantic query — returns top entries across all banks."""
-    results = _bank_manager.query_all(req.topic, req.context, req.n_per_bank)
-    return {
-        "topic": req.topic,
-        "results": [e.to_dict() for e in results],
-        "count": len(results),
-    }
-
-
-class KnowledgeIngestRequest(BaseModel):
-    bank_id: str
-    domain: str
-    signals: list[str]
-
-
-@app.post("/v2/knowledge/ingest")
-async def ingest_knowledge(req: KnowledgeIngestRequest) -> dict[str, Any]:
-    """Manually ingest a list of signal strings into a specific bank/domain."""
-    try:
-        report = _sota_ingestion.ingest_single(
-            req.bank_id, req.domain, req.signals)
-        _broadcast({"type": "knowledge_ingested", "report": report.to_dict()})
-        return report.to_dict()
-    except ValueError as exc:
-        return {"error": str(exc)}
-
-
-@app.post("/v2/knowledge/ingest/full")
-async def run_full_sota_ingestion() -> dict[str, Any]:
-    """Trigger a full SOTA ingestion run across all banks and domains.
-
-    This enriches all knowledge banks with the latest signals from Gemini
-    (or the structured SOTA catalogue when offline). May take 15-30 s when
-    Gemini is available; ~1 s in offline/structured mode.
-    """
-    loop = asyncio.get_event_loop()
-    report = await loop.run_in_executor(None, _sota_ingestion.run_full_ingestion)
-    _broadcast({"type": "sota_ingestion_complete", "report": report.to_dict()})
-    return report.to_dict()
-
-
-@app.get("/v2/knowledge/intent/{intent}/signals")
-async def get_intent_signals(intent: str, n: int = 5) -> dict[str, Any]:
-    """Return the top SOTA signals for a given routing intent, from knowledge banks."""
-    signals = _bank_manager.signals_for_intent(intent.upper(), n)
-    return {"intent": intent.upper(), "signals": signals, "count": len(signals)}
-
-
-# ── VLT (Vector Layout Tree) endpoints ───────────────────────────────────────────────
-
-from engine.vlt_schema import VectorTree, VLTAuditReport, demo_vlt  # noqa: E402
-
-
-@app.get("/v2/vlt/demo")
-async def vlt_demo() -> dict[str, Any]:
-    """Return the production-quality demo VLT + its full math audit report.
-
-    Used by the Spatial Engine canvas “Load Demo VLT” button.
-    The tree encodes the TooLoo Studio layout using pure numeric constraints;
-    the audit proves zero violations before the browser ever paints a pixel.
-    """
-    tree = demo_vlt()
-    audit: VLTAuditReport = tree.full_audit()
-    _broadcast({"type": "vlt_rendered", "tree_id": tree.tree_id,
-                "verdict": audit.verdict, "violations": audit.total_violations})
-    return {
-        "tree":  tree.model_dump(),
-        "audit": audit.model_dump(),
-    }
-
-
-@app.post("/v2/vlt/audit")
-async def vlt_audit(req: dict[str, Any]) -> dict[str, Any]:
-    """Run all three math proofs (collision / overflow / WCAG) on a submitted VLT.
-
-    Accepts a raw VectorTree JSON body (not wrapped).  Returns VLTAuditReport.
-    Security: validated through Pydantic model — no raw dict passed to eval/exec.
-    """
-    if "tree" not in req and "tree_id" not in req:
-        raise HTTPException(
-            status_code=422, detail="Missing required field: 'tree'")
-    try:
-        tree = VectorTree.model_validate(req.get("tree", req))
-    except Exception as exc:
-        return {"error": f"Invalid VLT payload: {exc}"}
-    audit: VLTAuditReport = tree.full_audit()
-    _broadcast({"type": "vlt_audit_complete", "tree_id": tree.tree_id,
-                "verdict": audit.verdict, "violations": audit.total_violations})
-    return audit.model_dump()
-
-
-@app.post("/v2/vlt/render")
-async def vlt_render(req: dict[str, Any]) -> dict[str, Any]:
-    """Validate a VLT, run audit, broadcast via SSE so all connected clients
-    automatically update their Spatial Canvas in real-time.
-
-    Returns the audit report.  The SSE ''vlt_push'' event carries the full tree
-    so the JS renderVectorTree() engine can tween coordinates client-side.
-    """
-    try:
-        tree = VectorTree.model_validate(req)
-    except Exception as exc:
-        return {"error": f"Invalid VLT payload: {exc}"}
-    audit: VLTAuditReport = tree.full_audit()
-    _broadcast({
-        "type":       "vlt_push",
-        "tree":        tree.model_dump(),
-        "audit":       audit.model_dump(),
-        "verdict":     audit.verdict,
-        "violations":  audit.total_violations,
-    })
-    return {
-        "tree_id":    tree.tree_id,
-        "audit":      audit.model_dump(),
-        "broadcast":  True,
-    }
-
-
-class VLTPatchRequest(BaseModel):
-    """Differential VLT patch — updates a subset of nodes without full reload.
-
-    Each entry in ``patches`` is a dict with ``node_id`` and any properties to
-    override (material, sensor_bindings, coordinates, style_tokens).  The SSE
-    ``vlt_patch`` event is streamed immediately so the frontend can tween only
-    the changed nodes without interrupting the current animation state.
-    """
-    tree_id: str = ""
-    patches: list[dict[str, Any]]
-    transition_ms: int = Field(
-        400, ge=0, le=5000,
-        description="Frontend GSAP tween duration for this patch (milliseconds)")
-
-
-@app.post("/v2/vlt/patch")
-async def vlt_patch(req: VLTPatchRequest) -> dict[str, Any]:
-    """Stream a differential VLT patch for live-wire real-time UI evolution.
-
-    Used by Buddy's Ghost Manifestation loop: material or sensor-binding changes
-    are extracted from LLM output and broadcast immediately so the 3D canvas
-    morphs *while* the text response is still streaming.
-
-    Security: node_id values validated as non-empty strings; no eval/exec.
-    """
-    validated_patches = []
-    for p in req.patches:
-        node_id = p.get("node_id", "")
-        if not node_id or not isinstance(node_id, str):
-            continue
-        if "material" in p:
-            from engine.vlt_schema import MaterialProps
-            try:
-                MaterialProps.model_validate(p["material"])
-            except Exception:
-                p.pop("material")
-        validated_patches.append(p)
-
-    _broadcast({
-        "type":          "vlt_patch",
-        "tree_id":       req.tree_id,
-        "patches":       validated_patches,
-        "transition_ms": req.transition_ms,
-    })
-    return {
-        "tree_id":         req.tree_id,
-        "patches_applied": len(validated_patches),
-        "broadcast":       True,
-    }
-
-
-# ── Cognitive Self-Map endpoints ──────────────────────────────────────────────
-
-@app.get("/v2/cognitive-map")
-async def cognitive_map_snapshot() -> dict[str, Any]:
-    """Return a live snapshot of the CognitiveMap DAG (nodes, edges, summary)."""
-    return _cognitive_map.to_dict()
-
-
-@app.get("/v2/cognitive-map/mermaid")
-async def cognitive_map_mermaid() -> dict[str, Any]:
-    """Return the live Mermaid diagram of engine component dependencies."""
-    return {
-        "mermaid": _cognitive_map.to_mermaid(),
-        "node_count": _cognitive_map.node_count(),
-    }
-
-
-@app.get("/v2/cognitive-map/context/{intent}")
-async def cognitive_map_context(intent: str, mandate: str = "") -> dict[str, Any]:
-    """Zero-shot workspace blueprint for a given intent."""
-    safe_intent = intent.upper()[:64]
-    safe_mandate = mandate[:512]
-    blueprint = _cognitive_map.relevant_context(safe_intent, safe_mandate)
-    nodes = [n.to_dict() for n in _cognitive_map.query_nodes(safe_intent)]
-    return {"intent": safe_intent, "blueprint": blueprint, "nodes": nodes}
-
-
-@app.post("/v2/cognitive-map/rebuild")
-async def cognitive_map_rebuild() -> dict[str, Any]:
-    """Force a full workspace rescan and rebuild the CognitiveMap."""
-    await asyncio.to_thread(_cognitive_map.rebuild)
-    _broadcast({
-        "type": "self_map_update",
-        "source": "manual_rebuild",
-        "node_count": _cognitive_map.node_count(),
-    })
-    return {"node_count": _cognitive_map.node_count(), "rebuilt": True}
-
-
-# ── Deep Introspection endpoints ──────────────────────────────────────────────
-
-
-@app.get("/v2/introspector")
-async def introspector_snapshot() -> dict[str, Any]:
-    """Full deep introspection snapshot: system health + all module health."""
-    return await asyncio.to_thread(_deep_introspector.to_dict)
-
-
-@app.get("/v2/introspector/health")
-async def introspector_system_health() -> dict[str, Any]:
-    """Break-glass system health dashboard (traffic-light status)."""
-    report = await asyncio.to_thread(_deep_introspector.system_health)
-    return report.to_dict()
-
-
-@app.get("/v2/introspector/module/{module_name}")
-async def introspector_module_health(module_name: str) -> dict[str, Any]:
-    """Per-module health deep dive."""
-    safe_name = re.sub(r"[^a-zA-Z0-9_]", "", module_name)[:64]
-    health = _deep_introspector.module_health(safe_name)
-    if health is None:
-        return {"error": f"Module '{safe_name}' not found", "modules": [
-            h.module_name for h in _deep_introspector.all_module_health()
-        ]}
-    return health.to_dict()
-
-
-@app.get("/v2/introspector/cross-refs")
-async def introspector_all_cross_refs() -> dict[str, Any]:
-    """All function-level cross-references grouped by target module."""
-    refs = await asyncio.to_thread(_deep_introspector.all_cross_refs)
-    total = sum(len(v) for v in refs.values())
-    return {"total_refs": total, "by_module": refs}
-
-
-@app.get("/v2/introspector/cross-refs/{module_name}")
-async def introspector_module_cross_refs(module_name: str) -> dict[str, Any]:
-    """Cross-references targeting a specific module's functions."""
-    safe_name = re.sub(r"[^a-zA-Z0-9_]", "", module_name)[:64]
-    refs = _deep_introspector.cross_refs(safe_name)
-    return {
-        "module": safe_name,
-        "ref_count": len(refs),
-        "refs": [r.to_dict() for r in refs],
-    }
-
-
-@app.get("/v2/introspector/dead-code")
-async def introspector_dead_code() -> dict[str, Any]:
-    """Public functions never referenced by other modules."""
-    dead = await asyncio.to_thread(_deep_introspector.dead_functions)
-    return {"dead_function_count": len(dead), "functions": dead}
-
-
-@app.get("/v2/introspector/knowledge-graph")
-async def introspector_knowledge_graph() -> dict[str, Any]:
-    """Semantic knowledge graph: module roles, layers, criticality."""
-    return await asyncio.to_thread(_deep_introspector.knowledge_graph)
-
-
-@app.get("/v2/introspector/cascade/{file_path:path}")
-async def introspector_cascade(file_path: str) -> dict[str, Any]:
-    """Predictive cascade analysis: failure risk if a file is modified."""
-    safe_path = file_path.replace("..", "").strip("/")[:256]
-    return await asyncio.to_thread(
-        _deep_introspector.cascade_analysis, safe_path
-    )
-
-
-@app.post("/v2/introspector/rebuild")
-async def introspector_rebuild() -> dict[str, Any]:
-    """Force a full deep introspection rebuild."""
-    await asyncio.to_thread(_deep_introspector.rebuild)
-    report = _deep_introspector.system_health()
-    _broadcast({
-        "type": "deep_introspection_update",
-        "source": "manual_rebuild",
-        "status": report.status,
-        "module_count": report.module_count,
-    })
-    return {
-        "rebuilt": True,
-        "status": report.status,
-        "module_count": report.module_count,
-        "avg_health": round(report.avg_health, 3),
-    }
-
-
-# ── Parallel Validation endpoint ──────────────────────────────────────────────
-
-class ParallelValidateRequest(BaseModel):
-    """Batch of file changes to validate concurrently (Tribunal + 16D + tests)."""
-    files: list[dict[str, Any]]
-    run_tests: bool = True
-
-
-@app.post("/v2/validate")
-async def parallel_validate(req: ParallelValidateRequest) -> dict[str, Any]:
-    """Fan-out Tribunal + 16D + tests concurrently for a batch of file changes.
-
-    Security: path values are validated inside ParallelValidationPipeline
-    (path-traversal guard). No eval/exec.
-    """
-    changes = [
-        FileChange(
-            path=f.get("path", ""),
-            content=f.get("content"),
-            component=f.get("component", ""),
-        )
-        for f in req.files
-        if isinstance(f.get("path"), str) and f["path"]
-    ]
-    if not changes:
-        raise HTTPException(
-            status_code=422, detail="No valid file paths provided")
-    report = await _parallel_validation.validate_changes(
-        changes, run_tests=req.run_tests
-    )
-    return report.to_dict()
-
-
-# ── NotificationBus endpoints ─────────────────────────────────────────────────
-
-@app.get("/v2/alerts")
-async def alerts_list(
-    level: str | None = None,
-    limit: int = 50,
-) -> dict[str, Any]:
-    """Return recent alert history from the NotificationBus.
-
-    Query params:
-        level  — filter by INFO | INSIGHT | WARNING | CRITICAL (optional)
-        limit  — max events to return (default 50)
-    """
-    safe_limit = max(1, min(limit, 200))
-    safe_level = level.upper() if level else None
-    events = _notification_bus.history(level=safe_level, limit=safe_limit)
-    return {
-        "events": [e.to_dict() for e in events],
-        "stats": _notification_bus.stats(),
-    }
-
-
-@app.get("/v2/alerts/pending")
-async def alerts_pending() -> dict[str, Any]:
-    """Return all events that are awaiting user confirmation."""
-    return {
-        "pending": [e.to_dict() for e in _notification_bus.pending()],
-    }
-
-
-@app.post("/v2/alerts/confirm/{event_id}")
-async def alerts_confirm(event_id: str, accepted: bool = True) -> dict[str, Any]:
-    """Confirm or dismiss a bus event that requires human acknowledgement.
-
-    SSE: broadcasts a ``bus_confirm_response`` event with the result.
-    """
-    result = _notification_bus.confirm(event_id, accepted=accepted)
-    if result is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Pending event '{event_id}' not found (already confirmed or expired)",
-        )
-    return result.to_dict()
-
-
-@app.post("/v2/alerts/dismiss/{event_id}")
-async def alerts_dismiss(event_id: str) -> dict[str, Any]:
-    """Silently remove a pending confirmation event without triggering on_confirm."""
-    removed = _notification_bus.dismiss(event_id)
-    if not removed:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Pending event '{event_id}' not found",
-        )
-    return {"event_id": event_id, "dismissed": True}
-
-
-@app.post("/v2/alerts/publish")
-async def alerts_publish(req: dict[str, Any]) -> dict[str, Any]:
-    """Manually publish a bus event (for testing or external system integration).
-
-    Security: level is constrained to the allowed set; message is plain text only.
-    """
-    level = str(req.get("level", "INFO")).upper()
-    if level not in ("INFO", "INSIGHT", "WARNING", "CRITICAL"):
-        level = "INFO"
-    message = str(req.get("message", ""))[:500]
-    source = str(req.get("source", "api"))[:64]
-    payload = req.get("payload", {})
-    if not isinstance(payload, dict):
-        payload = {}
-    requires_confirmation = bool(req.get("requires_confirmation", False))
-
-    event = BusEvent(
-        level=level,
-        source=source,
-        message=message,
-        payload=payload,
-        requires_confirmation=requires_confirmation,
-    )
-    _notification_bus.publish(event)
-    return {"published": True, "event_id": event.event_id, "level": event.level}
-
-
-# ── Cognitive Stance endpoints ────────────────────────────────────────────────
-
-@app.get("/v2/stance")
-async def stance_get() -> dict[str, Any]:
-    """Return the currently active Cognitive Stance."""
-    return get_active_stance().to_dict()
-
-
-class StanceOverrideRequest(BaseModel):
-    # IDEATION | DEEP_EXECUTION | SURGICAL_REPAIR | MAINTENANCE
-    stance: str
-    mandate_text: str = ""            # optional — used for confidence estimation
-
-
-@app.post("/v2/stance")
-async def stance_set(req: StanceOverrideRequest) -> dict[str, Any]:
-    """Override the active Cognitive Stance for current session.
-
-    This immediately propagates to the 16D Validator, ConversationEngine persona,
-    and the next NStroke execution preflight.  Broadcasting a ``stance_detected``
-    SSE event so the UI can reflect the change.
-    """
-    stance_upper = req.stance.upper()
-    try:
-        stance_enum = Stance(stance_upper)
-    except ValueError:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Invalid stance '{req.stance}'. "
-            f"Valid values: {[s.value for s in Stance if s != Stance.UNKNOWN]}",
-        )
-
-    if req.mandate_text:
-        result = _stance_engine.detect(
-            mandate_text=req.mandate_text,
-            recent_intents=[stance_upper],
-        )
-    else:
-        from engine.stance import (
-            # type: ignore[attr-defined]
-            _STANCE_WEIGHTS, _STANCE_BUDDY_PERSONA, StanceResult
-        )
-        result = StanceResult(
-            stance=stance_enum,
-            confidence=1.0,
-            explanation=f"Manually set via POST /v2/stance",
-            dimension_weights=_STANCE_WEIGHTS[stance_enum],
-            buddy_persona=_STANCE_BUDDY_PERSONA[stance_enum],
-        )
-        set_active_stance(result)
-
-    _broadcast({
-        "type": "stance_detected",
-        "stance": result.stance.value,
-        "confidence": round(result.confidence, 3),
-        "explanation": result.explanation,
-        "source": "manual_override",
-    })
-    return result.to_dict()
-
-
-@app.post("/v2/stance/detect")
-async def stance_detect(req: dict[str, Any]) -> dict[str, Any]:
-    """Run automatic stance detection from mandate text + intent history.
-
-    Body: { "mandate_text": "...", "recent_intents": ["BUILD", "DEBUG"] }
-    """
-    mandate_text = str(req.get("mandate_text", ""))[:512]
-    recent_intents = [str(i) for i in req.get("recent_intents", [])][:10]
-    result = _stance_engine.detect(
-        mandate_text=mandate_text,
-        recent_intents=recent_intents,
-    )
-    _broadcast({
-        "type": "stance_detected",
-        "stance": result.stance.value,
-        "confidence": round(result.confidence, 3),
-        "explanation": result.explanation,
-    })
-    return result.to_dict()
-
-
-@app.post("/v2/memory/distill")
-async def distill_hot_memory() -> dict[str, Any]:
-    """Manually trigger the Recursive Summary Agent to distill Hot Memory into Warm Memory."""
-    agent = RecursiveSummaryAgent()
-    result = agent.distill_pending()
-    return result
 

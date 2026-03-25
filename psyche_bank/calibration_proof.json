@@ -1,6 +1,6 @@
 {
-  "run_id": "1937e7f1913c",
-  "timestamp": "2026-03-22T07:23:12.831192+00:00",
+  "run_id": "d171a49a0159",
+  "timestamp": "2026-03-24T17:21:34.880718+00:00",
   "components_calibrated": 28,
   "engine_version": "5-cycle-v2",
   "system_metrics": {
@@ -49,7 +49,7 @@
     "WebArena Leaderboard — CMU 2025",
     "Zilliz GPTCache Production Report 2025"
   ],
-  "summary": "5-CYCLE CALIBRATION SUMMARY  [run:1937e7f1913c]\n\n  System alignment : 0.7378 → 0.7667 (+2.89pp)\n  Mean Δ16D        : +3.94pp\n  Mean JIT gain    : +14.21pp\n  System Gain Index: 41.2363\n  Benchmarks cited : 34 across 10 domains\n\n  TOP-3 IMPACT COMPONENTS (by IPA):\n    • buddy_cache                IPA=58.65x  Δ16D=+7.04pp\n    • model_garden               IPA=56.13x  Δ16D=+6.74pp\n    • model_selector             IPA=51.26x  Δ16D=+6.15pp\n\n  TOP-3 JIT GAIN COMPONENTS:\n    • sandbox                    JIT gain=+18.20pp  composite=1.0000\n    • refinement_supervisor      JIT gain=+17.90pp  composite=1.0000\n    • roadmap                    JIT gain=+17.30pp  composite=1.0000\n\n  TOP-3 CRITICAL SOTA GAPS (gap_ratio < 0.75):\n    • LLM Inference Throughput — A100×8 (70B param)  gap_ratio=0.127  TooLoo=1240.000 vs SOTA=9800.000\n    • Concurrent Request Throughput (requests/sec)   gap_ratio=0.129  TooLoo=412.000 vs SOTA=3200.000\n    • Deploy Frequency — Elite Performers            gap_ratio=0.250  TooLoo=1.200 vs SOTA=4.800\n\n  CYCLE 4 — FEATURE COVERAGE MATRIX:\n    Domains scanned  : 10\n    Coverage deserts : 7 (score < 0.80)\n    ⚠  performance              coverage=0.5560  weak=buddy_cache (0.5107)\n    ⚠  intelligence             coverage=0.6829  weak=model_selector (0.5380)\n    ⚠  retrieval                coverage=0.6848  weak=buddy_cache (0.5107)\n\n  CYCLE 5 — CROSS-COMPONENT INTEGRATION:\n    Integration health   : 0.5444\n    System coupling index: 0.3396\n    Bottleneck components: model_selector, executor, buddy_cache\n\n  JIT PARAMETER RECOMMENDATIONS:\n    BOOST_PER_SIGNAL  : 0.0735 (current: 0.0500)\n    MAX_BOOST_DELTA   : 0.3500 (current: 0.2500)\n\n  PROOF ARTEFACTS:\n    psyche_bank/calibration_proof.json\n    psyche_bank/jit_calibration.json\n    psyche_bank/calibration_rules.cog.json\n    psyche_bank/feature_coverage.json\n    psyche_bank/integration_scores.json",
+  "summary": "5-CYCLE CALIBRATION SUMMARY  [run:d171a49a0159]\n\n  System alignment : 0.7378 → 0.7667 (+2.89pp)\n  Mean Δ16D        : +3.94pp\n  Mean JIT gain    : +14.21pp\n  System Gain Index: 41.2363\n  Benchmarks cited : 34 across 10 domains\n\n  TOP-3 IMPACT COMPONENTS (by IPA):\n    • buddy_cache                IPA=58.65x  Δ16D=+7.04pp\n    • model_garden               IPA=56.13x  Δ16D=+6.74pp\n    • model_selector             IPA=51.26x  Δ16D=+6.15pp\n\n  TOP-3 JIT GAIN COMPONENTS:\n    • sandbox                    JIT gain=+18.20pp  composite=1.0000\n    • refinement_supervisor      JIT gain=+17.90pp  composite=1.0000\n    • roadmap                    JIT gain=+17.30pp  composite=1.0000\n\n  TOP-3 CRITICAL SOTA GAPS (gap_ratio < 0.75):\n    • LLM Inference Throughput — A100×8 (70B param)  gap_ratio=0.127  TooLoo=1240.000 vs SOTA=9800.000\n    • Concurrent Request Throughput (requests/sec)   gap_ratio=0.129  TooLoo=412.000 vs SOTA=3200.000\n    • Deploy Frequency — Elite Performers            gap_ratio=0.250  TooLoo=1.200 vs SOTA=4.800\n\n  CYCLE 4 — FEATURE COVERAGE MATRIX:\n    Domains scanned  : 10\n    Coverage deserts : 7 (score < 0.80)\n    ⚠  performance              coverage=0.5560  weak=buddy_cache (0.5107)\n    ⚠  intelligence             coverage=0.6829  weak=model_selector (0.5380)\n    ⚠  retrieval                coverage=0.6848  weak=buddy_cache (0.5107)\n\n  CYCLE 5 — CROSS-COMPONENT INTEGRATION:\n    Integration health   : 0.5444\n    System coupling index: 0.3396\n    Bottleneck components: model_selector, executor, buddy_cache\n\n  JIT PARAMETER RECOMMENDATIONS:\n    BOOST_PER_SIGNAL  : 0.0735 (current: 0.0500)\n    MAX_BOOST_DELTA   : 0.3500 (current: 0.2500)\n\n  PROOF ARTEFACTS:\n    psyche_bank/calibration_proof.json\n    psyche_bank/jit_calibration.json\n    psyche_bank/calibration_rules.cog.json\n    psyche_bank/feature_coverage.json\n    psyche_bank/integration_scores.json",
   "cycles": {
     "cycle_1_baselines": [
       {
@@ -783,7 +783,7 @@
         "delta_16d": 0.0158,
         "delta_16d_pct": 1.58,
         "impact_per_action": 13.2027,
-        "proof_certificate": "PROOF-v2 [router]: Cycle-1 alignment=0.9176 (gap=0.0824). Profile: primary_dims=['Speed', 'Accuracy', 'Honesty']. Per-dim boost: primary×1.033, secondary×1.016. Base composite=0.8773 → Cal=0.8932. Δ16D=+1.58pp. Top gains: Honesty+3.0pp, Speed+2.9pp, Safety+1.6pp. IPA=13.20× at est. cost $0.0012. Sources: Intent Classification F1 Score, Circuit Breaker False-Positive Rate, HumanEval Pass@1.",
+        "proof_certificate": "PROOF-v2 [router]: Cycle-1 alignment=0.9176 (gap=0.0824). Profile: primary_dims=['Honesty', 'Speed', 'Accuracy']. Per-dim boost: primary×1.033, secondary×1.016. Base composite=0.8773 → Cal=0.8932. Δ16D=+1.58pp. Top gains: Honesty+3.0pp, Speed+2.9pp, Safety+1.6pp. IPA=13.20× at est. cost $0.0012. Sources: Intent Classification F1 Score, Circuit Breaker False-Positive Rate, HumanEval Pass@1.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -924,7 +924,7 @@
         "delta_16d": 0.0284,
         "delta_16d_pct": 2.84,
         "impact_per_action": 23.6446,
-        "proof_certificate": "PROOF-v2 [tribunal]: Cycle-1 alignment=0.7867 (gap=0.2133). Profile: primary_dims=['Accuracy', 'Safety', 'Security']. Per-dim boost: primary×1.085, secondary×1.043. Base composite=0.8665 → Cal=0.8949. Δ16D=+2.84pp. Top gains: Legal+3.8pp, Reversibility+3.8pp, Honesty+3.8pp. IPA=23.64× at est. cost $0.0012. Sources: OWASP Top-10 Coverage in Static Analysis, Vulnerability Detection True-Positive Rate, Supply-Chain Attack Detection Rate.",
+        "proof_certificate": "PROOF-v2 [tribunal]: Cycle-1 alignment=0.7867 (gap=0.2133). Profile: primary_dims=['Safety', 'Accuracy', 'Security']. Per-dim boost: primary×1.085, secondary×1.043. Base composite=0.8665 → Cal=0.8949. Δ16D=+2.84pp. Top gains: Legal+3.8pp, Reversibility+3.8pp, Honesty+3.8pp. IPA=23.64× at est. cost $0.0012. Sources: OWASP Top-10 Coverage in Static Analysis, Vulnerability Detection True-Positive Rate, Supply-Chain Attack Detection Rate.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -1488,7 +1488,7 @@
         "delta_16d": 0.0338,
         "delta_16d_pct": 3.38,
         "impact_per_action": 28.2038,
-        "proof_certificate": "PROOF-v2 [graph]: Cycle-1 alignment=0.7589 (gap=0.2411). Profile: primary_dims=['Accuracy', 'Reversibility', 'Safety']. Per-dim boost: primary×1.096, secondary×1.048. Base composite=0.8628 → Cal=0.8967. Δ16D=+3.38pp. Top gains: Legal+4.3pp, Honesty+4.2pp, Convergence+4.2pp. IPA=28.20× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
+        "proof_certificate": "PROOF-v2 [graph]: Cycle-1 alignment=0.7589 (gap=0.2411). Profile: primary_dims=['Safety', 'Reversibility', 'Accuracy']. Per-dim boost: primary×1.096, secondary×1.048. Base composite=0.8628 → Cal=0.8967. Δ16D=+3.38pp. Top gains: Legal+4.3pp, Honesty+4.2pp, Convergence+4.2pp. IPA=28.20× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -1629,7 +1629,7 @@
         "delta_16d": 0.0403,
         "delta_16d_pct": 4.03,
         "impact_per_action": 33.5703,
-        "proof_certificate": "PROOF-v2 [scope_evaluator]: Cycle-1 alignment=0.7589 (gap=0.2411). Profile: primary_dims=['Accuracy', 'Efficiency', 'Quality']. Per-dim boost: primary×1.096, secondary×1.048. Base composite=0.8749 → Cal=0.9152. Δ16D=+4.03pp. Top gains: Quality+8.5pp, Efficiency+8.0pp, Legal+4.3pp. IPA=33.57× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
+        "proof_certificate": "PROOF-v2 [scope_evaluator]: Cycle-1 alignment=0.7589 (gap=0.2411). Profile: primary_dims=['Efficiency', 'Accuracy', 'Quality']. Per-dim boost: primary×1.096, secondary×1.048. Base composite=0.8749 → Cal=0.9152. Δ16D=+4.03pp. Top gains: Quality+8.5pp, Efficiency+8.0pp, Legal+4.3pp. IPA=33.57× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -1911,7 +1911,7 @@
         "delta_16d": 0.0352,
         "delta_16d_pct": 3.52,
         "impact_per_action": 29.3477,
-        "proof_certificate": "PROOF-v2 [refinement_supervisor]: Cycle-1 alignment=0.7857 (gap=0.2143). Profile: primary_dims=['Control', 'Resilience', 'Convergence']. Per-dim boost: primary×1.086, secondary×1.043. Base composite=0.8761 → Cal=0.9113. Δ16D=+3.52pp. Top gains: Control+6.0pp, Resilience+6.0pp, Accuracy+3.9pp. IPA=29.35× at est. cost $0.0012. Sources: Auto-Remediation Cycle Time (MTTHR), Refinement Loop Convergence Rate, Deploy Frequency — Elite Performers.",
+        "proof_certificate": "PROOF-v2 [refinement_supervisor]: Cycle-1 alignment=0.7857 (gap=0.2143). Profile: primary_dims=['Convergence', 'Control', 'Resilience']. Per-dim boost: primary×1.086, secondary×1.043. Base composite=0.8761 → Cal=0.9113. Δ16D=+3.52pp. Top gains: Control+6.0pp, Resilience+6.0pp, Accuracy+3.9pp. IPA=29.35× at est. cost $0.0012. Sources: Auto-Remediation Cycle Time (MTTHR), Refinement Loop Convergence Rate, Deploy Frequency — Elite Performers.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -2052,7 +2052,7 @@
         "delta_16d": 0.0433,
         "delta_16d_pct": 4.33,
         "impact_per_action": 36.1063,
-        "proof_certificate": "PROOF-v2 [n_stroke]: Cycle-1 alignment=0.7471 (gap=0.2529). Profile: primary_dims=['ROI', 'Convergence', 'Resilience']. Per-dim boost: primary×1.101, secondary×1.051. Base composite=0.8836 → Cal=0.9269. Δ16D=+4.33pp. Top gains: ROI+8.9pp, Resilience+8.9pp, Accuracy+4.7pp. IPA=36.11× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
+        "proof_certificate": "PROOF-v2 [n_stroke]: Cycle-1 alignment=0.7471 (gap=0.2529). Profile: primary_dims=['Convergence', 'Resilience', 'ROI']. Per-dim boost: primary×1.101, secondary×1.051. Base composite=0.8836 → Cal=0.9269. Δ16D=+4.33pp. Top gains: ROI+8.9pp, Resilience+8.9pp, Accuracy+4.7pp. IPA=36.11× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -2193,7 +2193,7 @@
         "delta_16d": 0.0339,
         "delta_16d_pct": 3.39,
         "impact_per_action": 28.2337,
-        "proof_certificate": "PROOF-v2 [meta_architect]: Cycle-1 alignment=0.7926 (gap=0.2074). Profile: primary_dims=['ROI', 'Accuracy', 'Convergence']. Per-dim boost: primary×1.083, secondary×1.041. Base composite=0.8779 → Cal=0.9118. Δ16D=+3.39pp. Top gains: ROI+7.4pp, Convergence+5.0pp, Legal+3.7pp. IPA=28.23× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
+        "proof_certificate": "PROOF-v2 [meta_architect]: Cycle-1 alignment=0.7926 (gap=0.2074). Profile: primary_dims=['Convergence', 'Accuracy', 'ROI']. Per-dim boost: primary×1.083, secondary×1.041. Base composite=0.8779 → Cal=0.9118. Δ16D=+3.39pp. Top gains: ROI+7.4pp, Convergence+5.0pp, Legal+3.7pp. IPA=28.23× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -2475,7 +2475,7 @@
         "delta_16d": 0.0674,
         "delta_16d_pct": 6.74,
         "impact_per_action": 56.132,
-        "proof_certificate": "PROOF-v2 [model_garden]: Cycle-1 alignment=0.5380 (gap=0.4620). Profile: primary_dims=['Speed', 'Efficiency', 'Financial Awareness']. Per-dim boost: primary×1.185, secondary×1.092. Base composite=0.8791 → Cal=0.9465. Δ16D=+6.74pp. Top gains: Financial Awareness+10.0pp, Speed+10.0pp, Honesty+8.1pp. IPA=56.13× at est. cost $0.0012. Sources: HumanEval Pass@1, MMLU Multi-task Average, LLM Inference Throughput — A100×8 (70B param).",
+        "proof_certificate": "PROOF-v2 [model_garden]: Cycle-1 alignment=0.5380 (gap=0.4620). Profile: primary_dims=['Efficiency', 'Speed', 'Financial Awareness']. Per-dim boost: primary×1.185, secondary×1.092. Base composite=0.8791 → Cal=0.9465. Δ16D=+6.74pp. Top gains: Financial Awareness+10.0pp, Speed+10.0pp, Honesty+8.1pp. IPA=56.13× at est. cost $0.0012. Sources: HumanEval Pass@1, MMLU Multi-task Average, LLM Inference Throughput — A100×8 (70B param).",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -2757,7 +2757,7 @@
         "delta_16d": 0.0302,
         "delta_16d_pct": 3.02,
         "impact_per_action": 25.2062,
-        "proof_certificate": "PROOF-v2 [conversation]: Cycle-1 alignment=0.8273 (gap=0.1727). Profile: primary_dims=['Human Considering', 'Accuracy', 'Honesty']. Per-dim boost: primary×1.069, secondary×1.035. Base composite=0.8699 → Cal=0.9001. Δ16D=+3.02pp. Top gains: Human Considering+5.0pp, Honesty+5.0pp, Security+3.1pp. IPA=25.21× at est. cost $0.0012. Sources: HumanEval Pass@1, MMLU Multi-task Average, MTEB Retrieval Average nDCG@10.",
+        "proof_certificate": "PROOF-v2 [conversation]: Cycle-1 alignment=0.8273 (gap=0.1727). Profile: primary_dims=['Honesty', 'Accuracy', 'Human Considering']. Per-dim boost: primary×1.069, secondary×1.035. Base composite=0.8699 → Cal=0.9001. Δ16D=+3.02pp. Top gains: Human Considering+5.0pp, Honesty+5.0pp, Security+3.1pp. IPA=25.21× at est. cost $0.0012. Sources: HumanEval Pass@1, MMLU Multi-task Average, MTEB Retrieval Average nDCG@10.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -2898,7 +2898,7 @@
         "delta_16d": 0.0704,
         "delta_16d_pct": 7.04,
         "impact_per_action": 58.6456,
-        "proof_certificate": "PROOF-v2 [buddy_cache]: Cycle-1 alignment=0.5107 (gap=0.4893). Profile: primary_dims=['Speed', 'Efficiency', 'Financial Awareness']. Per-dim boost: primary×1.196, secondary×1.098. Base composite=0.8751 → Cal=0.9455. Δ16D=+7.04pp. Top gains: Honesty+8.6pp, Convergence+8.6pp, Accuracy+8.4pp. IPA=58.65× at est. cost $0.0012. Sources: MTEB Retrieval Average nDCG@10, Cache Hit Rate — Production AI Chat, LLM Inference Throughput — A100×8 (70B param).",
+        "proof_certificate": "PROOF-v2 [buddy_cache]: Cycle-1 alignment=0.5107 (gap=0.4893). Profile: primary_dims=['Efficiency', 'Speed', 'Financial Awareness']. Per-dim boost: primary×1.196, secondary×1.098. Base composite=0.8751 → Cal=0.9455. Δ16D=+7.04pp. Top gains: Honesty+8.6pp, Convergence+8.6pp, Accuracy+8.4pp. IPA=58.65× at est. cost $0.0012. Sources: MTEB Retrieval Average nDCG@10, Cache Hit Rate — Production AI Chat, LLM Inference Throughput — A100×8 (70B param).",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -3039,7 +3039,7 @@
         "delta_16d": 0.0297,
         "delta_16d_pct": 2.97,
         "impact_per_action": 24.7869,
-        "proof_certificate": "PROOF-v2 [buddy_cognition]: Cycle-1 alignment=0.8273 (gap=0.1727). Profile: primary_dims=['Human Considering', 'Accuracy', 'Honesty']. Per-dim boost: primary×1.069, secondary×1.035. Base composite=0.8703 → Cal=0.9000. Δ16D=+2.97pp. Top gains: Honesty+5.0pp, Human Considering+4.0pp, Security+3.1pp. IPA=24.79× at est. cost $0.0012. Sources: HumanEval Pass@1, MMLU Multi-task Average, MTEB Retrieval Average nDCG@10.",
+        "proof_certificate": "PROOF-v2 [buddy_cognition]: Cycle-1 alignment=0.8273 (gap=0.1727). Profile: primary_dims=['Honesty', 'Accuracy', 'Human Considering']. Per-dim boost: primary×1.069, secondary×1.035. Base composite=0.8703 → Cal=0.9000. Δ16D=+2.97pp. Top gains: Honesty+5.0pp, Human Considering+4.0pp, Security+3.1pp. IPA=24.79× at est. cost $0.0012. Sources: HumanEval Pass@1, MMLU Multi-task Average, MTEB Retrieval Average nDCG@10.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -3180,7 +3180,7 @@
         "delta_16d": 0.0355,
         "delta_16d_pct": 3.55,
         "impact_per_action": 29.6035,
-        "proof_certificate": "PROOF-v2 [branch_executor]: Cycle-1 alignment=0.7589 (gap=0.2411). Profile: primary_dims=['Reversibility', 'Efficiency', 'Convergence']. Per-dim boost: primary×1.096, secondary×1.048. Base composite=0.8799 → Cal=0.9155. Δ16D=+3.55pp. Top gains: Efficiency+5.0pp, Accuracy+4.4pp, Legal+4.3pp. IPA=29.60× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
+        "proof_certificate": "PROOF-v2 [branch_executor]: Cycle-1 alignment=0.7589 (gap=0.2411). Profile: primary_dims=['Convergence', 'Efficiency', 'Reversibility']. Per-dim boost: primary×1.096, secondary×1.048. Base composite=0.8799 → Cal=0.9155. Δ16D=+3.55pp. Top gains: Efficiency+5.0pp, Accuracy+4.4pp, Legal+4.3pp. IPA=29.60× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -3321,7 +3321,7 @@
         "delta_16d": 0.0587,
         "delta_16d_pct": 5.87,
         "impact_per_action": 48.9176,
-        "proof_certificate": "PROOF-v2 [async_fluid_executor]: Cycle-1 alignment=0.6066 (gap=0.3934). Profile: primary_dims=['Speed', 'Efficiency', 'Resilience']. Per-dim boost: primary×1.157, secondary×1.079. Base composite=0.8740 → Cal=0.9327. Δ16D=+5.87pp. Top gains: Resilience+9.0pp, Speed+8.0pp, Reversibility+7.0pp. IPA=48.92× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
+        "proof_certificate": "PROOF-v2 [async_fluid_executor]: Cycle-1 alignment=0.6066 (gap=0.3934). Profile: primary_dims=['Efficiency', 'Speed', 'Resilience']. Per-dim boost: primary×1.157, secondary×1.079. Base composite=0.8740 → Cal=0.9327. Δ16D=+5.87pp. Top gains: Resilience+9.0pp, Speed+8.0pp, Reversibility+7.0pp. IPA=48.92× at est. cost $0.0012. Sources: SWE-bench Verified Resolve Rate, GAIA Level-1 Success Rate, WebArena Task Completion Rate.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -3603,7 +3603,7 @@
         "delta_16d": 0.0363,
         "delta_16d_pct": 3.63,
         "impact_per_action": 30.2327,
-        "proof_certificate": "PROOF-v2 [mcp_manager]: Cycle-1 alignment=0.7471 (gap=0.2529). Profile: primary_dims=['Accuracy', 'Control', 'Security']. Per-dim boost: primary×1.101, secondary×1.051. Base composite=0.8704 → Cal=0.9067. Δ16D=+3.63pp. Top gains: Control+5.0pp, Legal+4.6pp, Reversibility+4.6pp. IPA=30.23× at est. cost $0.0012. Sources: Deploy Frequency — Elite Performers, Mean Time to Recovery (MTTR) — Elite, Change Failure Rate — Elite Performers.",
+        "proof_certificate": "PROOF-v2 [mcp_manager]: Cycle-1 alignment=0.7471 (gap=0.2529). Profile: primary_dims=['Control', 'Accuracy', 'Security']. Per-dim boost: primary×1.101, secondary×1.051. Base composite=0.8704 → Cal=0.9067. Δ16D=+3.63pp. Top gains: Control+5.0pp, Legal+4.6pp, Reversibility+4.6pp. IPA=30.23× at est. cost $0.0012. Sources: Deploy Frequency — Elite Performers, Mean Time to Recovery (MTTR) — Elite, Change Failure Rate — Elite Performers.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -3744,7 +3744,7 @@
         "delta_16d": 0.0393,
         "delta_16d_pct": 3.93,
         "impact_per_action": 32.7326,
-        "proof_certificate": "PROOF-v2 [self_improvement]: Cycle-1 alignment=0.7780 (gap=0.2220). Profile: primary_dims=['ROI', 'Convergence', 'Resilience']. Per-dim boost: primary×1.089, secondary×1.044. Base composite=0.8773 → Cal=0.9166. Δ16D=+3.93pp. Top gains: Resilience+7.7pp, ROI+7.0pp, Accuracy+4.1pp. IPA=32.73× at est. cost $0.0012. Sources: Deploy Frequency — Elite Performers, Mean Time to Recovery (MTTR) — Elite, Change Failure Rate — Elite Performers.",
+        "proof_certificate": "PROOF-v2 [self_improvement]: Cycle-1 alignment=0.7780 (gap=0.2220). Profile: primary_dims=['Convergence', 'Resilience', 'ROI']. Per-dim boost: primary×1.089, secondary×1.044. Base composite=0.8773 → Cal=0.9166. Δ16D=+3.93pp. Top gains: Resilience+7.7pp, ROI+7.0pp, Accuracy+4.1pp. IPA=32.73× at est. cost $0.0012. Sources: Deploy Frequency — Elite Performers, Mean Time to Recovery (MTTR) — Elite, Change Failure Rate — Elite Performers.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -4026,7 +4026,7 @@
         "delta_16d": 0.0452,
         "delta_16d_pct": 4.52,
         "impact_per_action": 37.6522,
-        "proof_certificate": "PROOF-v2 [roadmap]: Cycle-1 alignment=0.7163 (gap=0.2837). Profile: primary_dims=['ROI', 'Accuracy', 'Quality']. Per-dim boost: primary×1.113, secondary×1.057. Base composite=0.8741 → Cal=0.9193. Δ16D=+4.52pp. Top gains: ROI+8.0pp, Quality+8.0pp, Legal+5.1pp. IPA=37.65× at est. cost $0.0012. Sources: Deploy Frequency — Elite Performers, Mean Time to Recovery (MTTR) — Elite, Change Failure Rate — Elite Performers.",
+        "proof_certificate": "PROOF-v2 [roadmap]: Cycle-1 alignment=0.7163 (gap=0.2837). Profile: primary_dims=['Accuracy', 'ROI', 'Quality']. Per-dim boost: primary×1.113, secondary×1.057. Base composite=0.8741 → Cal=0.9193. Δ16D=+4.52pp. Top gains: ROI+8.0pp, Quality+8.0pp, Legal+5.1pp. IPA=37.65× at est. cost $0.0012. Sources: Deploy Frequency — Elite Performers, Mean Time to Recovery (MTTR) — Elite, Change Failure Rate — Elite Performers.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -4167,7 +4167,7 @@
         "delta_16d": 0.0394,
         "delta_16d_pct": 3.94,
         "impact_per_action": 32.8569,
-        "proof_certificate": "PROOF-v2 [vector_store]: Cycle-1 alignment=0.7504 (gap=0.2496). Profile: primary_dims=['Speed', 'Accuracy', 'Efficiency']. Per-dim boost: primary×1.100, secondary×1.050. Base composite=0.8701 → Cal=0.9096. Δ16D=+3.94pp. Top gains: Speed+8.5pp, Efficiency+7.0pp, Reversibility+4.5pp. IPA=32.86× at est. cost $0.0012. Sources: MTEB Retrieval Average nDCG@10, Cache Hit Rate — Production AI Chat.",
+        "proof_certificate": "PROOF-v2 [vector_store]: Cycle-1 alignment=0.7504 (gap=0.2496). Profile: primary_dims=['Efficiency', 'Speed', 'Accuracy']. Per-dim boost: primary×1.100, secondary×1.050. Base composite=0.8701 → Cal=0.9096. Δ16D=+3.94pp. Top gains: Speed+8.5pp, Efficiency+7.0pp, Reversibility+4.5pp. IPA=32.86× at est. cost $0.0012. Sources: MTEB Retrieval Average nDCG@10, Cache Hit Rate — Production AI Chat.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -4308,7 +4308,7 @@
         "delta_16d": 0.0427,
         "delta_16d_pct": 4.27,
         "impact_per_action": 35.561,
-        "proof_certificate": "PROOF-v2 [sota_ingestion]: Cycle-1 alignment=0.7074 (gap=0.2926). Profile: primary_dims=['Honesty', 'Accuracy', 'Resilience']. Per-dim boost: primary×1.117, secondary×1.059. Base composite=0.8717 → Cal=0.9144. Δ16D=+4.27pp. Top gains: Resilience+10.0pp, Legal+5.3pp, Reversibility+5.3pp. IPA=35.56× at est. cost $0.0012. Sources: RAG Accuracy Improvement over Base LLM, Dynamic Context Injection Multi-Turn Accuracy Gain, MTEB Retrieval Average nDCG@10.",
+        "proof_certificate": "PROOF-v2 [sota_ingestion]: Cycle-1 alignment=0.7074 (gap=0.2926). Profile: primary_dims=['Honesty', 'Resilience', 'Accuracy']. Per-dim boost: primary×1.117, secondary×1.059. Base composite=0.8717 → Cal=0.9144. Δ16D=+4.27pp. Top gains: Resilience+10.0pp, Legal+5.3pp, Reversibility+5.3pp. IPA=35.56× at est. cost $0.0012. Sources: RAG Accuracy Improvement over Base LLM, Dynamic Context Injection Multi-Turn Accuracy Gain, MTEB Retrieval Average nDCG@10.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -4449,7 +4449,7 @@
         "delta_16d": 0.0405,
         "delta_16d_pct": 4.05,
         "impact_per_action": 33.7501,
-        "proof_certificate": "PROOF-v2 [daemon]: Cycle-1 alignment=0.7471 (gap=0.2529). Profile: primary_dims=['Control', 'Resilience', 'Monitor']. Per-dim boost: primary×1.101, secondary×1.051. Base composite=0.8754 → Cal=0.9159. Δ16D=+4.05pp. Top gains: Control+6.0pp, Resilience+6.0pp, Accuracy+4.7pp. IPA=33.75× at est. cost $0.0012. Sources: Deploy Frequency — Elite Performers, Mean Time to Recovery (MTTR) — Elite, Change Failure Rate — Elite Performers.",
+        "proof_certificate": "PROOF-v2 [daemon]: Cycle-1 alignment=0.7471 (gap=0.2529). Profile: primary_dims=['Monitor', 'Control', 'Resilience']. Per-dim boost: primary×1.101, secondary×1.051. Base composite=0.8754 → Cal=0.9159. Δ16D=+4.05pp. Top gains: Control+6.0pp, Resilience+6.0pp, Accuracy+4.7pp. IPA=33.75× at est. cost $0.0012. Sources: Deploy Frequency — Elite Performers, Mean Time to Recovery (MTTR) — Elite, Change Failure Rate — Elite Performers.",
         "dimension_deltas": [
           {
             "dimension": "ROI",
@@ -4590,7 +4590,7 @@
         "delta_16d": 0.0413,
         "delta_16d_pct": 4.13,
         "impact_per_action": 34.3839,
-        "proof_certificate": "PROOF-v2 [config]: Cycle-1 alignment=0.7480 (gap=0.2520). Profile: primary_dims=['Quality', 'Security', 'Legal']. Per-dim boost: primary×1.101, secondary×1.050. Base composite=0.8709 → Cal=0.9121. Δ16D=+4.13pp. Top gains: Quality+8.8pp, Safety+4.6pp, Accuracy+4.6pp. IPA=34.38× at est. cost $0.0012. Sources: OWASP Top-10 Coverage in Static Analysis, Vulnerability Detection True-Positive Rate, Supply-Chain Attack Detection Rate.",
+        "proof_certificate": "PROOF-v2 [config]: Cycle-1 alignment=0.7480 (gap=0.2520). Profile: primary_dims=['Legal', 'Security', 'Quality']. Per-dim boost: primary×1.101, secondary×1.050. Base composite=0.8709 → Cal=0.9121. Δ16D=+4.13pp. Top gains: Quality+8.8pp, Safety+4.6pp, Accuracy+4.6pp. IPA=34.38× at est. cost $0.0012. Sources: OWASP Top-10 Coverage in Static Analysis, Vulnerability Detection True-Positive Rate, Supply-Chain Attack Detection Rate.",
         "dimension_deltas": [
           {
             "dimension": "ROI",

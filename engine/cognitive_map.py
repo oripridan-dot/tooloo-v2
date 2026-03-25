@@ -47,7 +47,7 @@ _STUDIO_ROOT = _REPO_ROOT / "studio"
 # Each entry is a list of relative paths from _REPO_ROOT.
 _INTENT_MODULE_MAP: dict[str, list[str]] = {
     "BUILD": [
-        "engine/n_stroke.py", "engine/mandate_executor.py",
+        "engine/pipeline.py", "engine/mandate_executor.py",
         "engine/executor.py", "engine/meta_architect.py",
         "engine/graph.py",
     ],
@@ -278,7 +278,7 @@ class CognitiveMap:
 
         Format::
             [Workspace Blueprint — <intent>]
-            Core files:    engine/n_stroke.py, engine/executor.py
+            Core files:    engine/pipeline.py, engine/executor.py
             Key classes:   NStrokeEngine, JITExecutor
             API contracts: POST /v2/n-stroke, POST /v2/mandate
             Dep chain:     executor → graph → router → tribunal

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from datetime import UTC, datetime
 
 from engine.executor import JITExecutor
@@ -8,7 +10,7 @@ from engine.jit_booster import JITBooster
 from engine.mcp_manager import MCPManager
 from engine.meta_architect import MetaArchitect
 from engine.model_selector import ModelSelector
-from engine.n_stroke import NStrokeEngine
+from engine.pipeline import NStrokeEngine
 from engine.psyche_bank import PsycheBank
 from engine.refinement import RefinementLoop
 from engine.refinement_supervisor import RefinementSupervisor
@@ -74,8 +76,9 @@ def test_meta_architect_proof_confidence_within_bounds() -> None:
     assert plan.confidence_proof.divergence_coverage >= 0.7
 
 
-def test_n_stroke_emits_confidence_proof_and_divergence_metrics() -> None:
-    result = _engine().run(
+@pytest.mark.asyncio
+async def test_n_stroke_emits_confidence_proof_and_divergence_metrics() -> None:
+    result = await _engine().run(
         _locked("build dynamic execution graph with divergent validation lanes")
     )
     stroke = result.strokes[0]

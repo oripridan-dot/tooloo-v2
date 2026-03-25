@@ -153,12 +153,13 @@ class VisualArtifact:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        res = {
             "artifact_id": self.artifact_id,
             "type": self.type,
             "content": self.content,
-            "metadata": self.metadata,
         }
+        res.update(self.metadata)
+        return res
 
 
 # ── DTOs ──────────────────────────────────────────────────────────────────────
@@ -295,13 +296,13 @@ class ConversationResult:
     # Cognitive profile snapshot at the time of this turn
     expertise_label: str = "intermediate"
     cognitive_load: str = "medium"
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        res = {
             "session_id": self.session_id,
             "turn_id": self.turn_id,
-            "response_text": self.response_text,
-            "plan": self.plan.to_dict(),
+            "response": self.response_text,
             "suggestions": self.suggestions,
             "tone": self.tone,
             "intent": self.intent,
@@ -316,6 +317,8 @@ class ConversationResult:
             "expertise_label": self.expertise_label,
             "cognitive_load": self.cognitive_load,
         }
+        res.update(self.metadata)
+        return res
 
 
 # ── Emotional state detection ─────────────────────────────────────────────────
@@ -946,6 +949,15 @@ class ConversationEngine:
         user_turn_count = sum(1 for t in session.turns if t.role == "user")
         if self._memory is not None and user_turn_count >= self._MEMORY_SAVE_THRESHOLD:
             self._memory.save_session(session)
+            # Tiered Memory Bridge: Trigger recursive summarization (Hot -> Warm -> Cold)
+            try:
+                import asyncio
+                from engine.memory_tier_orchestrator import get_memory_orchestrator
+                orch = get_memory_orchestrator()
+                # Run in background to avoid blocking turn latency
+                asyncio.create_task(orch.recursive_summarize(session_id))
+            except Exception as e:
+                logger.warning(f"ConversationEngine: Memory tier trigger failed: {e}")
 
         return ConversationResult(
             session_id=session_id,
@@ -1465,6 +1477,14 @@ class ConversationEngine:
         user_turn_count = sum(1 for t in session.turns if t.role == "user")
         if self._memory is not None and user_turn_count >= self._MEMORY_SAVE_THRESHOLD:
             self._memory.save_session(session)
+            # Tiered Memory Bridge: Trigger recursive summarization (Hot -> Warm -> Cold)
+            try:
+                import asyncio
+                from engine.memory_tier_orchestrator import get_memory_orchestrator
+                orch = get_memory_orchestrator()
+                asyncio.create_task(orch.recursive_summarize(session.session_id))
+            except Exception as e:
+                logger.warning(f"ConversationEngine: Memory tier trigger (stream) failed: {e}")
 
     def stream_chunks_sync(self, prompt: str) -> "list[str]":
         """Call the LLM with streaming and return all chunks as a list.

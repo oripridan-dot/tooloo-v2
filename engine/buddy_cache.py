@@ -62,6 +62,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from engine.vector_store import VectorStore
+from engine.kv_store import get_kv_store
+
 _KNOWLEDGE_CACHE_PATH = (
     Path(__file__).resolve().parents[1] /
     "psyche_bank" / "buddy_knowledge_cache.json"
@@ -211,10 +214,14 @@ class BuddyCache:
         # L2: (intent, fingerprint) → CacheEntry
         self._process_cache: dict[tuple[str, str], CacheEntry] = {}
 
-        # L3: topic_key → {response, intent, created_at}  (disk-backed)
+        # Layer 3: topic_key → {response, intent, created_at}  (disk-backed)
         self._path = knowledge_cache_path
         self._knowledge_cache: dict[str, dict[str, Any]] = {}
         self._load_knowledge_cache()
+
+        # Antigravity Layer Dependencies
+        self._vector_store = VectorStore()
+        self._kv_store = get_kv_store()
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -225,6 +232,13 @@ class BuddyCache:
         Updates hit/miss counters on every call.
         """
         with self._lock:
+            # Layer A — Antigravity (Hash-based Absolute Truth)
+            # High priority: if we have a deterministic 6W match, use it.
+            result = self._antigravity_lookup(text, intent)
+            if result is not None:
+                # We count this as a super-hit
+                return result
+
             result = self._l1_lookup(session_id, text, intent)
             if result is not None:
                 self._stats.l1_hits += 1
@@ -322,6 +336,36 @@ class BuddyCache:
                 "l2_entries": len(self._process_cache),
                 "l3_entries": len(self._knowledge_cache),
             }
+
+    # ── Layer A: Antigravity Retrieval ────────────────────────────────────────
+
+    def _antigravity_lookup(self, text: str, intent: str) -> str | None:
+        """
+        Two-step deterministic retrieval:
+        1. Contextual Filter: Search VectorStore for semantic metadata.
+        2. Absolute Truth: Fetch heavy payload from KVStore using Hash.
+        """
+        # Search for semantically similar 'what' with matching 'why' (intent)
+        # We query the vector store which indices the 'what' field.
+        results = self._vector_store.search(text, top_k=5)
+        
+        for res in results:
+            metadata = res.doc.metadata
+            # Ensure the intent (why) matches
+            if metadata.get("why") == intent:
+                doc_id = res.id
+                if doc_id:
+                    # Fetch from KV Store
+                    payload = self._kv_store.get(doc_id)
+                    if payload and "response_text" in payload:
+                        return payload["response_text"]
+                    # If it's a general pipeline record, it might be in 'raw_payload'
+                    if payload and "raw_payload" in payload:
+                        raw = payload["raw_payload"]
+                        if isinstance(raw, dict) and "response" in raw:
+                            return raw["response"]
+        
+        return None
 
     # ── Private layer lookups ─────────────────────────────────────────────────
 

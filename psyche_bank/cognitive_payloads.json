@@ -1,0 +1,515 @@
+{
+  "test-hash-123": {
+    "result": "success",
+    "data": [
+      1,
+      2,
+      3
+    ]
+  },
+  "1528d939c780cbc643033762efe4d8f50cf88728c242dd70c911019d8fc6bdda": {
+    "response_text": "The 6W system is a deterministic cognitive coordinate system."
+  },
+  "8e91794bca375105f076007772d482fa6f4a97b9c06dde2b3e6c223b714135c6": {
+    "response_text": "The 6W system is a deterministic cognitive coordinate system."
+  },
+  "81a99f9b805de5f7d0da27885ad70f99ac47de0d914a23b2c6174dc1a6250774": {
+    "pipeline_id": "smoke-ns-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "401366127c14ba6d9f4cd1c732c7f0cd8b4c08eb19b6e310dae13a405ffac7d8": {
+    "pipeline_id": "smoke-ns-2",
+    "stroke_num": 1,
+    "model": "gemini-2.5-flash-lite",
+    "intent": "EXPLAIN",
+    "prior_failure_signal": ""
+  },
+  "7883fa5bfab2eba167b3dce4b4dacc3eb48de1ff80da59643076580e800a99d1": {
+    "pipeline_id": "smoke-ts-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "431d1ae9d9f36261526f2baf1d3b4b101712798367cf9fb25d0a63464f537987": {
+    "pipeline_id": "smoke-ns-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "78cb884b6930c268d793692efbfea70fb69ecbea0e1ac4f01361b0d4d3c231f6": {
+    "pipeline_id": "smoke-ns-2",
+    "stroke_num": 1,
+    "model": "gemini-2.5-flash-lite",
+    "intent": "EXPLAIN",
+    "prior_failure_signal": ""
+  },
+  "64042a5b4606b33bbb10bc562c48aa9dc0fb5b50b519afebf9f987a40af66252": {
+    "pipeline_id": "smoke-ts-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "acda9ad28c2f36d994440591a4a26f7885223534406992046816f86269fd917b": {
+    "pipeline_id": "smoke-ns-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "90f564b63820cdf89b349400a8307fef883fa5fa5ccb77ae1ec2eb0175cce59a": {
+    "pipeline_id": "smoke-ns-2",
+    "stroke_num": 1,
+    "model": "gemini-2.5-flash-lite",
+    "intent": "EXPLAIN",
+    "prior_failure_signal": ""
+  },
+  "a8cf985fb96c2976dcc5b336a27e5175492a9c947a25898b9c0cb3eff7eca3f7": {
+    "pipeline_id": "smoke-ts-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "67fede97444b357c2d9e85349b84ff3be53098e787cc1fa02c3ffdf08312f0ed": {
+    "pipeline_id": "smoke-ns-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "3f172c2d67b12b306125865d8f2a454e328ae7eced6212d40610a614427c144b": {
+    "pipeline_id": "smoke-ns-1",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "0800f1fbe2761ff7834843a87e1ae3f91b73d57eaea93874046dae13d4598685": {
+    "pipeline_id": "smoke-ns-2",
+    "stroke_num": 1,
+    "model": "gemini-2.5-flash-lite",
+    "intent": "EXPLAIN",
+    "prior_failure_signal": ""
+  },
+  "9081b83a59451cb10ac24441db2f5c0c08bfce947f0c5f7bd79c24e1dee10c72": {
+    "pipeline_id": "smoke-ns-2",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "1a6828e3a91e5a189c2c3109d0ab0c6de6caff63441333afbbad6ad09ac83e0b": {
+    "pipeline_id": "smoke-ts-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "4d693b2e997a60bd3a8be0e2a79357ff7d0a25176bbede97bbfe8292338d9c45": {
+    "pipeline_id": "smoke-ts-1",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "03b0c0ec3143edd0f686501909aed148844f384f270edc447fcd57936fa93f28": {
+    "pipeline_id": "smoke-ns-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "71e66a089eab1f251e14812d68b7d7acd0e953f19e4fe78e9cf6a081d1e481d2": {
+    "pipeline_id": "smoke-ns-1",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "bd92f6c74a795c52f3ccf093ae2e89f8a8eb0053d3b53dd63405a87d2a7a2554": {
+    "pipeline_id": "smoke-ns-2",
+    "stroke_num": 1,
+    "model": "gemini-2.5-flash-lite",
+    "intent": "EXPLAIN",
+    "prior_failure_signal": ""
+  },
+  "5e92033e0dc482c62652edd6ad23ddab64e17a8f779b39d053f6aca7184526c8": {
+    "pipeline_id": "smoke-ns-2",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "4013d9bafb101581d7c90b52e695128425a538719a595d52287f8b1a0c956051": {
+    "pipeline_id": "smoke-ts-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "4340a1c8e41be1a40408f9010508809b3d43efe67c6671edd6b4f97cd875ba24": {
+    "pipeline_id": "smoke-ts-1",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "42e0bc8bcfb5dbcba34915a5e3781cc0974548112904d502eb2e84c5d88998b4": {
+    "pipeline_id": "nstroke-8ef06bc7",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "dcb4f1a5c253a792b8929ba50de00cda9604e7e1d59f85b6eef8caf84dd0bf3f": {
+    "pipeline_id": "nstroke-8ef06bc7",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "cd0fa83a2051441534fa7a506dbe75717c84eff631505a4285b5d42248038ca3": {
+    "pipeline_id": "smoke-ns-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "0f30763b4f8715ca39365e123bc7d9929f6255dde326c5c9d4b872a9d5b00273": {
+    "pipeline_id": "smoke-ns-1",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "8548b896a60fe7efa805b65e9760e37886bf698ebaaa9bf7bf44748f13ca2f0f": {
+    "pipeline_id": "smoke-ns-2",
+    "stroke_num": 1,
+    "model": "gemini-2.5-flash-lite",
+    "intent": "EXPLAIN",
+    "prior_failure_signal": ""
+  },
+  "26eca46773349bc512d7ddf7eefa83823aaebeb9e88696837e50d18567df8c18": {
+    "pipeline_id": "smoke-ns-2",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "80b9b629e3165b3d7b62cdc2f033a11cb7ec23906aaa72fe45315ba7b43647af": {
+    "pipeline_id": "smoke-ts-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "f3d20b49c1a2b00acd3a4320aeea3baaeb8b51e400811c7ef7c7f8c95a2c732a": {
+    "pipeline_id": "smoke-ts-1",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "34a7ba36d7a486309bd6588c1ad993545af7ebb846ffdf8f7a0af2509e1aad2b": {
+    "pipeline_id": "smoke-ns-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "e1d6c11b8631963f7cce0c4fb1ded14fa488e5b6f3c66f8fd12f2e0346f82ff4": {
+    "pipeline_id": "smoke-ns-1",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "89a3838b44fe053c87f724f27e1035a36c7bc3899973fd7092234bcb86cf2371": {
+    "pipeline_id": "smoke-ns-2",
+    "stroke_num": 1,
+    "model": "gemini-2.5-flash-lite",
+    "intent": "EXPLAIN",
+    "prior_failure_signal": ""
+  },
+  "ee6d87d754bfae9a3c29745d87ea4e89a95505184627d032bcfea79e7711d2e7": {
+    "pipeline_id": "smoke-ns-2",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "b35797a64fc7249913e1afac801c97c44f050a5f7e46b0c5c983d4052e9986b3": {
+    "pipeline_id": "smoke-ts-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "6e977f7da1afa2e94a2019c5a20baa9e55ab49958757ec05bab60082188a5d70": {
+    "pipeline_id": "smoke-ts-1",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "5295850b4ae6a58013efed365fbd194514eecca5bd1c7c3268ebfa00dfb08578": {
+    "pipeline_id": "smoke-ns-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "b29319d706784f218c6617604007d00a20c5ce007d4042fc99f76196dfe30633": {
+    "pipeline_id": "smoke-ns-1",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['smoke-ns-1-s1-audit_wave', 'smoke-ns-1-s1-design_wave', 'smoke-ns-1-s1-ux_eval'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "b5eafaa5ec4f69a149aaccf11b5183e0e399e602886baa329f6a88275cb0dd26": {
+    "pipeline_id": "smoke-ns-1",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "8614cce352fa1985c26a6ebfb1b2c4d8e0ebacad96cda2065e028d7e4bec8ec6": {
+    "pipeline_id": "smoke-ns-2",
+    "stroke_num": 1,
+    "model": "gemini-2.5-flash-lite",
+    "intent": "EXPLAIN",
+    "prior_failure_signal": ""
+  },
+  "a5606edcb9a08df70e4d8cafc4f03fcd94d7feeea5403e55af2c57e97330006a": {
+    "pipeline_id": "smoke-ns-2",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "EXPLAIN",
+    "prior_failure_signal": "[retry-signal stroke=1] model=gemini-2.5-flash-lite, verdict=fail, failed_nodes=['smoke-ns-2-s1-audit_wave', 'smoke-ns-2-s1-design_wave', 'smoke-ns-2-s1-ux_eval'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "6dc1d67386f76784c609c58914fcae1b0cdb86710c9127d5a378239a07ff3477": {
+    "pipeline_id": "smoke-ns-2",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "197bdaf43701799de0facf47bf065579c0a59aeba0a49f5778151c2bc0e68a30": {
+    "pipeline_id": "smoke-ts-1",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "dec87f9a13baa460206f6b87915c59421921f3586dafe711aff362775f390917": {
+    "pipeline_id": "smoke-ts-1",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['smoke-ts-1-s1-audit_wave', 'smoke-ts-1-s1-design_wave', 'smoke-ts-1-s1-ux_eval'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "5cda08edaa379d113cf3029e181b1200e92a8387838a131b81d9e0dab94a921d": {
+    "pipeline_id": "smoke-ts-1",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "cba7cb8a3ca4fe2fef5792711516001aeaffa1dc80e5656bcc348e1e31ccc85e": {
+    "pipeline_id": "nstroke-74615f04",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "f7d1961eb86e131835bdb6e26694f127604c954f1a98f07594316d85de437b03": {
+    "pipeline_id": "nstroke-74615f04",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-74615f04-s1-deep_research', 'nstroke-74615f04-s1-audit_wave', 'nstroke-74615f04-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "a124d8629e5a7a5f766e7499ad8ee50be95cd78281aee06617e27f94d0151930": {
+    "pipeline_id": "nstroke-74615f04",
+    "stroke_num": 3,
+    "model": "gemini-2.5-pro",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=2] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-74615f04-s2-deep_research', 'nstroke-74615f04-s2-audit_wave', 'nstroke-74615f04-s2-design_wave'], escalated_to=gemini-2.5-pro. Reapproach with corrections."
+  },
+  "8541f9d126b955c7e006c86e5afc28e639d227c82d74e4cb7e21a93aa11de472": {
+    "pipeline_id": "nstroke-74615f04",
+    "stroke_num": 4,
+    "model": "mistral-large@2407",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=3] model=gemini-2.5-pro, verdict=fail, failed_nodes=['nstroke-74615f04-s3-deep_research', 'nstroke-74615f04-s3-audit_wave', 'nstroke-74615f04-s3-design_wave'], escalated_to=mistral-large@2407. Reapproach with corrections."
+  },
+  "323687a17bc3b5559f68e1c1ac7914c525f8a14df48b9fdcfa43580ca5cf1655": {
+    "pipeline_id": "nstroke-74615f04",
+    "satisfied": false,
+    "total_strokes": 4
+  },
+  "ee400d6e2a91448d803e1d16a8c88719f29701ea4d1ff2f424e310cb7048f592": {
+    "pipeline_id": "nstroke-e4117f14",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "e590c1d4955d0a33ceebee91f4c98cd0e2f5e04f9efa6b5ec9cf7039263ecf18": {
+    "pipeline_id": "nstroke-e4117f14",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-e4117f14-s1-deep_research', 'nstroke-e4117f14-s1-audit_wave', 'nstroke-e4117f14-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "6217e03cc996412897cbfc317eb5bacc61f699345ad75f530dc62817eb3aa6d9": {
+    "pipeline_id": "nstroke-e4117f14",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "c6b90a972e58b1d2f2f48f208b0f7c8b1141a34dce7acf84bac11b3eac89c717": {
+    "pipeline_id": "nstroke-a719bd57",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "8d63173b233fbc5da2a8ac36a4ddabac61d4248e5af12655dcb7fa4161bb14df": {
+    "pipeline_id": "nstroke-a719bd57",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-a719bd57-s1-deep_research', 'nstroke-a719bd57-s1-audit_wave', 'nstroke-a719bd57-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "c6d53d219873173a46bb1b2670c958f2714a2bb50f800d6001dba16db4e9fe96": {
+    "pipeline_id": "nstroke-a719bd57",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "3ba26032554c6b7a5f6d11612b564bd11acb40a8f85e95a8c263a990b67d55d8": {
+    "pipeline_id": "nstroke-14c30944",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "4a40ca76d24e6be3990d50001ded3ca5522046545e8e620ad5918f8ed08e65f0": {
+    "pipeline_id": "nstroke-14c30944",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-14c30944-s1-deep_research', 'nstroke-14c30944-s1-audit_wave', 'nstroke-14c30944-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "fe06c8dc5da498da7957b02c42c651a2a805c7f70e130dcbbb3af8988ddd7336": {
+    "pipeline_id": "nstroke-14c30944",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "aa6cab2f5f4b057b868e970bea0b528866deb38b025bd9b667ffbdb3a5997204": {
+    "pipeline_id": "nstroke-448fa33f",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "da215ecc5271ab98b98ce2cdb6365ebd93623008ed85499d918e3e5f8e37a186": {
+    "pipeline_id": "nstroke-448fa33f",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-448fa33f-s1-deep_research', 'nstroke-448fa33f-s1-audit_wave', 'nstroke-448fa33f-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "feb7c24c386383c2ecb3e476b4c192e9885f1c0ad4b84f72f772327779365cdf": {
+    "pipeline_id": "nstroke-448fa33f",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "27d9ce1f057d21c21ded258b8d42f17efbffcecc51ce13ac84ca0549c4b92df0": {
+    "pipeline_id": "nstroke-9e135c00",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "4c057bdee99172d88489e98e6df94b12303607fa2bdf672921120a9169be2389": {
+    "pipeline_id": "nstroke-9e135c00",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-9e135c00-s1-deep_research', 'nstroke-9e135c00-s1-audit_wave', 'nstroke-9e135c00-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "ac1f8c66e5a46379e76491fd068421fa86842e8d631d18eb48192a387bc07121": {
+    "pipeline_id": "nstroke-9e135c00",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "678f5db70e59424b725acdd23cc59dfba40aa3ab5aa3017e92a4959693d7f9c7": {
+    "pipeline_id": "nstroke-7241955e",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "8d6ef73f964809f5b6fc57be2f3756d990fc30e8ab53d97681a5e4b163a36886": {
+    "pipeline_id": "nstroke-7241955e",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-7241955e-s1-deep_research', 'nstroke-7241955e-s1-audit_wave', 'nstroke-7241955e-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "abd5415ba28bd6a72dbe87183fa7b729e8fdfc7cdff9d693ca0c5a46a7c80d68": {
+    "pipeline_id": "nstroke-7241955e",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "9c41fd38b63f2bae01b8f361b55972dc8bfca3a8718a3bb34ebef4007574c367": {
+    "pipeline_id": "nstroke-89e06436",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "d9e8d548ca740f1344a4cea6fb2365b670af304d86a8127083cbc09d96fd96a8": {
+    "pipeline_id": "nstroke-89e06436",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-89e06436-s1-deep_research', 'nstroke-89e06436-s1-audit_wave', 'nstroke-89e06436-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "2a1cb7a8ed9bcdae6fa445458a65baacc2616685b631336bceebbd8243a478a5": {
+    "pipeline_id": "nstroke-89e06436",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "18ec0aa5826b2deda6e767b464304955cd0e44b617340c7c61ce477a78978128": {
+    "pipeline_id": "nstroke-b478f7f0",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "7f471eb093ecc8ba093a78558d97935851a91654af2b9814c362bec869988521": {
+    "pipeline_id": "nstroke-b478f7f0",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-b478f7f0-s1-deep_research', 'nstroke-b478f7f0-s1-audit_wave', 'nstroke-b478f7f0-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "9010bb989b72d1d37eb17ac7479a5e9b7346d0af28980a4ca4519606d819dde1": {
+    "pipeline_id": "nstroke-b478f7f0",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "fe47bb20550acadb321c88a436d35f3000a01963632fd2bf52b8ec55644fe1f4": {
+    "pipeline_id": "nstroke-5e1917a2",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "f53db541576b18cf26d8163043a243fce082d10d63de70a4eb109f41150f49e8": {
+    "pipeline_id": "nstroke-5e1917a2",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-5e1917a2-s1-deep_research', 'nstroke-5e1917a2-s1-audit_wave', 'nstroke-5e1917a2-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "4d0e249e35286bfb46b7847b2f12d42ec4ea41afcf6eec39a4746c2f6c13bf6b": {
+    "pipeline_id": "nstroke-5e1917a2",
+    "satisfied": false,
+    "total_strokes": 2
+  },
+  "a1c0c04704de675ce029989a89d9845e8f4cbe68c738431d8757722611b37262": {
+    "pipeline_id": "nstroke-c72b7df2",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "944764a1e1c3bdaafcc123fd19c020fe33711162e1047c00623c6eb5962052fc": {
+    "pipeline_id": "nstroke-c72b7df2",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['nstroke-c72b7df2-s1-deep_research', 'nstroke-c72b7df2-s1-audit_wave', 'nstroke-c72b7df2-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "ec64511f51d54636bebd84fc3f5ab0e85d2b6eff025df2b874778b20db12a3d5": {
+    "pipeline_id": "nstroke-c72b7df2",
+    "satisfied": false,
+    "total_strokes": 2
+  }
+}

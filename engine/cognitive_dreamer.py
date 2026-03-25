@@ -35,7 +35,7 @@ class CognitiveDreamer:
     async def run_dream_cycle(self) -> DreamReport:
         # Pull high-value context nodes for 16D/user context
         # (In complete implementation, queries contextual priority)
-        results = self._vector_store.search("system events", limit=2)
+        results = self._vector_store.search("system events", top_k=2)
         if asyncio.iscoroutine(results):
             results = await results
 

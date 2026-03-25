@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TooLoo AI Design Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .canvas-bg {
+            background-image: radial-gradient(circle at 30% 50%, #1e293b 0%, #0f172a 100%);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .active-pill {
+            background-color: rgba(37, 99, 235, 0.2) !important;
+            color: #60a5fa !important;
+            border-color: rgba(59, 130, 246, 0.5) !important;
+            font-weight: 500;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .shimmer-bg { position: relative; overflow: hidden; background: #0f172a; }
+        .shimmer-bg::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in { animation: fadeInUp 0.3s ease forwards; }
+
+        /* Phase indicator */
+        .phase-dot { width: 10px; height: 10px; border-radius: 50%; transition: all 0.4s ease; }
+        .phase-dot.active { box-shadow: 0 0 12px currentColor; transform: scale(1.3); }
+        .phase-dot.completed { opacity: 0.4; }
+        .phase-line { height: 2px; flex: 1; transition: background 0.4s ease; }
+
+        /* Prototype iframe */
+        #prototype-frame {
+            border: none;
+            border-radius: 12px;
+            background: white;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Phase suggestion card */
+        .suggestion-card {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(124, 58, 237, 0.15));
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            animation: fadeInUp 0.4s ease forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 h-screen overflow-hidden flex">
+
+    <!-- ═══════ LEFT: Buddy Chat Panel ═══════ -->
+    <div class="w-[380px] flex flex-col border-r border-slate-800 bg-slate-900/50 relative z-10">
+        <!-- Header -->
+        <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-xs font-bold shadow-lg shadow-blue-500/20">B</div>
+                <div>
+                    <h1 class="text-sm font-semibold text-white">Buddy<span class="text-blue-400">.studio</span></h1>
+                    <div id="phase-label" class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">💡 Discover</div>
+                </div>
+            </div>
+            <div id="conn-status" class="text-[10px] px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full border border-yellow-500/30 flex items-center gap-1">
+                <div class="w-1 h-1 rounded-full bg-current"></div>
+                Connecting
+            </div>
+        </div>
+
+        <!-- Phase Progress Bar -->
+        <div class="px-4 py-3 flex items-center gap-1 border-b border-slate-800/50" id="phase-bar">
+            <div class="phase-dot active bg-blue-500 text-blue-500" data-phase="discover"></div>
+            <div class="phase-line bg-slate-700" data-line="discover"></div>
+            <div class="phase-dot bg-slate-600 text-violet-500" data-phase="design"></div>
+            <div class="phase-line bg-slate-700" data-line="design"></div>
+            <div class="phase-dot bg-slate-600 text-emerald-500" data-phase="prototype"></div>
+            <div class="phase-line bg-slate-700" data-line="prototype"></div>
+            <div class="phase-dot bg-slate-600 text-red-500" data-phase="ship"></div>
+        </div>
+
+        <!-- Chat History -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chat-history">
+            <div class="flex items-start gap-2.5 animate-in">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-[10px] font-bold shrink-0 shadow-lg shadow-blue-500/20">B</div>
+                <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-700/50 shadow-lg">
+                    <p class="text-[13px] leading-relaxed">Hey! I'm Buddy, your AI design partner. Tell me what you'd like to build — a landing page, a dashboard, an app screen? I'll guide us from concept to a working prototype.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div class="p-4 border-t border-slate-800 bg-slate-900">
+            <div id="status-text" class="text-[10px] text-blue-400 mb-1.5 h-4 transition-opacity opacity-0 italic font-medium"></div>
+            <div class="relative">
+                <input type="text" id="prompt-input"
+                    class="w-full bg-slate-800 border border-slate-700 text-[13px] rounded-xl px-4 py-3 pr-12 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all text-white placeholder-slate-500"
+                    placeholder="Tell Buddy what you're imagining...">
+                <button id="send-btn" class="absolute right-1.5 top-1.5 bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg transition-all active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ RIGHT: Canvas ═══════ -->
+    <div class="flex-1 flex flex-col relative canvas-bg">
+        <div class="flex-1 p-6 flex items-center justify-center relative">
+            <div id="canvas-container" class="relative w-full h-full rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-slate-700/50 transition-all duration-500 flex items-center justify-center bg-slate-900/50">
+
+                <!-- Placeholder -->
+                <div id="placeholder" class="flex flex-col items-center gap-4 text-slate-500 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="opacity-30"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                    <span class="text-xs font-medium tracking-widest uppercase">Chat with Buddy to begin</span>
+                </div>
+
+                <!-- Image canvas (Design phase) -->
+                <img id="main-image" src="" alt="" class="absolute inset-0 w-full h-full object-contain transition-opacity duration-500 opacity-0 z-10">
+
+                <!-- Prototype iframe (Prototype phase) -->
+                <iframe id="prototype-frame" class="absolute inset-0 w-full h-full opacity-0 z-10" sandbox="allow-scripts allow-same-origin"></iframe>
+
+                <!-- Loading Overlay -->
+                <div id="loading-overlay" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 z-20">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-8 h-8 border-[3px] border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span id="loading-text" class="text-xs font-medium text-blue-400 tracking-wider uppercase">Processing</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Control Bar -->
+        <div class="h-16 glass-panel absolute bottom-6 left-6 right-6 rounded-xl flex items-center px-5 gap-4 shadow-2xl z-30">
+            <div class="flex items-center gap-2" id="style-container">
+                <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mr-1">Style</span>
+            </div>
+            <div class="w-px h-8 bg-slate-700 shrink-0"></div>
+            <div class="flex items-center gap-2" id="ar-container">
+                <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mr-1">Ratio</span>
+            </div>
+            <div class="flex-1"></div>
+            <button id="export-btn" class="px-4 py-2 bg-white text-slate-900 font-semibold text-xs rounded-lg hover:bg-slate-200 transition shadow-lg flex items-center gap-1.5 shrink-0 opacity-30 cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export
+            </button>
+        </div>
+    </div>
+
+    <script>
+    (() => {
+        // ── State ───────────────────────────────────────────────────
+        let currentPhase = 'discover';
+        let currentStyle = 'cinematic';
+        let currentAR = '16:9';
+        let currentImageData = null;
+        let currentPrototypeHTML = null;
+        let ws = null;
+        let isProcessing = false;
+
+        // ── Elements ────────────────────────────────────────────────
+        const $ = id => document.getElementById(id);
+        const input = $('prompt-input');
+        const sendBtn = $('send-btn');
+        const chat = $('chat-history');
+        const loadingOverlay = $('loading-overlay');
+        const loadingText = $('loading-text');
+        const mainImage = $('main-image');
+        const protoFrame = $('prototype-frame');
+        const placeholder = $('placeholder');
+        const statusText = $('status-text');
+        const connStatus = $('conn-status');
+        const exportBtn = $('export-btn');
+        const phaseLabel = $('phase-label');
+
+        const PHASE_LABELS = {
+            discover: '💡 Discover',
+            design: '🎨 Design',
+            prototype: '⚙️ Prototype',
+            ship: '🚀 Ship',
+        };
+        const PHASE_ORDER = ['discover', 'design', 'prototype', 'ship'];
+
+        // ── Phase UI ────────────────────────────────────────────────
+        function updatePhaseUI(phase) {
+            currentPhase = phase;
+            phaseLabel.textContent = PHASE_LABELS[phase] || phase;
+
+            const dots = document.querySelectorAll('.phase-dot');
+            const lines = document.querySelectorAll('.phase-line');
+            const idx = PHASE_ORDER.indexOf(phase);
+
+            dots.forEach((dot, i) => {
+                dot.classList.remove('active', 'completed');
+                if (i < idx) {
+                    dot.classList.add('completed');
+                    dot.style.backgroundColor = '';
+                } else if (i === idx) {
+                    dot.classList.add('active');
+                } else {
+                    dot.style.backgroundColor = '';
+                }
+            });
+
+            lines.forEach((line, i) => {
+                line.style.backgroundColor = i < idx ? 'currentColor' : '';
+            });
+        }
+
+        // ── Chat Helpers ────────────────────────────────────────────
+        function appendBuddyMsg(text) {
+            const el = document.createElement('div');
+            el.className = 'flex items-start gap-2.5 animate-in';
+            el.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-[10px] font-bold shrink-0 shadow-lg shadow-blue-500/20">B</div>
+                <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-700/50 shadow-lg">
+                    <p class="text-[13px] leading-relaxed">${text}</p>
+                </div>`;
+            chat.appendChild(el);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function appendUserMsg(text) {
+            const el = document.createElement('div');
+            el.className = 'flex items-start gap-2.5 flex-row-reverse animate-in';
+            el.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0">U</div>
+                <div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] shadow-lg shadow-blue-900/20">
+                    <p class="text-[13px] leading-relaxed">${text}</p>
+                </div>`;
+            chat.appendChild(el);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function appendPhaseSuggestion(suggestedPhase, reason) {
+            const label = PHASE_LABELS[suggestedPhase] || suggestedPhase;
+            const el = document.createElement('div');
+            el.className = 'px-3 animate-in';
+            el.innerHTML = `
+                <div class="suggestion-card rounded-xl p-3 mt-1 mb-1">
+                    <p class="text-[12px] text-slate-300 mb-2">${reason}</p>
+                    <button onclick="acceptPhaseChange('${suggestedPhase}')"
+                        class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-medium rounded-lg transition-all active:scale-95 shadow-lg shadow-blue-500/20">
+                        Move to ${label} →
+                    </button>
+                </div>`;
+            chat.appendChild(el);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // ── Phase change ────────────────────────────────────────────
+        window.acceptPhaseChange = function(phase) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            ws.send(JSON.stringify({
+                text: `Let's move to ${phase} phase`,
+                action: 'phase_change',
+                phase: phase,
+                style: currentStyle,
+                aspect_ratio: currentAR,
+            }));
+        };
+
+        // ── Fetch Configs ───────────────────────────────────────────
+        async function fetchConfigs() {
+            try {
+                const res = await fetch('/v2/studio/styles');
+                const data = await res.json();
+                const sc = $('style-container');
+                data.styles.slice(0, 5).forEach(s => {
+                    const btn = document.createElement('button');
+                    btn.className = `px-2.5 py-1 text-[11px] bg-slate-800 text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-700 transition whitespace-nowrap ${s.id === currentStyle ? 'active-pill' : ''}`;
+                    btn.textContent = s.label;
+                    btn.onclick = () => {
+                        currentStyle = s.id;
+                        sc.querySelectorAll('button').forEach(b => b.classList.remove('active-pill'));
+                        btn.classList.add('active-pill');
+                    };
+                    sc.appendChild(btn);
+                });
+
+                const ac = $('ar-container');
+                data.aspect_ratios.forEach(ar => {
+                    const btn = document.createElement('button');
+                    btn.className = `px-2.5 py-1 text-[11px] bg-slate-800 text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-700 transition ${ar === currentAR ? 'active-pill' : ''}`;
+                    btn.textContent = ar;
+                    btn.onclick = () => {
+                        currentAR = ar;
+                        ac.querySelectorAll('button').forEach(b => b.classList.remove('active-pill'));
+                        btn.classList.add('active-pill');
+                    };
+                    ac.appendChild(btn);
+                });
+            } catch (err) { console.error("Config fetch failed", err); }
+        }
+
+        // ── WebSocket ───────────────────────────────────────────────
+        function connectWS() {
+            const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${proto}//${location.host}/ws/studio`);
+
+            ws.onopen = () => {
+                connStatus.className = "text-[10px] px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full border border-green-500/30 flex items-center gap-1";
+                connStatus.innerHTML = '<div class="w-1 h-1 rounded-full bg-current"></div>Live';
+            };
+            ws.onclose = () => {
+                connStatus.className = "text-[10px] px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full border border-red-500/30 flex items-center gap-1";
+                connStatus.innerHTML = '<div class="w-1 h-1 rounded-full bg-current"></div>Offline';
+                setTimeout(connectWS, 3000);
+            };
+
+            ws.onmessage = (ev) => {
+                try {
+                    const d = JSON.parse(ev.data);
+
+                    if (d.type === 'status') {
+                        statusText.textContent = d.text;
+                        statusText.classList.remove('opacity-0');
+                        loadingText.textContent = d.text;
+                    }
+                    else if (d.type === 'chat') {
+                        appendBuddyMsg(d.text);
+                    }
+                    else if (d.type === 'error') {
+                        appendBuddyMsg(`⚠️ ${d.text}`);
+                        endProcessing();
+                    }
+                    else if (d.type === 'image') {
+                        currentImageData = `data:image/png;base64,${d.data}`;
+                        mainImage.src = currentImageData;
+                        mainImage.onload = () => {
+                            protoFrame.classList.add('opacity-0');
+                            protoFrame.classList.remove('z-10');
+                            mainImage.classList.remove('opacity-0');
+                            mainImage.classList.add('z-10');
+                            placeholder.classList.add('opacity-0');
+                            document.getElementById('canvas-container').classList.remove('shimmer-bg');
+                            exportBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+                        };
+                    }
+                    else if (d.type === 'prototype') {
+                        currentPrototypeHTML = d.html;
+                        protoFrame.srcdoc = d.html;
+                        mainImage.classList.add('opacity-0');
+                        mainImage.classList.remove('z-10');
+                        protoFrame.classList.remove('opacity-0');
+                        protoFrame.classList.add('z-10');
+                        placeholder.classList.add('opacity-0');
+                        document.getElementById('canvas-container').classList.remove('shimmer-bg');
+                        exportBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+                    }
+                    else if (d.type === 'phase_change') {
+                        updatePhaseUI(d.phase);
+                    }
+                    else if (d.type === 'phase_suggestion') {
+                        appendPhaseSuggestion(d.suggested_phase, d.reason);
+                    }
+                    else if (d.type === 'done') {
+                        if (d.phase) updatePhaseUI(d.phase);
+                        endProcessing();
+                    }
+                } catch (err) { console.error("WS parse error", err); }
+            };
+        }
+
+        // ── Send ────────────────────────────────────────────────────
+        function handleSend() {
+            const text = input.value.trim();
+            if (!text || isProcessing || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+            isProcessing = true;
+            input.disabled = true;
+            sendBtn.classList.add('opacity-50');
+
+            appendUserMsg(text);
+
+            loadingOverlay.classList.remove('opacity-0');
+            document.getElementById('canvas-container').classList.add('shimmer-bg');
+
+            ws.send(JSON.stringify({
+                text: text,
+                style: currentStyle,
+                aspect_ratio: currentAR,
+            }));
+            input.value = '';
+        }
+
+        function endProcessing() {
+            isProcessing = false;
+            input.disabled = false;
+            sendBtn.classList.remove('opacity-50');
+            input.focus();
+            loadingOverlay.classList.add('opacity-0');
+            statusText.classList.add('opacity-0');
+        }
+
+        // ── Export ───────────────────────────────────────────────────
+        exportBtn.addEventListener('click', () => {
+            if (isProcessing) return;
+            if (currentPrototypeHTML) {
+                const blob = new Blob([currentPrototypeHTML], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `tooloo_prototype_${Date.now()}.html`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } else if (currentImageData) {
+                const a = document.createElement('a');
+                a.href = currentImageData;
+                a.download = `tooloo_design_${Date.now()}.png`;
+                a.click();
+            }
+        });
+
+        // ── Init ────────────────────────────────────────────────────
+        sendBtn.addEventListener('click', handleSend);
+        input.addEventListener('keypress', e => { if (e.key === 'Enter') handleSend(); });
+        fetchConfigs();
+        connectWS();
+    })();
+    </script>
+</body>
+</html>

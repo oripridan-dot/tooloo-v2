@@ -307,6 +307,7 @@ class RoadmapManager:
                     _ALL_DIMENSIONS),
             )
             self._items[item_id] = item
+            self._graph.add_node(item_id)
             for dep in deps:
                 if dep in self._items:
                     self._graph.add_edge(dep, item_id)

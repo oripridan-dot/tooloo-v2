@@ -1,25 +1,13 @@
-#!/usr/bin/env python3
-"""
-run_calibration_cycles.py — TooLoo V2 Precision Calibration Runner
-
-Executes 3 cycles of calibration across all 28 engine components,
-benchmarking each against real published SOTA data and computing
-precise mathematical improvement proofs for all 16D, SOTA, and JIT
-parameters.
-
-Usage:
-    python run_calibration_cycles.py
-    python run_calibration_cycles.py --component jit_booster tribunal router
-    python run_calibration_cycles.py --summary-only
-    python run_calibration_cycles.py --apply-jit-params
-
-Outputs:
-    psyche_bank/calibration_proof.json         (full mathematical proof)
-    psyche_bank/jit_calibration.json           (JIT parameter recommendations)
-    psyche_bank/calibration_rules.cog.json     (PsycheBank rule injections)
-    calibration_cycles_report.json             (workspace-level report)
-"""
 from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+# Ensure repo root is on path
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 from engine.sota_benchmarks import (
     SOTA_CATALOGUE,
     COMPONENT_DOMAIN_MAP,
@@ -37,9 +25,6 @@ import re
 import sys
 from pathlib import Path
 
-# Ensure repo root is on path
-_REPO_ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(_REPO_ROOT))
 
 
 def print_banner() -> None:

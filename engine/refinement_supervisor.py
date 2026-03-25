@@ -378,7 +378,7 @@ class SpeculativeHealingEngine:
         result = await engine.speculate(
             node_id="pipe-001-s4-implement",
             error_text="AttributeError: 'NoneType' has no attribute 'items'",
-            file_path="engine/n_stroke.py",
+            file_path="engine/pipeline.py",
             broken_snippet="for k, v in result.items():",
             intent="BUILD",
             mandate_text="...",

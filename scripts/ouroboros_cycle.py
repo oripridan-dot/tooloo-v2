@@ -57,7 +57,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 # ── Project root on sys.path (must come before any engine import) ─────────────
-_ROOT = Path(__file__).resolve().parent
+_ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
@@ -79,7 +79,7 @@ from engine.graph import TopologicalSorter  # noqa: E402
 from engine.jit_booster import JITBooster  # noqa: E402
 from engine.mcp_manager import MCPManager  # noqa: E402
 from engine.model_selector import ModelSelector  # noqa: E402
-from engine.n_stroke import NStrokeEngine  # noqa: E402
+from engine.pipeline import NStrokeEngine  # noqa: E402
 from engine.psyche_bank import PsycheBank  # noqa: E402
 from engine.refinement import RefinementLoop  # noqa: E402
 from engine.refinement_supervisor import RefinementSupervisor  # noqa: E402
@@ -124,7 +124,7 @@ _COMPONENT_TEST_MAP: dict[str, str] = {
     "engine/graph.py":           "tests/test_branch_executor.py",
     "engine/scope_evaluator.py": "tests/test_workflow_proof.py",
     "engine/refinement.py":      "tests/test_speculative_healing.py",
-    "engine/n_stroke.py":        "tests/test_n_stroke_async.py",
+    "engine/pipeline.py":        "tests/test_n_stroke_async.py",
     "engine/supervisor.py":      "tests/test_two_stroke.py",
     "engine/conversation.py":    "tests/test_buddy_memory.py",
     "engine/config.py":          "tests/test_workspace_roots.py",
@@ -140,7 +140,7 @@ _COMPONENT_SOURCE_MAP: dict[str, str] = {
     "graph":           "engine/graph.py",
     "scope_evaluator": "engine/scope_evaluator.py",
     "refinement":      "engine/refinement.py",
-    "n_stroke":        "engine/n_stroke.py",
+    "n_stroke":        "engine/pipeline.py",
     "supervisor":      "engine/supervisor.py",
     "conversation":    "engine/conversation.py",
     "config":          "engine/config.py",
@@ -371,7 +371,7 @@ def _make_build_work_fn(
             "component": component,
             "source_path": source_path,
             "line_count": line_count,
-            "annotation_lines": len(annotation_lines),
+            "annotation_lines": 0,
             "write_path": write_result.output if isinstance(
                 write_result.output, str) else source_path,
             "latency_ms": round((time.monotonic() - t0) * 1000, 2),

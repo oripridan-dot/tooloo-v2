@@ -13,10 +13,12 @@ RUN npm install -g pyright
 # Set working directory
 WORKDIR /app
 
-# Copy dependencies
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir gunicorn uvicorn google-cloud-firestore
+# Copy python configuration
+COPY pyproject.toml uv.lock* ./
+
+# Install uv and sync dependencies (avoids needing a requirements.txt)
+RUN pip install --no-cache-dir uv && \
+    uv sync --frozen --no-install-project || uv sync --no-install-project
 
 # Copy application files
 COPY . .
@@ -26,5 +28,5 @@ ENV PORT=8080
 ENV STUDIO_HOST=0.0.0.0
 ENV STUDIO_PORT=8080
 
-# Run API
-CMD exec uvicorn studio.api:app --host 0.0.0.0 --port ${PORT} --workers 1
+# Run API using uv
+CMD exec uv run uvicorn studio.api:app --host 0.0.0.0 --port ${PORT} --workers 1

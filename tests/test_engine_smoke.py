@@ -21,7 +21,8 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import Any
+import asyncio
+from typing import Any, List, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -106,7 +107,8 @@ class TestRouter:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestTribunal:
-    def test_safe_logic_passes(self) -> None:
+    @pytest.mark.asyncio
+    async def test_safe_logic_passes(self) -> None:
         from engine.tribunal import Tribunal, Engram
         from engine.psyche_bank import PsycheBank
         t = Tribunal(bank=PsycheBank())
@@ -117,10 +119,11 @@ class TestTribunal:
             domain="test",
             mandate_level="L1",
         )
-        result = t.evaluate(e)
+        result = await t.evaluate(e)
         assert result.passed is True
 
-    def test_poison_eval_caught(self) -> None:
+    @pytest.mark.asyncio
+    async def test_poison_eval_caught(self) -> None:
         from engine.tribunal import Tribunal, Engram
         from engine.psyche_bank import PsycheBank
         t = Tribunal(bank=PsycheBank())
@@ -131,10 +134,11 @@ class TestTribunal:
             domain="test",
             mandate_level="L1",
         )
-        result = t.evaluate(e)
+        result = await t.evaluate(e)
         assert result.passed is False
 
-    def test_verdicts_have_required_shape(self) -> None:
+    @pytest.mark.asyncio
+    async def test_verdicts_have_required_shape(self) -> None:
         from engine.tribunal import Tribunal, Engram
         from engine.psyche_bank import PsycheBank
         t = Tribunal(bank=PsycheBank())
@@ -145,7 +149,7 @@ class TestTribunal:
             domain="test",
             mandate_level="L1",
         )
-        r = t.evaluate(e)
+        r = await t.evaluate(e)
         assert hasattr(r, "passed")
         assert hasattr(r, "violations")
         assert isinstance(r.violations, list)
@@ -156,35 +160,30 @@ class TestTribunal:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestPsycheBank:
-    def test_load_and_forbidden_patterns_present(self) -> None:
+    @pytest.mark.asyncio
+    async def test_load_and_forbidden_patterns_present(self) -> None:
         from engine.psyche_bank import PsycheBank
         bank = PsycheBank()
-        rules = bank.all_rules()
+        rules = await bank.all_rules()
         assert isinstance(rules, list)
         assert len(rules) > 0
         # At least one OWASP security rule must be seeded
         categories = {r.category for r in rules}
         assert "security" in categories
 
-    def test_thread_safe_concurrent_reads(self) -> None:
+    @pytest.mark.asyncio
+    async def test_thread_safe_concurrent_reads(self) -> None:
         from engine.psyche_bank import PsycheBank
         bank = PsycheBank()
-        results: list[list[Any]] = []
-        errors: list[Exception] = []
-
-        def read() -> None:
-            try:
-                results.append(bank.all_rules())
-            except Exception as exc:
-                errors.append(exc)
-
-        threads = [threading.Thread(target=read) for _ in range(8)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
-        assert not errors
+        
+        # We test concurrent async reads using asyncio.gather
+        tasks = [bank.all_rules() for _ in range(8)]
+        results = await asyncio.gather(*tasks)
+        
         assert len(results) == 8
+        for r in results:
+            assert isinstance(r, list)
+            assert len(r) > 0
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -223,7 +222,8 @@ class TestGraph:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestExecutor:
-    def test_fan_out_executes_all_envelopes(self) -> None:
+    @pytest.mark.asyncio
+    async def test_fan_out_executes_all_envelopes(self) -> None:
         from engine.executor import JITExecutor, Envelope
         ex = JITExecutor(max_workers=2)
         envelopes = [
@@ -231,11 +231,12 @@ class TestExecutor:
                      domain="test", metadata={})
             for i in range(4)
         ]
-        results = ex.fan_out(lambda env: {"id": env.mandate_id}, envelopes)
+        results = await ex.fan_out(lambda env: {"id": env.mandate_id}, envelopes)
         assert len(results) == 4
         assert all(r.success for r in results)
 
-    def test_fan_out_captures_exceptions(self) -> None:
+    @pytest.mark.asyncio
+    async def test_fan_out_captures_exceptions(self) -> None:
         from engine.executor import JITExecutor, Envelope
         ex = JITExecutor(max_workers=2)
         envs = [Envelope(mandate_id="e0", intent="BUILD",
@@ -244,7 +245,7 @@ class TestExecutor:
         def boom(_env: Envelope) -> dict[str, Any]:
             raise RuntimeError("boom")
 
-        results = ex.fan_out(boom, envs)
+        results = await ex.fan_out(boom, envs)
         assert len(results) == 1
         assert results[0].success is False
 
@@ -261,24 +262,26 @@ class TestExecutor:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestScopeEvaluator:
-    def test_evaluate_returns_scope_result(self) -> None:
+    @pytest.mark.asyncio
+    async def test_evaluate_returns_scope_result(self) -> None:
         from engine.graph import TopologicalSorter
         from engine.scope_evaluator import ScopeEvaluator
         waves = TopologicalSorter().sort(
             [("a", []), ("b", ["a"]), ("c", ["b"])])
         se = ScopeEvaluator()
-        result = se.evaluate(waves, intent="BUILD")
+        result = await se.evaluate(waves, intent="BUILD")
         assert hasattr(result, "scope_summary")
         assert hasattr(result, "strategy")
         assert result.node_count >= 3
 
-    def test_parallelism_detected(self) -> None:
+    @pytest.mark.asyncio
+    async def test_parallelism_detected(self) -> None:
         from engine.graph import TopologicalSorter
         from engine.scope_evaluator import ScopeEvaluator
         waves = TopologicalSorter().sort(
             [("a", []), ("b", []), ("c", [])])
         se = ScopeEvaluator()
-        result = se.evaluate(waves, intent="BUILD")
+        result = await se.evaluate(waves, intent="BUILD")
         # 3 independent nodes → one wave with width 3
         assert result.max_wave_width >= 3
         assert result.parallelism_ratio > 0.0
@@ -335,7 +338,7 @@ class TestRefinement:
 class TestNStroke:
     @pytest.fixture()
     def engine(self):
-        from engine.n_stroke import NStrokeEngine
+        from engine.pipeline import NStrokeEngine
         from engine.router import MandateRouter
         from engine.jit_booster import JITBooster
         from engine.tribunal import Tribunal
@@ -363,7 +366,8 @@ class TestNStroke:
             max_strokes=2,
         )
 
-    def test_run_returns_result_with_verdict(self, engine) -> None:
+    @pytest.mark.asyncio
+    async def test_run_returns_result_with_verdict(self, engine) -> None:
         from engine.executor import Envelope
         from engine.router import LockedIntent
 
@@ -375,11 +379,12 @@ class TestNStroke:
             mandate_text="build a simple hello-world function",
             context_turns=[],
         )
-        result = engine.run(locked_intent=locked, pipeline_id="smoke-ns-1")
+        result = await engine.run(locked_intent=locked, pipeline_id="smoke-ns-1")
         assert result.final_verdict in ("pass", "warn", "fail")
         assert result.total_strokes >= 1
 
-    def test_result_has_strokes_detail(self, engine) -> None:
+    @pytest.mark.asyncio
+    async def test_result_has_strokes_detail(self, engine) -> None:
         from engine.router import LockedIntent
         locked = LockedIntent(
             intent="EXPLAIN",
@@ -389,7 +394,7 @@ class TestNStroke:
             mandate_text="explain what a DAG is",
             context_turns=[],
         )
-        result = engine.run(locked_intent=locked, pipeline_id="smoke-ns-2")
+        result = await engine.run(locked_intent=locked, pipeline_id="smoke-ns-2")
         assert isinstance(result.strokes, list)
         d = result.to_dict()
         assert "strokes_detail" in d
@@ -400,8 +405,9 @@ class TestNStroke:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestSupervisor:
-    def test_two_stroke_happy_path(self) -> None:
-        from engine.supervisor import TwoStrokeEngine
+    @pytest.mark.asyncio
+    async def test_two_stroke_happy_path(self) -> None:
+        from engine.pipeline import NStrokeEngine as TwoStrokeEngine
         from engine.router import MandateRouter, LockedIntent
         from engine.jit_booster import JITBooster
         from engine.tribunal import Tribunal
@@ -410,6 +416,9 @@ class TestSupervisor:
         from engine.executor import JITExecutor
         from engine.scope_evaluator import ScopeEvaluator
         from engine.refinement import RefinementLoop
+        from engine.model_selector import ModelSelector
+        from engine.refinement_supervisor import RefinementSupervisor
+        from engine.mcp_manager import MCPManager
         events: list[dict] = []
         tse = TwoStrokeEngine(
             router=MandateRouter(),
@@ -419,7 +428,11 @@ class TestSupervisor:
             executor=JITExecutor(max_workers=2),
             scope_evaluator=ScopeEvaluator(),
             refinement_loop=RefinementLoop(),
+            mcp_manager=MCPManager(),
+            model_selector=ModelSelector(),
+            refinement_supervisor=RefinementSupervisor(),
             broadcast_fn=lambda e: events.append(e),
+            max_strokes=2,
         )
         locked = LockedIntent(
             intent="BUILD",
@@ -429,7 +442,7 @@ class TestSupervisor:
             mandate_text="create a health check endpoint",
             context_turns=[],
         )
-        result = tse.run(locked, pipeline_id="smoke-ts-1")
+        result = await tse.run(locked, pipeline_id="smoke-ts-1")
         assert result.final_verdict in ("pass", "warn", "fail")
 
 
@@ -496,8 +509,9 @@ class TestJITBooster:
         booster = JITBooster()
         route = MandateRouter().route("Audit security posture")
         result = booster.fetch(route)
+        # JITBooster uses (1 - context_obscurity_factor) where factor = 0.2
         expected_delta = min(len(result.signals) *
-                             BOOST_PER_SIGNAL, MAX_BOOST_DELTA)
+                             BOOST_PER_SIGNAL * 0.8, MAX_BOOST_DELTA)
         assert abs(result.boost_delta - expected_delta) < 0.001
 
     def test_source_field_populated(self) -> None:

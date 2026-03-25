@@ -814,3 +814,139 @@ def get_garden() -> ModelGarden:
             if _garden_instance is None:
                 _garden_instance = ModelGarden()
     return _garden_instance
+
+
+# ---------------------------------------------------------------------------
+# ModelSelector — tier-based routing (formerly engine/model_selector.py)
+# ---------------------------------------------------------------------------
+
+# Compute tier → model map once at import time
+_FULL_TIERS: dict[int, str] = get_full_tier_models()
+TIER_1_MODEL: str = _FULL_TIERS[1]
+TIER_2_MODEL: str = _FULL_TIERS[2]
+TIER_3_MODEL: str = _FULL_TIERS[3]
+TIER_4_MODEL: str = _FULL_TIERS[4]
+_TIER_MODELS: dict[int, str] = dict(_FULL_TIERS)
+VERTEX_TIER_MAP: dict[int, str] = dict(_FULL_TIERS)
+
+# Intents that benefit from deeper reasoning from the very first stroke
+_DEEP_INTENTS: frozenset[str] = frozenset(
+    {"BUILD", "SPAWN_REPO", "DEBUG", "AUDIT"})
+
+
+@dataclass
+class ModelSelection:
+    """Immutable record of one model selection decision."""
+
+    stroke: int
+    intent: str
+    model: str
+    tier: int
+    rationale: str
+    vertex_model_id: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "stroke": self.stroke,
+            "intent": self.intent,
+            "model": self.model,
+            "tier": self.tier,
+            "rationale": self.rationale,
+            "vertex_model_id": self.vertex_model_id,
+        }
+
+
+class ModelSelector:
+    """Selects the optimal model tier for a given N-Stroke iteration.
+
+    Model IDs come from ModelGarden which is multi-provider and capability-aware.
+    The tier escalation logic is deterministic and auditable.
+    """
+
+    def select(
+        self,
+        stroke: int,
+        intent: str,
+        prior_verdict: str = "",
+        force_tier: int | None = None,
+    ) -> ModelSelection:
+        """Return the optimal model selection for this stroke."""
+        tier = (
+            max(1, min(4, force_tier))
+            if force_tier is not None
+            else self._compute_tier(stroke, intent, prior_verdict)
+        )
+        if tier >= 3:
+            model = get_garden().get_tier_model(tier, intent)
+        else:
+            model = _TIER_MODELS[tier]
+
+        rationale = self._rationale(tier, stroke, intent, prior_verdict, model)
+        return ModelSelection(
+            stroke=stroke, intent=intent, model=model, tier=tier,
+            rationale=rationale, vertex_model_id=model,
+        )
+
+    @staticmethod
+    def _compute_tier(stroke: int, intent: str, prior_verdict: str) -> int:
+        if stroke == 1:
+            return 2 if intent in _DEEP_INTENTS else 1
+        if prior_verdict == "fail":
+            return min(4, stroke)
+        if prior_verdict == "warn":
+            return min(3, stroke)
+        return min(2, stroke)
+
+    @staticmethod
+    def _rationale(
+        tier: int, stroke: int, intent: str, prior_verdict: str, model: str = ""
+    ) -> str:
+        intent_clause = f"{intent} mandate"
+        model_label = model or f"tier-{tier} model"
+        if tier == 1:
+            return f"Stroke {stroke}: {model_label} — initial fast attempt on {intent_clause}."
+        if tier == 2:
+            reason = (
+                "deep intent → enhanced model for first stroke"
+                if stroke == 1
+                else f"prior verdict='{prior_verdict}' → escalating to enhanced model"
+            )
+            return f"Stroke {stroke}: {reason} ({model_label}) for {intent_clause}."
+        if tier == 3:
+            return (
+                f"Stroke {stroke}: prior verdict='{prior_verdict}' → "
+                f"escalating to pro reasoning model ({model_label}) for {intent_clause}."
+            )
+        return (
+            f"Stroke {stroke}: {stroke}+ failed attempts → "
+            f"maximum capability deployed ({model_label}) for {intent_clause}."
+        )
+
+    def select_with_bidder(
+        self, stroke: int, intent: str, prior_verdict: str = "",
+        node_id: str = "", task_type: str = "reasoning",
+    ) -> ModelSelection:
+        """Select model using JIT16DBidder when available, else fall back."""
+        tier_sel = self.select(stroke, intent, prior_verdict)
+        try:
+            from engine.dynamic_model_registry import get_bidder
+            bidder = get_bidder()
+            bid = bidder.bid(
+                node_id=node_id or f"stroke-{stroke}",
+                task_type=task_type, estimated_tokens=2000,
+            )
+            if bid.winning_score > 0:
+                return ModelSelection(
+                    stroke=stroke, intent=intent, model=bid.winning_model,
+                    tier=tier_sel.tier,
+                    rationale=(
+                        f"{tier_sel.rationale} "
+                        f"[JIT16D bid: {bid.winning_model} "
+                        f"score={bid.winning_score:.2f} "
+                        f"cost=${bid.winning_cost_per_10k:.4f}/10k]"
+                    ),
+                    vertex_model_id=bid.winning_model,
+                )
+        except Exception:
+            pass
+        return tier_sel
