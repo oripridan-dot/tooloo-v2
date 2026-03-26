@@ -338,20 +338,17 @@ async def _autonomous_loop() -> None:
             _broadcast(
                 {"type": "auto_loop", "phase": "started", "cycle": cycle})
 
-            # 1. Self-improvement cycle (blocking — run in thread pool)
-            loop = asyncio.get_event_loop()
-            report = await loop.run_in_executor(None, _self_improvement_engine.run)
+            # 1. Self-improvement cycle (asynchronous)
+            report = await _self_improvement_engine.run()
             _broadcast({"type": "self_improve", "report": report.to_dict()})
 
-            # 2. Roadmap sandbox run (blocking)
+            # 2. Roadmap sandbox run (asynchronous)
             items = _roadmap.all_items()
             features = [
                 {"text": i.description, "title": i.title, "roadmap_item_id": i.id}
                 for i in items
             ]
-            reports = await loop.run_in_executor(
-                None, _sandbox_orchestrator.run_parallel, features
-            )
+            reports = await _sandbox_orchestrator.run_parallel(features)
             proven = 0
             for r in reports:
                 if r.roadmap_item_id:
@@ -1150,7 +1147,7 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
     _broadcast({"type": "plan", "mandate_id": mandate_id, "waves": plan})
 
     # 4. Action scope evaluation — understand full plan before allocating resources
-    scope = _scope_evaluator.evaluate(plan, intent=route.intent)
+    scope = await _scope_evaluator.evaluate(plan, intent=route.intent)
     _broadcast({"type": "scope", "mandate_id": mandate_id,
                "scope": scope.to_dict()})
 
@@ -1173,7 +1170,7 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
         jit_signals=jit_result.signals,
     )
 
-    exec_results = _executor.fan_out_dag(
+    exec_results = await _executor.fan_out_dag(
         _live_work,
         envelopes,
         {node_id: deps for node_id, deps in spec},
@@ -1448,11 +1445,7 @@ async def self_improve_parallel() -> dict[str, Any]:
       - parallel_validation_complete
     """
     t0 = time.monotonic()
-    loop = asyncio.get_running_loop()
-    report = await loop.run_in_executor(
-        None,
-        lambda: _self_improvement_engine.run_parallel(broadcast_fn=_broadcast),
-    )
+    report = await _self_improvement_engine.run_parallel(broadcast_fn=_broadcast)
     latency_ms = round((time.monotonic() - t0) * 1000, 2)
     report_dict = report.to_dict()
     return {"self_improvement": report_dict, "report": report_dict, "latency_ms": latency_ms}
