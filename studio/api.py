@@ -144,167 +144,167 @@ def _get_heavy_singletons():
         if _router is not None:
             return
 
-    # SURGICAL IMPORTS
-    from engine.config import settings
-    from engine.router import MandateRouter, ConversationalIntentDiscovery
-    from engine.graph import CognitiveGraph, TopologicalSorter
-    from engine.psyche_bank import PsycheBank
-    from engine.tribunal import Tribunal, Engram as _Engram
-    from engine.mcp_manager import MCPManager
-    from engine.executor import JITExecutor, Envelope as _Envelope
-    from engine.scope_evaluator import ScopeEvaluator
-    from engine.refinement import RefinementLoop
-    from engine.memory_tier_orchestrator import get_memory_orchestrator
-    from engine.conversation import ConversationEngine
-    from engine.jit_booster import JITBooster
-    from engine.engram_visual import VisualEngramGenerator
-    from engine.model_selector import ModelSelector
-    from engine.director import Director
-    from engine.b_unit import BUnit
-    from engine.daemon import BackgroundDaemon
-    from engine.bus import get_bus
-    from engine.stance import get_stance_engine
-    from engine.self_improvement import SelfImprovementEngine
-    from engine.knowledge_banks.manager import BankManager
-    from engine.sota_ingestion import SOTAIngestionEngine
-    from engine.validator_16d import Validator16D
-    from engine.cognitive_map import get_cognitive_map
-    from engine.deep_introspector import get_deep_introspector
-    from engine.pipeline import NStrokeEngine, TwoStrokeEngine
-    from engine.branch_executor import BranchExecutor
-    from engine.roadmap import RoadmapManager
-    from engine.sandbox import SandboxOrchestrator
-    from engine.refinement_supervisor import RefinementSupervisor
-    from engine.async_fluid_executor import AsyncFluidExecutor
-    from engine.jit_designer import JITDesigner
-    from engine.parallel_validation import ParallelValidationPipeline
-    from engine.buddy_cognition import CognitiveLens as _CognitiveLens
+        # SURGICAL IMPORTS
+        from engine.config import settings
+        from engine.router import MandateRouter, ConversationalIntentDiscovery
+        from engine.graph import CognitiveGraph, TopologicalSorter
+        from engine.psyche_bank import PsycheBank
+        from engine.tribunal import Tribunal, Engram as _Engram
+        from engine.mcp_manager import MCPManager
+        from engine.executor import JITExecutor, Envelope as _Envelope
+        from engine.scope_evaluator import ScopeEvaluator
+        from engine.refinement import RefinementLoop
+        from engine.memory_tier_orchestrator import get_memory_orchestrator
+        from engine.conversation import ConversationEngine
+        from engine.jit_booster import JITBooster
+        from engine.engram_visual import VisualEngramGenerator
+        from engine.model_selector import ModelSelector
+        from engine.director import Director
+        from engine.b_unit import BUnit
+        from engine.daemon import BackgroundDaemon
+        from engine.bus import get_bus
+        from engine.stance import get_stance_engine
+        from engine.self_improvement import SelfImprovementEngine
+        from engine.knowledge_banks.manager import BankManager
+        from engine.sota_ingestion import SOTAIngestionEngine
+        from engine.validator_16d import Validator16D
+        from engine.cognitive_map import get_cognitive_map
+        from engine.deep_introspector import get_deep_introspector
+        from engine.pipeline import NStrokeEngine, TwoStrokeEngine
+        from engine.branch_executor import BranchExecutor
+        from engine.roadmap import RoadmapManager
+        from engine.sandbox import SandboxOrchestrator
+        from engine.refinement_supervisor import RefinementSupervisor
+        from engine.async_fluid_executor import AsyncFluidExecutor
+        from engine.jit_designer import JITDesigner
+        from engine.parallel_validation import ParallelValidationPipeline
+        from engine.buddy_cognition import CognitiveLens as _CognitiveLens
 
-    # Explicit global assignment
-    CognitiveLens = _CognitiveLens
-    Engram = _Engram
-    Envelope = _Envelope
+        # Explicit global assignment
+        CognitiveLens = _CognitiveLens
+        Engram = _Engram
+        Envelope = _Envelope
 
-    # 1. Base components
-    _router = MandateRouter()
-    _graph = CognitiveGraph()
-    _bank = PsycheBank()
-    _tribunal = Tribunal(bank=_bank)
-    _mcp_manager = MCPManager()
-    _executor = JITExecutor(mcp_manager=_mcp_manager, tribunal=_tribunal)
-    _sorter = TopologicalSorter()
-    _scope_evaluator = ScopeEvaluator()
-    _refinement_loop = RefinementLoop()
-    _buddy_memory = get_memory_orchestrator().buddy_store
-    _conversation_engine = ConversationEngine(memory_store=_buddy_memory)
-    _jit_booster = JITBooster()
-    _engram_generator = VisualEngramGenerator()
-    _model_selector = ModelSelector()
-    _refinement_supervisor = RefinementSupervisor()
-    _intent_discovery = ConversationalIntentDiscovery()
-    _async_fluid_executor = AsyncFluidExecutor()
-    _jit_designer = JITDesigner()
+        # 1. Base components
+        _router = MandateRouter()
+        _graph = CognitiveGraph()
+        _bank = PsycheBank()
+        _tribunal = Tribunal(bank=_bank)
+        _mcp_manager = MCPManager()
+        _executor = JITExecutor(mcp_manager=_mcp_manager, tribunal=_tribunal)
+        _sorter = TopologicalSorter()
+        _scope_evaluator = ScopeEvaluator()
+        _refinement_loop = RefinementLoop()
+        _buddy_memory = get_memory_orchestrator().buddy_store
+        _conversation_engine = ConversationEngine(memory_store=_buddy_memory)
+        _jit_booster = JITBooster()
+        _engram_generator = VisualEngramGenerator()
+        _model_selector = ModelSelector()
+        _refinement_supervisor = RefinementSupervisor()
+        _intent_discovery = ConversationalIntentDiscovery()
+        _async_fluid_executor = AsyncFluidExecutor()
+        _jit_designer = JITDesigner()
 
-    _director = Director(_broadcast)
-    _b_unit = BUnit(_broadcast)
-    _daemon = BackgroundDaemon(_broadcast)
+        _director = Director(_broadcast)
+        _b_unit = BUnit(_broadcast)
+        _daemon = BackgroundDaemon(_broadcast)
 
-    # Re-register notification bus with initialized components
-    _notification_bus = get_bus()
-    _notification_bus.register_broadcast(_broadcast)
-    _notification_bus.subscribe("ALL", lambda e: _director.on_bus_event(e.level, e.payload))
-    _notification_bus.subscribe("INSIGHT", lambda e: _b_unit.on_bus_event(e.level, e.payload))
-    _notification_bus.subscribe("CRITICAL", _on_tribunal_critical)
+        # Re-register notification bus with initialized components
+        _notification_bus = get_bus()
+        _notification_bus.register_broadcast(_broadcast)
+        _notification_bus.subscribe("ALL", lambda e: _director.on_bus_event(e.level, e.payload))
+        _notification_bus.subscribe("INSIGHT", lambda e: _b_unit.on_bus_event(e.level, e.payload))
+        _notification_bus.subscribe("CRITICAL", _on_tribunal_critical)
 
-    # 1.1 Stance engine
-    _stance_engine = get_stance_engine()
+        # 1.1 Stance engine
+        _stance_engine = get_stance_engine()
 
-    # 2. Heavy components
-    _self_improvement_engine = SelfImprovementEngine(booster=_jit_booster, bank=_bank)
-    _bank_manager = BankManager()
-    _sota_ingestion = SOTAIngestionEngine(manager=_bank_manager, tribunal=_tribunal)
-    _validator_16d = Validator16D()
+        # 2. Heavy components
+        _self_improvement_engine = SelfImprovementEngine(booster=_jit_booster, bank=_bank)
+        _bank_manager = BankManager()
+        _sota_ingestion = SOTAIngestionEngine(manager=_bank_manager, tribunal=_tribunal)
+        _validator_16d = Validator16D()
 
-    _cognitive_map = get_cognitive_map()
-    _cognitive_map.register_update_callback(_broadcast)
-    _deep_introspector = get_deep_introspector()
-    _deep_introspector.register_update_callback(_broadcast)
+        _cognitive_map = get_cognitive_map()
+        _cognitive_map.register_update_callback(_broadcast)
+        _deep_introspector = get_deep_introspector()
+        _deep_introspector.register_update_callback(_broadcast)
 
-    _parallel_validation = ParallelValidationPipeline(
-        broadcast_fn=_broadcast, tribunal=_tribunal, validator=_validator_16d
-    )
-    _supervisor = TwoStrokeEngine(
-        router=_router, booster=_jit_booster, tribunal=_tribunal,
-        sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
-        refinement_loop=_refinement_loop, broadcast_fn=_broadcast,
-    )
-    _n_stroke_engine = NStrokeEngine(
-        router=_router, booster=_jit_booster, tribunal=_tribunal,
-        sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
-        refinement_loop=_refinement_loop, mcp_manager=_mcp_manager,
-        model_selector=_model_selector, refinement_supervisor=_refinement_supervisor,
-        broadcast_fn=_broadcast, async_fluid_executor=_async_fluid_executor,
-    )
-    _n_stroke_engine.register_director(_director)
-    _branch_executor = BranchExecutor(
-        router=_router, booster=_jit_booster, tribunal=_tribunal,
-        sorter=_sorter, jit_executor=_executor, scope_evaluator=_scope_evaluator,
-        refinement_loop=_refinement_loop, broadcast_fn=_broadcast,
-    )
-    _roadmap = RoadmapManager()
-    _sandbox_orchestrator = SandboxOrchestrator(
-        max_workers=_get_settings().sandbox_max_workers,
-        broadcast_fn=_broadcast, booster=_jit_booster, bank=_bank,
-    )
-    _loop_stats["interval_seconds"] = 600 if _get_settings().lean_mode else 30
-
-    # 3. Route initialization (Lazy-loaded to keep import memory low)
-    from studio.routes import introspection as ir
-    from studio.routes import buddy as br
-    from studio.routes import pipeline as pr
-    from studio.routes import sandbox as sr
-    from studio.routes import knowledge as kr
-    from studio.routes import vlt as vr
-    from studio.routes import core as cr
-    from studio.routes import studio as str_r
-
-    def __create_n_stroke(max_strokes: int):
-        from engine.pipeline import NStrokeEngine as _NSE
-        return _NSE(
+        _parallel_validation = ParallelValidationPipeline(
+            broadcast_fn=_broadcast, tribunal=_tribunal, validator=_validator_16d
+        )
+        _supervisor = TwoStrokeEngine(
+            router=_router, booster=_jit_booster, tribunal=_tribunal,
+            sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
+            refinement_loop=_refinement_loop, broadcast_fn=_broadcast,
+        )
+        _n_stroke_engine = NStrokeEngine(
             router=_router, booster=_jit_booster, tribunal=_tribunal,
             sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
             refinement_loop=_refinement_loop, mcp_manager=_mcp_manager,
             model_selector=_model_selector, refinement_supervisor=_refinement_supervisor,
-            broadcast_fn=_broadcast, max_strokes=max_strokes,
-            async_fluid_executor=_async_fluid_executor,
+            broadcast_fn=_broadcast, async_fluid_executor=_async_fluid_executor,
+        )
+        _n_stroke_engine.register_director(_director)
+        _branch_executor = BranchExecutor(
+            router=_router, booster=_jit_booster, tribunal=_tribunal,
+            sorter=_sorter, jit_executor=_executor, scope_evaluator=_scope_evaluator,
+            refinement_loop=_refinement_loop, broadcast_fn=_broadcast,
+        )
+        _roadmap = RoadmapManager()
+        _sandbox_orchestrator = SandboxOrchestrator(
+            max_workers=settings.sandbox_max_workers,
+            broadcast_fn=_broadcast, booster=_jit_booster, bank=_bank,
+        )
+        _loop_stats["interval_seconds"] = 600 if settings.lean_mode else 30
+
+        # 3. Route initialization (Lazy-loaded to keep import memory low)
+        from studio.routes import introspection as ir
+        from studio.routes import buddy as br
+        from studio.routes import pipeline as pr
+        from studio.routes import sandbox as sr
+        from studio.routes import knowledge as kr
+        from studio.routes import vlt as vr
+        from studio.routes import core as cr
+        from studio.routes import studio as str_r
+
+        def __create_n_stroke(max_strokes: int):
+            from engine.pipeline import NStrokeEngine as _NSE
+            return _NSE(
+                router=_router, booster=_jit_booster, tribunal=_tribunal,
+                sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
+                refinement_loop=_refinement_loop, mcp_manager=_mcp_manager,
+                model_selector=_model_selector, refinement_supervisor=_refinement_supervisor,
+                broadcast_fn=_broadcast, max_strokes=max_strokes,
+                async_fluid_executor=_async_fluid_executor,
+            )
+
+        ir.set_broadcast(_broadcast)
+        br.init(buddy_memory=_buddy_memory, conversation_engine=_conversation_engine, broadcast_fn=_broadcast)
+        pr.init(
+            intent_discovery=_intent_discovery, supervisor=_supervisor,
+            n_stroke_engine=_n_stroke_engine, async_fluid_executor=_async_fluid_executor,
+            branch_executor=_branch_executor, mcp_manager=_mcp_manager,
+            broadcast_fn=_broadcast, create_n_stroke_fn=__create_n_stroke,
+        )
+        sr.init(sandbox_orchestrator=_sandbox_orchestrator, roadmap=_roadmap, broadcast_fn=_broadcast)
+        kr.init(bank_manager=_bank_manager, sota_ingestion=_sota_ingestion, broadcast_fn=_broadcast)
+        vr.init(broadcast_fn=_broadcast)
+        cr.init(
+            parallel_validation=_parallel_validation,
+            notification_bus=_notification_bus,
+            stance_engine=_stance_engine,
+            broadcast_fn=_broadcast,
         )
 
-    ir.set_broadcast(_broadcast)
-    br.init(buddy_memory=_buddy_memory, conversation_engine=_conversation_engine, broadcast_fn=_broadcast)
-    pr.init(
-        intent_discovery=_intent_discovery, supervisor=_supervisor,
-        n_stroke_engine=_n_stroke_engine, async_fluid_executor=_async_fluid_executor,
-        branch_executor=_branch_executor, mcp_manager=_mcp_manager,
-        broadcast_fn=_broadcast, create_n_stroke_fn=__create_n_stroke,
-    )
-    sr.init(sandbox_orchestrator=_sandbox_orchestrator, roadmap=_roadmap, broadcast_fn=_broadcast)
-    kr.init(bank_manager=_bank_manager, sota_ingestion=_sota_ingestion, broadcast_fn=_broadcast)
-    vr.init(broadcast_fn=_broadcast)
-    cr.init(
-        parallel_validation=_parallel_validation,
-        notification_bus=_notification_bus,
-        stance_engine=_stance_engine,
-        broadcast_fn=_broadcast,
-    )
-
-    app.include_router(ir.router)
-    app.include_router(br.router)
-    app.include_router(pr.router)
-    app.include_router(sr.router)
-    app.include_router(kr.router)
-    app.include_router(vr.router)
-    app.include_router(cr.router)
-    app.include_router(str_r.router)
+        app.include_router(ir.router)
+        app.include_router(br.router)
+        app.include_router(pr.router)
+        app.include_router(sr.router)
+        app.include_router(kr.router)
+        app.include_router(vr.router)
+        app.include_router(cr.router)
+        app.include_router(str_r.router)
 
 # ── Autonomous improvement loop state ─────────────────────────────────────────
 _loop_active: bool = False
