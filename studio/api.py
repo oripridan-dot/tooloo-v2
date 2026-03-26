@@ -102,6 +102,7 @@ def _on_tribunal_critical(event: Any) -> None:
     )
 
 _stance_engine: Any = None
+CognitiveLens: Any = None
 
 # ── Heavyweight singletons — lazy-initialized on first use ───────────────────
 # These are deferred to reduce startup memory below 512 MiB for Cloud Run.
@@ -129,7 +130,7 @@ def _get_heavy_singletons():
     global _cognitive_map, _deep_introspector, _parallel_validation
     global _supervisor, _n_stroke_engine, _branch_executor, _roadmap, _sandbox_orchestrator
     global _refinement_supervisor, _intent_discovery, _async_fluid_executor, _jit_designer
-    global _buddy_memory
+    global _buddy_memory, CognitiveLens
 
     if _router is not None:
         return  # Already initialized
