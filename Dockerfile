@@ -17,16 +17,17 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 
 # Install uv and sync dependencies (avoids needing a requirements.txt)
+# Install dependencies into system site-packages to avoid venv path issues in Cloud Run
 RUN pip install --no-cache-dir uv && \
-    uv sync --frozen --no-install-project || uv sync --no-install-project
+    uv pip install --system --no-cache-dir .
 
 # Copy application files
 COPY . .
 
-# Set environment defaults (can be overridden by Cloud Run)
-ENV PORT=8080
+# Expose port and set host
+EXPOSE 8080
 ENV STUDIO_HOST=0.0.0.0
 ENV STUDIO_PORT=8080
 
-# Run API using uv run (with --no-sync to avoid runtime overhead)
-CMD ["uv", "run", "--no-sync", "uvicorn", "studio.api:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
+# Run API using uvicorn directly
+CMD ["uvicorn", "studio.api:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
