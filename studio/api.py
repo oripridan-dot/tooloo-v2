@@ -1072,6 +1072,7 @@ async def clear_intent_session(session_id: str) -> dict[str, Any]:
 
 @app.post("/v2/mandate")
 async def route_mandate(req: MandateRequest) -> dict[str, Any]:
+    _get_heavy_singletons()
     t0 = time.monotonic()
     mandate_id = f"m-{uuid.uuid4().hex[:8]}"
 
@@ -1191,7 +1192,8 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
 
 
 @app.post("/v2/chat")
-async def buddy_chat(req: ChatRequest) -> dict[str, Any]:
+async def chat_with_buddy(req: ChatRequest) -> dict[str, Any]:
+    _get_heavy_singletons()
     t0 = time.monotonic()
     mandate_id = f"c-{uuid.uuid4().hex[:8]}"
     session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
