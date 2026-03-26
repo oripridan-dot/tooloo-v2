@@ -1312,6 +1312,7 @@ async def engram_generate(req: EngramGenerateRequest) -> dict[str, Any]:
 
 @app.get("/v2/dag")
 async def dag_snapshot() -> dict[str, Any]:
+    _get_heavy_singletons()
     nodes = _graph.nodes()
     edges = [{"from": u, "to": v} for u, v in _graph.edges()]
     return {"nodes": nodes, "edges": edges, "node_count": len(nodes), "edge_count": len(edges)}
@@ -1319,16 +1320,19 @@ async def dag_snapshot() -> dict[str, Any]:
 
 @app.get("/v2/psyche-bank")
 async def psyche_bank_rules() -> dict[str, Any]:
+    _get_heavy_singletons()
     return await _bank.to_dict()
 
 
 @app.get("/v2/router-status")
 async def router_status() -> dict[str, Any]:
+    _get_heavy_singletons()
     return _router.status()
 
 
 @app.post("/v2/router-reset")
 async def router_reset() -> dict[str, Any]:
+    _get_heavy_singletons()
     _router.reset()
     return {"reset": True, "status": _router.status()}
 
