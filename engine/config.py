@@ -119,14 +119,14 @@ class Settings:
     # Models for the incremental refinement pattern (Prompt Engineering with iterative refinement).
     # These models leverage enhanced context windows for complex prompt chaining.
     # GPT-4o and Gemini 1.5 Pro are known for their large context windows, suitable for complex ideation.
-    ideation_theme_model: str = field(default=os.getenv("IDEATION_THEME_MODEL", "gemini-1.5-pro-001"))
-    suggestion_refinement_model: str = field(default=os.getenv("SUGGESTION_REFINEMENT_MODEL", "gemini-1.5-pro-001"))
+    ideation_theme_model: str = field(default=os.getenv("IDEATION_THEME_MODEL", "gemini-1.5-pro"))
+    suggestion_refinement_model: str = field(default=os.getenv("SUGGESTION_REFINEMENT_MODEL", "gemini-1.5-pro"))
 
     # Model for structured output generation (e.g., function calling) for tool integration.
     function_calling_model: str = field(default=os.getenv("FUNCTION_CALLING_MODEL", "gpt-4-turbo-preview"))
 
-    vertex_default_model: Optional[str] = field(default=os.getenv("VERTEX_DEFAULT_MODEL", "gemini-1.5-pro-001"))
-    gemini_model: Optional[str] = field(default=os.getenv("GEMINI_MODEL", "gemini-1.5-pro-001"))
+    vertex_default_model: Optional[str] = field(default=os.getenv("VERTEX_DEFAULT_MODEL", "gemini-1.5-pro"))
+    gemini_model: Optional[str] = field(default=os.getenv("GEMINI_MODEL", "gemini-1.5-pro"))
     image_gen_model: Optional[str] = field(default=os.getenv("IMAGE_GEN_MODEL", "imagegeneration@006"))
     local_slm_model: str = field(default=os.getenv("LOCAL_SLM_MODEL", "ollama/llama3:8b-instruct-q5_K_M"))
     local_slm_endpoint: str = field(default=os.getenv("LOCAL_SLM_ENDPOINT", "http://localhost:11434/api/generate"))

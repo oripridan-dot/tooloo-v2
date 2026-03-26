@@ -29,20 +29,14 @@ from __future__ import annotations
 from engine.vlt_schema import VectorTree, VLTAuditReport
 from engine.mcp_manager import MCPManager
 from engine.executor import Envelope
+from engine.model_garden import get_garden
 from engine.config import (
-    _vertex_client as _vertex_client_cfg,
-    _gemini_client as _gemini_client_cfg,
-    GEMINI_API_KEY,
     GEMINI_MODEL,
     VERTEX_DEFAULT_MODEL,
     settings,
 )
 from engine.vector_store import VectorStore
 from engine.intent import IntentPayload, ValidationResult, RemediationPlan
-
-# ── LLM Clients (patched by tests/conftest.py) ───────────────────────────────
-_vertex_client = _vertex_client_cfg
-_gemini_client = _gemini_client_cfg
 
 import json
 import logging
@@ -62,16 +56,8 @@ _MANDATE_MAX_LENGTH = settings.mandate_executor_max_length
 _MODULE_INIT_T0 = time.perf_counter()
 
 
-# ── LLM clients (initialised once at import — same pattern as jit_booster) ────
-_vertex_client = _vertex_client_cfg
-
-_gemini_client = None
-if GEMINI_API_KEY:
-    try:
-        from google import genai as _genai_mod  # type: ignore[import-untyped]
-        _gemini_client = _genai_mod.Client(api_key=GEMINI_API_KEY)
-    except Exception:  # pragma: no cover
-        pass
+# ModelGarden singleton handles all provider dispatch and client init.
+_garden = get_garden()
 
 # ── Node-type → prompt template ───────────────────────────────────────────────
 # {mandate}, {intent}, {signals} are always substituted.
@@ -439,42 +425,26 @@ def make_live_work_fn(
     _warm_memory = VectorStore()
 
     def _call_llm(node_type: str, prompt: str, model_id: str) -> str:
-        """Call Vertex AI → Gemini Direct → symbolic fallback."""
+        """Call ModelGarden for provider-agnostic inference with symbolic fallback."""
 
         system = _NODE_SYSTEM.format(node_type=node_type)
         full_prompt = f"{system}\n\n{prompt}"
-
-        if _vertex_client is not None:
-            try:
-                resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
-                    model=model_id, contents=full_prompt,
-                )
-                text = (resp.text or "").strip()
-                if text:
-                    return text
-            except Exception:
-                pass  # fall through to Gemini Direct
-
-        if _gemini_client is not None:
-            try:
-                resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
-                    model=GEMINI_MODEL, contents=full_prompt,
-                )
-                text = (resp.text or "").strip()
-                if text:
-                    return text
-            except Exception:
-                pass  # fall through to symbolic
-
-        # Symbolic fallback (offline / test mode)
-        return (
-            f"[symbolic-{node_type}] intent={intent} "
-            f"model={model_id} signals={_signals_str[:80]}"
-        )
+        
+        try:
+            # Use ModelGarden to dispatch to the correct provider (Vertex or Gemini)
+            return _garden.call(model_id, full_prompt)
+        except Exception as e:
+            logger.warning(f"ModelGarden call failed for {model_id} (node={node_type}): {e}")
+            # Fall through to symbolic fallback
+            return (
+                f"[symbolic-{node_type}] intent={intent} "
+                f"model={model_id} signals={_signals_str[:80]}"
+            )
 
     def _call_llm_raw(full_prompt: str, _node_type: str, model_id: str) -> str:
-        """Call LLM with a fully-built conversation prompt (no system prepend)."""
+        """Call ModelGarden with a fully-built conversation prompt (no system prepend)."""
         if "CLAUDIO" in _mandate.upper():
+            # ... (Claudio simulation logic preserved for Law 0 adherence)
             if "intent" in _node_type:
                 return '{"intent": "BUILD", "confidence": 1.0, "value_statement": "Real-time edge computing audio rendering", "constraint_summary": "<20ms latency", "mandate_text": "architect the core data flow for CLAUDIO...", "context_turns": []}'
             elif "validate" in _node_type or "remediate" in _node_type:
@@ -486,31 +456,14 @@ def make_live_work_fn(
             elif "ux_eval" in _node_type:
                 return "No UI required for core DSP loop."
 
-        if _vertex_client is not None:
-            try:
-                resp = _vertex_client.models.generate_content(  # type: ignore[union-attr]
-                    model=model_id, contents=full_prompt,
-                )
-                text = (resp.text or "").strip()
-                if text:
-                    return text
-            except Exception:
-                pass
-        if _gemini_client is not None:
-            try:
-                resp = _gemini_client.models.generate_content(  # type: ignore[union-attr]
-                    model=GEMINI_MODEL, contents=full_prompt,
-                )
-                text = (resp.text or "").strip()
-                if text:
-                    return text
-            except Exception:
-                pass
-        # Symbolic fallback (offline / test mode)
-        return (
-            f"[symbolic-{_node_type}] intent={intent} "
-            f"model={model_id} signals={_signals_str[:80]}"
-        )
+        try:
+            return _garden.call(model_id, full_prompt)
+        except Exception as e:
+            logger.warning(f"ModelGarden raw call failed for {model_id} (node={_node_type}): {e}")
+            return (
+                f"[symbolic-{_node_type}] intent={intent} "
+                f"model={model_id} signals={_signals_str[:80]}"
+            )
 
     def work_fn(env: Envelope) -> dict[str, Any]:
         """Stateless per-node execution with Intent-Gap-Remediation loop."""

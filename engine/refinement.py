@@ -292,8 +292,11 @@ class LLMClient:
         # In a real implementation, the client would orchestrate tool execution and response generation.
         simulated_llm_suggestions_text = [
             f"LLM Suggestion ({self.model_name}): Analyze logs for nodes identified as slow in the report, specifically focusing on I/O operations or external service calls.",
-            f"LLM Suggestion ({self.model_name}): Investigate the root cause of '{report.failed_nodes[0]}' if it represents a common failure mode, cross-referencing with external documentation.",
         ]
+        if report.failed_nodes:
+            simulated_llm_suggestions_text.append(
+                f"LLM Suggestion ({self.model_name}): Investigate the root cause of '{report.failed_nodes[0]}' if it represents a common failure mode, cross-referencing with external documentation."
+            )
         if report.success_rate < 0.7: # Example condition for more aggressive suggestions
             simulated_llm_suggestions_text.append(f"LLM Suggestion ({self.model_name}): Temporarily reduce concurrency for nodes exhibiting high latency or failure rates to stabilize the system.")
 
