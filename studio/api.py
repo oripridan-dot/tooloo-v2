@@ -103,6 +103,8 @@ def _on_tribunal_critical(event: Any) -> None:
 
 _stance_engine: Any = None
 CognitiveLens: Any = None
+Engram: Any = None
+Envelope: Any = None
 
 # ── Heavyweight singletons — lazy-initialized on first use ───────────────────
 # These are deferred to reduce startup memory below 512 MiB for Cloud Run.
@@ -130,7 +132,7 @@ def _get_heavy_singletons():
     global _cognitive_map, _deep_introspector, _parallel_validation
     global _supervisor, _n_stroke_engine, _branch_executor, _roadmap, _sandbox_orchestrator
     global _refinement_supervisor, _intent_discovery, _async_fluid_executor, _jit_designer
-    global _buddy_memory, CognitiveLens
+    global _buddy_memory, CognitiveLens, Engram, Envelope
 
     if _router is not None:
         return  # Already initialized
@@ -140,9 +142,9 @@ def _get_heavy_singletons():
     from engine.router import MandateRouter, ConversationalIntentDiscovery
     from engine.graph import CognitiveGraph, TopologicalSorter
     from engine.psyche_bank import PsycheBank
-    from engine.tribunal import Tribunal
+    from engine.tribunal import Tribunal, Engram as _Engram
     from engine.mcp_manager import MCPManager
-    from engine.executor import JITExecutor
+    from engine.executor import JITExecutor, Envelope as _Envelope
     from engine.scope_evaluator import ScopeEvaluator
     from engine.refinement import RefinementLoop
     from engine.memory_tier_orchestrator import get_memory_orchestrator
@@ -169,7 +171,12 @@ def _get_heavy_singletons():
     from engine.async_fluid_executor import AsyncFluidExecutor
     from engine.jit_designer import JITDesigner
     from engine.parallel_validation import ParallelValidationPipeline
-    from engine.buddy_cognition import CognitiveLens
+    from engine.buddy_cognition import CognitiveLens as _CognitiveLens
+
+    # Explicit global assignment
+    CognitiveLens = _CognitiveLens
+    Engram = _Engram
+    Envelope = _Envelope
 
     # 1. Base components
     _router = MandateRouter()
