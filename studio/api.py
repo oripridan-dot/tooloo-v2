@@ -158,6 +158,7 @@ def _get_heavy_singletons():
         from engine.conversation import ConversationEngine
         from engine.jit_booster import JITBooster
         from engine.engram_visual import VisualEngramGenerator
+        from engine.mandate_executor import make_live_work_fn as _make_live_work_fn
         from engine.model_selector import ModelSelector
         from engine.director import Director
         from engine.b_unit import BUnit
@@ -181,6 +182,8 @@ def _get_heavy_singletons():
         from engine.buddy_cognition import CognitiveLens as _CognitiveLens
 
         # Explicit global assignment
+        global make_live_work_fn, CognitiveLens, Engram, Envelope
+        make_live_work_fn = _make_live_work_fn
         CognitiveLens = _CognitiveLens
         Engram = _Engram
         Envelope = _Envelope
