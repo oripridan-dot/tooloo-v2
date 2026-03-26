@@ -377,15 +377,17 @@ async def _lifespan(_: FastAPI):
     # DOCKER-OPTIMIZED: Do not call _get_heavy_singletons on boot.
     # We want the container to listen on 8080 instantly to pass health-checks.
     # Individual routes (and health checks) will call it on-demand.
-    _jit_booster.start_background_refresh()
+    if _jit_booster is not None:
+        _jit_booster.start_background_refresh()
 
     async def _purge_psychebank_loop() -> None:
         """Hourly background task: evict TTL-expired PsycheBank rules."""
         while True:
             await asyncio.sleep(3600)
-            removed = _bank.purge_expired()
-            if removed:
-                _broadcast({"type": "psychebank_purge", "removed": removed})
+            if _bank is not None:
+                removed = _bank.purge_expired()
+                if removed:
+                    _broadcast({"type": "psychebank_purge", "removed": removed})
 
     purge_task = asyncio.create_task(_purge_psychebank_loop())
     try:
@@ -394,7 +396,8 @@ async def _lifespan(_: FastAPI):
         purge_task.cancel()
         with suppress(asyncio.CancelledError):
             await purge_task
-        _jit_booster.stop_background_refresh()
+        if _jit_booster is not None:
+            _jit_booster.stop_background_refresh()
 
 
 app = FastAPI(title="TooLoo V2 Governor Dashboard",
