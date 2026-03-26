@@ -274,7 +274,12 @@ def _get_heavy_singletons():
     sr.init(sandbox_orchestrator=_sandbox_orchestrator, roadmap=_roadmap, broadcast_fn=_broadcast)
     kr.init(bank_manager=_bank_manager, sota_ingestion=_sota_ingestion, broadcast_fn=_broadcast)
     vr.init(broadcast_fn=_broadcast)
-    cr.init(parallel_validation=_parallel_validation, notification_bus=_notification_bus, stance_engine=_stance_engine)
+    cr.init(
+        parallel_validation=_parallel_validation,
+        notification_bus=_notification_bus,
+        stance_engine=_stance_engine,
+        broadcast_fn=_broadcast,
+    )
 
     app.include_router(ir.router)
     app.include_router(br.router)
