@@ -22,9 +22,11 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--memory'
-      - '2Gi'
+      - '1Gi'
       - '--cpu'
       - '1'
+      - '--set-env-vars'
+      - 'WORKSPACE_ROOT=/app,GCP_REGION=us-central1,GCP_PROJECT_ID=$PROJECT_ID,LEAN_MODE=true,STARTUP_TIMEOUT=120'
 
 images:
   - 'gcr.io/$PROJECT_ID/tooloo-v2:$_IMAGE_TAG'

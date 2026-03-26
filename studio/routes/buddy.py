@@ -100,3 +100,69 @@ async def invalidate_buddy_cache() -> dict[str, Any]:
     _conversation_engine.invalidate_cache()
     _broadcast_fn({"type": "buddy_cache_invalidated"})
     return {"invalidated": True, "layers_cleared": ["l1_semantic", "l2_process", "l3_persistent"]}
+
+
+# ── Personality Introspection ─────────────────────────────────────────────────
+
+from pathlib import Path
+
+_PERSONALITY_PATH = (
+    Path(__file__).resolve().parents[2] / "psyche_bank" / "buddy_personality.md"
+)
+
+
+@router.get("/v2/buddy/personality")
+async def get_buddy_personality() -> dict[str, Any]:
+    """Return Buddy's current personality file (hot-reloadable)."""
+    try:
+        text = _PERSONALITY_PATH.read_text(encoding="utf-8")
+        return {"personality": text, "path": str(_PERSONALITY_PATH), "editable": True}
+    except OSError:
+        return {"personality": "", "path": str(_PERSONALITY_PATH), "editable": False}
+
+
+@router.put("/v2/buddy/personality")
+async def update_buddy_personality(payload: dict[str, Any]) -> dict[str, Any]:
+    """Update Buddy's personality file. Hot-reloads on next conversation turn."""
+    content = str(payload.get("content", "")).strip()
+    if not content:
+        raise HTTPException(status_code=422, detail="content is required.")
+    _PERSONALITY_PATH.write_text(content, encoding="utf-8")
+    _broadcast_fn({"type": "buddy_personality_updated"})
+    return {"updated": True, "length": len(content)}
+
+
+# ── Runtime Metrics for 16D Scoring ───────────────────────────────────────────
+
+@router.get("/v2/buddy/runtime-metrics")
+async def get_runtime_metrics_endpoint() -> dict[str, Any]:
+    """Return live runtime metrics used by the 16D validator."""
+    from engine.runtime_metrics import get_runtime_metrics
+    return get_runtime_metrics().to_dict()
+
+
+# ── Memory Tier Observability ─────────────────────────────────────────────────
+
+@router.get("/v2/buddy/memory/tiers")
+async def get_memory_tier_stats() -> dict[str, Any]:
+    """Return Hot/Warm/Cold memory tier sizes and health."""
+    from engine.memory_tier_orchestrator import get_memory_orchestrator
+    return get_memory_orchestrator().stats()
+
+
+@router.post("/v2/buddy/memory/query")
+async def query_cross_tier_memory(payload: dict[str, Any]) -> dict[str, Any]:
+    """Query across all 3 memory tiers for relevant context."""
+    query_text = str(payload.get("query", "")).strip()
+    if not query_text:
+        raise HTTPException(status_code=422, detail="query is required.")
+    top_k = int(payload.get("top_k", 5))
+    domain = str(payload.get("domain", "buddy"))
+    from engine.memory_tier_orchestrator import get_memory_orchestrator
+    results = get_memory_orchestrator().query(query_text, top_k=top_k, domain=domain)
+    return {
+        "query": query_text,
+        "domain": domain,
+        "results": [r.to_dict() for r in results],
+        "count": len(results),
+    }

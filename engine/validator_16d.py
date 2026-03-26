@@ -37,6 +37,7 @@ from typing import Any
 from engine.config import AUTONOMOUS_CONFIDENCE_THRESHOLD as _AUTO_CONF_THRESHOLD
 
 from engine.model_garden import get_garden
+from engine.psyche_bank import PsycheBank
 
 
 # ── Validation Result Structure ────────────────────────────────────────────────
@@ -123,8 +124,9 @@ class Validator16D:
     # Autonomous confidence target — read from config so .env changes apply everywhere
     AUTONOMOUS_CONFIDENCE_THRESHOLD: float = _AUTO_CONF_THRESHOLD
 
-    def __init__(self) -> None:
+    def __init__(self, psyche_bank: PsycheBank | None = None) -> None:
         self.garden = get_garden()
+        self.pb = psyche_bank or PsycheBank()
 
     async def validate(
         self,
@@ -210,6 +212,9 @@ class Validator16D:
             d.name for d in dims
             if d.name in critical_dims and not d.passed
         ]
+
+        # Phase 4: Self-Optimization persistence
+        await self.pb.record_roi_event(result.to_dict())
 
         return result
 

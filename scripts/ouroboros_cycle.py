@@ -93,7 +93,7 @@ from engine.tribunal import Tribunal  # noqa: E402
 _DEFAULT_MAX_STROKES = int(
     os.environ.get("GOD_MODE_MAX_STROKES", "7")
 )
-_REPORT_PATH = _ROOT / "ouroboros_report.json"
+_REPORT_PATH = Path("/tmp/ouroboros_report.json")
 
 # Components the cycle is *allowed* to touch in autonomous mode.
 # Extending this list is a deliberate, reviewable action.
@@ -317,19 +317,17 @@ def _make_build_work_fn(
 
         new_source = current_source
         try:
+            from engine.model_garden import get_garden, CognitiveProfile
+            garden = get_garden()
+            profile = CognitiveProfile(primary_need="coding", minimum_tier=3, complexity=0.7)
+            model_id = garden.get_tier_model(3, "BUILD", profile=profile)
+
             import engine.jit_booster as _jib_mod
-            from engine.config import VERTEX_DEFAULT_MODEL, GEMINI_MODEL
-            if _jib_mod._vertex_client:
-                # Vertex AI client currently sync in this SDK version
-                resp = _jib_mod._vertex_client.models.generate_content(
-                    model=VERTEX_DEFAULT_MODEL, contents=prompt
-                )
-                if resp.text:
-                    new_source = resp.text.strip()
-            elif _jib_mod._gemini_client:
-                # Gemini client currently sync in this SDK version
-                resp = _jib_mod._gemini_client.models.generate_content(
-                    model=GEMINI_MODEL, contents=prompt
+            if _jib_mod._vertex_client or _jib_mod._gemini_client:
+                client = _jib_mod._vertex_client if _jib_mod._vertex_client else _jib_mod._gemini_client
+                # The google-genai client is used here
+                resp = client.models.generate_content(
+                    model=model_id, contents=prompt
                 )
                 if resp.text:
                     new_source = resp.text.strip()
@@ -420,7 +418,7 @@ def _build_n_stroke_engine(
     booster = JITBooster()
     router = MandateRouter()
     sorter = TopologicalSorter()
-    executor = JITExecutor(max_workers=3)
+    executor = JITExecutor(mcp_manager=mcp, tribunal=tribunal, max_workers=3)
     scope_evaluator = ScopeEvaluator()
     refinement_loop = RefinementLoop()
     model_selector = ModelSelector()

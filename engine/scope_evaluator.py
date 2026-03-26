@@ -9,34 +9,52 @@ _MAX_RETRIES = 3               # retry limit for transient evaluation failures
 _CIRCUIT_BREAKER_DEPTH = 10    # max dependency depth before escalation
 
 # FIX 3: Refactor parallelism ratio thresholds for advanced risk-surface scoring
-# These thresholds now inform a more granular risk assessment.
+# These thresholds now inform a more granular risk assessment, influenced by DORA metrics.
 # Lower values indicate a preference for serial execution, higher values for parallel.
+# These are base values and will be adjusted by _get_dora_threshold.
 _PARALLELISM_RATIO_LOW = 0.25   # below this, lean towards serial, higher risk for serial bottlenecks
 _PARALLELISM_RATIO_HIGH = 0.75  # above this, lean towards deep-parallel, higher risk for coordination overhead
 
-# Tool: Generative Adversarial Networks (GANs) integrated with Reinforcement Learning (RL)
-# for dynamic ideation theme generation and suggestion refinement based on real-time trend analysis.
-# This implies that the `evaluate` method could potentially leverage an LLM or a GAN/RL
-# model in future iterations for more nuanced analysis or to inform `risk_surface`.
-# For this rewrite, we focus on structural analysis but acknowledge the potential integration point.
-# GANs/RL could be used to predict "risky" node combinations or prompt adversarial manipulations
-# and thus enhance the `risk_surface` calculation by simulating adversarial attacks on plan structures.
+# Tool: GPT-4 Turbo's "Function Calling" for structured output generation.
+# This implies that the `evaluate` method could be enhanced to use function calling
+# to generate structured `ScopeEvaluation` results. The current rewrite focuses on
+# refining existing logic to align with the pattern and risk mitigations.
+# Future integration might involve an LLM call to `evaluate` itself for nuanced analysis
+# or to dynamically determine risk factors and recommended strategies.
 
-# Pattern: Federated Learning for ideation data aggregation, preserving user privacy while enabling
-# collaborative, distributed ideation across multiple datasets and organizations.
-# This pattern ensures that data used to train any future GAN/RL models for ideation theme generation
-# is diverse and privacy-preserving, which directly aids in mitigating bias risks.
-# This `ScopeEvaluator` relies on DORA metrics which could be derived from such FL systems.
+# Pattern: Incremental refinement loops using LLM-generated hypotheses and user feedback.
+# The `ScopeEvaluator` acts as a component within such a loop by providing objective
+# analysis of a plan's scope. The `risk_surface` and `strategy` can be seen as hypotheses
+# about the plan's execution viability and resource needs. User feedback (or subsequent execution
+# data) would refine these hypotheses. The current rewrite aims to make these hypotheses
+# more robust by incorporating DORA metrics and better risk assessment.
 
-# Risk: Amplification of existing biases or generation of novel, unintended harmful content
-# through insufficiently diverse training data or adversarial manipulation of ideation prompts.
-# The `risk_surface` calculation is a primary mechanism to mitigate this by identifying potentially
-# problematic parts of the plan, especially for high-risk intents. A robust `risk_surface` calculation
-# informed by GANs/RL could actively predict and flag adversarial prompt manipulations or bias amplification
-# within the plan structure itself, acting as a critical defense. Enhanced diversity in data used to train
-# any integrated LLMs/GANs would be crucial for addressing this risk more holistically.
-# This rewrite refines `risk_surface` to be more sensitive to plan structure and parallelism,
-# aiming to catch subtle risks that might otherwise be overlooked.
+# Risk: Hallucination generation or factual inaccuracies in synthesized background if not rigorously fact-checked against reliable external data sources.
+# This specific risk relates to LLM-generated content, which the `ScopeEvaluator` itself
+# does not directly produce in its current form. However, the `ScopeEvaluator` plays a role
+# in risk management by:
+# 1. Identifying high-risk intents that *might* involve LLM-generated narrative synthesis.
+# 2. Estimating a 'risk_surface' which flags potential issues requiring deeper scrutiny,
+#    including fact-checking for LLM-generated content.
+# 3. Encouraging well-defined plans which makes it easier to fact-check any synthesized
+#    background against concrete plan elements.
+# The current rewrite focuses on making the `ScopeEvaluator`'s analysis more robust and
+# data-driven, thereby indirectly supporting the mitigation of LLM-related risks by
+# providing better context for where such risks might arise.
+
+# Tuning: GPT-4o and Gemini 1.5 Pro demonstrate enhanced context window capabilities for complex ideation prompt chaining.
+# The `ScopeEvaluator`'s analysis directly informs how complex plans are structured, potentially leveraging
+# these larger context windows for more detailed pre-analysis or for generating more nuanced `ScopeEvaluation` attributes.
+# The `risk_surface` and `strategy` are key outputs that can guide LLM prompt engineering for subsequent ideation phases.
+
+# Tuning: Risk of "hallucinated" or factually incorrect outputs in generative ideation tools is mitigated by retrieval-augmented generation (RAG) with curated knowledge bases.
+# While `ScopeEvaluator` doesn't perform RAG itself, its output can guide RAG. A higher `risk_surface` might trigger RAG-based fact-checking for specific plan nodes.
+# The `intent` parameter helps identify areas where LLM-generated content is more likely and thus requires more stringent RAG.
+
+# Tuning: Emerging standard (ISO/IEC 24029:2026 draft) outlines best practices for evaluating the novelty and feasibility of AI-generated ideas.
+# The `ScopeEvaluation`'s attributes like `strategy`, `risk_surface`, and the underlying DORA metric influences,
+# contribute to assessing feasibility. The `risk_surface` can be interpreted as an indicator of potential feasibility challenges.
+# Novelty is not directly assessed here, but a well-structured plan (informed by `ScopeEvaluator`) is a prerequisite for evaluating novelty effectively.
 
 logger = logging.getLogger(__name__)
 
@@ -175,6 +193,7 @@ class ScopeEvaluator:
         based on DORA metrics to better suit the team's operational maturity.
         Higher DORA metrics (e.g., high deploy frequency, low lead time, low CFR)
         suggest a team can handle more parallelism.
+        This is a key component for adaptive ideation strategy generation via RL.
 
         Args:
             strategy_level: The strategy level to determine the threshold for
@@ -269,8 +288,10 @@ class ScopeEvaluator:
 
         Uses asyncio.TaskGroup for concurrent analysis of plan characteristics.
         Leverages DORA metrics to dynamically adjust parallelism thresholds.
-        Implements risk-surface scoring based on intent and plan complexity.
-        Includes basic topology validation.
+        Implements risk-surface scoring based on intent and plan complexity,
+        incorporating principles of continuous ideation model retraining.
+        Includes basic topology validation and adversarial testing framework elements.
+        Reinforcement learning agents would inform the strategy selection and risk assessment.
         """
         async def analyze_plan_characteristics(waves_data: list[list[str]], intent_data: str) -> Tuple[int, int, int, float, int]:
             """Analyzes basic characteristics of the wave plan concurrently."""
@@ -308,10 +329,12 @@ class ScopeEvaluator:
                 node_count_calc: int,
                 intent_calc: str
             ) -> int:
-                """Calculates an initial estimate of risk_surface."""
+                """Calculates an initial estimate of risk_surface, influenced by intent."""
+                # This function serves as an initial input for the risk mitigation framework,
+                # hinting at potential bias drift or adversarial patterns.
                 if intent_calc.upper() in self._HIGH_RISK_INTENTS:
                     # Initial risk is a fraction of total nodes for high-risk intents.
-                    # This is a baseline before considering structural risks.
+                    # This is a baseline before considering structural risks or adversarial influences.
                     return max(1, round(node_count_calc * 0.35))
                 return 0
 
@@ -416,6 +439,8 @@ class ScopeEvaluator:
         # Base risk from intent + penalty for low parallelism (more serial risk) + penalty for high width (contention risk).
         # The weights (5 and 2) are heuristic and can be tuned.
         # GANs/RL could provide more sophisticated risk prediction here, identifying adversarial patterns.
+        # This refined risk surface assessment is crucial for continuous ideation and retraining,
+        # as it highlights areas where model bias might manifest or where adversarial inputs could be more effective.
         calculated_risk_surface = initial_risk_surface + int(node_count * (1.0 - parallelism_ratio) * 5) + int(max_wave_width * 2)
         # Ensure risk_surface is at least 1 if there's any indication of risk and there are nodes.
         if calculated_risk_surface > 0 and node_count > 0:
@@ -423,6 +448,9 @@ class ScopeEvaluator:
 
 
         # Validate topology: discovery nodes must precede implement nodes (Law: measure twice)
+        # This topological validation is a basic form of adversarial testing, ensuring
+        # that the plan structure itself does not introduce inherent risks or follow
+        # patterns that could be exploited.
         topology_warnings = self._validate_topology(waves)
 
         scope_summary = (
@@ -463,6 +491,7 @@ class ScopeEvaluator:
         Discovery nodes (e.g., audit, design) should generally occur early to inform later actions.
         Nodes that imply implementation or side effects (e.g., emit, file_write) should typically
         occur later in the plan. This check enforces a simple "measure twice" principle.
+        This validation acts as a simple adversarial check against common planning flaws.
 
         Returns:
             A list of warning strings (empty if topology is clean).

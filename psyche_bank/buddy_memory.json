@@ -29,5 +29,52 @@
     "last_turn_at": "2026-03-21T15:24:31.929681+00:00",
     "last_message_preview": "Should I check WCAG contrast ratios?",
     "distilled": false
+  },
+  {
+    "session_id": "s-d3881510d856",
+    "summary": "CASUAL session (6 user turns): hello; can you show me something nice you can do?",
+    "key_topics": [
+      "CASUAL",
+      "EXPLAIN"
+    ],
+    "emotional_arc": [
+      "grateful"
+    ],
+    "turn_count": 12,
+    "created_at": "2026-03-25T17:24:02.261474+00:00",
+    "last_turn_at": "2026-03-25T17:37:18.920094+00:00",
+    "last_message_preview": "show me the workflow scheme",
+    "distilled": false
+  },
+  {
+    "session_id": "s-f63d069a7bc4",
+    "summary": "CASUAL session (7 user turns): hello\ncan i see the system's workflow scheme?; how would you improve yourself?",
+    "key_topics": [
+      "CASUAL",
+      "COACH",
+      "DESIGN"
+    ],
+    "emotional_arc": [
+      "frustrated"
+    ],
+    "turn_count": 14,
+    "created_at": "2026-03-25T17:39:12.653671+00:00",
+    "last_turn_at": "2026-03-25T20:24:05.934815+00:00",
+    "last_message_preview": "can you provide urls to some of the best realtime changing/streaming ui examples from the world?",
+    "distilled": false
+  },
+  {
+    "session_id": "spatial-1774483171499",
+    "summary": "CASUAL session (3 user turns): hello buddy; show me ehat you can do",
+    "key_topics": [
+      "CASUAL",
+      "EXPLAIN"
+    ],
+    "emotional_arc": [],
+    "turn_count": 6,
+    "created_at": "2026-03-25T23:59:43.241180+00:00",
+    "last_turn_at": "2026-03-26T00:00:06.553034+00:00",
+    "last_message_preview": "Want a diagram to go with this?",
+    "distilled": false
   }
 ]

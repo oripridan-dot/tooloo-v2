@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TooLoo V2 · Architect's Workbench</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+        :root {
+            --bg: #020205;
+            --panel-bg: rgba(10, 10, 15, 0.85);
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #00E5FF;
+            --muted: #475569;
+            --text: #CBD5E1;
+            --danger: #FF4757;
+            --success: #2ED573;
+            --amber: #FFAB40;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background-color: var(--bg);
+            background-image: 
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- HEADER --- */
+        header {
+            height: 50px;
+            border-bottom: 1px solid var(--border);
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .sys-title { font-weight: 700; color: var(--accent); letter-spacing: 2px; font-size: 14px; }
+        .hud-metrics { display: flex; gap: 30px; font-size: 10px; color: var(--muted); }
+        .metric-val { color: var(--text); font-weight: 700; }
+
+        /* --- MAIN LAYOUT --- */
+        #workbench {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: 280px 1fr 350px;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBARS --- */
+        aside {
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        .sidebar-right { border-left: 1px solid var(--border); border-right: none; }
+
+        h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 3px; color: var(--muted); margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+
+        /* --- COMMUNICATION HUB (LEFT) --- */
+        #cognitive-aside { padding-top: 0; }
+        .sidebar-tabs { 
+            display: flex; 
+            border-bottom: 1px solid var(--border); 
+            margin-bottom: 15px; 
+            background: rgba(0,0,0,0.2);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            font-size: 9px;
+            letter-spacing: 2px;
+            text-align: center;
+            cursor: pointer;
+            color: var(--muted);
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(0,229,255,0.05); }
+
+        #chat-view { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+        #chat-view.active { display: flex; }
+        #cognitive-map { display: none; overflow-y: auto; flex-grow: 1; }
+        #cognitive-map.active { display: block; }
+
+        #chat-log { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chat-bubble {
+            max-width: 90%;
+            padding: 10px 12px;
+            font-size: 11px;
+            line-height: 1.4;
+            border-radius: 4px;
+            animation: fadeIn 0.3s ease-out;
+            position: relative;
+        }
+        .chat-bubble.user {
+            align-self: flex-end;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .chat-bubble.engine {
+            align-self: flex-start;
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            color: var(--accent);
+        }
+        .chat-label { font-size: 8px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; display: block; }
+
+        /* --- DAG VISUALIZATION --- */
+        #telemetry-stream { overflow-y: auto; font-size: 9px; }
+        .telemetry-event { 
+            margin-bottom: 10px; 
+            padding: 8px; 
+            background: rgba(0,0,0,0.3); 
+            border: 1px solid var(--border); 
+            border-radius: 4px; 
+            animation: fadeIn 0.2s ease-out;
+            word-break: break-all;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .event-type { color: var(--accent); font-weight: 700; margin-bottom: 4px; display: block; }
+        .event-data { color: rgba(255,255,255,0.4); }
+
+        /* --- CENTER VIEWPORT --- */
+        main {
+            position: relative;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- DAG VISUALIZATION --- */
+        #dag-analyser {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-content: center;
+            justify-content: center;
+        }
+
+        .dag-node {
+            width: 140px;
+            background: rgba(10, 15, 30, 0.4);
+            border: 1px solid var(--border);
+            padding: 12px;
+            position: relative;
+            transition: all 0.3s;
+        }
+        .dag-node.active { border-color: var(--accent); box-shadow: 0 0 15px rgba(0,229,255,0.2); background: rgba(0,229,255,0.05); }
+        .dag-node.success { border-color: var(--success); }
+        .dag-node.error { border-color: var(--danger); }
+
+        .node-id { font-size: 8px; color: var(--muted); margin-bottom: 5px; }
+        .node-label { font-size: 10px; font-weight: 700; }
+        .node-status { position: absolute; top:5px; right:5px; width:4px; height:4px; border-radius: 50%; background: var(--muted); }
+        .active .node-status { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
+
+        /* --- CONSOLE --- */
+        #terminal {
+            height: 120px;
+            background: var(--panel-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+        }
+
+        .prompt { color: var(--accent); margin-right: 15px; font-weight: 700; }
+        #command-input {
+            width: 100%;
+            background: none;
+            border: none;
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            outline: none;
+        }
+        #command-input::placeholder { color: var(--muted); }
+
+        /* --- OVERLAYS --- */
+        #narration-hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 12px;
+            opacity: 0.5;
+            max-width: 500px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="sys-title">TOOLOO·V2 // ARCHITECT'S WORKBENCH</div>
+        <div class="hud-metrics">
+            <div>CORE: <span class="metric-val" id="val-core">NOMINAL</span></div>
+            <div>LOAD: <span class="metric-val" id="val-load">0.0%</span></div>
+            <div>LINK: <span class="metric-val" id="val-link" style="color:var(--danger)">OFFLINE</span></div>
+            <div>MANDATE_ID: <span class="metric-val" id="val-mandate">----</span></div>
+        </div>
+    </header>
+
+    <div id="workbench">
+        <!-- COMMUNICATION HUB (Side State & Chat) -->
+        <aside id="cognitive-aside">
+            <div class="sidebar-tabs">
+                <div class="tab-btn active" id="tab-chat" onclick="switchTab('chat')">CHAT</div>
+                <div class="tab-btn" id="tab-map" onclick="switchTab('map')">MAP</div>
+            </div>
+
+            <div id="chat-view" class="active">
+                <div id="chat-log">
+                    <div class="chat-bubble engine">
+                        <span class="chat-label">Director</span>
+                        Architect's Workbench initialized. Standing by for mandates.
+                    </div>
+                </div>
+            </div>
+
+            <div id="cognitive-map">
+                <div class="map-node">
+                    <div class="node-tag">INTENT_ENGINE</div>
+                    <div class="node-val">Awaiting mandate input...</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- DAG ANALYSER (Logic Flow) -->
+        <main>
+            <div id="narration-hud">Initializing telemetric workbench...</div>
+            <div id="dag-analyser">
+                <!-- Nodes fanned out dynamically -->
+            </div>
+        </main>
+
+        <!-- TELEMETRY STREAM (Raw Feed) -->
+        <aside class="sidebar-right">
+            <h2>Telemetry Stream</h2>
+            <div id="telemetry-stream">
+                <!-- Raw log events -->
+            </div>
+        </aside>
+    </div>
+
+    <!-- TERMINAL CONSOLE -->
+    <div id="terminal">
+        <span class="prompt">&gt;</span>
+        <input type="text" id="command-input" placeholder="Enter architectural mandate..." autocomplete="off">
+    </div>
+
+    <script>
+        const linkStatus = document.getElementById('val-link');
+        const loadVal = document.getElementById('val-load');
+        const mandateVal = document.getElementById('val-mandate');
+        const narrationHud = document.getElementById('narration-hud');
+        
+        const cognitiveMap = document.getElementById('cognitive-map');
+        const telemetryStream = document.getElementById('telemetry-stream');
+        const dagAnalyser = document.getElementById('dag-analyser');
+        const commandInput = document.getElementById('command-input');
+        const chatLog = document.getElementById('chat-log');
+        const chatView = document.getElementById('chat-view');
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            chatView.classList.remove('active');
+            cognitiveMap.classList.remove('active');
+
+            if (tab === 'chat') {
+                document.getElementById('tab-chat').classList.add('active');
+                chatView.classList.add('active');
+            } else {
+                document.getElementById('tab-map').classList.add('active');
+                cognitiveMap.classList.add('active');
+            }
+        }
+
+        function addChatMessage(role, text) {
+            const el = document.createElement('div');
+            el.className = `chat-bubble ${role}`;
+            el.innerHTML = `<span class="chat-label">${role === 'user' ? 'Architect' : 'Director'}</span>${text}`;
+            chatLog.appendChild(el);
+            chatLog.scrollTop = chatLog.scrollHeight;
+            
+            // Auto-switch to chat tab if message received
+            if (role === 'engine' && !chatView.classList.contains('active')) {
+                switchTab('chat');
+            }
+        }
+
+        function addTelemetry(type, data) {
+            const el = document.createElement('div');
+            el.className = 'telemetry-event';
+            el.innerHTML = `<span class="event-type">${type.toUpperCase()}</span><div class="event-data">${JSON.stringify(data, null, 2)}</div>`;
+            telemetryStream.prepend(el);
+            while (telemetryStream.children.length > 30) telemetryStream.lastChild.remove();
+        }
+
+        function updateMap(tag, value) {
+            const el = document.createElement('div');
+            el.className = 'map-node';
+            el.innerHTML = `<div class="node-tag">${tag.toUpperCase()}</div><div class="node-val">${value}</div>`;
+            cognitiveMap.prepend(el);
+            while (cognitiveMap.children.length > 20) cognitiveMap.lastChild.remove();
+        }
+
+        function renderDAG(waves) {
+            dagAnalyser.innerHTML = '';
+            waves.forEach((wave, waveIdx) => {
+                wave.forEach(nodeId => {
+                    const node = document.createElement('div');
+                    node.id = `node-${nodeId}`;
+                    node.className = 'dag-node';
+                    node.innerHTML = `
+                        <div class="node-id">WAVE_${waveIdx}</div>
+                        <div class="node-label">${nodeId.split('-').pop().toUpperCase()}</div>
+                        <div class="node-status"></div>
+                    `;
+                    dagAnalyser.appendChild(node);
+                });
+            });
+        }
+
+        // --- SSE CONNECTION ---
+        const evtSource = new EventSource("/v2/stream");
+
+        evtSource.onopen = () => {
+            linkStatus.innerText = 'ONLINE';
+            linkStatus.style.color = 'var(--success)';
+            addTelemetry('sys', 'Director Link Established.');
+        };
+
+        evtSource.addEventListener('cinematic', (e) => {
+            const data = JSON.parse(e.data);
+            if (data.narration) {
+                narrationHud.innerText = data.narration;
+                addChatMessage('engine', data.narration);
+            }
+            addTelemetry('cinematic', data);
+        });
+
+        evtSource.addEventListener('puppeteer', (e) => {
+            const data = JSON.parse(e.data);
+            addTelemetry('puppeteer', data);
+            if (data.load) loadVal.innerText = (data.load === 'high' ? '88.4%' : (data.load === 'medium' ? '42.1%' : '12.0%'));
+        });
+
+        evtSource.addEventListener('route', (e) => {
+            const data = JSON.parse(e.data);
+            mandateVal.innerText = data.mandate_id;
+            updateMap('locked_intent', data.route.intent);
+            addTelemetry('route', data);
+        });
+
+        evtSource.addEventListener('plan', (e) => {
+            const data = JSON.parse(e.data);
+            renderDAG(data.waves);
+            addTelemetry('plan', data);
+        });
+
+        // --- COMMAND HANDLING ---
+        async function sendMandate() {
+            const text = commandInput.value.trim();
+            if (!text) return;
+            commandInput.value = '';
+            
+            addChatMessage('user', text);
+            updateMap('mandate', text);
+            addTelemetry('user', text);
+
+            try {
+                const res = await fetch('/v2/mandate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await res.json();
+                mandateVal.innerText = data.mandate_id;
+            } catch (err) {
+                addTelemetry('error', `Mandate submission failed: ${err.message}`);
+            }
+        }
+
+        commandInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendMandate();
+        });
+
+    </script>
+</body>
+</html>

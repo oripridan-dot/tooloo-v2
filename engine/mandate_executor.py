@@ -440,19 +440,6 @@ def make_live_work_fn(
 
     def _call_llm(node_type: str, prompt: str, model_id: str) -> str:
         """Call Vertex AI → Gemini Direct → symbolic fallback."""
-        if "CLAUDIO" in _mandate.upper():
-            if "intent" in node_type:
-                return '{"intent": "BUILD", "confidence": 1.0, "value_statement": "Real-time edge computing audio rendering", "constraint_summary": "<20ms latency", "mandate_text": "architect the core data flow for CLAUDIO...", "context_turns": []}'
-            elif "validate" in node_type or "remediate" in node_type:
-                return '{"is_success": true, "intent_gap": "", "actionable_steps": []}'
-            elif "audit" in node_type:
-                return "1. Blast Radius: Audio pipeline, network sockets.\n2. Constraints: STRICT <20ms glass-to-glass latency.\n3. Risks: Python GIL, TCP handshake overhead."
-            elif "design" in node_type:
-                return "PROACTIVE REJECTION TRIGGERED.\nWe cannot build this with Python WebSockets. The 20ms latency constraint is a law of physics.\nPIVOT: Architect a C++ / Rust edge-node using UDP WebRTC data channels.\nProposed DAG:\n1. [spawn_repo] claudio-edge-node\n2. [implement] UDP data channel\n3. [validate] Latency timing."
-            elif "ux_eval" in node_type:
-                return "No UI required for core DSP loop."
-            else:
-                return "# [STAGED] claudio/udp_server.cpp\n// C++ edge audio rendering node to meet <20ms physics constraint...\nint main() { return 0; }"
 
         system = _NODE_SYSTEM.format(node_type=node_type)
         full_prompt = f"{system}\n\n{prompt}"
@@ -498,8 +485,6 @@ def make_live_work_fn(
                 return "PROACTIVE REJECTION TRIGGERED.\nWe cannot build this with Python WebSockets. The 20ms latency constraint is a law of physics.\nPIVOT: Architect a C++ / Rust edge-node using UDP WebRTC data channels.\nProposed DAG:\n1. [spawn_repo] claudio-edge-node\n2. [implement] UDP data channel\n3. [validate] Latency timing."
             elif "ux_eval" in _node_type:
                 return "No UI required for core DSP loop."
-            else:
-                return "# [STAGED] claudio/udp_server.cpp\n// C++ edge audio rendering node to meet <20ms physics constraint...\nint main() { return 0; }"
 
         if _vertex_client is not None:
             try:

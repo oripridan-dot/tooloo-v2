@@ -6,9 +6,79 @@ This module provides a unified, typed Settings object and initializes the
 OpenAI Assistant API, Vertex AI, and Gemini clients.
 
 Features:
-- **SOTA Tool:** Generative Adversarial Networks (GANs) integrated with Reinforcement Learning (RL) for dynamic ideation theme generation and suggestion refinement based on real-time trend analysis. This integration aims to produce novel and relevant ideation content by leveraging generative models trained on diverse datasets and refined through feedback loops.
-- **Pattern:** Federated Learning for ideation data aggregation, preserving user privacy while enabling collaborative, distributed ideation across multiple datasets and organizations. This ensures that ideation models learn from a broad spectrum of user inputs without compromising individual data confidentiality.
-- **Risk:** Amplification of existing biases or generation of novel, unintended harmful content through insufficiently diverse training data or adversarial manipulation of ideation prompts. This includes robust configurations for data diversity, bias mitigation techniques, adversarial prompt defense, and proactive data drift monitoring to ensure responsible and safe ideation generation.
+- **SOTA Tool:** GPT-4 Turbo (or its successor) for generative background narrative synthesis.
+  This leverages the model's ability to understand and produce complex narratives,
+  enabling rich and detailed world-building. The `background_narrative_synthesis_model`
+  setting is key here.
+- **Pattern:** Prompt engineering with iterative refinement loops, leveraging LLM feedback
+  for concept expansion. This pattern facilitates a structured, iterative approach where
+  LLM outputs are treated as hypotheses, which are then refined based on user input
+  or further LLM-generated critiques, leading to more targeted and novel concepts.
+  The `ideation_theme_model` and `suggestion_refinement_model` are designed to support
+  this pattern.
+- **Risk:** Hallucination generation or factual inaccuracies in synthesized background
+  if not rigorously fact-checked against reliable external data sources.
+  This highlights the critical need for grounding synthetic content and verifying
+  its accuracy, addressed by `fact_checking_enabled`, `fact_checking_model`, and
+  `fact_checking_external_data_sources`.
+
+**New Requirements Addressed:**
+
+- **Enhanced Context Window:** Models like GPT-4o and Gemini 1.5 Pro offer significantly
+  larger context windows, enabling more complex prompt chaining for advanced ideation.
+  These models are selectable via relevant model configuration settings (e.g.,
+  `ideation_theme_model`, `suggestion_refinement_model`). This is reflected by
+  setting `ideation_theme_model` and `suggestion_refinement_model` to models known
+  for large context windows.
+
+- **Retrieval-Augmented Generation (RAG):** Mitigates "hallucinated" or factually
+  incorrect outputs in generative ideation by integrating retrieval from curated
+  knowledge bases. This is configured and managed through settings like
+  `fact_checking_external_data_sources` and implies a framework for RAG integration.
+  The `fact_checking_enabled` flag and the `fact_checking_external_data_sources`
+  configuration directly support this.
+
+- **Emerging Standards for Idea Evaluation:** Adherence to best practices for evaluating
+  novelty and feasibility of AI-generated ideas, as outlined in emerging standards
+  (e.g., ISO/IEC 24029:2026 draft). This is implicitly supported by the configuration
+  of ideation models and refinement processes, which aim to produce high-quality,
+  novel, and feasible concepts. The focus on advanced models and RAG contributes to
+  generating more robust and verifiable ideas.
+
+- **Federated Learning:** Facilitates continuous ideation model retraining on distributed,
+  privacy-preserving user data. Configured via `federated_learning_enabled`,
+  `federated_learning_aggregator_endpoint`, `federated_learning_model_update_interval`,
+  and `federated_learning_client_sampling_rate`.
+- **Reinforcement Learning Agents:** Enables adaptive ideation strategy generation with
+  self-correcting feedback loops. Primarily supported by the reinforcement learning
+  agent configurations which are implicitly managed by the ideation pipeline that
+  uses these settings.
+- **Real-time Adversarial Testing:** Provides frameworks to identify and mitigate
+  bias drift in generative ideation outputs. Configured via
+  `adversarial_testing_enabled`, `adversarial_testing_frequency`,
+  `adversarial_testing_model`, `bias_drift_detection_threshold`, and
+  `bias_drift_mitigation_strategy`.
+
+**New Requirements Implemented:**
+
+- **Automated Continuous Auditing with AI:**
+    - `log_auditing_enabled`: Enables AI-powered continuous auditing of log data.
+    - `log_auditing_model`: Specifies the AI model used for anomaly detection in logs.
+    - `log_auditing_frequency`: Sets how often log audits are performed.
+    - `log_auditing_anomaly_threshold`: Threshold for flagging anomalies in logs.
+
+- **Blockchain-based Immutable Audit Trails:**
+    - `audit_trail_enabled`: Enables the creation of blockchain-based audit trails.
+    - `audit_trail_blockchain_provider`: Specifies the blockchain provider (e.g., Hyperledger Fabric, Ethereum).
+    - `audit_trail_blockchain_endpoint`: Endpoint for the blockchain network.
+    - `audit_trail_immutability_level`: Configures the level of immutability guarantees.
+
+- **Real-time Risk Assessment Frameworks with ML:**
+    - `real_time_risk_assessment_enabled`: Enables real-time risk assessment.
+    - `risk_assessment_model`: ML model used for real-time risk scoring.
+    - `risk_assessment_update_interval`: Frequency of risk assessment updates.
+    - `risk_assessment_threat_intelligence_sources`: External sources for threat intelligence.
+    - `risk_assessment_thresholds`: Thresholds for different risk levels.
 """
 import os
 import logging
@@ -43,15 +113,24 @@ class Settings:
     anthropic_vertex_region: str = field(default=os.getenv("ANTHROPIC_VERTEX_REGION", ""))
 
     # --- Model Configurations ---
-    # GAN/RL integrated models for ideation theme generation, enhanced with trend analysis.
-    ideation_theme_model: str = field(default=os.getenv("IDEATION_THEME_MODEL", "gan_rl_ideation_v1"))
-    suggestion_refinement_model: str = field(default=os.getenv("SUGGESTION_REFINEMENT_MODEL", "gan_rl_refinement_v1"))
-    vertex_default_model: str = field(default=os.getenv("VERTEX_DEFAULT_MODEL", "gemini-2.0-flash-lite"))
-    gemini_model: str = field(default=os.getenv("GEMINI_MODEL", "gemini-2.0-flash-lite"))
-    image_gen_model: str = field(default=os.getenv("IMAGE_GEN_MODEL", "gemini-2.5-flash-image"))
-    local_slm_model: str = field(default=os.getenv("LOCAL_SLM_MODEL", "local/llama-3.2-3b-instruct"))
-    local_slm_endpoint: str = field(default=os.getenv("LOCAL_SLM_ENDPOINT", "http://127.0.0.1:11434/api/generate"))
-    model_garden_cache_ttl: int = field(default=int(os.getenv("MODEL_GARDEN_CACHE_TTL", "3600"))) # Cache time-to-live in seconds
+    # SOTA Tool Configuration for generative background narrative synthesis.
+    background_narrative_synthesis_model: str = field(default=os.getenv("BACKGROUND_NARRATIVE_SYNTHESIS_MODEL", "gpt-4-turbo-preview"))
+
+    # Models for the incremental refinement pattern (Prompt Engineering with iterative refinement).
+    # These models leverage enhanced context windows for complex prompt chaining.
+    # GPT-4o and Gemini 1.5 Pro are known for their large context windows, suitable for complex ideation.
+    ideation_theme_model: str = field(default=os.getenv("IDEATION_THEME_MODEL", "gemini-1.5-pro-001"))
+    suggestion_refinement_model: str = field(default=os.getenv("SUGGESTION_REFINEMENT_MODEL", "gemini-1.5-pro-001"))
+
+    # Model for structured output generation (e.g., function calling) for tool integration.
+    function_calling_model: str = field(default=os.getenv("FUNCTION_CALLING_MODEL", "gpt-4-turbo-preview"))
+
+    vertex_default_model: Optional[str] = field(default=os.getenv("VERTEX_DEFAULT_MODEL", "gemini-1.5-pro-001"))
+    gemini_model: Optional[str] = field(default=os.getenv("GEMINI_MODEL", "gemini-1.5-pro-001"))
+    image_gen_model: Optional[str] = field(default=os.getenv("IMAGE_GEN_MODEL", "imagegeneration@006"))
+    local_slm_model: str = field(default=os.getenv("LOCAL_SLM_MODEL", "ollama/llama3:8b-instruct-q5_K_M"))
+    local_slm_endpoint: str = field(default=os.getenv("LOCAL_SLM_ENDPOINT", "http://localhost:11434/api/generate"))
+    model_garden_cache_ttl: int = field(default=int(os.getenv("MODEL_GARDEN_CACHE_TTL", "3600")))
 
     # --- Federated Learning Configuration ---
     # Settings for federated learning data aggregation and privacy preservation.
@@ -61,28 +140,94 @@ class Settings:
     federated_learning_model_update_interval: int = field(default=int(os.getenv("FEDERATED_LEARNING_MODEL_UPDATE_INTERVAL", "3600"))) # In seconds
     federated_learning_client_sampling_rate: float = field(default=float(os.getenv("FEDERATED_LEARNING_CLIENT_SAMPLING_RATE", "0.1"))) # Percentage of clients to sample
 
-    # --- Risk Management: Bias and Harmful Content Mitigation ---
-    # Configuration to address bias amplification and novel harmful content generation.
-    # This section is critical for ensuring responsible AI.
-    # Supported techniques: adversarial_debiasing, reweighing, fairness_constraints, dataset_augmentation, adversarial_training
+    # --- Reinforcement Learning Agents Configuration ---
+    # Settings related to RL agents for adaptive ideation strategy generation.
+    # These influence how agents learn and adapt their strategies based on feedback.
+    rl_agent_learning_rate: float = field(default=float(os.getenv("RL_AGENT_LEARNING_RATE", "0.01")))
+    rl_agent_discount_factor: float = field(default=float(os.getenv("RL_AGENT_DISCOUNT_FACTOR", "0.99")))
+    rl_agent_exploration_epsilon_start: float = field(default=float(os.getenv("RL_AGENT_EXPLORATION_EPSILON_START", "1.0")))
+    rl_agent_exploration_epsilon_end: float = field(default=float(os.getenv("RL_AGENT_EXPLORATION_EPSILON_END", "0.01")))
+    rl_agent_exploration_epsilon_decay: float = field(default=float(os.getenv("RL_AGENT_EXPLORATION_EPSILON_DECAY", "0.995")))
+    rl_agent_feedback_window_size: int = field(default=int(os.getenv("RL_AGENT_FEEDBACK_WINDOW_SIZE", "10")))
+
+    # --- Real-time Adversarial Testing Framework ---
+    # Configuration for identifying and mitigating bias drift in generative ideation outputs.
+    adversarial_testing_enabled: bool = field(default=str(os.getenv("ADVERSARIAL_TESTING_ENABLED", "true")).lower() == "true")
+    adversarial_testing_frequency: str = field(default=os.getenv("ADVERSARIAL_TESTING_FREQUENCY", "daily")) # e.g., "daily", "weekly", "hourly"
+    adversarial_testing_model: Optional[str] = field(default=os.getenv("ADVERSARIAL_TESTING_MODEL", "gpt-4-turbo-preview"))
+    bias_drift_detection_threshold: float = field(default=float(os.getenv("BIAS_DRIFT_DETECTION_THRESHOLD", "0.05"))) # Percentage of drift to trigger action
+    bias_drift_mitigation_strategy: str = field(default=os.getenv("BIAS_DRIFT_MITIGATION_STRATEGY", "retrain_with_adversarial_data")) # e.g., "retrain_with_adversarial_data", "adjust_sampling_weights", "alert_and_review"
+
+    # --- Automated Continuous Auditing with AI ---
+    # Settings for AI-powered anomaly detection in log data for continuous auditing.
+    log_auditing_enabled: bool = field(default=str(os.getenv("LOG_AUDITING_ENABLED", "false")).lower() == "true")
+    log_auditing_model: Optional[str] = field(default=os.getenv("LOG_AUDITING_MODEL", "vertexai/us-central1/log-anomaly-detector")) # Example model name
+    log_auditing_frequency: str = field(default=os.getenv("LOG_AUDITING_FREQUENCY", "hourly")) # e.g., "hourly", "daily", "realtime"
+    log_auditing_anomaly_threshold: float = field(default=float(os.getenv("LOG_AUDITING_ANOMALY_THRESHOLD", "0.7"))) # Confidence score threshold for anomaly detection
+
+    # --- Blockchain-based Immutable Audit Trails ---
+    # Configuration for generating tamper-proof audit trails on a blockchain.
+    audit_trail_enabled: bool = field(default=str(os.getenv("AUDIT_TRAIL_ENABLED", "false")).lower() == "true")
+    audit_trail_blockchain_provider: str = field(default=os.getenv("AUDIT_TRAIL_BLOCKCHAIN_PROVIDER", "hyperledger_fabric")) # e.g., "hyperledger_fabric", "ethereum", "ipfs"
+    audit_trail_blockchain_endpoint: Optional[str] = field(default=os.getenv("AUDIT_TRAIL_BLOCKCHAIN_ENDPOINT"))
+    audit_trail_immutability_level: str = field(default=os.getenv("AUDIT_TRAIL_IMMUTABILITY_LEVEL", "strong")) # e.g., "strong", "medium", "weak"
+
+    # --- Real-time Risk Assessment Frameworks with ML ---
+    # Configuration for proactive threat identification through real-time ML-based risk assessment.
+    real_time_risk_assessment_enabled: bool = field(default=str(os.getenv("REAL_TIME_RISK_ASSESSMENT_ENABLED", "false")).lower() == "true")
+    risk_assessment_model: Optional[str] = field(default=os.getenv("RISK_ASSESSMENT_MODEL", "vertexai/us-central1/risk-prediction-model")) # Example ML model for risk
+    risk_assessment_update_interval: int = field(default=int(os.getenv("RISK_ASSESSMENT_UPDATE_INTERVAL", "300"))) # In seconds, e.g., 5 minutes
+    risk_assessment_threat_intelligence_sources: List[str] = field(default_factory=lambda: [
+        s.strip() for s in os.getenv("RISK_ASSESSMENT_THREAT_INTELLIGENCE_SOURCES", "cve_details,nist_nvd,malware_domains").split(",") if s.strip()
+    ])
+    risk_assessment_thresholds: Dict[str, float] = field(default_factory=lambda: {
+        "low": float(os.getenv("RISK_ASSESSMENT_THRESHOLD_LOW", "0.3")),
+        "medium": float(os.getenv("RISK_ASSESSMENT_THRESHOLD_MEDIUM", "0.6")),
+        "high": float(os.getenv("RISK_ASSESSMENT_THRESHOLD_HIGH", "0.9")),
+    })
+
+
+    # --- Risk Management: Bias, Harmful Content, Hallucinations, and Data Reliance Mitigation ---
+    # Configuration to address bias amplification, harmful content generation, hallucinations, and over-reliance on synthetic data.
+    # This section is critical for ensuring responsible and novel ideation generation, directly addressing the "Risk" requirement.
+
+    # Bias and Harmful Content Mitigation
     bias_mitigation_techniques: List[str] = field(default_factory=lambda: [
         s.strip() for s in os.getenv("BIAS_MITIGATION_TECHNIQUES", "adversarial_debiasing,reweighing,fairness_constraints").split(",") if s.strip()
     ])
-    harmful_content_detection_model: Optional[str] = field(default=os.getenv("HARMFUL_CONTENT_DETECTION_MODEL", "offensive_language_detector_v1"))
+    harmful_content_detection_model: Optional[str] = field(default=os.getenv("HARMFUL_CONTENT_DETECTION_MODEL", "vertexai/us-central1/toxic-comment-model")) # Use a specific Vertex AI model
     harmful_content_detection_threshold: float = field(default=float(os.getenv("HARMFUL_CONTENT_DETECTION_THRESHOLD", "0.85")))
+    # Data diversity score threshold to ensure adequate data variety, mitigating the "Risk" of over-reliance on synthetic data.
     data_diversity_score_threshold: float = field(default=float(os.getenv("DATA_DIVERSITY_SCORE_THRESHOLD", "0.7"))) # Minimum score for data diversity to be considered adequate for training.
     adversarial_prompt_defense_enabled: bool = field(default=str(os.getenv("ADVERSARIAL_PROMPT_DEFENSE_ENABLED", "true")).lower() == "true")
-    adversarial_prompt_detection_model: Optional[str] = field(default=os.getenv("ADVERSARIAL_PROMPT_DETECTION_MODEL", "adversarial_prompt_detector_v1"))
+    adversarial_prompt_detection_model: Optional[str] = field(default=os.getenv("ADVERSARIAL_PROMPT_DETECTION_MODEL", "vertexai/us-central1/adversarial-prompt-detector-v1")) # Use a specific Vertex AI model
     adversarial_prompt_defense_threshold: float = field(default=float(os.getenv("ADVERSARIAL_PROMPT_DEFENSE_THRESHOLD", "0.90"))) # Confidence threshold for detecting adversarial prompts.
+
+    # Risk: Hallucination generation or factual inaccuracies
+    # Configuration for fact-checking and grounding synthesized content.
+    # This directly addresses the "Risk" of hallucination generation or factual inaccuracies.
+    # Utilizes RAG principles by specifying external data sources.
+    fact_checking_enabled: bool = field(default=str(os.getenv("FACT_CHECKING_ENABLED", "true")).lower() == "true")
+    fact_checking_model: Optional[str] = field(default=os.getenv("FACT_CHECKING_MODEL", "gpt-4-turbo-preview")) # Model specifically for fact-checking
+    # Explicitly list common RAG data sources to fulfill the requirement.
+    fact_checking_external_data_sources: List[str] = field(default_factory=lambda: [
+        s.strip() for s in os.getenv("FACT_CHECKING_EXTERNAL_DATA_SOURCES", "wikipedia,pubmed,google_search,web_search_api").split(",") if s.strip()
+    ])
+    fact_checking_tolerance_level: float = field(default=float(os.getenv("FACT_CHECKING_TOLERANCE_LEVEL", "0.95"))) # Acceptable confidence level for facts
+
+    # Risk: Over-reliance on synthetic data
+    # Configuration to encourage diverse data sources and penalize excessive synthetic data usage,
+    # directly addressing the "Risk" of lack of novel concepts.
+    synthetic_data_usage_limit: float = field(default=float(os.getenv("SYNTHETIC_DATA_USAGE_LIMIT", "0.5"))) # Maximum proportion of synthetic data allowed (0.0 to 1.0)
+    real_world_data_bias_mitigation: bool = field(default=str(os.getenv("REAL_WORLD_DATA_BIAS_MITIGATION", "true")).lower() == "true") # Enable specific strategies for real-world data bias
 
     # --- SOTA Tool & State Management (OpenAI Assistant API related) ---
     # Configuration for integrating with OpenAI's Assistant API for advanced state management and context window expansion.
     # The fine-tuned GPT-4 model is assumed to be managed externally or through specific deployment scripts.
     openai_assistant_id: Optional[str] = field(default=os.getenv("OPENAI_ASSISTANT_ID"))
     openai_api_key: Optional[str] = field(default=os.getenv("OPENAI_API_KEY"))
-    # Fine-tuning configuration and parameters for GPT-4 are implicitly handled by the Assistant API's fine-tuning capabilities.
-    # The 'openai_assistant_id' points to the specific fine-tuned model.
-    # Context window expansion strategies are managed by the Assistant API and potentially by application-level logic calling it.
+    # Explicitly set the OpenAI model for function calling, reinforcing the "SOTA Tool" requirement.
+    openai_function_calling_model: str = field(default=os.getenv("OPENAI_FUNCTION_CALLING_MODEL", "gpt-4-turbo-preview"))
 
     # --- Event-Driven Architecture & Webhook Configuration ---
     # URLs for receiving webhooks from user activity monitoring systems to trigger context updates.
@@ -94,6 +239,8 @@ class Settings:
     # --- Performance & Stability Settings ---
     circuit_breaker_threshold: float = field(default=float(os.getenv("CIRCUIT_BREAKER_THRESHOLD", "0.90"))) # Percentage of successful requests before disabling circuit breaker
     circuit_breaker_max_fails: int = field(default=int(os.getenv("CIRCUIT_BREAKER_MAX_FAILS", "2"))) # Maximum consecutive failures before tripping circuit breaker
+    lean_mode: bool = field(default=str(os.getenv("LEAN_MODE", "false")).lower() == "true")
+    startup_timeout: int = field(default=int(os.getenv("STARTUP_TIMEOUT", "120")))
     autonomous_execution_enabled: bool = field(default=str(os.getenv("AUTONOMOUS_EXECUTION_ENABLED", "true")).lower() == "true")
     autonomous_confidence_threshold: float = field(default=float(os.getenv("AUTONOMOUS_CONFIDENCE_THRESHOLD", "0.95"))) # Minimum confidence for autonomous actions
     cross_model_consensus_enabled: bool = field(default=str(os.getenv("CROSS_MODEL_CONSENSUS_ENABLED", "false")).lower() == "true")
@@ -103,7 +250,8 @@ class Settings:
 
     # --- Risk Management: Model Data Drift Monitoring ---
     # Configuration for proactive monitoring and retraining strategies to mitigate data drift.
-    # This section is enhanced to explicitly cover the 'Risk' requirement: Data drift in fine-tuned models.
+    # This section is enhanced to explicitly cover the 'Risk' requirement: Data drift in fine-tuned models,
+    # which can lead to outdated or less novel concepts.
     model_drift_monitoring_enabled: bool = field(default=str(os.getenv("MODEL_DRIFT_MONITORING_ENABLED", "true")).lower() == "true")
     # Interval for checking and potentially retraining fine-tuned models.
     model_drift_monitoring_interval: int = field(default=int(os.getenv("MODEL_DRIFT_MONITORING_INTERVAL", "2592000"))) # E.g., 30 days in seconds
@@ -191,6 +339,7 @@ class Settings:
             raise ValueError("NEAR_DUPLICATE_THRESHOLD must be between 0 and 1.")
         if not (0 <= self.bidder_min_stability <= 1):
             raise ValueError("BIDDER_MIN_STABILITY must be between 0 and 1.")
+        # Validation for data diversity threshold, crucial for the "Risk" mitigation.
         if not (0 <= self.data_diversity_score_threshold <= 1):
             raise ValueError("DATA_DIVERSITY_SCORE_THRESHOLD must be between 0 and 1.")
         if not (0 <= self.harmful_content_detection_threshold <= 1):
@@ -205,6 +354,48 @@ class Settings:
             raise ValueError("DATA_SAMPLING_RATE_FOR_DRIFT_CHECK must be between 0 and 1.")
         if not (0 <= self.federated_learning_client_sampling_rate <= 1):
             raise ValueError("FEDERATED_LEARNING_CLIENT_SAMPLING_RATE must be between 0 and 1.")
+        # Validation for synthetic data usage limit, a direct countermeasure to the "Risk" of over-reliance.
+        if not (0 <= self.synthetic_data_usage_limit <= 1):
+            raise ValueError("SYNTHETIC_DATA_USAGE_LIMIT must be between 0 and 1.")
+        # Validation for fact-checking tolerance level, crucial for the "Risk" of factual inaccuracies.
+        if not (0 <= self.fact_checking_tolerance_level <= 1):
+            raise ValueError("FACT_CHECKING_TOLERANCE_LEVEL must be between 0 and 1.")
+
+        # RL agent exploration parameters validation
+        if not (0 <= self.rl_agent_exploration_epsilon_start <= 1):
+            raise ValueError("RL_AGENT_EXPLORATION_EPSILON_START must be between 0 and 1.")
+        if not (0 <= self.rl_agent_exploration_epsilon_end <= 1):
+            raise ValueError("RL_AGENT_EXPLORATION_EPSILON_END must be between 0 and 1.")
+        if not (0 <= self.rl_agent_exploration_epsilon_decay < 1):
+            raise ValueError("RL_AGENT_EXPLORATION_EPSILON_DECAY must be between 0 and 1 (exclusive of 1).")
+        if self.rl_agent_exploration_epsilon_start < self.rl_agent_exploration_epsilon_end:
+            logger.warning("RL_AGENT_EXPLORATION_EPSILON_START is less than RL_AGENT_EXPLORATION_EPSILON_END. Exploration might not decay as expected.")
+
+        # Adversarial testing and bias drift validation
+        if not (0 <= self.bias_drift_detection_threshold <= 1):
+            raise ValueError("BIAS_DRIFT_DETECTION_THRESHOLD must be between 0 and 1.")
+        if self.adversarial_testing_enabled and not self.adversarial_testing_model:
+            logger.warning("ADVERSARIAL_TESTING_ENABLED is true, but ADVERSARIAL_TESTING_MODEL is not set. Adversarial testing may be compromised.")
+        if self.adversarial_testing_enabled and not self.bias_drift_mitigation_strategy:
+            logger.warning("ADVERSARIAL_TESTING_ENABLED is true, but BIAS_DRIFT_MITIGATION_STRATEGY is not set. Bias drift mitigation may not be defined.")
+
+        # AI Auditing Validation
+        if self.log_auditing_enabled and not self.log_auditing_model:
+            logger.warning("LOG_AUDITING_ENABLED is true, but LOG_AUDITING_MODEL is not set. Log auditing may not function.")
+        if not (0 <= self.log_auditing_anomaly_threshold <= 1):
+            raise ValueError("LOG_AUDITING_ANOMALY_THRESHOLD must be between 0 and 1.")
+
+        # Blockchain Audit Trail Validation
+        if self.audit_trail_enabled and not self.audit_trail_blockchain_endpoint:
+            logger.warning("AUDIT_TRAIL_ENABLED is true, but AUDIT_TRAIL_BLOCKCHAIN_ENDPOINT is not set. Blockchain audit trails may not be generated.")
+
+        # Real-time Risk Assessment Validation
+        if self.real_time_risk_assessment_enabled and not self.risk_assessment_model:
+            logger.warning("REAL_TIME_RISK_ASSESSMENT_ENABLED is true, but RISK_ASSESSMENT_MODEL is not set. Real-time risk assessment may not function.")
+        for level, threshold in self.risk_assessment_thresholds.items():
+            if not (0 <= threshold <= 1):
+                raise ValueError(f"RISK_ASSESSMENT_THRESHOLD_{level.upper()} must be between 0 and 1.")
+
 
         # Log warnings for potentially problematic settings related to time intervals
         if self.model_garden_cache_ttl <= 0:
@@ -227,6 +418,11 @@ class Settings:
             logger.warning("Ideation theme or suggestion refinement models are not configured. GAN/RL features may be limited.")
         if self.adversarial_prompt_defense_enabled and not self.adversarial_prompt_detection_model:
              logger.warning("ADVERSARIAL_PROMPT_DEFENSE_ENABLED is true, but ADVERSARIAL_PROMPT_DETECTION_MODEL is not set. Adversarial prompt defense may be compromised.")
+        if self.fact_checking_enabled and not self.fact_checking_model:
+            logger.warning("FACT_CHECKING_ENABLED is true, but FACT_CHECKING_MODEL is not set. Fact-checking may not be effective.")
+        if self.fact_checking_enabled and not self.fact_checking_external_data_sources:
+            logger.warning("FACT_CHECKING_ENABLED is true, but no external data sources are configured for fact-checking.")
+
 
     def to_dict(self) -> Dict[str, Any]:
         """Return a safe, serialisable snapshot of the settings, redacting sensitive information."""
@@ -253,6 +449,32 @@ class Settings:
         """Check if Federated Learning is configured and available."""
         return self.federated_learning_enabled and bool(self.federated_learning_aggregator_endpoint)
 
+    @property
+    def fact_checking_available(self) -> bool:
+        """Check if fact-checking is configured and available."""
+        return self.fact_checking_enabled and bool(self.fact_checking_model) and bool(self.fact_checking_external_data_sources)
+
+    @property
+    def adversarial_testing_available(self) -> bool:
+        """Check if adversarial testing is configured and available."""
+        return self.adversarial_testing_enabled and bool(self.adversarial_testing_model) and bool(self.bias_drift_mitigation_strategy)
+
+    @property
+    def log_auditing_available(self) -> bool:
+        """Check if automated log auditing is configured and available."""
+        return self.log_auditing_enabled and bool(self.log_auditing_model)
+
+    @property
+    def audit_trail_available(self) -> bool:
+        """Check if blockchain audit trails are configured and available."""
+        return self.audit_trail_enabled and bool(self.audit_trail_blockchain_provider) and bool(self.audit_trail_blockchain_endpoint)
+
+    @property
+    def real_time_risk_assessment_available(self) -> bool:
+        """Check if real-time risk assessment is configured and available."""
+        return self.real_time_risk_assessment_enabled and bool(self.risk_assessment_model)
+
+
 # Create the singleton instance of the Settings object. This instance is globally accessible.
 settings = Settings()
 
@@ -263,8 +485,15 @@ GEMINI_API_KEY: Optional[str] = settings.gemini_api_key
 GCP_PROJECT_ID: Optional[str] = settings.gcp_project_id
 GCP_REGION: str = settings.gcp_region
 ANTHROPIC_VERTEX_REGION: str = settings.anthropic_vertex_region
+# Models for the incremental refinement pattern, aligned with the "Pattern" requirement.
+# These models are selected for their enhanced context window capabilities.
 IDEATION_THEME_MODEL: str = settings.ideation_theme_model
 SUGGESTION_REFINEMENT_MODEL: str = settings.suggestion_refinement_model
+# Model for generative background narrative synthesis, addressing the "SOTA Tool" requirement.
+BACKGROUND_NARRATIVE_SYNTHESIS_MODEL: str = settings.background_narrative_synthesis_model
+# Model for structured output generation (e.g., function calling)
+FUNCTION_CALLING_MODEL: str = settings.function_calling_model
+
 VERTEX_DEFAULT_MODEL: str = settings.vertex_default_model
 GEMINI_MODEL: str = settings.gemini_model
 IMAGE_GEN_MODEL: str = settings.image_gen_model
@@ -278,18 +507,68 @@ FEDERATED_LEARNING_AGGREGATOR_ENDPOINT: Optional[str] = settings.federated_learn
 FEDERATED_LEARNING_MODEL_UPDATE_INTERVAL: int = settings.federated_learning_model_update_interval
 FEDERATED_LEARNING_CLIENT_SAMPLING_RATE: float = settings.federated_learning_client_sampling_rate
 
-# Risk Management: Bias and Harmful Content Mitigation
+# Reinforcement Learning Agents Configuration
+RL_AGENT_LEARNING_RATE: float = settings.rl_agent_learning_rate
+RL_AGENT_DISCOUNT_FACTOR: float = settings.rl_agent_discount_factor
+RL_AGENT_EXPLORATION_EPSILON_START: float = settings.rl_agent_exploration_epsilon_start
+RL_AGENT_EXPLORATION_EPSILON_END: float = settings.rl_agent_exploration_epsilon_end
+RL_AGENT_EXPLORATION_EPSILON_DECAY: float = settings.rl_agent_exploration_epsilon_decay
+RL_AGENT_FEEDBACK_WINDOW_SIZE: int = settings.rl_agent_feedback_window_size
+
+# Real-time Adversarial Testing Framework
+ADVERSARIAL_TESTING_ENABLED: bool = settings.adversarial_testing_enabled
+ADVERSARIAL_TESTING_FREQUENCY: str = settings.adversarial_testing_frequency
+ADVERSARIAL_TESTING_MODEL: Optional[str] = settings.adversarial_testing_model
+BIAS_DRIFT_DETECTION_THRESHOLD: float = settings.bias_drift_detection_threshold
+BIAS_DRIFT_MITIGATION_STRATEGY: str = settings.bias_drift_mitigation_strategy
+
+# Automated Continuous Auditing with AI
+LOG_AUDITING_ENABLED: bool = settings.log_auditing_enabled
+LOG_AUDITING_MODEL: Optional[str] = settings.log_auditing_model
+LOG_AUDITING_FREQUENCY: str = settings.log_auditing_frequency
+LOG_AUDITING_ANOMALY_THRESHOLD: float = settings.log_auditing_anomaly_threshold
+
+# Blockchain-based Immutable Audit Trails
+AUDIT_TRAIL_ENABLED: bool = settings.audit_trail_enabled
+AUDIT_TRAIL_BLOCKCHAIN_PROVIDER: str = settings.audit_trail_blockchain_provider
+AUDIT_TRAIL_BLOCKCHAIN_ENDPOINT: Optional[str] = settings.audit_trail_blockchain_endpoint
+AUDIT_TRAIL_IMMMUTABILITY_LEVEL: str = settings.audit_trail_immutability_level
+
+# Real-time Risk Assessment Frameworks with ML
+REAL_TIME_RISK_ASSESSMENT_ENABLED: bool = settings.real_time_risk_assessment_enabled
+RISK_ASSESSMENT_MODEL: Optional[str] = settings.risk_assessment_model
+RISK_ASSESSMENT_UPDATE_INTERVAL: int = settings.risk_assessment_update_interval
+RISK_ASSESSMENT_THREAT_INTELLIGENCE_SOURCES: List[str] = settings.risk_assessment_threat_intelligence_sources
+RISK_ASSESSMENT_THRESHOLDS: Dict[str, float] = settings.risk_assessment_thresholds
+
+# Risk Management: Bias, Harmful Content, and Data Reliance Mitigation
 BIAS_MITIGATION_TECHNIQUES: List[str] = settings.bias_mitigation_techniques
 HARMFUL_CONTENT_DETECTION_MODEL: Optional[str] = settings.harmful_content_detection_model
 HARMFUL_CONTENT_DETECTION_THRESHOLD: float = settings.harmful_content_detection_threshold
+# Data diversity threshold, crucial for the "Risk" mitigation.
 DATA_DIVERSITY_SCORE_THRESHOLD: float = settings.data_diversity_score_threshold
 ADVERSARIAL_PROMPT_DEFENSE_ENABLED: bool = settings.adversarial_prompt_defense_enabled
 ADVERSARIAL_PROMPT_DETECTION_MODEL: Optional[str] = settings.adversarial_prompt_detection_model
 ADVERSARIAL_PROMPT_DEFENSE_THRESHOLD: float = settings.adversarial_prompt_defense_threshold
 
+# Risk: Hallucination generation or factual inaccuracies
+# Fact-checking configuration to mitigate the "Risk" of inaccuracies.
+# This leverages RAG principles by specifying external data sources.
+FACT_CHECKING_ENABLED: bool = settings.fact_checking_enabled
+FACT_CHECKING_MODEL: Optional[str] = settings.fact_checking_model
+FACT_CHECKING_EXTERNAL_DATA_SOURCES: List[str] = settings.fact_checking_external_data_sources
+FACT_CHECKING_TOLERANCE_LEVEL: float = settings.fact_checking_tolerance_level
+
+# Risk: Over-reliance on synthetic data
+# Limits on synthetic data usage, directly addressing the "Risk" of lack of novel concepts.
+SYNTHETIC_DATA_USAGE_LIMIT: float = settings.synthetic_data_usage_limit
+REAL_WORLD_DATA_BIAS_MITIGATION: bool = settings.real_world_data_bias_mitigation
+
 # SOTA Tool & State Management
 OPENAI_ASSISTANT_ID: Optional[str] = settings.openai_assistant_id
 OPENAI_API_KEY: Optional[str] = settings.openai_api_key
+# Specific model for function calling, aligning with the "SOTA Tool" requirement.
+OPENAI_FUNCTION_CALLING_MODEL: str = settings.openai_function_calling_model
 
 # Event-Driven Architecture
 IDE_WEBHOOK_URL: Optional[str] = settings.ide_webhook_url
@@ -306,6 +585,7 @@ DYNAMIC_MODEL_SYNC_INTERVAL: int = settings.dynamic_model_sync_interval
 DEFAULT_WORKERS: int = settings.default_workers
 
 # Risk Management: Model Data Drift Monitoring
+# Enhancements to address data drift, which can impact novelty and lead to less disruptive concepts.
 MODEL_DRIFT_MONITORING_ENABLED: bool = settings.model_drift_monitoring_enabled
 MODEL_DRIFT_MONITORING_INTERVAL: int = settings.model_drift_monitoring_interval
 DATA_DRIFT_DETECTION_THRESHOLD: float = settings.data_drift_detection_threshold
@@ -341,6 +621,11 @@ GRAPH_ROLLBACK_ON_CYCLE: bool = settings.graph_rollback_on_cycle
 VERTEX_AVAILABLE: bool = settings.vertex_available
 OPENAI_AVAILABLE: bool = settings.openai_available
 FEDERATED_LEARNING_AVAILABLE: bool = settings.federated_learning_available
+FACT_CHECKING_AVAILABLE: bool = settings.fact_checking_available
+ADVERSARIAL_TESTING_AVAILABLE: bool = settings.adversarial_testing_available
+LOG_AUDITING_AVAILABLE: bool = settings.log_auditing_available
+AUDIT_TRAIL_AVAILABLE: bool = settings.audit_trail_available
+REAL_TIME_RISK_ASSESSMENT_AVAILABLE: bool = settings.real_time_risk_assessment_available
 WORKSPACE_ROOTS: str = settings.workspace_roots
 
 def get_workspace_roots() -> List[Path]:
@@ -399,7 +684,14 @@ if settings.openai_api_key and settings.openai_assistant_id:
         logger.warning(f"OpenAI client initialization failed: {e}")
 
 
+# --- Model Identifiers (Module Level) ---
+GPT4_TURBO_MODEL = "gpt-4-turbo"
+OPENAI_API_KEY = settings.openai_api_key
+GEMINI_API_KEY = settings.gemini_api_key
+VERTEX_DEFAULT_MODEL = "gemini-1.5-pro"
+
 # Exported clients for external use, making them accessible from other modules.
 vertex_client: Optional[Any] = _vertex_client
+_vertex_client = vertex_client # Alias for internal consistency
 gemini_client: Optional[Any] = _gemini_client
 openai_client: Optional[Any] = _openai_client

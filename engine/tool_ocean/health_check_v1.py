@@ -1,0 +1,1 @@
+def sota_health_check(depth=48): return f'Depth {depth} calibration active.'

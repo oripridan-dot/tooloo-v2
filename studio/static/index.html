@@ -1613,32 +1613,18 @@
       width: 100%;
       height: 100%;
       filter: drop-shadow(0 0 20px var(--primary-glow));
+      overflow: visible;
     }
 
-    #buddy-path {
-      fill: none;
-      stroke: var(--cyan);
-      stroke-width: 2.5;
-      stroke-linecap: round;
-      filter: url(#buddy-glow);
-      transition: stroke 0.6s ease, stroke-width 0.6s ease;
+    #buddy-nodes circle, #buddy-edges line {
+      transition: stroke 0.4s ease;
     }
-
-    #buddy-path.executing {
-      stroke: var(--cyan);
-      stroke-width: 4;
-      filter: url(#buddy-primary-glow);
-    }
-
-    #buddy-path.analyzing {
-      stroke: var(--purple);
-      stroke-width: 2;
-    }
-
-    #buddy-path.success {
-      stroke: var(--success);
-      stroke-width: 5;
-    }
+    
+    #buddy-svg.idle #buddy-nodes circle, #buddy-svg.idle #buddy-edges line { stroke: var(--cyan); }
+    #buddy-svg.analyzing #buddy-nodes circle, #buddy-svg.analyzing #buddy-edges line { stroke: var(--purple); }
+    #buddy-svg.executing #buddy-nodes circle, #buddy-svg.executing #buddy-edges line { stroke: #00ffe0; stroke-width: 3; }
+    #buddy-svg.executing #buddy-edges { filter: url(#buddy-primary-glow); }
+    #buddy-svg.success #buddy-nodes circle, #buddy-svg.success #buddy-edges line { stroke: var(--success); }
 
     #buddy-narrative {
       margin-top: -40px;
@@ -1875,7 +1861,7 @@
 
       <!-- ── BUDDY CENTER CORE (THE SIGNAL) ── -->
       <div id="buddy-core-container">
-        <svg id="buddy-svg" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+        <svg id="buddy-svg" class="idle" viewBox="-150 -150 300 300" preserveAspectRatio="xMidYMid meet">
           <!-- Glow filters -->
           <defs>
             <filter id="buddy-glow" x="-50%" y="-50%" width="200%" height="200%">
@@ -1888,11 +1874,10 @@
             </filter>
           </defs>
           
-          <!-- The Morphing Signal Path -->
-          <path id="buddy-path" d="M100,60 Q140,60 140,100 Q140,140 100,140 Q60,140 60,100 Q60,60 100,60 Z" />
-          
-          <!-- Orbitals / Particles -->
           <g id="buddy-orbitals"></g>
+          <!-- Dynamic Procedural Neural Mesh -->
+          <g id="buddy-edges" stroke-width="1.5" stroke-opacity="0.4"></g>
+          <g id="buddy-nodes" fill="var(--bg)" stroke-width="2.5"></g>
         </svg>
 
         <!-- Dynamic Storytelling Tracks -->
@@ -3295,50 +3280,135 @@
        9. BUDDY CORE (THE LIVING SIGNAL)
        ════════════════════════════════════════════════════════════════════════ */
     const BuddyCore = (() => {
-      const path = document.getElementById('buddy-path');
+      const edgesGroup = document.getElementById('buddy-edges');
+      const nodesGroup = document.getElementById('buddy-nodes');
       const subtitle = document.getElementById('buddy-subtitle');
       const thoughts = document.getElementById('buddy-thoughts');
       const svg = document.getElementById('buddy-svg');
       
-      const SHAPES = {
-        idle: "M100,60 Q140,60 140,100 Q140,140 100,140 Q60,140 60,100 Q60,60 100,60 Z",
-        analyzing: "M100,40 Q160,40 160,100 Q160,160 100,160 Q40,160 40,100 Q40,40 100,40 Z", 
-        executing: "M100,20 L130,70 L190,80 L140,120 L160,180 L100,150 L40,180 L60,120 L10,80 L70,70 Z",
-        success: "M100,10 Q190,10 190,100 Q190,190 100,190 Q10,190 10,100 Q10,10 100,10 Z"
-      };
-
+      const NUM_NODES = 24;
+      let nodes = [];
+      let edges = [];
       let currentMode = 'idle';
-
+      
+      // Initialize Geometric Matrix
+      for (let i = 0; i < NUM_NODES; i++) {
+        const p = i / (NUM_NODES - 1);
+        const phi = Math.acos(-1 + (2 * i) / NUM_NODES);
+        const theta = Math.sqrt(NUM_NODES * Math.PI) * phi;
+        const radius = 60 + Math.random() * 30;
+        nodes.push({
+          id: i,
+          baseX: radius * Math.cos(theta) * Math.sin(phi),
+          baseY: radius * Math.sin(theta) * Math.sin(phi),
+          x: 0, y: 0
+        });
+      }
+      
+      // Create Delaunay-like network connectivity
+      for (let i = 0; i < NUM_NODES; i++) {
+        for (let j = i + 1; j < NUM_NODES; j++) {
+          const dx = nodes[i].baseX - nodes[j].baseX;
+          const dy = nodes[i].baseY - nodes[j].baseY;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < 85 && Math.random() > 0.2) edges.push({source: i, target: j});
+        }
+      }
+      
+      // Inject elements
+      nodes.forEach(n => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 4.5);
+        circle.id = 'bnode-' + n.id;
+        nodesGroup.appendChild(circle);
+      });
+      edges.forEach((e, idx) => {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.id = 'bedge-' + idx;
+        edgesGroup.appendChild(line);
+      });
+      
+      const stateConfigs = {
+        idle: { speed: 1.0, radiusScale: 1.0, chaos: 12 },
+        analyzing: { speed: 2.8, radiusScale: 1.4, chaos: 35 },
+        executing: { speed: 6.0, radiusScale: 0.85, chaos: 4 },
+        success: { speed: 0.5, radiusScale: 1.15, chaos: 0 }
+      };
+      
+      let curConfig = {...stateConfigs.idle};
+      let proxy = { time: 0 };
+      
+      function render() {
+        nodes.forEach(n => {
+          const t = proxy.time * curConfig.speed;
+          const offset = n.id * 1.618; // golden ratio offset
+          
+          if (currentMode === 'executing') {
+            // Rigid structural tension
+            n.x = n.baseX * curConfig.radiusScale + Math.sin(t*2 + offset) * curConfig.chaos;
+            n.y = n.baseY * curConfig.radiusScale + Math.cos(t*2 + offset) * curConfig.chaos;
+          } else if (currentMode === 'analyzing') {
+            // Chaotic fracture analysis
+            n.x = n.baseX * curConfig.radiusScale + Math.sin(t + offset) * curConfig.chaos;
+            n.y = n.baseY * curConfig.radiusScale + Math.cos(t*1.3 + offset) * curConfig.chaos;
+          } else if (currentMode === 'success') {
+            // Perfectly crystalline
+            const angle = Math.atan2(n.baseY, n.baseX) + t * 0.5;
+            const r = 80 + Math.sin(t * 3) * 5;
+            n.x = Math.cos(angle) * r;
+            n.y = Math.sin(angle) * r;
+          } else {
+            // Deep breathing idle
+            n.x = n.baseX * curConfig.radiusScale + Math.sin(t + offset) * curConfig.chaos;
+            n.y = n.baseY * curConfig.radiusScale + Math.cos(t + offset) * curConfig.chaos;
+          }
+          
+          const circle = document.getElementById('bnode-' + n.id);
+          circle.setAttribute('cx', n.x);
+          circle.setAttribute('cy', n.y);
+        });
+        
+        edges.forEach((e, idx) => {
+          const line = document.getElementById('bedge-' + idx);
+          line.setAttribute('x1', nodes[e.source].x);
+          line.setAttribute('y1', nodes[e.source].y);
+          line.setAttribute('x2', nodes[e.target].x);
+          line.setAttribute('y2', nodes[e.target].y);
+        });
+      }
+      
+      if (window.gsap) {
+        gsap.to(proxy, {
+          time: 10000, duration: 10000, ease: 'none', onUpdate: render
+        });
+      }
+      
       function setState(mode) {
         if (mode === currentMode) return;
         currentMode = mode;
+        svg.className.baseVal = mode;
         
-        path.className.baseVal = mode;
-        
+        const targetConfig = stateConfigs[mode] || stateConfigs.idle;
         if (window.gsap) {
-          gsap.to(path, {
-            attr: { d: SHAPES[mode] || SHAPES.idle },
+          gsap.to(curConfig, {
+            speed: targetConfig.speed,
+            radiusScale: targetConfig.radiusScale,
+            chaos: targetConfig.chaos,
             duration: 0.8,
-            ease: "elastic.out(1, 0.6)"
+            ease: "power2.out"
           });
-          
-          if (mode === 'executing') {
-            gsap.to(svg, { scale: 1.1, duration: 0.4, repeat: -1, yoyo: true, ease: "sine.inOut" });
-          } else {
-            gsap.killTweensOf(svg);
-            gsap.to(svg, { scale: 1, duration: 0.4 });
-          }
+          gsap.fromTo(svg, 
+            { scale: mode === 'executing' ? 0.9 : 1.1, rotation: mode === 'executing' ? 15 : 0 }, 
+            { scale: 1, rotation: 0, duration: 0.6, ease: "elastic.out(1, 0.5)" }
+          );
         }
       }
 
       function say(text, accelerated = false) {
         if (!text) return;
-        
-        // Accelerated Typewriter
         subtitle.innerHTML = '';
         const words = text.split(' ');
         let i = 0;
-        
         function next() {
           if (i >= words.length) return;
           subtitle.innerHTML += (i > 0 ? ' ' : '') + words[i];
@@ -3352,35 +3422,15 @@
         const node = document.createElement('div');
         node.className = 'thought-node';
         node.textContent = thought;
-        
-        // Random trajectory
         const angle = Math.random() * Math.PI * 2;
-        const dist = 150 + Math.random() * 100;
-        const tx = Math.cos(angle) * dist;
-        const ty = Math.sin(angle) * dist;
-        
-        node.style.setProperty('--tx', `${tx}px`);
-        node.style.setProperty('--ty', `${ty}px`);
+        const dist = 180 + Math.random() * 80;
+        node.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+        node.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
         node.style.left = '50%';
         node.style.top = '50%';
-        
         thoughts.appendChild(node);
         setTimeout(() => node.remove(), 4000);
       }
-
-      // Breathing idle
-      function _init() {
-        if (window.gsap) {
-          gsap.to(path, {
-            attr: { d: "M100,55 Q145,55 145,100 Q145,145 100,145 Q55,145 55,100 Q55,55 100,55 Z" },
-            duration: 2.5,
-            repeat: -1,
-            yoyo: true,
-            ease: "sine.inOut"
-          });
-        }
-      }
-      _init();
 
       return { setState, say, radiateThought };
     })();
@@ -3393,8 +3443,8 @@
       
       // State mapping
       if (t === 'route' || t === 'jit_boost' || t === 'thought') BuddyCore.setState('analyzing');
-      if (t === 'execution' || t === 'pipeline_start') BuddyCore.setState('executing');
-      if (t === 'refinement' || t === 'n_stroke_complete') BuddyCore.setState('success');
+      if (t === 'execution' || t === 'pipeline_start' || t === 'daemon_rt') BuddyCore.setState('executing');
+      if (t === 'refinement' || t === 'n_stroke_complete' || t === 'buddy_chat_fast' || t === 'done') BuddyCore.setState('success');
       
       // Storytelling
       const thoughtText = ev.thought || (t === 'thought' ? ev.message : null);
@@ -3409,7 +3459,7 @@
     _appendBuddy = function(text, ev) {
       _oldAppendBuddy(text, ev);
       BuddyCore.setState('idle');
-      BuddyCore.say(text, false);
+      BuddyCore.say('Awaiting next mandate...', false);
     };
     function connectSSE() {
       if (_sse) { _sse.onopen = null; _sse.onmessage = null; _sse.onerror = null; _sse.close() }

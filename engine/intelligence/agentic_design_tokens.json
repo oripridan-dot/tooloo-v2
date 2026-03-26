@@ -1,0 +1,57 @@
+{
+  "name": "TooLoo V2 SOTA Design System",
+  "version": "1.0.0",
+  "tokens": {
+    "colors": {
+      "primary": { "value": "#6366f1", "type": "color" },
+      "secondary": { "value": "#10b981", "type": "color" },
+      "background": { "value": "#0f172a", "type": "color" },
+      "surface": { "value": "#1e293b", "type": "color" },
+      "text": { "value": "#f8fafc", "type": "color" },
+      "muted": { "value": "#94a3b8", "type": "color" }
+    },
+    "spacing": {
+      "xs": { "value": "4px", "type": "dimension" },
+      "sm": { "value": "8px", "type": "dimension" },
+      "md": { "value": "16px", "type": "dimension" },
+      "lg": { "value": "24px", "type": "dimension" },
+      "xl": { "value": "32px", "type": "dimension" }
+    },
+    "typography": {
+      "base": { "value": "Inter, sans-serif", "type": "fontFamily" },
+      "headings": { "value": "Outfit, sans-serif", "type": "fontFamily" }
+    },
+    "shadows": {
+      "sm": { "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "type": "shadow" },
+      "md": { "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)", "type": "shadow" },
+      "lg": { "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "type": "shadow" }
+    },
+    "breakpoints": {
+      "sm": { "value": "640px", "type": "dimension" },
+      "md": { "value": "768px", "type": "dimension" },
+      "lg": { "value": "1024px", "type": "dimension" },
+      "xl": { "value": "1280px", "type": "dimension" }
+    }
+  },
+  "patterns": {
+    "card": {
+      "description": "Standard container for content blocks.",
+      "styles": {
+        "bg": "tokens.colors.surface",
+        "p": "tokens.spacing.lg",
+        "rounded": "12px",
+        "shadow": "tokens.shadows.md"
+      }
+    },
+    "button_primary": {
+      "description": "Call to action button.",
+      "styles": {
+        "bg": "tokens.colors.primary",
+        "text": "tokens.colors.text",
+        "p": "8px 16px",
+        "rounded": "8px",
+        "font": "tokens.typography.headings"
+      }
+    }
+  }
+}

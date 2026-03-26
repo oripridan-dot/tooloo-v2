@@ -112,9 +112,9 @@ class MetaArchitect:
         "latency", "accuracy", "autonomous", "branch", "healing",
     })
 
-    def generate(self, mandate_text: str, intent: str) -> DynamicExecutionPlan:
+    def generate(self, mandate_text: str, intent: str, strategy_audit: str | None = None) -> DynamicExecutionPlan:
         roi = self._assess_roi(mandate_text)
-        nodes = self._build_graph(mandate_text, intent, roi.investigation_roi)
+        nodes = self._build_graph(mandate_text, intent, roi.investigation_roi, strategy_audit)
         proof = self._build_confidence_proof(nodes, roi.investigation_roi)
         return DynamicExecutionPlan(
             depth_assessment=roi,
@@ -147,8 +147,10 @@ class MetaArchitect:
             rationale="Mandate appears narrow; optimize for speed with minimal depth overhead.",
         )
 
-    def _build_graph(self, mandate_text: str, intent: str, roi: str) -> list[GraphNodeSpec]:
+    def _build_graph(self, mandate_text: str, intent: str, roi: str, strategy_audit: str | None = None) -> list[GraphNodeSpec]:
         base: list[GraphNodeSpec] = []
+        
+        audit_context = f"\n[STRATEGY AUDIT GUIDE]: {strategy_audit}" if strategy_audit else ""
 
         if roi == "high":
             base.append(GraphNodeSpec(
@@ -173,7 +175,7 @@ class MetaArchitect:
                 action_type="audit_wave",
                 dependencies=list(pre_deps),
                 cognitive_profile=CognitiveProfile("reasoning", 2, None),
-                node_mandate="Audit constraints, security risks, and invariants.",
+                node_mandate=f"Audit constraints, security risks, and invariants.{audit_context}",
             ),
             GraphNodeSpec(
                 node_id="design_wave",

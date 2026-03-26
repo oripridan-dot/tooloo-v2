@@ -4,7 +4,7 @@ import logging
 from engine.pipeline import NStrokeEngine
 from engine.tribunal import Tribunal
 from engine.router import LockedIntent, MandateRouter
-from engine.memory import memory_manager
+from engine.graph_store import memory_manager
 from engine.graph import CognitiveGraph, TopologicalSorter
 from engine.jit_booster import JITBooster
 from engine.executor import JITExecutor

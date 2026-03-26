@@ -73,6 +73,10 @@ class CognitiveProfile:
     minimum_tier: int  # 0=local SLM, 1=flash, 2=flash-pro, 3=pro, 4=frontier
     # override model selection (e.g., "local_slm")
     lock_model: str | None = None
+    # Tier-5: Reasoning budget for test-time compute (Wave 0.5)
+    thinking_budget: int | None = None
+    # Tier-5: Task complexity (0.0-1.0)
+    complexity: float = 0.5
 
     def __post_init__(self) -> None:
         if self.primary_need not in ("speed", "reasoning", "coding", "synthesis"):
@@ -90,6 +94,8 @@ class CognitiveProfile:
             "primary_need": self.primary_need,
             "minimum_tier": self.minimum_tier,
             "lock_model": self.lock_model,
+            "thinking_budget": self.thinking_budget,
+            "complexity": self.complexity,
         }
 
 # ── Capability profile and Cognitive Routing ──────────────────────────────────
@@ -117,6 +123,8 @@ class ModelInfo:
     coding: float      # code generation, debugging, architecture
     synthesis: float   # creative writing, summarisation, explanation
     stability: float   # 1.0=GA  0.9=preview-stable  0.8=experimental
+    # Tier-5: supports test-time compute / internal reasoning
+    thinking_available: bool = False
 
     def score_for(self, task_type: str) -> float:
         w = _TASK_WEIGHTS.get(
@@ -155,19 +163,22 @@ _REGISTRY: list[ModelInfo] = [
     ),
     ModelInfo(
         "gemini-3-flash-preview", "google",
-        speed=0.87, reasoning=0.84, coding=0.85, synthesis=0.82, stability=0.90,
+        speed=0.87, reasoning=0.84, coding=0.85, synthesis=0.82, stability=0.98,
     ),
     ModelInfo(
         "gemini-2.5-pro", "google",
         speed=0.65, reasoning=0.94, coding=0.92, synthesis=0.90, stability=1.00,
+        thinking_available=True,
     ),
     ModelInfo(
         "gemini-3-pro-preview", "google",
-        speed=0.62, reasoning=0.96, coding=0.95, synthesis=0.93, stability=0.90,
+        speed=0.62, reasoning=0.96, coding=0.95, synthesis=0.93, stability=0.99,
+        thinking_available=True,
     ),
     ModelInfo(
-        "gemini-3.1-pro-preview", "google",
-        speed=0.60, reasoning=0.98, coding=0.96, synthesis=0.95, stability=0.90,
+        "gemini-2.5-pro", "google",
+        speed=0.65, reasoning=0.94, coding=0.92, synthesis=0.90, stability=1.00,
+        thinking_available=True,
     ),
 
     # ── Anthropic Claude — Vertex AI us-east5 ────────────────────────────────
@@ -184,6 +195,7 @@ _REGISTRY: list[ModelInfo] = [
     ModelInfo(
         "claude-3-7-sonnet@20250219", "anthropic",
         speed=0.68, reasoning=0.97, coding=0.96, synthesis=0.94, stability=1.00,
+        thinking_available=True,
     ),
 
     # ── Meta Llama — Vertex AI us-central1 MaaS ───────────────────────────────────────
@@ -371,10 +383,14 @@ def discover_and_register_models() -> None:
                 continue
 
             # Skip already-known, embedding, or vision-only models
+            # Blacklist: gemini-2.0 and 3.1 are currently 404ing in us-central1 for this project.
             if (
                 model_id in registered_ids
                 or "embedding" in model_id
                 or "vision" in model_id
+                or "gemini-2.0" in model_id
+                or "gemini-3.1" in model_id
+                or "google/models/gemini-3.1" in model_id
             ):
                 continue
 
@@ -549,6 +565,19 @@ class ModelGarden:
         if tier <= 2:
             return self._static_tiers[tier]
 
+        # Tier 5: Dynamic Resolution Strategy (March 2026 Mandates)
+        if profile and profile.complexity > 0.8:
+            # Resolve to Thinking model for high complexity
+            return "gemini-2.5-pro"
+        
+        if primary_need == "synthesis" and "aesthetic" in intent.lower():
+            # Resolve to Image/Aesthetic specialisation
+            return "gemini-3.1-flash-image-preview"
+            
+        if primary_need == "speed" and ("bulk" in intent.lower() or "data" in intent.lower()):
+            # Resolve to Lite for high-volume data
+            return "gemini-2.5-flash-lite"
+
         # Tier 3-4: Heavy reasoning models, ranked by cognitive fit
         task_type = primary_need if primary_need in _TASK_WEIGHTS else INTENT_TASK.get(
             intent, "reasoning")
@@ -561,9 +590,14 @@ class ModelGarden:
         if tier == 3:
             stable = [m for m in pro_pool if m.stability >= 0.9]
             pool = stable if stable else pro_pool
-            return max(pool, key=lambda m: m.score_for(task_type)).id
+            winner = max(pool, key=lambda m: m.score_for(task_type)).id
+            # Failover: If winning model is a deprecated preview, shift to stable
+            if "preview" in winner and "gemini-3" in winner:
+                 # Check for 3.1 Pro stable if preview is risky (mocking March 9 cutoff)
+                 return "gemini-2.5-pro" 
+            return winner
 
-        t3_id = self.get_tier_model(3, intent, primary_need=primary_need)
+        t3_id = self.get_tier_model(3, intent, primary_need=primary_need, profile=profile)
         t4_pool = [m for m in pro_pool if m.id != t3_id]
         if t4_pool:
             return max(t4_pool, key=lambda m: m.score_for(task_type)).id
@@ -574,7 +608,7 @@ class ModelGarden:
 
     # ── Provider-dispatched inference ────────────────────────────────────────
 
-    def call(self, model_id: str, prompt: str, max_tokens: int = 1024) -> str:
+    def call(self, model_id: str, prompt: str, max_tokens: int = 1024, thinking_budget: int | None = None) -> str:
         """
         Dispatch inference to the correct provider SDK.
 
@@ -585,13 +619,16 @@ class ModelGarden:
             return self._call_local_slm(model_id, prompt, max_tokens)
 
         info = self._find(model_id)
+        # Tier-5: Override thinking budget if model supports it
+        actual_budget = thinking_budget if (info and info.thinking_available) else None
+
         provider = info.provider if info else (
             "anthropic" if model_id.startswith("claude") else "google"
         )
         if provider == "anthropic":
             if _init_anthropic():
                 try:
-                    return self._call_anthropic(model_id, prompt, max_tokens)
+                    return self._call_anthropic(model_id, prompt, max_tokens, actual_budget)
                 except RuntimeError:
                     # Anthropic call failed (404 / permission denied / etc.) —
                     # fall through to Google Vertex as the next available path.
@@ -605,7 +642,7 @@ class ModelGarden:
         # "google" and "vertex_maas" both use the google-genai Vertex client.
         # MaaS models use publisher-namespaced IDs (meta/..., mistral-large@...).
         if _google_client is not None:
-            return self._call_google(model_id, prompt)
+            return self._call_google(model_id, prompt, actual_budget)
         raise RuntimeError(
             f"Google/Vertex client unavailable (model={model_id})")
 
@@ -708,23 +745,32 @@ class ModelGarden:
         return None
 
     @staticmethod
-    def _call_google(model_id: str, prompt: str) -> str:
-        resp = _google_client.models.generate_content(  # type: ignore[union-attr]
-            model=model_id, contents=prompt
-        )
+    def _call_google(model_id: str, prompt: str, thinking_budget: int | None = None) -> str:
+        kwargs: dict[str, Any] = {"model": model_id, "contents": prompt}
+        if thinking_budget:
+            # Vertex AI Gemini 2.0+ thinking configuration
+            kwargs["config"] = {"thinking_config": {"include_thoughts": True}}
+            # Note: actual budget is often handled by thinking_budget_tokens in newer SDKs
+            # or simply by selecting the correct model version.
+        
+        resp = _google_client.models.generate_content(**kwargs)  # type: ignore[union-attr]
         text = resp.text
         if not text:
             raise ValueError(f"Google/{model_id} returned empty response")
         return text.strip()
 
     @staticmethod
-    def _call_anthropic(model_id: str, prompt: str, max_tokens: int) -> str:
+    def _call_anthropic(model_id: str, prompt: str, max_tokens: int, thinking_budget: int | None = None) -> str:
         try:
-            msg = _anthropic_client.messages.create(  # type: ignore[union-attr]
-                model=model_id,
-                max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}],
-            )
+            kwargs: dict[str, Any] = {
+                "model": model_id,
+                "max_tokens": max_tokens,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            if thinking_budget:
+                kwargs["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
+            
+            msg = _anthropic_client.messages.create(**kwargs)  # type: ignore[union-attr]
             return msg.content[0].text.strip()
         except Exception as exc:
             # Normalise all Anthropic API errors (404 NOT_FOUND, 403 permission
@@ -820,14 +866,7 @@ def get_garden() -> ModelGarden:
 # ModelSelector — tier-based routing (formerly engine/model_selector.py)
 # ---------------------------------------------------------------------------
 
-# Compute tier → model map once at import time
-_FULL_TIERS: dict[int, str] = get_full_tier_models()
-TIER_1_MODEL: str = _FULL_TIERS[1]
-TIER_2_MODEL: str = _FULL_TIERS[2]
-TIER_3_MODEL: str = _FULL_TIERS[3]
-TIER_4_MODEL: str = _FULL_TIERS[4]
-_TIER_MODELS: dict[int, str] = dict(_FULL_TIERS)
-VERTEX_TIER_MAP: dict[int, str] = dict(_FULL_TIERS)
+# The TIER_N_MODEL constants are now dynamically resolved via ModelGarden.
 
 # Intents that benefit from deeper reasoning from the very first stroke
 _DEEP_INTENTS: frozenset[str] = frozenset(
@@ -876,10 +915,7 @@ class ModelSelector:
             if force_tier is not None
             else self._compute_tier(stroke, intent, prior_verdict)
         )
-        if tier >= 3:
-            model = get_garden().get_tier_model(tier, intent)
-        else:
-            model = _TIER_MODELS[tier]
+        model = get_garden().get_tier_model(tier, intent)
 
         rationale = self._rationale(tier, stroke, intent, prior_verdict, model)
         return ModelSelection(

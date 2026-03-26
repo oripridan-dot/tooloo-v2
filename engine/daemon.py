@@ -54,11 +54,21 @@ class BackgroundDaemon:
         from engine.cognitive_dreamer import CognitiveDreamer
         from engine.vector_store import get_vector_store
         from engine.model_garden import get_garden
+        from engine.system_memory import SystemMemoryStore
         self._dreamer = CognitiveDreamer(
             vector_store=get_vector_store(),
             psyche_bank=self._bank,
             model_garden=get_garden()
         )
+        self._system_store = SystemMemoryStore()
+        
+    def _get_git_sha(self) -> str:
+        """State Checkpointing: Hash the current environment reality."""
+        try:
+            res = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=str(_REPO_ROOT))
+            return res.stdout.strip() if res.returncode == 0 else "unknown"
+        except Exception:
+            return "unknown"
 
     async def start(self):
         self.active = True
@@ -79,6 +89,18 @@ class BackgroundDaemon:
         self._broadcast({"type": "daemon_status", "status": "stopped"})
 
     async def _cycle(self):
+        # ── State Checkpointing (The Reality Anchor) ──
+        current_sha = self._get_git_sha()
+        recent_cycles = self._system_store.recent(limit=1, domain="system")
+        if recent_cycles:
+            last_sha = recent_cycles[0].git_sha
+            if last_sha != "unknown" and current_sha != "unknown" and last_sha != current_sha:
+                self._broadcast({
+                    "type": "daemon_rt",
+                    "msg": f"[Reality Anchor] External mutation detected (SHA {last_sha[:7]} → {current_sha[:7]}). Forcing fresh environment scan..."
+                })
+                # Here we could invalidate Hot memory assumptions if appropriate
+        
         # Prune expired tribunal rules before each scan to keep the bank lean.
         removed = self._bank.purge_expired()
         if removed:
@@ -221,6 +243,9 @@ class BackgroundDaemon:
             capture_output=True, text=True, cwd=str(_REPO_ROOT),
         )
 
+        current_sha = self._get_git_sha()
+        from engine.memory_tier_orchestrator import get_memory_orchestrator
+
         if result.returncode == 0:
             summary_lines = [
                 l for l in result.stdout.splitlines() if l.strip()]
@@ -235,6 +260,19 @@ class BackgroundDaemon:
             proposal["status"] = "merged"
             self._broadcast({"type": "daemon_rt",
                              "msg": f"[{comp}] ✓ Real change committed to {file_rel}"})
+            
+            # Record Success to Hot Memory
+            self._system_store.record_cycle(
+                cycle_id=pid,
+                domain="system",
+                summary=f"Successfully applied patch to {file_rel}: {proposal['suggestion']}",
+                modules_touched=[file_rel],
+                success=True,
+                composite_score_delta=0.0,
+                key_learnings=["Patch passed all unit tests and was merged."],
+                git_sha=self._get_git_sha(), # Updated SHA after commit
+                is_anti_pattern=False
+            )
         else:
             full_path.write_text(original, encoding="utf-8")  # revert
             err_lines = [l for l in result.stdout.splitlines()
@@ -243,6 +281,25 @@ class BackgroundDaemon:
             self._broadcast({"type": "daemon_rt",
                              "msg": f"[{comp}] Tests ✗ ({err_summary}) — reverted {file_rel}"})
             proposal["status"] = "reverted"
+            
+            # Record Anti-Pattern to Hot Memory
+            self._system_store.record_cycle(
+                cycle_id=pid,
+                domain="system",
+                summary=f"Anti-Pattern: Patch broken tests in {file_rel}: {proposal['suggestion']}",
+                modules_touched=[file_rel],
+                success=False,
+                composite_score_delta=0.0,
+                key_learnings=[f"Tests failed: {err_summary}. Do not attempt this specific patch again."],
+                git_sha=current_sha,
+                is_anti_pattern=True
+            )
+
+        # Execution-Triggered Tiering: Dispatch to Warm immediately
+        try:
+            loop.create_task(get_memory_orchestrator().promote_hot_to_warm(session_id=pid, domain="system"))
+        except RuntimeError:
+            pass # fallback if loop structure changed
 
     # ── Patch generation ──────────────────────────────────────────────────────
 
@@ -290,6 +347,22 @@ class BackgroundDaemon:
         if _gemini_client is None:
             return None
 
+        # ── Surface Anti-Pattern Memory ──
+        from engine.memory_tier_orchestrator import get_memory_orchestrator
+        search_query = f"{file_rel} {description}"
+        past_memories = get_memory_orchestrator().query(search_query, top_k=3, domain="system")
+        anti_pattern_ctx = ""
+        if past_memories:
+            anti_pattern_list = [
+                m.content for m in past_memories 
+                if m.metadata.get("is_anti_pattern") or "[ANTI-PATTERN" in m.content
+            ]
+            if anti_pattern_list:
+                anti_pattern_ctx = "ANTI-PATTERN MEMORY (Past Failures to Avoid):\n"
+                for content in anti_pattern_list:
+                    anti_pattern_ctx += f"- {content}\n"
+                anti_pattern_ctx += "\n"
+
         snippet_block = (
             f"Suggested replacement snippet:\n```python\n{code_snippet}\n```\n\n"
             if code_snippet else ""
@@ -297,7 +370,8 @@ class BackgroundDaemon:
         prompt = (
             f"You are making a surgical improvement to a Python codebase.\n\n"
             f"File: {file_rel}\n"
-            f"Change: {description}\n"
+            f"Change: {description}\n\n"
+            f"{anti_pattern_ctx}"
             f"{snippet_block}"
             f"Context (lines {ctx_start + 1}–{ctx_end}):\n"
             f"```python\n{context}\n```\n\n"

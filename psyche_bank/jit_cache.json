@@ -2,66 +2,66 @@
   "signals": {
     "BUILD": {
       "signals": [
-        "CI/CD platforms like GitHub Actions or GitLab CI with sophisticated caching and artifact management for build acceleration.",
-        "Containerization (Docker, Kubernetes) for reproducible and isolated build environments, enabling efficient caching of base images and dependencies.",
-        "Automated dependency vulnerability scanning integrated into the build pipeline (e.g., Snyk, Dependabot) to mitigate supply chain risks proactively."
+        "DORA metrics (deployment frequency, lead time for changes, MTTR, change failure rate) anchor engineering strategy discussions",
+        "FastAPI + Pydantic v2 are the production standard for async Python services in 2026",
+        "Feature flags (OpenFeature standard) decouple deployment from release, enabling hypothesis testing"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-25T15:35:51.359486+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-26T17:02:40.386591+00:00"
     },
     "DEBUG": {
       "signals": [
-        "Automated regression testing frameworks like Playwright or Cypress integrated with CI/CD pipelines for continuous validation of background debug functionalities.",
-        "Use of distributed tracing tools (e.g., OpenTelemetry) for granular visibility into background process execution and error identification in complex distributed systems.",
-        "Risk of subtle race conditions in asynchronous background operations, necessitating rigorous concurrency testing and potential adoption of formal verification methods for critical debugging pathways."
+        "OpenTelemetry 2.0 with AI-powered root-cause analysis via Jaeger + Grafana is the 2026 observability standard",
+        "LLM-assisted debugging (GitHub Copilot Workspace, Cursor, Aider) reduces mean time to resolution by 60%",
+        "Flamegraph profiling (py-spy / async-profiler) localises hot paths in under 60 seconds"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-25T15:35:52.559514+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-26T17:02:40.386667+00:00"
     },
     "AUDIT": {
       "signals": [
-        "**Tool:** Cloud-native security monitoring platforms (e.g., Palo Alto Prisma Cloud, Lacework) integrating real-time audit log analysis via AI/ML for anomaly detection.",
-        "**Pattern:** Immutable audit logs stored on blockchain or distributed ledger technology (DLT) for tamper-proof auditing, coupled with automated reconciliation against desired state configurations.",
-        "**Risk:** Advanced persistent threats (APTs) employing sophisticated evasion techniques to bypass AI/ML-driven audit anomaly detection, requiring next-generation behavioral analysis and threat intelligence feeds."
+        "OWASP Top 10 2025 edition promotes Broken Object-Level Authorisation to the #1 priority",
+        "OSS supply-chain audits (Sigstore + Rekor transparency log) are required in regulated environments",
+        "CSPM tools (Wiz, Orca, Prisma Cloud) provide real-time cloud posture scoring in 2026"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-25T15:35:53.505669+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-26T17:02:40.386677+00:00"
     },
     "DESIGN": {
       "signals": [
-        "**SOTA Tool:** Figma's AI-powered \"Dev Mode\" for rapid design-to-code iteration and real-time component library syncing.",
-        "**Pattern:** \"Continuous Design Validation\" integrating automated A/B testing of UI elements and UX flows directly within design tools.",
-        "**Risk:** Increased velocity of design changes outpacing the ability of backend infrastructure to dynamically adapt, leading to feature parity issues."
+        "Radix UI + Tailwind CSS v4 is the dominant headless component stack for 2026 projects",
+        "WCAG 2.2 is the current accessibility compliance target; Level AA is the minimum bar",
+        "Design tokens managed via Style Dictionary v4 enable cross-platform design-system consistency"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-25T15:35:54.529850+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-26T17:02:40.386682+00:00"
     },
     "EXPLAIN": {
       "signals": [
-        "**SOTA Tool:** Google's Gemini 1.5 Pro, with its 1 million token context window, enabling the analysis of extensive documentation for mandate explanation.",
-        "**Pattern:** Active learning loops for continuous refinement of mandate explanation models, incorporating user feedback on clarity and completeness.",
-        "**Risk:** Overfitting to specific jargon or domain language within existing mandates, leading to less generalizable explanations for new or evolving policy areas."
+        "Di\u00e1taxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure",
+        "Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams",
+        "LLM-generated runbooks require mandatory human review before operational use per SOX/ISO-27001"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-25T15:35:55.449693+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-26T17:02:40.386689+00:00"
     },
     "IDEATE": {
       "signals": [
-        "**Automated Prompt Engineering Frameworks:** Tools like LangChain Agents, AutoGPT, and BabyAGI are demonstrating SOTA capabilities in dynamically generating and refining prompts for ideation tasks based on real-time context.",
-        "**Federated Learning for Ideation Privacy:** Emerging standards in federated learning allow for the training of ideation models on decentralized data without exposing sensitive user information, crucial for proprietary brainstorming.",
-        "**Real-time Cognitive Load Monitoring:** Integration of biometric data (e.g., EEG, eye-tracking) into ideation platforms predicts cognitive fatigue and proactively triggers background refresh mechanisms or shifts in ideation strategies to maintain optimal creative output."
+        "DORA metrics (deployment frequency, lead time, MTTR, CFR) anchor engineering strategy discussions",
+        "Two-pizza team + async RFC process (Notion/Linear) is the standard ideation workflow",
+        "Feature flags (OpenFeature standard) decouple deployment from release, enabling hypothesis testing"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-25T15:35:56.884849+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-26T17:02:40.386693+00:00"
     },
     "SPAWN_REPO": {
       "signals": [
-        "GitOps (e.g., Argo CD, Flux) for automated, declarative repository provisioning and management.",
-        "Infrastructure as Code (IaC) tools (e.g., Terraform, Pulumi) for defining and provisioning repository infrastructure.",
-        "Secure by design principles, including least privilege access controls and automated vulnerability scanning of new repository codebases."
+        "GitHub Actions + Dependabot + CodeQL is the baseline secure CI/CD starter pack in 2026",
+        "devcontainer.json (Dev Containers spec 2.0) ensures reproducible contributor environments",
+        "Semantic versioning + Conventional Commits enables automated CHANGELOG and release notes"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-25T15:35:57.911740+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-26T17:02:40.387183+00:00"
     }
   }
 }

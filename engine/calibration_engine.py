@@ -171,6 +171,8 @@ _BASE_SCORES_16D: dict[str, float] = {
 }
 
 # ── Component base confidence (from ouroboros last-run + session history) ─────
+# NOTE: These static values are blended with live code quality analysis
+# via engine.dynamic_scorer when refresh_dynamic_confidence() is called.
 _COMPONENT_BASE_CONFIDENCE: dict[str, float] = {
     "router":                0.871,
     "tribunal":              0.854,
@@ -206,6 +208,52 @@ _COMPONENT_BASE_CONFIDENCE: dict[str, float] = {
 _COMPONENT_COST_USD: dict[str, float] = {
     k: 0.0012 for k in _COMPONENT_BASE_CONFIDENCE  # ~$0.0012 per calibration pass
 }
+
+# ── Dynamic confidence cache ──────────────────────────────────────────────────
+_DYNAMIC_CONFIDENCE: dict[str, float] = {}
+
+
+def refresh_dynamic_confidence() -> dict[str, float]:
+    """Recompute component confidence from live code quality + performance.
+
+    Blends: 40% static history + 30% code quality + 30% runtime performance.
+    Call this before calibration to get scores that reflect actual code changes.
+    """
+    global _DYNAMIC_CONFIDENCE
+    try:
+        from engine.dynamic_scorer import compute_dynamic_confidence
+        quality_scores = compute_dynamic_confidence(_COMPONENT_BASE_CONFIDENCE)
+    except Exception:
+        quality_scores = dict(_COMPONENT_BASE_CONFIDENCE)
+
+    try:
+        # Try loading cached performance scores
+        perf_path = Path(__file__).resolve().parents[1] / "psyche_bank" / "performance_confidence.json"
+        if perf_path.exists():
+            perf_scores = json.loads(perf_path.read_text())
+        else:
+            perf_scores = dict(_COMPONENT_BASE_CONFIDENCE)
+    except Exception:
+        perf_scores = dict(_COMPONENT_BASE_CONFIDENCE)
+
+    # Blend: 40% static + 30% code quality + 30% performance
+    blended: dict[str, float] = {}
+    for comp, static in _COMPONENT_BASE_CONFIDENCE.items():
+        q = quality_scores.get(comp, static)
+        p = perf_scores.get(comp, static)
+        blended[comp] = round(
+            min(0.98, 0.40 * static + 0.30 * q + 0.30 * p), 4
+        )
+
+    _DYNAMIC_CONFIDENCE = blended
+    return blended
+
+
+def get_component_confidence(component: str) -> float:
+    """Get the current confidence for a component (dynamic if available)."""
+    if _DYNAMIC_CONFIDENCE:
+        return _DYNAMIC_CONFIDENCE.get(component, 0.850)
+    return _COMPONENT_BASE_CONFIDENCE.get(component, 0.850)
 
 
 # ── Data classes ──────────────────────────────────────────────────────────────
@@ -883,7 +931,7 @@ class CalibrationEngine:
         """
         _RECENCY_K_PUB = math.log(2) / 1.0  # half-life = 1 year for research
 
-        base_conf = _COMPONENT_BASE_CONFIDENCE.get(component, 0.850)
+        base_conf = get_component_confidence(component)
 
         # Build de-duplicated benchmark list for this component
         domains = COMPONENT_DOMAIN_MAP.get(component, [])
@@ -1322,3 +1370,72 @@ class CalibrationEngine:
             f"    psyche_bank/integration_scores.json",
         ]
         return "\n".join(lines)
+
+    # ── Training telemetry helper ────────────────────────────────────────
+
+    @staticmethod
+    def delta_from_previous(
+        previous_report: "CalibrationCycleReport",
+        current_report: "CalibrationCycleReport",
+    ) -> dict[str, Any]:
+        """Compute precise Δ16D between two CalibrationCycleReport objects.
+
+        Used by the training pipeline to measure per-epoch improvement.
+        Accepts the return type of ``run_5_cycles()``.
+
+        Returns:
+            dict with keys:
+              - delta_composite: float (overall alignment change)
+              - dimension_deltas: dict[dim_name, delta_score]
+              - improved_dimensions: list[str] (dims that improved)
+              - degraded_dimensions: list[str] (dims that degraded)
+              - ipa: float (mean absolute impact across dimensions)
+        """
+        # Build dim → avg calibrated_score from cycle_2_proofs
+        def _avg_dim_scores(
+            proofs: list,
+        ) -> dict[str, float]:
+            """Average calibrated_score per dimension across all proofs."""
+            dim_sums: dict[str, list[float]] = {}
+            for proof in proofs:
+                for dd in proof.dimension_deltas:
+                    dim_sums.setdefault(dd.dimension, []).append(
+                        dd.calibrated_score
+                    )
+            return {
+                dim: sum(vals) / len(vals)
+                for dim, vals in dim_sums.items()
+            }
+
+        prev_dims = _avg_dim_scores(previous_report.cycle_2_proofs)
+        curr_dims = _avg_dim_scores(current_report.cycle_2_proofs)
+
+        dimension_deltas: dict[str, float] = {}
+        improved: list[str] = []
+        degraded: list[str] = []
+
+        for dim in prev_dims:
+            if dim in curr_dims:
+                delta = curr_dims[dim] - prev_dims[dim]
+                dimension_deltas[dim] = round(delta, 6)
+                if delta > 0.001:
+                    improved.append(dim)
+                elif delta < -0.001:
+                    degraded.append(dim)
+
+        delta_composite = (
+            current_report.system_alignment_after
+            - previous_report.system_alignment_after
+        )
+
+        n_dims = len(dimension_deltas) or 1
+        ipa = sum(abs(v) for v in dimension_deltas.values()) / n_dims
+
+        return {
+            "delta_composite": round(delta_composite, 6),
+            "dimension_deltas": dimension_deltas,
+            "improved_dimensions": improved,
+            "degraded_dimensions": degraded,
+            "ipa": round(ipa, 6),
+        }
+

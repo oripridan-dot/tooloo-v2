@@ -30,7 +30,8 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from engine.mcp_types import MCPToolSpec, MCPCallResult
+from engine.tool_ocean import ToolOcean
 
 # ── Workspace root (one level up from this file) ──────────────────────────────
 _WORKSPACE_ROOT: Path = Path(__file__).resolve().parents[1]
@@ -97,42 +98,7 @@ _SOTA_CATALOGUE: dict[str, list[str]] = {
 # ── DTOs ──────────────────────────────────────────────────────────────────────
 
 
-@dataclass
-class MCPToolSpec:
-    """Describes one registered MCP tool."""
-
-    uri: str
-    name: str
-    description: str
-    parameters: list[dict[str, str]]
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "uri": self.uri,
-            "name": self.name,
-            "description": self.description,
-            "parameters": self.parameters,
-        }
-
-
-@dataclass
-class MCPCallResult:
-    """Result of one MCP tool invocation."""
-
-    uri: str
-    success: bool
-    output: Any
-    error: str | None = None
-    truncated: bool = False
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "uri": self.uri,
-            "success": self.success,
-            "output": self.output,
-            "error": self.error,
-            "truncated": self.truncated,
-        }
+# Moved to engine/mcp_types.py
 
 
 # ── Security helpers ──────────────────────────────────────────────────────────
@@ -181,6 +147,12 @@ def _tool_file_write(path: str, content: str, **_: Any) -> dict[str, Any]:
             f"Write to '{resolved.suffix}' extension is not permitted."
         )
     resolved.parent.mkdir(parents=True, exist_ok=True)
+    # ── Z3-Inspired Symbolic Hardening ──
+    from engine.z3_gateway import SymbolicSafetyGuard
+    guard = SymbolicSafetyGuard(_WORKSPACE_ROOT)
+    if not guard.verify_write(path, content):
+        raise PermissionError(f"Symbolic Hardening Block: Write to '{path}' violates safety invariants.")
+
     resolved.write_text(content, encoding="utf-8")
     return {
         "path": str(resolved.relative_to(_WORKSPACE_ROOT)),
@@ -688,6 +660,31 @@ def _tool_render_screenshot(
         }
 
 
+def _tool_visual_capture(sandbox_id: str = "default", **_: Any) -> dict[str, Any]:
+    """Capture a screenshot and metadata from the visual sandbox."""
+    from engine.sandbox.v_executor import VExecutor
+    executor = VExecutor(sandbox_id)
+    state = executor.capture_state()
+    return {
+        "sandbox_id": sandbox_id,
+        "screenshot_b64": state.screenshot_b64,
+        "active_window": state.active_window,
+        "cursor_position": state.cursor_position,
+        "metadata": state.metadata
+    }
+
+def _tool_visual_action(
+    action: str,
+    x: int,
+    y: int,
+    text: str | None = None,
+    sandbox_id: str = "default",
+    **_: Any
+) -> dict[str, Any]:
+    """Execute a mouse/keyboard action in the visual sandbox."""
+    executor = VExecutor(sandbox_id)
+    return executor.execute_action(action, (x, y), text)
+
 # ── Tool registry ─────────────────────────────────────────────────────────────
 
 _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
@@ -829,6 +826,23 @@ _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
                 "description": "Viewport height in pixels (default 800)"},
         ],
     )),
+    "visual_capture": (_tool_visual_capture, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}visual_capture",
+        name="visual_capture",
+        description="Capture the current OS visual state (screenshot + metadata).",
+        parameters=[{"name": "sandbox_id", "type": "string", "description": "Target sandbox ID"}]
+    )),
+    "visual_action": (_tool_visual_action, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}visual_action",
+        name="visual_action",
+        description="Execute a visual action (click, type, etc.) at specific coordinates.",
+        parameters=[
+            {"name": "action", "type": "string", "description": "mouse_move | left_click | type"},
+            {"name": "x", "type": "integer", "description": "X coordinate"},
+            {"name": "y", "type": "integer", "description": "Y coordinate"},
+            {"name": "text", "type": "string", "description": "Text to type (optional)"}
+        ]
+    )),
 }
 
 
@@ -836,43 +850,45 @@ _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
 
 
 class MCPManager:
-    """MCP tool discovery and dispatch.
+    """MCP tool discovery and dispatch."""
 
-    Usage::
-
-        mcp = MCPManager()
-        tools = mcp.manifest()                         # list[MCPToolSpec]
-        result = mcp.call("file_read", path="engine/config.py")
-        result2 = mcp.call_uri("mcp://tooloo/web_lookup", query="async python")
-    """
+    def __init__(self):
+        self._tool_ocean = ToolOcean()
 
     def manifest(self) -> list[MCPToolSpec]:
-        """Return the full tool manifest (all registered tool specs)."""
-        return [spec for _, spec in _TOOL_REGISTRY.values()]
+        """Return the full tool manifest (static + dynamic tools)."""
+        static_tools = [spec for _, spec in _TOOL_REGISTRY.values()]
+        dynamic_tools = self._tool_ocean.list_tools()
+        return static_tools + dynamic_tools
 
     def call(self, tool_name: str, **kwargs: Any) -> MCPCallResult:
-        """Invoke a registered MCP tool by short name, with kwargs as parameters."""
-        if tool_name not in _TOOL_REGISTRY:
-            return MCPCallResult(
-                uri=f"{_MCP_PREFIX}{tool_name}",
-                success=False,
-                output=None,
-                error=(
-                    f"Tool '{tool_name}' is not registered. "
-                    f"Available: {list(_TOOL_REGISTRY)}"
-                ),
-            )
-        handler, spec = _TOOL_REGISTRY[tool_name]
-        try:
-            output = handler(**kwargs)
-            return MCPCallResult(uri=spec.uri, success=True, output=output)
-        except Exception as exc:
-            return MCPCallResult(
-                uri=spec.uri,
-                success=False,
-                output=None,
-                error=str(exc),
-            )
+        """Invoke a registered MCP tool (static or dynamic) by name."""
+        # 1. Check static registry first
+        if tool_name in _TOOL_REGISTRY:
+            handler, spec = _TOOL_REGISTRY[tool_name]
+            try:
+                output = handler(**kwargs)
+                return MCPCallResult(uri=spec.uri, success=True, output=output)
+            except Exception as exc:
+                return MCPCallResult(uri=spec.uri, success=False, output=None, error=str(exc))
+        
+        # 2. Check dynamic ToolOcean
+        dynamic_tool = self._tool_ocean.get_tool(tool_name)
+        if dynamic_tool:
+            handler, spec = dynamic_tool
+            try:
+                output = handler(**kwargs)
+                return MCPCallResult(uri=spec.uri, success=True, output=output)
+            except Exception as exc:
+                return MCPCallResult(uri=spec.uri, success=False, output=None, error=str(exc))
+
+        # 3. Not found
+        return MCPCallResult(
+            uri=f"{_MCP_PREFIX}{tool_name}",
+            success=False,
+            output=None,
+            error=f"Tool '{tool_name}' is not registered in static or dynamic registries.",
+        )
 
     def call_uri(self, uri: str, **kwargs: Any) -> MCPCallResult:
         """Invoke a tool by its full MCP URI (e.g. ``mcp://tooloo/file_read``)."""

@@ -784,3 +784,107 @@ DIMENSION_WEIGHTS_16D: dict[str, float] = {
 assert abs(sum(DIMENSION_WEIGHTS_16D.values()) - 16.0) < 0.01, (
     "DIMENSION_WEIGHTS_16D must sum to 16.0"
 )
+
+
+# ── Runtime Catalogue Management ─────────────────────────────────────────────
+
+def update_catalogue(new_benchmarks: list[SOTABenchmark]) -> int:
+    """Dynamically update SOTA_CATALOGUE with fresh benchmark data.
+
+    Merges new benchmarks by metric_name:
+      - Existing metrics: update sota_value, source, pub_year, notes
+        (preserves tooloo_current from existing entry)
+      - New metrics: append directly
+
+    Returns the number of benchmarks updated or added.
+
+    Thread-safety: this mutates the module-level list in-place.
+    In a multi-worker deployment each worker gets its own copy,
+    so no lock is needed.
+    """
+    existing_map: dict[str, int] = {
+        bm.metric_name: i for i, bm in enumerate(SOTA_CATALOGUE)
+    }
+    updated = 0
+
+    for new_bm in new_benchmarks:
+        if new_bm.metric_name in existing_map:
+            idx = existing_map[new_bm.metric_name]
+            old = SOTA_CATALOGUE[idx]
+            # Only update if the new data is more recent
+            if new_bm.pub_year >= old.pub_year:
+                SOTA_CATALOGUE[idx] = SOTABenchmark(
+                    metric_name=new_bm.metric_name,
+                    sota_value=new_bm.sota_value,
+                    unit=new_bm.unit,
+                    sota_model_or_system=new_bm.sota_model_or_system,
+                    tooloo_current=old.tooloo_current,  # preserve TooLoo estimate
+                    domain=new_bm.domain,
+                    source=new_bm.source,
+                    pub_year=new_bm.pub_year,
+                    notes=new_bm.notes,
+                )
+                updated += 1
+        else:
+            SOTA_CATALOGUE.append(new_bm)
+            existing_map[new_bm.metric_name] = len(SOTA_CATALOGUE) - 1
+            updated += 1
+
+    return updated
+
+
+def snapshot_catalogue() -> dict[str, Any]:
+    """Return a serialisable snapshot of the current SOTA catalogue.
+
+    Used by training telemetry to persist the catalogue state at each epoch.
+    """
+    return {
+        "benchmark_count": len(SOTA_CATALOGUE),
+        "domains": sorted({b.domain for b in SOTA_CATALOGUE}),
+        "overall_weighted_alignment": weighted_alignment(SOTA_CATALOGUE),
+        "benchmarks": [b.to_dict() for b in SOTA_CATALOGUE],
+    }
+
+
+def compute_16d_alignment_vector() -> dict[str, float]:
+    """Compute per-dimension alignment scores for training telemetry.
+
+    Maps each 16D dimension to the weighted alignment of benchmarks
+    in domains related to that dimension.
+
+    Returns dict[dimension_name, alignment_score] with scores in [0, 1].
+    """
+    # Map dimensions → relevant benchmark domains
+    _dim_domains: dict[str, list[str]] = {
+        "ROI":                  [DOMAIN_ENGINEERING, DOMAIN_PERFORMANCE],
+        "Safety":               [DOMAIN_SECURITY, DOMAIN_16D],
+        "Security":             [DOMAIN_SECURITY],
+        "Legal":                [DOMAIN_SECURITY],
+        "Human Considering":    [DOMAIN_INTELLIGENCE],
+        "Accuracy":             [DOMAIN_INTELLIGENCE, DOMAIN_EXECUTION],
+        "Efficiency":           [DOMAIN_PERFORMANCE, DOMAIN_EXECUTION],
+        "Quality":              [DOMAIN_VALIDATION, DOMAIN_ENGINEERING],
+        "Speed":                [DOMAIN_PERFORMANCE],
+        "Monitor":              [DOMAIN_ENGINEERING],
+        "Control":              [DOMAIN_ROUTING],
+        "Honesty":              [DOMAIN_16D, DOMAIN_INTELLIGENCE],
+        "Resilience":           [DOMAIN_VALIDATION, DOMAIN_EXECUTION],
+        "Financial Awareness":  [DOMAIN_PERFORMANCE, DOMAIN_ENGINEERING],
+        "Convergence":          [DOMAIN_16D, DOMAIN_VALIDATION],
+        "Reversibility":        [DOMAIN_16D],
+    }
+
+    result: dict[str, float] = {}
+    for dim, domains in _dim_domains.items():
+        benchmarks = []
+        for domain in domains:
+            benchmarks.extend(get_benchmarks_for_domain(domain))
+        # Deduplicate by metric name
+        seen: set[str] = set()
+        unique: list[SOTABenchmark] = []
+        for b in benchmarks:
+            if b.metric_name not in seen:
+                seen.add(b.metric_name)
+                unique.append(b)
+        result[dim] = weighted_alignment(unique) if unique else 0.850
+    return result

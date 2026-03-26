@@ -74,8 +74,10 @@ in a specific published research framework.
 from __future__ import annotations
 
 import json
+import math
 import re
 import threading
+import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -84,6 +86,11 @@ from typing import Any
 _PROFILE_PATH = (
     Path(__file__).resolve().parents[1] / "psyche_bank" / "buddy_profile.json"
 )
+
+# ── Ebbinghaus Spaced Repetition Constants ────────────────────────────────────
+# Optimal review intervals follow a doubling pattern.
+_SPACED_REP_INTERVALS_HOURS = [24, 48, 96, 192, 384, 768]  # 1d → 32d
+_RETENTION_STRENGTH_INIT = 1.0  # New anchor starts at full retention
 
 # ── Expertise vocabulary signals ──────────────────────────────────────────────
 # Expert token presence → positive delta; novice phrase presence → negative delta.
@@ -188,6 +195,9 @@ class UserProfile:
     # ISO-8601 UTC timestamp of last update
     last_updated: str = ""
 
+    # True if the user has explicitly confirmed their expertise level
+    expertise_calibrated: bool = False
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "expertise_score": self.expertise_score,
@@ -213,6 +223,7 @@ class UserProfile:
             credits=float(d.get("credits", 0.0)),
             session_count=int(d.get("session_count", 0)),
             last_updated=str(d.get("last_updated", "")),
+            expertise_calibrated=bool(d.get("expertise_calibrated", False)),
         )
 
     def expertise_label(self) -> str:
@@ -444,40 +455,51 @@ class UserProfileStore:
         with self._lock:
             p = self._profile
 
-            # 1. Expertise EMA
+            # 1. Expertise EMA with JUMP CORRECTION
+            #    If the expertise delta is large (|delta| > 0.15), we have a signal
+            #    that the EMA has diverged from reality (user shows sudden mastery
+            #    or sudden confusion). Apply a 3x stronger alpha for one update.
             target = p.expertise_score + turn.expertise_delta
             target = max(0.0, min(1.0, target))
+            alpha = self._EMA_ALPHA
+            if abs(turn.expertise_delta) > 0.15:
+                alpha = min(1.0, alpha * 3.0)  # Jump correction: faster response
             p.expertise_score = round(
-                p.expertise_score * (1 - self._EMA_ALPHA)
-                + target * self._EMA_ALPHA,
-                4,
+                p.expertise_score * (1 - alpha) + target * alpha, 4
             )
 
             # 2. Learning style
             if turn.style_signal and turn.style_signal != "direct":
                 p.preferred_style = turn.style_signal
 
-            # 3. New goals
+            # 3. New goals with AUTO-DECOMPOSITION
+            #    If a goal contains conjunction words ('and', 'then', 'also'),
+            #    split it into atomic sub-goals for better tracking.
             for goal in turn.goals_extracted:
-                if (
-                    goal not in p.active_goals
-                    and goal not in p.completed_goals
-                ):
-                    p.active_goals.append(goal)
+                sub_goals = self._decompose_goal(goal)
+                for sg in sub_goals:
+                    if sg not in p.active_goals and sg not in p.completed_goals:
+                        p.active_goals.append(sg)
             p.active_goals = p.active_goals[-10:]
 
-            # 4. Achievement → move oldest active goal to completed
+            # 4. Achievement → move best-matching active goal to completed
             if turn.achievement_detected and p.active_goals:
                 completed = p.active_goals.pop(0)
                 p.completed_goals.append(completed)
                 p.completed_goals = p.completed_goals[-20:]
 
-            # 5. Knowledge anchor
+            # 5. Knowledge anchor with SPACED REPETITION timestamps
             if turn.anchor_signal_detected and last_buddy_response:
                 anchor_text = last_buddy_response[:400]
-                p.knowledge_anchors.append(
-                    {"topic": intent, "anchor": anchor_text}
-                )
+                now_ts = time.time()
+                p.knowledge_anchors.append({
+                    "topic": intent,
+                    "anchor": anchor_text,
+                    "created_at": str(now_ts),
+                    "last_surfaced": str(now_ts),
+                    "surface_count": "0",
+                    "interval_idx": "0",
+                })
                 p.knowledge_anchors = p.knowledge_anchors[-20:]
 
             # 6. Intent frequency
@@ -490,6 +512,18 @@ class UserProfileStore:
 
             self._save()
             return UserProfile.from_dict(p.to_dict())
+
+    @staticmethod
+    def _decompose_goal(goal: str) -> list[str]:
+        """Split compound goals into atomic sub-goals.
+
+        'Build auth and deploy to staging' → ['Build auth', 'deploy to staging']
+        Simple goals are returned as-is.
+        """
+        # Split on conjunction patterns
+        parts = re.split(r"\b(?:and then|and also|and|then|also|plus)\b", goal, flags=re.IGNORECASE)
+        parts = [p.strip() for p in parts if p.strip() and len(p.strip()) > 5]
+        return parts if len(parts) > 1 else [goal]
 
     def complete_goal(self, goal_text: str) -> bool:
         """Explicitly mark the best-matching active goal as completed.
@@ -522,6 +556,96 @@ class UserProfileStore:
         with self._lock:
             self._profile.session_count += 1
             self._save()
+
+    def needs_calibration(self) -> bool:
+        """Return True if session_count >= 5 and expertise is not yet actively calibrated."""
+        with self._lock:
+            return self._profile.session_count >= 5 and not self._profile.expertise_calibrated
+
+    def apply_calibration_jump(self, new_score: float) -> None:
+        """Force the expertise score to a specific value and mark as calibrated."""
+        with self._lock:
+            self._profile.expertise_score = max(0.0, min(1.0, new_score))
+            self._profile.expertise_calibrated = True
+            self._save()
+
+    def get_due_anchors(self) -> list[dict[str, str]]:
+        """Return a list of knowledge anchors that are due for spaced repetition."""
+        due_anchors = []
+        now_ts = time.time()
+        with self._lock:
+            for anchor in self._profile.knowledge_anchors:
+                try:
+                    last_surfaced = float(anchor.get("last_surfaced", 0))
+                    interval_idx = int(anchor.get("interval_idx", 0))
+                    
+                    # Bound index
+                    idx = min(interval_idx, len(_SPACED_REP_INTERVALS_HOURS) - 1)
+                    target_interval_hours = _SPACED_REP_INTERVALS_HOURS[idx]
+                    
+                    hours_since = (now_ts - last_surfaced) / 3600.0
+                    if hours_since >= target_interval_hours:
+                        due_anchors.append(anchor)
+                except ValueError:
+                    continue
+        return due_anchors
+
+    def mark_anchor_surfaced(self, anchor_text: str) -> None:
+        """Update spaced repetition metrics for an anchor that was just reused."""
+        with self._lock:
+            for anchor in self._profile.knowledge_anchors:
+                if anchor.get("anchor") == anchor_text:
+                    try:
+                        idx = int(anchor.get("interval_idx", 0))
+                        count = int(anchor.get("surface_count", 0))
+                        
+                        anchor["interval_idx"] = str(idx + 1)
+                        anchor["surface_count"] = str(count + 1)
+                        anchor["last_surfaced"] = str(time.time())
+                        
+                    except ValueError:
+                        pass
+            self._save()
+
+    async def async_decompose_active_goals(self) -> None:
+        """Asynchronously decompose compound goals into sub-goals using LLM.
+        Operates on unparsed active_goals.
+        """
+        import asyncio
+        from engine.executor import JITExecutor
+        
+        goals_to_process = []
+        with self._lock:
+            for g in self._profile.active_goals:
+                if "{" not in g and "}" not in g:  # simple heuristic to see if it's structural
+                    goals_to_process.append(g)
+                    
+        if not goals_to_process:
+            return
+            
+        executor = JITExecutor()
+        for goal in goals_to_process:
+            prompt = (
+                f"Decompose the following high-level goal into an actionable JSON array of sub-goal strings. "
+                f"Goal to decompose: '{goal}'. Return ONLY raw JSON array of strings."
+            )
+            try:
+                # Fire and forget LLM parsing
+                res = await asyncio.to_thread(executor._generate_patch, prompt, "")
+                if res.startswith("[") and res.endswith("]"):
+                    import json
+                    subs = json.loads(res)
+                    if isinstance(subs, list) and len(subs) > 1:
+                        with self._lock:
+                            if goal in self._profile.active_goals:
+                                idx = self._profile.active_goals.index(goal)
+                                self._profile.active_goals.pop(idx)
+                                for sg in reversed(subs):
+                                    self._profile.active_goals.insert(idx, sg[:120])
+                                self._save()
+            except Exception:
+                pass
+
 
     def _load(self) -> UserProfile:
         if not self._path.exists():
@@ -636,13 +760,40 @@ def build_cognition_context(
             "Where naturally relevant, frame your answer as progress toward these."
         )
 
-    # ── Knowledge anchor re-use ────────────────────────────────────────────
+    # ── Knowledge anchor re-use with SPACED REPETITION ──────────────────────
     if profile.knowledge_anchors:
-        recent = profile.knowledge_anchors[-1]
-        anchor_preview = recent.get("anchor", "")[:150]
-        lines.append(
-            f"[COGNITION] Proven anchor for this user (re-use if relevant topic): "
-            f"\"{anchor_preview}\""
-        )
+        # Find the anchor that is most DUE for review (Ebbinghaus scheduling)
+        best_anchor = None
+        best_urgency = -1.0
+        now = time.time()
+        for anch in profile.knowledge_anchors:
+            last_surfaced = float(anch.get("last_surfaced", str(now)))
+            interval_idx = int(anch.get("interval_idx", "0"))
+            # Hours since last surfaced
+            hours_elapsed = (now - last_surfaced) / 3600
+            # Target interval from Ebbinghaus schedule
+            target_hours = _SPACED_REP_INTERVALS_HOURS[
+                min(interval_idx, len(_SPACED_REP_INTERVALS_HOURS) - 1)
+            ]
+            # Urgency: how overdue is this anchor? (>1.0 = due for review)
+            urgency = hours_elapsed / max(target_hours, 1)
+            if urgency > best_urgency:
+                best_urgency = urgency
+                best_anchor = anch
+
+        if best_anchor and best_urgency >= 0.8:  # At least 80% of interval elapsed
+            anchor_preview = best_anchor.get("anchor", "")[:150]
+            topic = best_anchor.get("topic", "unknown")
+            lines.append(
+                f"[COGNITION] Spaced repetition DUE — re-surface this anchor "
+                f"(topic: {topic}): \"{anchor_preview}\""
+            )
+        elif best_anchor:
+            # Not due yet, but still provide the most recent anchor as optional
+            anchor_preview = profile.knowledge_anchors[-1].get("anchor", "")[:150]
+            lines.append(
+                f"[COGNITION] Proven anchor (re-use if relevant): "
+                f"\"{anchor_preview}\""
+            )
 
     return "\n".join(lines)

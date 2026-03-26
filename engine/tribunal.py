@@ -1,48 +1,3 @@
-# ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
-# Cycle: 2026-03-20T19:59:29.189756+00:00
-# Component: tribunal  Source: engine/tribunal.py
-# Improvement signals from JIT SOTA booster:
-#  [1] Extend engine/tribunal.py: OWASP Top 10 2025 edition promotes Broken Object-
-#     Level Authorisation to the #1 priority
-#  [2] Extend engine/tribunal.py: OSS supply-chain audits (Sigstore + Rekor
-#     transparency log) are required in regulated environments
-#  [3] Extend engine/tribunal.py: CSPM tools (Wiz, Orca, Prisma Cloud) provide real-
-#     time cloud posture scoring in 2026
-#  [4] Extend engine/tribunal.py: SOTA Tool: OpenAI's "Assistant API" with fine-tuned GPT-4 for persistent state management and context window expansion, enabling continuous ideation threads.
-#  [5] Extend engine/tribunal.py: Pattern: Event-driven architecture leveraging webhooks from user activity monitoring systems (e.g., IDE integrations) to trigger context updates for ongoing ideation sessions.
-#  [6] Extend engine/tribunal.py: Risk: Data drift in fine-tuned models due to evolving user ideation patterns, requiring proactive monitoring and retraining strategies to maintain relevance.
-#  [7] Extend engine/tribunal.py: Tool: Generative Adversarial Networks (GANs) integrated with Reinforcement Learning (RL) for dynamic ideation theme generation and suggestion refinement based on real-time trend analysis.
-#  [8] Extend engine/tribunal.py: Pattern: Federated Learning for ideation data aggregation, preserving user privacy while enabling collaborative, distributed ideation across multiple datasets and organizations.
-#  [9] Extend engine/tribunal.py: Risk: Amplification of existing biases or generation of novel, unintended harmful content through insufficiently diverse training data or adversarial manipulation of ideation prompts.
-# [10] Extend engine/tribunal.py: SOTA Tool: GPT-4 Turbo (or its successor) for generative background narrative synthesis.
-# [11] Extend engine/tribunal.py: Pattern: Prompt engineering with iterative refinement loops, leveraging LLM feedback for concept expansion.
-# [12] Extend engine/tribunal.py: Risk: Hallucination generation or factual inaccuracies in synthesized background if not rigorously fact-checked against reliable external data sources.
-# [13] Extend engine/tribunal.py: SOTA Tool: GPT-4 Turbo's "Function Calling" feature for structured output generation in ideation workflows.
-# [14] Extend engine/tribunal.py: Pattern: Incremental refinement loops using LLM-generated hypotheses and user feedback for focused ideation.
-# [15] Extend engine/tribunal.py: Risk: Over-reliance on synthetic data for ideation leading to a lack of novel or truly disruptive concepts.
-# ─────────────────────────────────────────────────────────────────
-"""
-engine/tribunal.py — Automated continuous auditing tools, blockchain-based immutable audit trails, and real-time risk assessment frameworks.
-
-Component to improve: tribunal at engine/tribunal.py
-Implemented suggestions/requirements:
-- Automated continuous auditing tools leveraging AI for anomaly detection in log data.
-- Blockchain-based immutable audit trails for enhanced data integrity and tamper-proofing.
-- Real-time risk assessment frameworks integrating machine learning for proactive threat identification.
-
-Standalone — zero imports outside engine/. No LLM, no network.
-
-OWASP-aligned poison patterns:
-  - Hardcoded secrets (SECRET=, API_KEY=, PASSWORD=TOKEN= with inline values)
-  - String-concatenation SQL injection
-  - eval() / exec() / __import__() in generated logic
-  - Command injection via os.system / subprocess
-
-On poison detection:
-  1. Redact logic_body with a tombstone comment.
-  2. Write a new .cog.json rule to psyche_bank/ via PsycheBank.
-  3. Return TribunalResult(poison_detected=True, heal_applied=True).
-"""
 from __future__ import annotations
 
 import logging
@@ -51,10 +6,128 @@ import asyncio
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Set, Optional, Tuple
+import datetime
+import json
+import hashlib
 
-# Placeholder for OpenAI Assistant API interaction. In a real implementation,
-# this would involve importing and configuring the OpenAI client.
-# For demonstration purposes, we'll simulate its behavior.
+# --- SOTA EXTENSIONS AS PER REQUIREMENTS ---
+
+# Requirement: Emergence of decentralized knowledge graph frameworks (e.g., IPFS-backed semantic webs)
+# for real-time, verifiable ideation data sourcing and integration.
+class DecentralizedKnowledgeGraphConnector:
+    """
+    Simulates a connector to a decentralized knowledge graph (e.g., an IPFS-backed
+    semantic web) for sourcing verifiable ideation data.
+    """
+    def __init__(self):
+        # Simulate a small, in-memory semantic web.
+        # Data is structured as (subject, predicate, object) triples.
+        self._graph_data: Dict[str, List[Tuple[str, str, str]]] = {
+            "ai_trends": [
+                ("generative_ai", "has_application", "code_generation"),
+                ("code_llama_2", "is_a", "generative_ai"),
+                ("code_llama_2", "released_by", "meta"),
+                ("federated_learning", "enables", "privacy_preserving_ml"),
+                ("privacy_preserving_ml", "is_subcategory_of", "responsible_ai"),
+            ],
+            "market_shifts": [
+                ("decentralized_finance", "disrupts", "traditional_banking"),
+                ("semantic_web", "related_to", "ipfs"),
+                ("ipfs", "is_a", "decentralized_storage"),
+            ]
+        }
+        logger.info("DecentralizedKnowledgeGraphConnector initialized with simulated semantic web data.")
+
+    async def query(self, topic: str, subject_filter: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Queries the simulated knowledge graph and returns data with verifiable
+        content identifiers (CIDs) mimicking IPFS.
+        """
+        logger.debug(f"Querying decentralized knowledge graph for topic: {topic}")
+        await asyncio.sleep(0.05) # Simulate network latency
+        triples = self._graph_data.get(topic, [])
+        if subject_filter:
+            triples = [t for t in triples if t[0] == subject_filter]
+
+        if not triples:
+            return {"data": [], "cid": None, "verified": False}
+
+        # Simulate creating a verifiable content identifier (CID)
+        data_str = json.dumps(triples, sort_keys=True)
+        cid = "z" + hashlib.sha256(data_str.encode('utf-8')).hexdigest() # 'z' prefix for simulation
+
+        logger.info(f"Sourced {len(triples)} triples for topic '{topic}'. Verifiable CID: {cid}")
+        return {"data": triples, "cid": cid, "verified": True}
+
+# Requirement: Increased adoption of federated learning for privacy-preserving model updates
+# on sensitive ideation datasets, mitigating data leakage risks.
+class FederatedLearningAggregator:
+    """
+    Simulates a federated learning system for privacy-preserving model updates.
+    It aggregates updates from multiple clients without accessing their raw,
+    sensitive ideation data.
+    """
+    def __init__(self):
+        # The global model here is a simplified representation, e.g., aggregated concept scores.
+        self.global_model_weights: Dict[str, float] = {
+            "ai_ethics": 0.5,
+            "sustainability": 0.3,
+            "decentralization": 0.1,
+        }
+        logger.info("FederatedLearningAggregator initialized with a global model.")
+
+    async def perform_federated_round(self, client_updates: List[Dict[str, float]], learning_rate: float = 0.1):
+        """
+        Aggregates model updates (not raw data) from clients using Federated Averaging (FedAvg).
+        This ensures privacy as sensitive datasets remain on client devices.
+        """
+        if not client_updates:
+            logger.warning("Federated round skipped: No client updates provided.")
+            return
+
+        logger.info(f"Starting federated aggregation round with {len(client_updates)} client updates.")
+        await asyncio.sleep(0.1) # Simulate aggregation compute time
+
+        # This simulates the core of Federated Averaging: averaging the weights/gradients.
+        aggregated_deltas: Dict[str, float] = {}
+        total_updates: Dict[str, int] = {}
+
+        for update in client_updates:
+            for concept, delta in update.items():
+                aggregated_deltas[concept] = aggregated_deltas.get(concept, 0.0) + delta
+                total_updates[concept] = total_updates.get(concept, 0) + 1
+
+        # Update the global model
+        for concept, total_delta in aggregated_deltas.items():
+            average_delta = total_delta / total_updates[concept]
+            current_weight = self.global_model_weights.get(concept, 0.0)
+            # Simple gradient descent-style update
+            self.global_model_weights[concept] = current_weight + (learning_rate * average_delta)
+
+        logger.info(f"Global model updated via federated learning. New weights: {self.global_model_weights}")
+
+# Simulates a client participating in federated learning
+async def run_federated_client_training(client_id: int, sensitive_data: Dict) -> Dict[str, float]:
+    """Simulates a local training round on a client's private data."""
+    logger.debug(f"Client {client_id}: Starting local training on private data.")
+    await asyncio.sleep(0.2) # Simulate local training time
+    # In a real scenario, this would train a model and generate weight deltas.
+    # Here, we simulate generating "insights" as deltas.
+    # The important part is that `sensitive_data` never leaves the client.
+    model_update = {}
+    if "ethical concerns" in sensitive_data["notes"]:
+        model_update["ai_ethics"] = 0.2 # Positive update
+    if "green tech" in sensitive_data["ideas"]:
+        model_update["sustainability"] = 0.1
+    if "blockchain" in sensitive_data["ideas"]:
+        model_update["decentralization"] = 0.3
+    if "over-monetization" in sensitive_data["notes"]:
+        model_update["ai_ethics"] = model_update.get("ai_ethics", 0.0) - 0.1 # Negative update
+
+    logger.debug(f"Client {client_id}: Generated model update (delta): {model_update}")
+    return model_update
+
+# Placeholder for OpenAI library interaction.
 try:
     # Using the latest OpenAI library structure
     from openai import OpenAI
@@ -64,15 +137,8 @@ except ImportError:
 
 from engine.psyche_bank import CogRule
 
-from engine.psyche_bank import CogRule
-    # logger is defined below, so use a placeholder or define it here if needed
-    # logger = logging.getLogger(__name__) # Moved below
-    # logger.warning("OpenAI library not found. Assistant API integration will be simulated.")
-
 # Event-driven components (simulated)
-# In a real scenario, these would be webhooks or message queues.
 class EventBus:
-    """Simulates an event bus for receiving user activity webhooks."""
     def __init__(self):
         self._listeners: Dict[str, List[callable]] = {}
 
@@ -80,471 +146,404 @@ class EventBus:
         if event_type not in self._listeners:
             self._listeners[event_type] = []
         self._listeners[event_type].append(listener)
-        # logger is defined below, so this will be called after its definition
-        # logger.debug(f"Subscribed listener to event: {event_type}")
+        logger.debug(f"Subscribed listener to event: {event_type}")
 
     async def publish(self, event_type: str, payload: Any):
         if event_type in self._listeners:
-            # logger is defined below
-            # logger.debug(f"Publishing event: {event_type} with payload: {payload}")
+            logger.debug(f"Publishing event: {event_type} with payload: {payload}")
             for listener in self._listeners[event_type]:
                 try:
-                    # Ensure listeners are async if they perform async operations
+                    # Support both sync and async listeners
                     if asyncio.iscoroutinefunction(listener):
+                        # Schedule as a task to avoid blocking the event bus
                         asyncio.create_task(listener(payload))
                     else:
-                        listener(payload) # For synchronous listeners
+                        listener(payload)
                 except Exception as e:
-                    # logger is defined below
-                    # logger.error(f"Error publishing event {event_type} to listener: {e}")
-                    pass # Avoid breaking event propagation if one listener fails
+                    logger.error(f"Error publishing event {event_type} to listener: {e}", exc_info=True)
         else:
-            # logger is defined below
-            # logger.debug(f"No listeners for event type: {event_type}")
-            pass
+            logger.debug(f"No listeners for event type: {event_type}")
 
-# Global event bus instance
-event_bus = EventBus()
-
-# Simulated OpenAI Assistant API client and persistent context store
-class SimulatedAssistantAPI:
+# Requirement: Advancements in LLM fine-tuning, e.g., Meta's Code Llama 2 (2026 iteration)
+# leveraging multi-modal input for more robust background refresh.
+class SimulatedCodeLlama2026API:
+    """
+    Simulates an advanced code generation assistant, like a future iteration of
+    Code Llama (2026), with multi-modal input capabilities for robust context
+    refresh and analysis.
+    """
     def __init__(self):
-        # Using a placeholder for Assistant ID as per OpenAI's Assistant API structure.
-        self._assistant_id = "asst_simulated_assistant_id_12345"
-        self._threads: Dict[str, Dict[str, Any]] = {} # thread_id -> thread_data
-        # Using a higher value for context window simulation as per GPT-4 Turbo capabilities
-        self._thread_context_window_size = 128000 # GPT-4 Turbo context window
-        self._max_threads = 100 # Example limit to prevent runaway memory
+        self._assistant_id = "asst_simulated_codellama_2026_id_67890"
+        self._threads: Dict[str, Dict[str, Any]] = {}
+        self._thread_context_window_size = 256000 # Simulating larger context windows
+        self._max_threads = 100
 
     async def create_thread(self, **kwargs) -> Dict[str, Any]:
-        # Generate a unique thread ID.
         thread_id = f"thread_{len(self._threads)}_{hash(asyncio.get_running_loop().time())}"
-
         if len(self._threads) >= self._max_threads:
-            # Simple eviction policy: remove oldest thread to manage resource usage.
             oldest_thread_id = list(self._threads.keys())[0]
             del self._threads[oldest_thread_id]
-            # logger is defined below
-            # logger.warning(f"Max threads reached, evicted thread: {oldest_thread_id}")
-
-        # Initialize thread with messages and any metadata provided.
-        self._threads[thread_id] = {"messages": [], **kwargs}
-        # logger is defined below
-        # logger.debug(f"Created new thread: {thread_id}")
+            logger.warning(f"Max threads reached, evicted thread: {oldest_thread_id}")
+        self._threads[thread_id] = {"messages": [], "modal_context": [], **kwargs}
+        logger.debug(f"Created new CodeLlama-2026 thread: {thread_id}")
         return {"id": thread_id}
 
     async def get_thread(self, thread_id: str) -> Optional[Dict[str, Any]]:
         return self._threads.get(thread_id)
 
-    async def add_message_to_thread(self, thread_id: str, role: str, content: str) -> None:
+    async def add_message_to_thread(self, thread_id: str, role: str, content: str, modal_data: Optional[Dict] = None) -> None:
         thread = await self.get_thread(thread_id)
         if thread:
             thread["messages"].append({"role": role, "content": content})
-            # Simulate context window management: keep only recent messages if exceeding limit.
-            # This mimics how LLMs manage long contexts by prioritizing recent interactions.
+            if modal_data:
+                # Store multi-modal data separately in the thread's context
+                thread["modal_context"].append(modal_data)
+                logger.debug(f"Added multi-modal data to thread {thread_id}: {modal_data.get('type')}")
+            # Simple context window management
             if len(thread["messages"]) > self._thread_context_window_size:
                 thread["messages"] = thread["messages"][-self._thread_context_window_size:]
-            # logger is defined below
-            # logger.debug(f"Added message to thread {thread_id}: {role} - {content[:50]}...")
+            logger.debug(f"Added message to thread {thread_id}: {role} - {content[:50]}...")
         else:
-            # logger is defined below
-            # logger.warning(f"Thread not found for adding message: {thread_id}")
-            pass
+            logger.warning(f"Thread not found for adding message: {thread_id}")
 
     async def run_assistant_on_thread(self, thread_id: str, prompt: str, tool_choice: Optional[str] = None) -> Dict[str, Any]:
         """
-        Simulates the Assistant API's run function.
-        This is where the core LLM generation and iterative refinement happens.
-        Incorporates Function Calling for structured output.
+        Simulates the Code Llama 2026 run, incorporating multi-modal context
+        and advanced function calling.
         """
         thread = await self.get_thread(thread_id)
         if not thread:
             return {"error": "Thread not found."}
 
-        # Add the user's prompt to the conversation history.
+        # Add user's prompt, which might include implicit modal references
         await self.add_message_to_thread(thread_id, "user", prompt)
-        # logger is defined below
-        # logger.debug(f"Running assistant on thread {thread_id} with prompt: {prompt[:50]}...")
+        logger.debug(f"Running CodeLlama-2026 on thread {thread_id} with prompt: {prompt[:50]}...")
 
-        # --- SOTA Tool: GPT-4 Turbo for Background Narrative Synthesis & Function Calling ---
-        # --- Pattern: Incremental Refinement Loops (Prompt Engineering & User Feedback) ---
-        # The simulation here aims to represent how GPT-4 Turbo would synthesize
-        # background narrative, incorporating context from the thread and using
-        # iterative refinement based on the prompt. It also simulates Function Calling
-        # for structured output generation.
+        # --- Multi-modal Context Synthesis ---
+        simulated_modal_analysis = ""
+        if thread.get("modal_context"):
+            for modal_item in thread["modal_context"]:
+                if modal_item.get('type') == 'image_url':
+                    simulated_modal_analysis += f" [System Note: Analysis of image at {modal_item.get('url')} suggests it is a system architecture diagram depicting a microservices-based approach.]"
+                elif modal_item.get('type') == 'data_viz':
+                    simulated_modal_analysis += f" [System Note: The provided data visualization shows a 30% increase in user engagement after the last feature launch.]"
+            thread["modal_context"] = []
 
-        # Combine thread messages to form the context for the LLM.
         context_messages = thread["messages"]
-
-        # Example of a sophisticated prompt structure that leverages Function Calling.
-        # The prompt would instruct the LLM to synthesize a narrative and, if requested,
-        # use specific tools (functions) to provide structured output.
-        # The `tool_choice` parameter would guide whether to use a specific function.
-
-        # For simulation, we'll create a response that reflects narrative generation
-        # and potentially a structured output if a function call is indicated.
-
-        # Placeholder for function definitions. In a real scenario, these would be actual Python functions
-        # and their definitions provided to the Assistant API.
-        available_functions = {
-            "generate_structured_concept": lambda concept_name, description: {"concept_name": concept_name, "description": description},
-            "analyze_risk_factor": lambda factor_name, severity, mitigation_strategy: {"factor": factor_name, "severity": severity, "mitigation": mitigation_strategy},
-            "generate_analysis_report": lambda findings: {"report": findings}, # Hypothetical tool for reporting
-            "synthesize_confirmation": lambda message: {"confirmation": message} # Hypothetical tool for confirmations
-        }
+        full_context_for_llm = " ".join([m["content"] for m in context_messages]) + simulated_modal_analysis
 
         simulated_response_content = ""
-        simulated_function_call = None
 
-        # --- Function Calling Simulation ---
-        # Based on the prompt and context, decide if a function call is appropriate.
-        # This is a highly simplified simulation. A real LLM would decide this based on its training.
-        if tool_choice == "generate_structured_concept" and "generate a structured concept" in prompt.lower():
-            # Simulate function call for structured output
-            simulated_function_call = {
-                "name": "generate_structured_concept",
-                "arguments": {
-                    "concept_name": "AI-Powered Predictive Maintenance",
-                    "description": "A system that uses AI to predict equipment failures before they occur."
-                }
-            }
-            # In a real scenario, the LLM would return this structure.
-            # We then call the actual function with these arguments.
-            try:
-                function_result = available_functions["generate_structured_concept"](**simulated_function_call["arguments"])
-                simulated_response_content = f"Structured Concept Generated: {function_result}"
-                await self.add_message_to_thread(thread_id, "assistant", simulated_response_content)
-                # Add tool output to the thread for continued reasoning.
-                await self.add_message_to_thread(thread_id, "tool", str(function_result))
-
-            except Exception as e:
-                logger.error(f"Error executing simulated function call: {e}")
-                simulated_response_content = f"Error during function execution: {e}"
-                await self.add_message_to_thread(thread_id, "assistant", simulated_response_content)
-
-        elif tool_choice == "analyze_risk_factor" and "analyze risk factor" in prompt.lower():
-            # Simulate another function call
-            simulated_function_call = {
-                "name": "analyze_risk_factor",
-                "arguments": {
-                    "factor_name": "Data drift in LLM models",
-                    "severity": "high",
-                    "mitigation_strategy": "Proactive monitoring and retraining cycles."
-                }
-            }
-            try:
-                function_result = available_functions["analyze_risk_factor"](**simulated_function_call["arguments"])
-                simulated_response_content = f"Risk Factor Analyzed: {function_result}"
-                await self.add_message_to_thread(thread_id, "assistant", simulated_response_content)
-                await self.add_message_to_thread(thread_id, "tool", str(function_result))
-            except Exception as e:
-                logger.error(f"Error executing simulated function call: {e}")
-                simulated_response_content = f"Error during function execution: {e}"
-                await self.add_message_to_thread(thread_id, "assistant", simulated_response_content)
-
-        elif tool_choice == "generate_analysis_report" and "Generate a concise report of the findings" in prompt:
-            # Simulate report generation
-            # Extract findings from recent assistant/tool messages or assume a structure
-            # For simulation, we'll create a mock finding.
-            findings_from_thread = [msg["content"] for msg in thread["messages"][-4:] if msg["role"] in ("assistant", "tool")] # Simplified lookback
-            simulated_findings = "\n".join(findings_from_thread) if findings_from_thread else "No specific findings to report."
-
-            simulated_function_call = {
-                "name": "generate_analysis_report",
-                "arguments": {
-                    "findings": f"Analysis Summary: {simulated_findings}"
-                }
-            }
-            try:
-                function_result = available_functions["generate_analysis_report"](**simulated_function_call["arguments"])
-                simulated_response_content = f"Analysis Report Generated: {function_result['report']}"
-                await self.add_message_to_thread(thread_id, "assistant", simulated_response_content)
-                await self.add_message_to_thread(thread_id, "tool", str(function_result))
-            except Exception as e:
-                logger.error(f"Error executing simulated function call: {e}")
-                simulated_response_content = f"Error during function execution: {e}"
-                await self.add_message_to_thread(thread_id, "assistant", simulated_response_content)
-
-        elif tool_choice == "synthesize_confirmation" and "Synthesize a confirmation message" in prompt:
-            # Simulate confirmation synthesis
-            # The prompt itself contains the message to be synthesized.
-            confirmation_message = prompt.split("Synthesize a confirmation message.")[-1].strip()
-            simulated_function_call = {
-                "name": "synthesize_confirmation",
-                "arguments": {
-                    "message": confirmation_message
-                }
-            }
-            try:
-                function_result = available_functions["synthesize_confirmation"](**simulated_function_call["arguments"])
-                simulated_response_content = f"Confirmation Synthesized: {function_result['confirmation']}"
-                await self.add_message_to_thread(thread_id, "assistant", simulated_response_content)
-                await self.add_message_to_thread(thread_id, "tool", str(function_result))
-            except Exception as e:
-                logger.error(f"Error executing simulated function call: {e}")
-                simulated_response_content = f"Error during function execution: {e}"
-                await self.add_message_to_thread(thread_id, "assistant", simulated_response_content)
-
-        else:
-            # Default narrative synthesis if no specific tool is called or indicated.
-            # This simulates a richer background narrative generation.
-            # --- SOTA Tool: GPT-4 Turbo for generative background narrative synthesis [10] ---
-            response_content_narrative = (
-                f"Simulated GPT-4 Turbo narrative synthesis for context related to '{prompt[:70]}...'. "
-                "The synthesized background narrative has been generated, "
-                "considering the iterative refinement of concepts based on the conversation's evolution. "
-                "Further details can be requested to expand on specific elements. "
-                "This synthesis can also leverage function calling for structured outputs."
+        if "robust background refresh" in prompt.lower():
+            simulated_response_content = (
+                f"Simulated CodeLlama-2026 background refresh synthesis.\n"
+                f"Thread Summary: The conversation revolves around an engram, with recent user activity noted. "
+                f"The context includes {len(context_messages)} messages.\n"
+                f"Multi-modal Analysis: {simulated_modal_analysis if simulated_modal_analysis else 'No new modal data.'}\n"
+                "This refresh provides a comprehensive state-of-the-art summary for continued contextual generation."
             )
-            simulated_response_content = response_content_narrative
             await self.add_message_to_thread(thread_id, "assistant", simulated_response_content)
 
-        # The Assistant API typically returns a message object or a Run object with status.
-        # For this simulation, we return the content and the potential function call.
+        # Risk: Adversarial AI & XAI - Enhanced simulation for Explainable AI
+        elif "JSON object" in prompt and "is_anomalous" in prompt:
+             simulated_response_content = "Simulated AI analysis result."
+             # The prompt from XAIAnomalyDetector is designed to trigger this.
+             # This block simulates the LLM detecting an adversarial pattern.
+             is_adversarial = "evasion" in full_context_for_llm or "covering their tracks" in full_context_for_llm
+             if is_adversarial or len([s for s in context_messages if "passed: false" in s.get('content','').lower()]) > 2:
+                  xai_output = {
+                      "is_anomalous": True,
+                      "risk_score": 9,
+                      "summary": "Potential adversarial activity detected: log manipulation attempt.",
+                      "explanation": {
+                          "chain_of_thought": "The sequence shows rapid, repeated failed evaluations followed by an attempt to modify logging configuration. This pattern is highly consistent with an adversary trying to cover their tracks after a failed exploit attempt.",
+                          "contributing_factors": [
+                              {"event_type": "EVALUATION_RESULT", "details": "passed: false", "weight": 0.4, "reason": "High frequency of failures (4 in 30s) raises suspicion."},
+                              {"event_type": "CONFIG_UPDATE", "details": "target: logging_level", "weight": 0.5, "reason": "Attempting to reduce log verbosity immediately after failures is a classic evasion tactic."}
+                          ]
+                      }
+                  }
+                  simulated_response_content += json.dumps(xai_output)
+             else:
+                  simulated_response_content += '{"is_anomalous": false, "risk_score": 1, "summary": "Activity appears normal."}'
+        else:
+            # Default narrative synthesis
+            response_narrative = (
+                f"Simulated CodeLlama-2026 narrative synthesis for prompt '{prompt[:50]}...'. "
+                f"Context considers text and modal data ({'present' if simulated_modal_analysis else 'not present'}). "
+                "The synthesized output reflects a deep understanding of code, architecture, and user intent."
+            )
+            simulated_response_content = response_narrative
+            await self.add_message_to_thread(thread_id, "assistant", simulated_response_content)
+
         return {
             "content": simulated_response_content,
-            "function_call": simulated_function_call,
+            "function_call": None,
             "thread_id": thread_id
         }
 
-# Global simulated assistant API
-simulated_assistant = SimulatedAssistantAPI()
+# --- NEW/EXTENDED COMPONENTS: Continuous Auditing, Zero-Trust, and XAI ---
 
+# Requirement: Blockchain-based immutable audit trails for enhanced data integrity and tamper-proofing.
+class SecureAuditLedger:
+    """
+    Simulates an immutable, hash-chained audit ledger, enforcing a zero-trust
+    pattern for audit trail integrity. Each entry is cryptographically linked
+    to the previous one, mimicking a distributed ledger or secure log.
+    """
+    def __init__(self):
+        self.chain: List[Dict[str, Any]] = []
+        self._create_genesis_block()
+        logger.info("SecureAuditLedger initialized. Enforcing Zero-Trust for audit trails.")
 
+    def _create_genesis_block(self):
+        genesis_block = {
+            "index": 0,
+            "timestamp": str(datetime.datetime.now(datetime.timezone.utc).isoformat()),
+            "event_type": "GENESIS",
+            "details": "Ledger created",
+            "previous_hash": "0"
+        }
+        genesis_block["hash"] = self._calculate_hash(genesis_block)
+        self.chain.append(genesis_block)
+
+    def _calculate_hash(self, block: Dict[str, Any]) -> str:
+        """Calculates the SHA-256 hash of a block."""
+        block_string = json.dumps({k: v for k, v in block.items() if k != 'hash'}, sort_keys=True).encode('utf-8')
+        return hashlib.sha256(block_string).hexdigest()
+
+    def get_latest_hash(self) -> str:
+        """Returns the hash of the most recent block in the chain."""
+        return self.chain[-1]["hash"]
+
+    async def record_event(self, event_type: str, details: Dict[str, Any]):
+        """
+        Records a new event to the immutable ledger, linking it to the previous block.
+        This is the core of the Zero-Trust pattern for log integrity.
+        """
+        await asyncio.sleep(0.01)  # Simulate write latency
+        previous_hash = self.get_latest_hash()
+        new_block = {
+            "index": len(self.chain),
+            "timestamp": str(datetime.datetime.now(datetime.timezone.utc).isoformat()),
+            "event_type": event_type,
+            "details": details,
+            "previous_hash": previous_hash
+        }
+        new_block["hash"] = self._calculate_hash(new_block)
+        self.chain.append(new_block)
+        logger.debug(f"SECURE_LEDGER: Recorded event '{event_type}' with hash {new_block['hash']}.")
+
+    async def verify_integrity(self) -> bool:
+        """Verifies the integrity of the entire ledger by checking all hash links."""
+        for i in range(1, len(self.chain)):
+            current_block = self.chain[i]
+            previous_block = self.chain[i-1]
+            if current_block['previous_hash'] != previous_block['hash']:
+                logger.error(f"INTEGRITY FAIL: Chain broken at block {i}. Prev hash mismatch.")
+                return False
+            if self._calculate_hash(current_block) != current_block['hash']:
+                logger.error(f"INTEGRITY FAIL: Hash mismatch for block {i}. Data tampered.")
+                return False
+        logger.info("Secure ledger integrity check PASSED.")
+        return True
+
+# Requirement: Automated continuous auditing tools leveraging AI for anomaly detection in log data.
+class AuditTrailMonitor:
+    """
+    Simulates the real-time detection engine of a continuous auditing platform
+    (e.g., Splunk Enterprise Security, Sentinel). It ingests audit events, applies
+    detection logic, and triggers responses via the SOAR connector.
+    """
+    def __init__(self, event_bus: EventBus, ai_detector: 'XAIAnomalyDetector', audit_ledger: SecureAuditLedger):
+        self.event_bus = event_bus
+        self.ai_detector = ai_detector
+        self.audit_ledger = audit_ledger
+        self.event_history: Dict[str, List[Dict[str, Any]]] = {}
+        self.history_limit = 20
+        self.event_bus.subscribe("AUDIT_EVENT", self.handle_audit_event)
+        logger.info("Audit Trail Monitor initialized. Acting as real-time detection engine.")
+
+    async def handle_audit_event(self, event: Dict[str, Any]):
+        # 1. Enforce Zero-Trust: Record event in the immutable ledger *before* processing.
+        await self.audit_ledger.record_event(event.get('type', 'UNKNOWN'), event.get('details', {}))
+
+        # 2. Ingest and maintain a buffer for analysis.
+        actor_id = event.get('actor_id', 'system')
+        if actor_id not in self.event_history:
+            self.event_history[actor_id] = []
+        self.event_history[actor_id].append(event)
+        if len(self.event_history[actor_id]) > self.history_limit:
+            self.event_history[actor_id].pop(0)
+
+        # 3. Detect anomalies in the buffered activity.
+        await self.detect_anomalies(actor_id)
+
+    async def detect_anomalies(self, actor_id: str):
+        history = self.event_history[actor_id]
+
+        # Use sophisticated, XAI-based detection for adversarial patterns.
+        xai_anomaly = await self.ai_detector.analyze_behavior(actor_id, history)
+        if xai_anomaly and xai_anomaly.get("is_anomalous"):
+            anomaly_payload = {
+                "actor_id": actor_id,
+                "xai_result": xai_anomaly,
+                "events": [e.get('details') for e in history]
+            }
+            await self.event_bus.publish("ANOMALY_DETECTED", anomaly_payload)
+
+# Requirement: Real-time risk assessment frameworks integrating machine learning for proactive threat identification.
+class XAIAnomalyDetector:
+    """
+    Uses an advanced AI model to detect anomalies with a focus on adversarial
+    patterns, providing explainable results (XAI) to counter sophisticated threats.
+    """
+    def __init__(self, assistant_api: SimulatedCodeLlama2026API):
+        self.assistant_api = assistant_api
+        logger.info("XAI Anomaly Detector initialized to counter adversarial AI.")
+
+    async def analyze_behavior(self, actor_id: str, event_history: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """Analyzes event history for adversarial patterns and provides XAI output."""
+        if len(event_history) < 3:
+            return None
+
+        # Sanitize details for the prompt to be concise and effective
+        event_summaries = []
+        for e in event_history:
+            details = e.get('details', {})
+            summary = f"type={e.get('type')}, passed={details.get('passed')}, slug={details.get('slug')}"
+            event_summaries.append(f"[{e.get('timestamp')}] {summary}")
+        
+        prompt = (
+            f"Analyze the following sequence of actions for actor '{actor_id}' to detect potential adversarial behavior. "
+            "Focus on patterns indicating evasion, obfuscation, or log manipulation, such as rapid failures followed by configuration changes, or attempts to cover their tracks. "
+            f"Event sequence: {'; '.join(event_summaries)}. "
+            "Respond ONLY with a JSON object. If anomalous, the JSON must include 'is_anomalous': true, a 'risk_score' (0-10), a 'summary' of the threat, and a structured 'explanation' object (XAI). Otherwise, 'is_anomalous': false."
+        )
+
+        try:
+            temp_thread = await self.assistant_api.create_thread()
+            response = await self.assistant_api.run_assistant_on_thread(temp_thread['id'], prompt)
+            content = response.get('content', '')
+
+            json_match = re.search(r'{.*}', content, re.DOTALL)
+            if json_match:
+                analysis_result = json.loads(json_match.group(0))
+                if analysis_result.get("is_anomalous"):
+                    logger.warning(f"XAI: Detected anomalous behavior for actor '{actor_id}'. Risk: {analysis_result.get('risk_score')}")
+                    return analysis_result
+        except (json.JSONDecodeError, Exception) as e:
+            logger.error(f"XAI Anomaly Detector failed to parse AI response: {e}\nResponse: {content}")
+        return None
+
+# Tool: Automated Continuous Auditing Platform (Detection & Response)
+class SOARConnector:
+    """
+    Simulates a Security Orchestration, Automation, and Response (SOAR) platform
+    (like Microsoft Sentinel Playbooks) to automate incident response.
+    """
+    def __init__(self, event_bus: EventBus, audit_ledger: SecureAuditLedger):
+        self.event_bus = event_bus
+        self.audit_ledger = audit_ledger
+        self.event_bus.subscribe("ANOMALY_DETECTED", self.handle_anomaly)
+        self.event_bus.subscribe("HIGH_CONFIDENCE_THREAT_DETECTED", self.handle_high_confidence_threat)
+        logger.info("SOAR Connector initialized and subscribed to security events.")
+
+    async def handle_anomaly(self, payload: Dict[str, Any]):
+        reason = payload.get('xai_result', {}).get('summary', 'No summary provided.')
+        logger.warning(f"SOAR [ALERT]: Received anomaly signal: {reason}")
+        await self.create_incident(title=f"Suspicious Activity by Actor: {payload.get('actor_id')}", description=json.dumps(payload.get('xai_result'), indent=2), severity="Medium", metadata={"events": payload.get('events'), "actor_id": payload.get('actor_id')})
+
+    async def handle_high_confidence_threat(self, payload: Dict[str, Any]):
+        logger.error(f"SOAR [CRITICAL ALERT]: Received high-confidence threat signal: {payload.get('violation_type')}")
+        await self.create_incident(title=f"High-Confidence Threat: {payload.get('violation_type')} in {payload.get('slug')}", description=f"Static analysis by Tribunal detected a clear violation. Heal was applied: {payload.get('heal_applied')}. Actor: {payload.get('actor_id')}", severity="High", metadata={"slug": payload.get('slug'), "violation": payload.get('violation_type'), "actor_id": payload.get('actor_id')})
+
+    async def create_incident(self, title: str, description: str, severity: str, metadata: Dict[str, Any]):
+        incident_id = f"INC-{hash(title + str(datetime.datetime.now(datetime.timezone.utc))) & 0xFFFFF}"
+        await self.audit_ledger.record_event("INCIDENT_CREATED", {"id": incident_id, "title": title, "severity": severity})
+        logger.info(f"SOAR: Creating incident {incident_id} [Severity: {severity}] - {title}")
+        logger.debug(f"SOAR: Incident Details: {description}")
+        if severity == "High":
+            await self.run_playbook_high_severity(incident_id, metadata)
+        else:
+            await self.run_playbook_medium_severity(incident_id, metadata)
+
+    async def run_playbook_high_severity(self, incident_id: str, metadata: Dict[str, Any]):
+        actor_id = metadata.get('actor_id')
+        logger.info(f"SOAR: Running HIGH SEVERITY playbook for {incident_id}.")
+        await self.audit_ledger.record_event("PLAYBOOK_EXECUTED", {"incident_id": incident_id, "type": "High Severity", "actions": ["Page On-call", "Restrict Actor"]})
+        logger.info(f"  > Action: Paging on-call security engineer.")
+        logger.warning(f"  > Action: Temporarily restricting permissions for actor '{actor_id}'.")
+        logger.info("SOAR: High-severity playbook complete.")
+
+    async def run_playbook_medium_severity(self, incident_id: str, metadata: Dict[str, Any]):
+        actor_id = metadata.get('actor_id')
+        logger.info(f"SOAR: Running MEDIUM SEVERITY playbook for {incident_id}.")
+        await self.audit_ledger.record_event("PLAYBOOK_EXECUTED", {"incident_id": incident_id, "type": "Medium Severity", "actions": ["Email Notification", "Add to Watchlist"]})
+        logger.info(f"  > Action: Sending email notification to security team.")
+        logger.info(f"  > Action: Adding actor '{actor_id}' to a 'watch list' for heightened monitoring.")
+        logger.info("SOAR: Medium-severity playbook complete.")
+
+# Global instances wiring everything together
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Initialize logger for EventBus and SimulatedAssistantAPI if not already done
-if not logger.handlers:
-    logging.basicConfig(level=logging.INFO) # Default basic config if no handlers
+# Core Infrastructure
+event_bus = EventBus()
+secure_audit_ledger = SecureAuditLedger()
+assistant_api = SimulatedCodeLlama2026API()
 
-# Re-registering listeners after logger is defined
-event_bus.subscribe("user_activity", lambda payload: asyncio.create_task(Tribunal()._handle_user_activity(payload)))
+# SOTA Ideation Components
+knowledge_graph = DecentralizedKnowledgeGraphConnector()
+federated_aggregator = FederatedLearningAggregator()
 
+# New Security & Auditing Stack
+xai_anomaly_detector = XAIAnomalyDetector(assistant_api=assistant_api)
+audit_trail_monitor = AuditTrailMonitor(event_bus=event_bus, ai_detector=xai_anomaly_detector, audit_ledger=secure_audit_ledger)
+soar_connector = SOARConnector(event_bus=event_bus, audit_ledger=secure_audit_ledger)
 
-_HEAL_TOMBSTONE = (
-    "# [TRIBUNAL HEALED] Poisoned logic redacted. "
-    "Rule captured in psyche_bank/."
-)
+_HEAL_TOMBSTONE = "# [TRIBUNAL HEALED] Poisoned logic redacted. Rule captured in psyche_bank/."
 
-# OWASP-aligned patterns — ranked by severity
-# Aligned with OWASP Top 10 2025: A01 Broken Object-Level Authorisation (BOLA)
-# is the #1 priority as of 2025. Patterns are ordered by 2025 severity rank.
 _POISON: list[tuple[str, re.Pattern[str]]] = [
-    (
-        # OWASP A01:2025 — BOLA / IDOR (elevated to #1 in 2025 edition)
-        # Detects direct DB/ORM queries using a user-supplied identifier
-        # without an ownership filter — the canonical BOLA/IDOR pattern.
-        # e.g.  Model.objects.get(id=request.data['id'])  without owner check.
-        "bola-idor",
-        re.compile(
-            r'\.(?:filter|get|find|fetch|load|delete|update)\s*\('
-            r'[^)]*\b(?:id|pk|user_id|object_id|resource_id|item_id|record_id)\s*='
-            r'\s*(?:request|req|params|args|data|form|kwargs)\b',
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # OWASP A01:2025 — BOLA / IDOR (second pattern)
-        # Detects unfiltered SQLAlchemy / Django ORM lookups by a bare variable
-        # that likely originates from a route parameter — no owner check present.
-        # e.g.  db.get(Model, item_id)  or  Model.objects.get(pk=item_id)
-        "bola-unfiltered-query",
-        re.compile(
-            r'\bdb\.(?:get|query|execute)\s*\([^)]*,\s*\w*_?id\w*\b'
-            r'|\bModel\.objects\.get\s*\(\s*pk\s*=\s*\w+\s*\)'
-            r'|\bget_object_or_404\s*\([^,)]+,\s*(?:pk|id)\s*=\s*(?!.*owner|.*user)',
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # OWASP A02:2025 Cryptographic Failures pattern
-        # Detects hardcoded secrets like API keys, passwords, tokens.
-        "hardcoded-secrets",
-        re.compile(
-            r'(?:SECRET|API_KEY|PASSWORD|TOKEN|PRIVATE_KEY|AUTH|CREDENTIAL|ACCESS_KEY|KEY)\s*=\s*["\'][^"\']{3,}["\']',
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # FIX 1: Add pattern for hardcoded secrets via environment variables
-        "hardcoded-secrets-env",
-        re.compile(r'\b(?:SECRET|API_KEY|PASSWORD|TOKEN)\s*=\s*(?:os\.environ\.get\(|os\.getenv\()'),
-    ),
-    (
-        "aws-key-leak",
-        re.compile(r'\bAKIA[0-9A-Z]{16}\b'),
-    ),
-    (
-        "bearer-token-leak",
-        re.compile(r'\bBearer\s+[A-Za-z0-9\-_+/]{20,}\.', re.IGNORECASE),
-    ),
-    (
-        # OWASP A03:2025 Injection pattern for SQL
-        # Detects string-concatenated SQL queries.
-        "sql-injection-concat",
-        re.compile(r'\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b.*?\+\s*\w+', re.IGNORECASE),
-    ),
-    (
-        # OWASP A03:2025 Injection pattern for dynamic evaluation
-        # Detects dynamic evaluation functions that can execute arbitrary code.
-        "dynamic-eval",
-        re.compile(r'\b(eval|exec|__import__)\s*\(', re.IGNORECASE),
-    ),
-    (
-        # FIX 3: Add pattern for `eval` with untrusted input
-        "untrusted-eval",
-        re.compile(r'eval\s*\(\s*(?:request|req|params|args|data|form|kwargs)\b'),
-    ),
-    (
-        # FIX 2: Add pattern for command injection via `subprocess` with string formatting
-        "command-injection-subprocess",
-        re.compile(r'subprocess\.(?:run|call|Popen)\s*\([^)]*f?string\s*[`\'"]'),
-    ),
-    (
-        # OWASP A03:2025 — Injection (Command Injection)
-        # Detects command injection via subprocess.run with shell=True
-        "command-injection-subprocess-shell",
-        re.compile(
-            r'subprocess\.run\s*\([^)]*\b'
-            r'shell\s*=\s*True\b'
-            r'[^)]*\)',
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # OWASP A03:2025 — Injection (Command Injection)
-        # Detects command injection via os.system
-        "command-injection-os-system",
-        re.compile(
-            r'os\.system\s*\([^)]*\)',
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # OWASP A01:2025 — Broken Access Control: path-traversal escape sequences
-        "path-traversal",
-        re.compile(r'\.\.[/\\]'),
-    ),
-    (
-        # OWASP A03:2021 — Injection: Server-Side Template Injection (SSTI)
-        # Detects {{ ... }} template syntax in logic bodies (Jinja2, Mako, etc.)
-        "ssti-template-injection",
-        re.compile(r'\{\{.*?\}\}'),
-    ),
-    (
-        # OWASP A10:2021 — Server-Side Request Forgery (SSRF)
-        # Detects HTTP client calls where the URL is constructed from user-controlled
-        # request attributes (requests.get(req.data['url']), httpx.get(params['uri']), …)
-        "ssrf",
-        re.compile(
-            r'(?:requests|httpx|aiohttp|urllib\.request)\s*\.\s*(?:get|post|put|delete|request)\s*\('
-            r'\s*(?:request|req|params|args|data|form|kwargs)\b',
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # OWASP A08:2021 — Software Integrity Failures: Insecure Deserialization
-        # pickle/marshal.load(s) on untrusted data enables arbitrary code execution
-        "insecure-deserialization",
-        re.compile(r'\b(pickle|marshal)\.(load|loads)\s*\(', re.IGNORECASE),
-    ),
-    (
-        # OWASP A08:2021 — Software / Data Integrity Failures: Supply-Chain
-        # Detects TLS verification bypass: requests.get(url, verify=False) or
-        # ssl.CERT_NONE — both allow MITM attacks on package/artifact fetches.
-        # Improvement signal [2] highlights the importance of OSS supply-chain audits.
-        "supply-chain-tls-bypass",
-        re.compile(
-            r'verify\s*=\s*False|ssl\.CERT_NONE|ssl\.create_default_context.*check_hostname\s*=\s*False',
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # OWASP A08:2021 — Software Integrity Failures: unsigned pip install
-        # subprocess pip install without --require-hashes or --hash= allows
-        # supply-chain substitution attacks (JIT signal: Sigstore/SLSA gate).
-        # Improvement signal [2] highlights the importance of OSS supply-chain audits.
-        "supply-chain-unpinned-install",
-        re.compile(
-            r'subprocess.*pip.*install(?!.*--require-hashes)(?!.*--hash=)',
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # Improvement signal [3]: CSPM tools (Wiz, Orca, Prisma Cloud) provide real-time cloud posture scoring.
-        # Detects potential interactions with CSPM tools or their concepts.
-        "cspm-posture-check",
-        re.compile(
-            r'(?:wiz|orca|prisma_cloud)\.(?:scan|report|posture|score|compliance)',
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # GDPR Compliance: PII Leakage (Email, SSN, Credit Card)
-        "gdpr-pii-leak",
-        re.compile(
-            r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b' # Email
-            r'|\b\d{3}-\d{2}-\d{4}\b' # SSN
-            r'|\b(?:\d[ -]*?){13,16}\b', # Credit Card
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # SOX Compliance: Financial Control Bypass
-        # Detects direct manipulation of balance or amount without approval logic.
-        "sox-financial-control-bypass",
-        re.compile(
-            r'\b(?:balance|amount|credit|total|price)\s*(?:\+|-|\*|/)?=\s*\d+'
-            r'|\bapproved\s*=\s*True(?!\s*if)',
-            re.IGNORECASE,
-        ),
-    ),
-    (
-        # GDPR: Unencrypted Transmission (HTTP instead of HTTPS for sensitive data)
-        "gdpr-unencrypted-transmission",
-        re.compile(
-            r'http://(?!localhost|127\.0\.0\.1|0\.0\.0\.0)[^"\']+\?(?:email|user|token|key|secret)=',
-            re.IGNORECASE,
-        ),
-    ),
+    ("bola-idor", re.compile(r'\.(?:filter|get|find|fetch|load|delete|update)\s*\([^)]*\b(?:id|pk|user_id|object_id|resource_id|item_id|record_id)\s*=\s*(?:request|req|params|args|data|form|kwargs)\b', re.IGNORECASE)),
+    ("bola-unfiltered-query", re.compile(r'\bdb\.(?:get|query|execute)\s*\([^)]*,\s*\w*_?id\w*\b|\bModel\.objects\.get\s*\(\s*pk\s*=\s*\w+\s*\)|\bget_object_or_404\s*\([^,)]+,\s*(?:pk|id)\s*=\s*(?!.*owner|.*user)', re.IGNORECASE)),
+    ("hardcoded-secrets", re.compile(r'(?:SECRET|API_KEY|PASSWORD|TOKEN|PRIVATE_KEY|AUTH|CREDENTIAL|ACCESS_KEY|KEY)\s*=\s*["\'][^"\']{3,}["\']', re.IGNORECASE)),
+    ("hardcoded-secrets-env", re.compile(r'\b(?:SECRET|API_KEY|PASSWORD|TOKEN)\s*=\s*(?:os\.environ\.get\(|os\.getenv\()')),
+    ("aws-key-leak", re.compile(r'\bAKIA[0-9A-Z]{16}\b')),
+    ("bearer-token-leak", re.compile(r'\bBearer\s+[A-Za-z0-9\-_+/]{20,}\.', re.IGNORECASE)),
+    ("sql-injection-concat", re.compile(r'\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b.*?\+\s*\w+', re.IGNORECASE)),
+    ("dynamic-eval", re.compile(r'\b(eval|exec|__import__)\s*\(', re.IGNORECASE)),
+    ("untrusted-eval", re.compile(r'eval\s*\(\s*(?:request|req|params|args|data|form|kwargs)\b')),
+    ("command-injection-subprocess", re.compile(r'subprocess\.(?:run|call|Popen)\s*\([^)]*f?string\s*[`\'"]')),
+    ("command-injection-subprocess-shell", re.compile(r'subprocess\.run\s*\([^)]*\bshell\s*=\s*True\b[^)]*\)', re.IGNORECASE)),
+    ("command-injection-os-system", re.compile(r'os\.system\s*\([^)]*\)', re.IGNORECASE)),
+    ("path-traversal", re.compile(r'\.\.[/\\]')),
+    ("ssti-template-injection", re.compile(r'\{\{.*?\}\}')),
+    ("ssrf", re.compile(r'(?:requests|httpx|aiohttp|urllib\.request)\s*\.\s*(?:get|post|put|delete|request)\s*\(\s*(?:request|req|params|args|data|form|kwargs)\b', re.IGNORECASE)),
+    ("insecure-deserialization", re.compile(r'\b(pickle|marshal)\.(load|loads)\s*\(', re.IGNORECASE)),
+    ("supply-chain-tls-bypass", re.compile(r'verify\s*=\s*False|ssl\.CERT_NONE|ssl\.create_default_context.*check_hostname\s*=\s*False', re.IGNORECASE)),
+    ("supply-chain-unpinned-install", re.compile(r'subprocess.*pip.*install(?!.*--require-hashes)(?!.*--hash=)', re.IGNORECASE)),
+    ("cspm-posture-check", re.compile(r'(?:wiz|orca|prisma_cloud)\.(?:scan|report|posture|score|compliance)', re.IGNORECASE)),
+    ("gdpr-pii-leak", re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b|\b\d{3}-\d{2}-\d{4}\b|\b(?:\d[ -]*?){13,16}\b', re.IGNORECASE)),
+    ("sox-financial-control-bypass", re.compile(r'\b(?:balance|amount|credit|total|price)\s*(?:\+|-|\*|/)?=\s*\d+|\bapproved\s*=\s*True(?!\s*if)', re.IGNORECASE)),
+    ("gdpr-unencrypted-transmission", re.compile(r'http://(?!localhost|127\.0\.0\.1|0\.0\.0\.0)[^"\']+\?(?:email|user|token|key|secret)=', re.IGNORECASE)),
 ]
 
-# ── Self-scan allowlist ──────────────────────────────────────────────────────
-# Files that CONTAIN detection patterns (the scanner itself, its tests, etc.)
-# must not trigger false positives when scanning their own source.
-# Maps slug-prefix → set of pattern names that are expected in that component's
-# source because it defines or tests those very patterns.
 _SELF_SCAN_ALLOWLIST: dict[str, set[str]] = {
-    "tribunal": {
-        "bola-idor", "bola-unfiltered-query", "hardcoded-secrets", "hardcoded-secrets-env",
-        "aws-key-leak", "bearer-token-leak", "sql-injection-concat", "dynamic-eval",
-        "untrusted-eval", "command-injection-subprocess", "command-injection-subprocess-shell",
-        "command-injection-os-system", "path-traversal", "ssti-template-injection", "ssrf", "insecure-deserialization",
-        "supply-chain-tls-bypass", "supply-chain-unpinned-install",
-        "cspm-posture-check", "gdpr-pii-leak", "sox-financial-control-bypass", "gdpr-unencrypted-transmission",
-    },
-    "n_stroke": {
-        "sql-injection-concat",  # comment/string pattern match, not real vulnerability
-        "dynamic-eval",  # detection logic references
-    },
-    "psyche_bank": {
-        "hardcoded-secrets",  # stores rule patterns about secrets
-    },
+    "tribunal": {"bola-idor", "bola-unfiltered-query", "hardcoded-secrets", "hardcoded-secrets-env", "aws-key-leak", "bearer-token-leak", "sql-injection-concat", "dynamic-eval", "untrusted-eval", "command-injection-subprocess", "command-injection-subprocess-shell", "command-injection-os-system", "path-traversal", "ssti-template-injection", "ssrf", "insecure-deserialization", "supply-chain-tls-bypass", "supply-chain-unpinned-install", "cspm-posture-check", "gdpr-pii-leak", "sox-financial-control-bypass", "gdpr-unencrypted-transmission"},
+    "n_stroke": {"sql-injection-concat", "dynamic-eval"},
+    "psyche_bank": {"hardcoded-secrets"},
 }
-
 
 @dataclass
 class Engram:
-    """Minimal engram representation — no external schema dependency."""
-
     slug: str
     intent: str
     logic_body: str
+    actor_id: str = "system"
     domain: str = "backend"
     mandate_level: str = "L2"
-    # New field to store thread ID for Assistant API interactions
     assistant_thread_id: Optional[str] = None
-
 
 @dataclass
 class TribunalResult:
@@ -556,331 +555,122 @@ class TribunalResult:
     violations: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "slug": self.slug,
-            "passed": self.passed,
-            "poison_detected": self.poison_detected,
-            "heal_applied": self.heal_applied,
-            "vast_learn_triggered": self.vast_learn_triggered,
-            "violations": self.violations,
-        }
-
-# Dummy PsycheBank for type hinting
+        return {"slug": self.slug, "passed": self.passed, "poison_detected": self.poison_detected, "heal_applied": self.heal_applied, "vast_learn_triggered": self.vast_learn_triggered, "violations": self.violations}
 
 class PsycheBank:
     def __init__(self):
         self._rules: Dict[str, CogRule] = {}
         logger.info("PsycheBank initialized.")
-
     async def __ainit__(self):
-        """Asynchronous initialization, if needed."""
-        # Simulate async initialization if PsycheBank were to load data from storage.
         logger.debug("PsycheBank asynchronous initialization.")
-        pass
-
     async def capture(self, rule: CogRule):
-        """Captures a new CogRule. In a real scenario, this would persist the rule."""
         if rule.id in self._rules:
             logger.warning(f"Rule with ID {rule.id} already exists. Overwriting.")
         self._rules[rule.id] = rule
         logger.info(f"Captured rule: {rule.id} (Pattern: {rule.pattern})")
 
-
 class Tribunal:
-    """Evaluate an engram for OWASP violations, heal, and capture rules."""
-
+    """
+    Evaluate an engram, integrating SOTA AI, decentralized data, federated learning,
+    and a robust, zero-trust continuous auditing security posture.
+    """
     def __init__(self, bank: PsycheBank | None = None) -> None:
         self._bank = bank or PsycheBank()
-        # Initialize the simulated Assistant API client
-        self.assistant_api = simulated_assistant
-
-        # Subscribe to user activity events for context updates (Pattern [5])
-        event_bus.subscribe("user_activity", self._handle_user_activity)
-
-        # Initialize GAN/RL components for ideation theme generation and suggestion refinement (Tool [7])
-        self.gan_rl_ideator = self.SimulatedGANRLIdeator() # Placeholder for GAN/RL logic
-
-        # Initialize Federated Learning component for data aggregation (Pattern [8])
-        self.federated_learning_aggregator = self.SimulatedFederatedLearningAggregator() # Placeholder for FL logic
-
-    class SimulatedGANRLIdeator:
-        """
-        Placeholder for Generative Adversarial Networks (GANs) integrated with
-        Reinforcement Learning (RL) for dynamic ideation theme generation and
-        suggestion refinement. This aligns with Tool [7].
-        """
-        def __init__(self):
-            logger.info("SimulatedGANRLIdeator initialized.")
-            self.trend_analysis_models: Dict[str, Any] = {} # Placeholder for trend analysis models
-
-        async def analyze_trends(self, data: Any) -> Dict[str, Any]:
-            """Simulates real-time trend analysis."""
-            logger.debug("Analyzing trends for ideation.")
-            # In a real implementation, this would involve complex ML models.
-            # We'll simulate some trend insights.
-            simulated_trends = {
-                "emerging_tech": ["AI-driven sustainability", "Quantum computing applications"],
-                "market_shifts": ["Decentralized finance evolution", "Creator economy boom"]
-            }
-            # --- Risk [15] Mitigation: Identify and potentially filter synthetic data ---
-            # In a real scenario, this logic would be more sophisticated, attempting to
-            # identify characteristics of synthetic data. For simulation, we acknowledge
-            # the risk and suggest a future direction.
-            logger.warning("Risk [15] - Over-reliance on synthetic data: Current trend analysis does not explicitly filter synthetic data. Future implementation should incorporate synthetic data detection mechanisms.")
-            return simulated_trends
-
-        async def generate_theme(self, trends: Dict[str, Any], feedback: str = "") -> str:
-            """Simulates GAN/RL for theme generation based on trends and feedback."""
-            logger.debug(f"Generating ideation theme with trends: {trends}, feedback: {feedback}")
-            # Simulate theme generation based on trends. RL would refine this based on feedback.
-            theme_suggestions = []
-            if "emerging_tech" in trends:
-                theme_suggestions.extend([f"Explore {t} for new ideation." for t in trends["emerging_tech"]])
-            if "market_shifts" in trends:
-                theme_suggestions.extend([f"Capitalize on {t} trends." for t in trends["market_shifts"]])
-
-            if not theme_suggestions:
-                return "Could not generate a theme based on current trends."
-
-            # Simple selection for simulation
-            selected_theme = theme_suggestions[0]
-            return f"Generated Theme: {selected_theme}"
-
-        async def refine_suggestion(self, suggestion: str, user_feedback: str) -> str:
-            """Simulates RL for refining suggestions based on user feedback. Aligns with Pattern [11] & [14]."""
-            logger.debug(f"Refining suggestion '{suggestion}' with feedback: '{user_feedback}'")
-            # Simulate RL-based refinement.
-            # In a real scenario, this would involve updating the RL agent's policy.
-            # --- Risk [9] Mitigation: Bias Amplification ---
-            # The refinement process should ideally consider not amplifying existing biases.
-            # A real RL agent would be trained with fairness objectives.
-            logger.warning("Risk [9] - Bias Amplification: Simulated refinement does not explicitly mitigate bias. Real implementation needs fairness considerations.")
-            return f"Refined: '{suggestion}' based on your feedback: '{user_feedback}'"
-
-    class SimulatedFederatedLearningAggregator:
-        """
-        Placeholder for Federated Learning for ideation data aggregation.
-        Preserves user privacy while enabling collaborative, distributed ideation.
-        Aligns with Pattern [8].
-        """
-        def __init__(self):
-            logger.info("SimulatedFederatedLearningAggregator initialized.")
-            self.global_model_state: Dict[str, Any] = {} # Placeholder for global model
-
-        async def aggregate_data(self, local_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-            """
-            Simulates aggregation of local, private ideation data.
-            In a real scenario, this would involve secure aggregation protocols.
-            """
-            logger.debug(f"Aggregating {len(local_data)} local datasets.")
-            # In a real FL system, this would involve averaging model weights or gradients.
-            # Here, we simulate combining insights from different sources.
-            aggregated_insights = {}
-            for dataset in local_data:
-                for key, value in dataset.items():
-                    if key not in aggregated_insights:
-                        aggregated_insights[key] = []
-                    aggregated_insights[key].extend(value)
-
-            # Deduplicate and return simulated aggregated insights
-            for key in aggregated_insights:
-                aggregated_insights[key] = list(set(aggregated_insights[key]))
-
-            return aggregated_insights
-
-        async def update_global_model(self, aggregated_data: Dict[str, Any]):
-            """Simulates updating a global model based on aggregated data."""
-            logger.debug("Updating global model with aggregated data.")
-            # This is a highly simplified simulation. Real FL involves complex model updates.
-            self.global_model_state = aggregated_data
-            logger.info("Global model state updated.")
+        # Use globally instantiated components
+        self.assistant_api = assistant_api
+        self.knowledge_graph = knowledge_graph
+        self.federated_aggregator = federated_aggregator
+        self.audit_ledger = secure_audit_ledger
 
     async def _handle_user_activity(self, payload: Dict[str, Any]):
-        """
-        Handles user activity webhooks to update engram context in ongoing ideation threads.
-        This implements the event-driven pattern (Pattern [5]).
-        """
+        """Handles user activity events to refresh LLM context."""
         logger.debug(f"Handling user_activity event: {payload}")
         engram_slug = payload.get("engram_slug")
         user_action = payload.get("action")
         context_snippet = payload.get("snippet")
-        assistant_thread_id = payload.get("assistant_thread_id") # Expect thread ID in payload
+        assistant_thread_id = payload.get("assistant_thread_id")
+        modal_data = payload.get("modal_data")
 
         if not all([engram_slug, user_action, context_snippet, assistant_thread_id]):
             logger.warning(f"Incomplete user_activity payload: {payload}")
             return
 
-        # Directly use the provided assistant_thread_id to update the thread's context.
         if assistant_thread_id and openai_available:
             try:
                 await self.assistant_api.add_message_to_thread(
-                    assistant_thread_id, "user", f"User activity update: {user_action} - {context_snippet}"
+                    assistant_thread_id, "user", f"User activity update: {user_action} - {context_snippet}",
+                    modal_data=modal_data
                 )
-                logger.debug(f"Updated Assistant thread {assistant_thread_id} with user activity.")
+                logger.info(f"Updated Assistant thread {assistant_thread_id} with user activity.")
+                await self.assistant_api.run_assistant_on_thread(assistant_thread_id, "perform robust background refresh")
             except Exception as e:
-                logger.error(f"Failed to update Assistant thread {assistant_thread_id} with user activity: {e}")
-        else:
-            logger.debug(f"No active Assistant thread ID provided or OpenAI not available for {engram_slug} to update.")
+                logger.error(f"Failed to update Assistant thread {assistant_thread_id}: {e}", exc_info=True)
 
-        # --- GAN/RL Ideation Integration (Tool [7]) ---
-        # If the user activity relates to ideation refinement, trigger GAN/RL.
-        # This aligns with Pattern [14] for incremental refinement loops.
-        if user_action == "ideation_feedback" and context_snippet and assistant_thread_id:
-            try:
-                # In a real scenario, 'previous_suggestion' would be dynamically retrieved.
-                # For this simulation, we use a placeholder.
-                refined_suggestion = await self.gan_rl_ideator.refine_suggestion(
-                    suggestion="previous_suggestion_placeholder",
-                    user_feedback=context_snippet
-                )
-                # Optionally add the refined suggestion back to the Assistant API thread
-                await self.assistant_api.add_message_to_thread(
-                    assistant_thread_id, "assistant", f"Refined Ideation Suggestion: {refined_suggestion}"
-                )
-                logger.info(f"Ideation suggestion refined for {engram_slug}.")
-            except Exception as e:
-                logger.error(f"Error refining ideation suggestion for {engram_slug}: {e}")
+    async def trigger_federated_update(self, payload: Dict[str, Any]):
+        """Simulates a full federated learning cycle."""
+        logger.info("Federated learning update cycle triggered.")
+        client_tasks = [
+            run_federated_client_training(1, {"ideas": ["green tech"], "notes": "ethical concerns"}),
+            run_federated_client_training(2, {"ideas": ["blockchain"], "notes": "avoid over-monetization"}),
+        ]
+        client_updates = await asyncio.gather(*client_tasks)
+        await self.federated_aggregator.perform_federated_round(client_updates)
+        logger.info("Federated learning update cycle complete.")
+
+    async def ideate_with_sota_tools(self) -> str:
+        """Demonstrates an ideation workflow using new SOTA components."""
+        logger.info("--- Starting SOTA Ideation Workflow ---")
+        kg_data = await self.knowledge_graph.query("ai_trends", subject_filter="federated_learning")
+        insights = kg_data.get('data')
+        logger.info(f"Sourced insight from knowledge graph (CID: {kg_data.get('cid')}): {insights}")
+
+        global_trends = self.federated_aggregator.global_model_weights
+        logger.info(f"Applying privacy-preserved global trends from federated model: {global_trends}")
+
+        prompt = f"Given verifiable insight '{insights}' and global trends '{global_trends}', generate a product concept."
+        thread = await self.assistant_api.create_thread()
+        response = await self.assistant_api.run_assistant_on_thread(thread['id'], prompt)
+        logger.info("--- SOTA Ideation Workflow Complete ---")
+        return response.get('content', "Failed to generate idea.")
 
     async def _evaluate_pattern(self, name: str, pattern: re.Pattern[str], logic_body: str) -> str | None:
-        """Asynchronously checks a single pattern against the logic body."""
-        # Return the pattern name if a match is found.
         if pattern.search(logic_body):
             return name
         return None
 
     async def evaluate(self, engram: Engram) -> TribunalResult:
-        """
-        Evaluates the engram for OWASP violations, heals, captures rules,
-        and integrates SOTA tools for dynamic ideation and privacy-preserving data aggregation.
-        Handles risks related to bias amplification, data drift, and over-reliance on synthetic data.
-        Also implements blockchain-based immutable audit trails for enhanced data integrity.
-        """
-        # Ensure the bank is initialized before any evaluation or capture.
         await self._bank.__ainit__()
+        result: Optional[TribunalResult] = None
+        start_time = datetime.datetime.now(datetime.timezone.utc)
 
-        # --- Blockchain-based Immutable Audit Trail ---
-        # In a real implementation, each significant event (e.g., engram evaluation,
-        # poison detection, rule capture, healing) would be recorded as a transaction
-        # on a blockchain. This provides an immutable, tamper-proof log of all
-        # audit activities. For this simulation, we'll log these events to our logger
-        # and acknowledge their conceptual placement on a blockchain.
+        # Publish start event for real-time monitoring. The monitor will write it to the ledger.
+        await event_bus.publish("AUDIT_EVENT", {
+            "type": "EVALUATION_START",
+            "timestamp": start_time,
+            "actor_id": engram.actor_id,
+            "details": {"slug": engram.slug}
+        })
 
-        async def log_to_blockchain(event_type: str, details: Dict[str, Any]):
-            """Simulates logging an event to a blockchain."""
-            logger.info(f"BLOCKCHAIN_AUDIT [{event_type}]: {details}")
-            # In a real system, this would involve interacting with a blockchain client
-            # to create and submit a transaction.
-
-        # Log the start of the evaluation process.
-        await log_to_blockchain("EVALUATION_START", {"engram_slug": engram.slug, "intent": engram.intent})
-
-        # --- SOTA Tool: OpenAI Assistant API Integration (Tool [4]) ---
-        # Initialize a thread for persistent state management and context expansion
-        # if it doesn't exist for this engram. This enables continuous ideation threads.
-        if not engram.assistant_thread_id:
+        if not engram.assistant_thread_id and openai_available:
             try:
-                thread = await self.assistant_api.create_thread(
-                    metadata={"engram_slug": engram.slug, "intent": engram.intent}
-                )
+                thread = await self.assistant_api.create_thread(metadata={"engram_slug": engram.slug, "actor_id": engram.actor_id})
                 engram.assistant_thread_id = thread["id"]
-                logger.info(f"Created new Assistant API thread {engram.assistant_thread_id} for engram {engram.slug}.")
-                await log_to_blockchain("ASSISTANT_THREAD_CREATED", {"engram_slug": engram.slug, "thread_id": engram.assistant_thread_id})
+                # Directly record critical infrastructure events to the ledger
+                await self.audit_ledger.record_event("ASSISTANT_THREAD_CREATED", {"engram_slug": engram.slug, "thread_id": engram.assistant_thread_id})
             except Exception as e:
                 logger.error(f"Failed to create Assistant API thread for {engram.slug}: {e}")
-                # Continue evaluation without Assistant API if creation fails
 
-        # Add the current logic body to the Assistant API thread for context synthesis.
-        if engram.assistant_thread_id and openai_available:
-            try:
-                await self.assistant_api.add_message_to_thread(
-                    engram.assistant_thread_id, "user", f"Reviewing code snippet for analysis: {engram.logic_body}"
-                )
-            except Exception as e:
-                logger.error(f"Failed to add logic_body to Assistant API thread {engram.assistant_thread_id}: {e}")
-
-        # --- Tool: GAN/RL for Ideation Theme Generation & Suggestion Refinement (Tool [7]) ---
-        # --- Pattern: Federated Learning for Data Aggregation (Pattern [8]) ---
-        # --- Risk: Over-reliance on synthetic data (Risk [15]) ---
-        # Analyze trends and potentially generate/refine ideation themes.
-        # This is done regardless of security findings to support the ideation process.
-        try:
-            # Simulate gathering data for trend analysis. In a real system, this might
-            # come from various sources or from the federated learning aggregation.
-            simulated_ideation_data_sources = [
-                {"user_id": "user1", "data": {"themes": ["AI Ethics", "Blockchain Governance"]}},
-                {"user_id": "user2", "data": {"themes": ["Sustainable Tech", "Creator Monetization"]}},
-                # Introduce some synthetic data to test Risk [15] mitigation
-                {"user_id": "synthetic_bot", "data": {"themes": ["Purely Theoretical Concept X", "Imaginary Innovation Y"]}}
-            ]
-
-            # Extract just the data part for aggregation
-            local_data_for_aggregation = [source["data"] for source in simulated_ideation_data_sources]
-
-            # Use Federated Learning to aggregate data privately (Pattern [8])
-            aggregated_ideation_data = await self.federated_learning_aggregator.aggregate_data(local_data_for_aggregation)
-            # Update the global model state with the aggregated data (simulated)
-            await self.federated_learning_aggregator.update_global_model(aggregated_ideation_data)
-
-            # Use aggregated data for trend analysis. The GAN/RL ideator can attempt
-            # to filter or down-weight purely synthetic data if it can be identified,
-            # mitigating Risk [15].
-            current_trends = await self.gan_rl_ideator.analyze_trends(aggregated_ideation_data)
-
-            # Generate initial theme if the intent is not a security review
-            if engram.intent.lower() != "security_review": # Avoid generating themes during security scans
-                generated_theme = await self.gan_rl_ideator.generate_theme(current_trends)
-                logger.info(f"Ideation Theme Generation: {generated_theme}")
-                # Optionally, add this theme to the Assistant API thread for context
-                if engram.assistant_thread_id and openai_available:
-                    await self.assistant_api.add_message_to_thread(
-                        engram.assistant_thread_id, "assistant", f"Ideation Context: {generated_theme}"
-                    )
-        except Exception as e:
-            logger.error(f"Error during GAN/RL ideation process for {engram.slug}: {e}")
-
-        # --- Rule 4: Billing Exemption Workflow ───────────────────────────────
-        _BILLING_EXEMPT_DOMAINS = [
-            "pay.google.com", "billing.google.com", "console.cloud.google.com/billing"
-        ]
-        # Simplified check for billing intent or domain presence
+        _BILLING_EXEMPT_DOMAINS = ["pay.google.com", "billing.google.com", "console.cloud.google.com/billing"]
         if engram.intent.upper() == "BILLING" or any(d in engram.logic_body for d in _BILLING_EXEMPT_DOMAINS):
-            logger.info(f"Tribunal: Billing Exemption (Rule 4) triggered for {engram.slug}. Bypassing scan.")
-            # Log the billing intent to the Assistant API thread if available.
-            if engram.assistant_thread_id and openai_available:
-                try:
-                    # Use the Assistant API to synthesize a relevant message about the exemption,
-                    # potentially using function calling to structure the output if relevant.
-                    await self.assistant_api.run_assistant_on_thread(
-                        engram.assistant_thread_id,
-                        "Billing intent detected, skipping security scan. Synthesize a confirmation message.",
-                        tool_choice="synthesize_confirmation" # Hypothetical tool for confirmation
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to send billing exemption message to Assistant API thread {engram.assistant_thread_id}: {e}")
+            logger.info(f"Tribunal: Billing Exemption for {engram.slug}. Bypassing scan.")
+            result = TribunalResult(slug=engram.slug, passed=True, poison_detected=False, heal_applied=False, vast_learn_triggered=False)
+            await event_bus.publish("AUDIT_EVENT", {"type": "EVALUATION_BYPASSED", "timestamp": datetime.datetime.now(datetime.timezone.utc), "actor_id": engram.actor_id, "details": {"reason": "Billing Exemption", **result.to_dict()}})
+            return result
 
-            # Log the exemption event to the blockchain.
-            await log_to_blockchain("BILLING_EXEMPTION_APPLIED", {"engram_slug": engram.slug})
-
-            return TribunalResult(
-                slug=engram.slug,
-                passed=True,
-                poison_detected=False,
-                heal_applied=False,
-                vast_learn_triggered=False,
-            )
-
-        violations_found: list[str] = []
-
-        # Use asyncio.TaskGroup for efficient concurrent execution of pattern checks.
         async with asyncio.TaskGroup() as tg:
-            tasks = [
-                tg.create_task(self._evaluate_pattern(name, pat, engram.logic_body))
-                for name, pat in _POISON
-            ]
-
+            tasks = [tg.create_task(self._evaluate_pattern(name, pat, engram.logic_body)) for name, pat in _POISON]
         violations_found = [task.result() for task in tasks if task.result()]
 
-        # Apply the self-scan allowlist to filter out expected false positives.
         allowed: set[str] = set()
         for prefix, patterns in _SELF_SCAN_ALLOWLIST.items():
             if engram.slug.startswith(prefix):
@@ -888,103 +678,32 @@ class Tribunal:
         if allowed:
             violations_found = [v for v in violations_found if v not in allowed]
 
-        # --- Risk Management: Data Drift and Bias Amplification ---
-        # Risk [6]: Data drift in fine-tuned models requires monitoring and retraining.
-        # Risk [9]: Bias amplification or harmful content generation requires mitigation.
-        # These risks are addressed implicitly by the SOTA tools and patterns used:
-        # - The Assistant API (GPT-4 Turbo) is inherently designed to adapt and learn,
-        #   and its interactions (logged) can serve as data for monitoring drift.
-        # - The GAN/RL ideation process and user feedback loops (Pattern [11] & [14]) are
-        #   intended to steer away from biased or harmful content generation.
-        # - The LLM's synthesis capabilities (Tool [10]) can be guided by well-engineered
-        #   prompts to avoid factual inaccuracies (Risk [12]).
-        # - Function Calling (Tool [13]) helps in generating structured output that is less prone to
-        #   hallucination and more verifiable.
-
-        # Logging analysis outcomes to the Assistant API thread for potential retraining data.
-        if engram.assistant_thread_id and openai_available:
-            try:
-                outcome_message = "Analysis complete. No violations found." if not violations_found else \
-                                  f"Violations detected: {', '.join(violations_found)}. Healing applied."
-                # Use the Assistant API's run function which can leverage its tools,
-                # potentially for summarizing findings or structuring the outcome.
-                await self.assistant_api.run_assistant_on_thread(
-                    engram.assistant_thread_id,
-                    f"Analysis summary for engram {engram.slug}: {outcome_message}. "
-                    "Generate a concise report of the findings.",
-                    tool_choice="generate_analysis_report" # Hypothetical tool for structured reporting
-                )
-                logger.info(f"Assistant API thread {engram.assistant_thread_id} updated with analysis outcome.")
-            except Exception as e:
-                logger.error(f"Failed to log outcome to Assistant API thread {engram.assistant_thread_id}: {e}")
-
-        # --- Risk: Hallucination Generation or Factual Inaccuracies (Risk [12]) ---
-        # This risk is inherent to LLMs. Rigorous fact-checking against reliable external
-        # data sources is crucial in a production system. The current simulation focuses
-        # on the integration of the tool and pattern, not the external fact-checking mechanism.
-        # In practice, outputs from `run_assistant_on_thread` that synthesize background
-        # narrative would undergo validation. The use of Function Calling (Tool [13])
-        # to generate structured outputs helps mitigate this by enforcing a predefined schema.
-
-        # If no violations are detected, return a clean passing result.
         if not violations_found:
-            # Log successful evaluation.
-            await log_to_blockchain("EVALUATION_PASSED", {"engram_slug": engram.slug, "violations": []})
-            return TribunalResult(
-                slug=engram.slug,
-                passed=True,
-                poison_detected=False,
-                heal_applied=False,
-                vast_learn_triggered=False,
-            )
+            result = TribunalResult(slug=engram.slug, passed=True, poison_detected=False, heal_applied=False, vast_learn_triggered=False)
+        else:
+            engram.logic_body = _HEAL_TOMBSTONE
+            for violation_type in violations_found:
+                rule_id = f"tribunal-auto-{violation_type}-{hash(violation_type) & 0xFFFFF}"
+                await self._bank.capture(CogRule(id=rule_id, description=f"Auto-captured by Tribunal: {violation_type}", pattern=violation_type, enforcement="block", category="security", source="tribunal"))
+                # Record critical security actions to immutable ledger
+                await self.audit_ledger.record_event("RULE_CAPTURED", {"engram_slug": engram.slug, "rule_id": rule_id, "violation": violation_type, "actor_id": engram.actor_id})
+                # Publish a high-confidence threat event for immediate SOAR response
+                await event_bus.publish("HIGH_CONFIDENCE_THREAT_DETECTED", {"slug": engram.slug, "violation_type": violation_type, "heal_applied": True, "actor_id": engram.actor_id})
+            
+            vast_learn_triggered = any(v in violations_found for v in ["supply-chain-tls-bypass", "supply-chain-unpinned-install", "cspm-posture-check"])
+            result = TribunalResult(slug=engram.slug, passed=False, poison_detected=True, heal_applied=True, vast_learn_triggered=vast_learn_triggered, violations=violations_found)
+            await self.audit_ledger.record_event("POISON_DETECTED_AND_HEALED", {"engram_slug": engram.slug, "violations": violations_found, "actor_id": engram.actor_id})
 
-        # --- Poison Detected: Apply Healing and Capture Rules ---
-
-        # 1. Heal: Replace the compromised logic with a tombstone comment.
-        # The Engram's logic_body attribute is updated directly.
-        engram.logic_body = _HEAL_TOMBSTONE
-
-        # 2. Capture Rules: For each detected violation, create a new CogRule
-        # and add it to the PsycheBank. This prevents recurrence.
-        for violation_type in violations_found:
-            rule_id = f"tribunal-auto-{violation_type}-{hash(violation_type) & 0xFFFFF}"
-            await self._bank.capture(
-                CogRule(
-                    id=rule_id,
-                    description=f"Auto-captured by Tribunal during heal: {violation_type}",
-                    pattern=violation_type,  # Use the violation type as the pattern identifier.
-                    enforcement="block",
-                    category="security",
-                    source="tribunal",
-                )
-            )
-            # Log rule capture to blockchain.
-            await log_to_blockchain("RULE_CAPTURED", {"engram_slug": engram.slug, "violation_type": violation_type, "rule_id": rule_id})
-
-        # 3. VastLearn Trigger: Identify specific violations that require
-        # advanced analysis and learning, as per improvement signals.
-        vast_learn_triggered = any(
-            violation in violations_found for violation in [
-                "supply-chain-tls-bypass",
-                "supply-chain-unpinned-install",
-                "cspm-posture-check",
-            ]
-        )
-
-        # Log the detected poison and healing.
-        await log_to_blockchain("POISON_DETECTED_AND_HEALED", {
-            "engram_slug": engram.slug,
-            "violations": violations_found,
-            "heal_applied": True,
-            "vast_learn_triggered": vast_learn_triggered,
+        # Publish final result to the audit trail for continuous monitoring
+        await event_bus.publish("AUDIT_EVENT", {
+            "type": "EVALUATION_RESULT",
+            "timestamp": datetime.datetime.now(datetime.timezone.utc),
+            "actor_id": engram.actor_id,
+            "details": result.to_dict()
         })
 
-        # Return a result indicating that poison was detected and healed.
-        return TribunalResult(
-            slug=engram.slug,
-            passed=False,  # The evaluation failed due to detected poison.
-            poison_detected=True,
-            heal_applied=True,
-            vast_learn_triggered=vast_learn_triggered,
-            violations=violations_found,
-        )
+        return result
+
+# Subscribe global event handlers
+event_bus.subscribe("user_activity", lambda payload: asyncio.create_task(Tribunal()._handle_user_activity(payload)))
+event_bus.subscribe("federated_update_trigger", lambda payload: asyncio.create_task(Tribunal().trigger_federated_update(payload)))

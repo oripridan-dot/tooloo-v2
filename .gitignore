@@ -67,3 +67,4 @@ google-cloud-cli-*.tar.gz
 .hypothesis/
 cycle_run_report.json
 
+service-account.json

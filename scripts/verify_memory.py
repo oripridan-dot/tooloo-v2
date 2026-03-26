@@ -1,5 +1,5 @@
 from engine.graph import CognitiveGraph
-from engine.memory import memory_manager
+from engine.graph_store import memory_manager
 import logging
 
 logging.basicConfig(level=logging.INFO)

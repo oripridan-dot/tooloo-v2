@@ -38,95 +38,38 @@ from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from engine.branch_executor import (
-    BRANCH_CLONE,
-    BRANCH_FORK,
-    BRANCH_SHARE,
-    BranchExecutor,
-    BranchSpec,
-)
-from engine.config import settings
-from engine.config import (
-    AUTONOMOUS_EXECUTION_ENABLED,
-    AUTONOMOUS_CONFIDENCE_THRESHOLD,
-    get_workspace_roots,
-)
-from engine.conversation import ConversationEngine, _FOLLOWUPS
-from engine.buddy_cognition import CognitiveLens
-from engine.buddy_memory import BuddyMemoryStore
-from engine.recursive_summarizer import RecursiveSummaryAgent
-from engine.cognitive_map import get_cognitive_map
-from engine.deep_introspector import get_deep_introspector
-from engine.bus import get_bus, BusEvent, NotificationBus
-from engine.stance import (
-    get_stance_engine,
-    get_active_stance,
-    set_active_stance,
-    CognitiveStanceEngine,
-    Stance,
-    StanceResult,
-)
-from engine.daemon import BackgroundDaemon
-from engine.engram_visual import VisualEngramGenerator
-from engine.executor import Envelope, JITExecutor
-from engine.graph import CognitiveGraph, TopologicalSorter
-from engine.jit_booster import JITBooster
-from engine.knowledge_banks.manager import BankManager
-from engine.mandate_executor import make_live_work_fn
-from engine.mcp_manager import MCPManager
-from engine.model_garden import get_garden
-from engine.model_selector import ModelSelector
-from engine.pipeline import NStrokeEngine
-from engine.parallel_validation import FileChange, ParallelValidationPipeline
-from engine.psyche_bank import PsycheBank
-from engine.refinement import RefinementLoop
-from engine.refinement_supervisor import RefinementSupervisor
-from engine.roadmap import RoadmapManager
-from engine.router import (
-    ConversationalIntentDiscovery,
-    LockedIntent,
-    MandateRouter,
-    compute_buddy_line,
-)
-from engine.sandbox import SandboxOrchestrator
-from engine.scope_evaluator import ScopeEvaluator
-from engine.self_improvement import SelfImprovementEngine
-from engine.sota_ingestion import SOTAIngestionEngine
-from engine.pipeline import TwoStrokeEngine
-from engine.tribunal import Engram, Tribunal
-from engine.validator_16d import Validator16D
-from engine.async_fluid_executor import AsyncFluidExecutor
-from engine.jit_designer import JITDesigner, StreamInterceptor, analyze_partial_prompt
+# ── De-prioritized imports for Lean Mode ──────────────────────────────────
+# All 'engine' package imports are moved into _get_heavy_singletons()
+# to ensure module-level memory remains below 256 MiB.
+_settings: Any = None
+
+def _get_settings():
+    global _settings
+    if _settings is None:
+        from engine.config import settings
+        _settings = settings
+    return _settings
 
 # ── Singletons ────────────────────────────────────────────────────────────────
-_router = MandateRouter()
-_graph = CognitiveGraph()
-_bank = PsycheBank()
-_tribunal = Tribunal(bank=_bank)
-_executor = JITExecutor()
-_sorter = TopologicalSorter()
-_scope_evaluator = ScopeEvaluator()
-_refinement_loop = RefinementLoop()
-_buddy_memory = BuddyMemoryStore()
-_conversation_engine = ConversationEngine(memory_store=_buddy_memory)
-_jit_booster = JITBooster()
-_engram_generator = VisualEngramGenerator()
-_self_improvement_engine = SelfImprovementEngine(
-    booster=_jit_booster, bank=_bank)
-
-# ── Knowledge Banks + SOTA Ingestion ─────────────────────────────────────────
-_bank_manager = BankManager()
-_sota_ingestion = SOTAIngestionEngine(
-    manager=_bank_manager, tribunal=_tribunal)
-_mcp_manager = MCPManager()
-_model_selector = ModelSelector()
-_refinement_supervisor = RefinementSupervisor()
-_intent_discovery = ConversationalIntentDiscovery()
-_validator_16d = Validator16D()
-_async_fluid_executor = AsyncFluidExecutor()
-_jit_designer = JITDesigner()
-_STATIC = Path(__file__).parent / "static"
-_STARTUP_TIME: str = datetime.now(UTC).isoformat()
+# ── Singletons — lazy-initialized ──────────────────────────────────────────
+_router: Any = None
+_graph: Any = None
+_bank: Any = None
+_tribunal: Any = None
+_mcp_manager: Any = None
+_executor: Any = None
+_sorter: Any = None
+_scope_evaluator: Any = None
+_refinement_loop: Any = None
+_buddy_memory: Any = None
+_conversation_engine: Any = None
+_jit_booster: Any = None
+_engram_generator: Any = None
+_model_selector: Any = None
+_refinement_supervisor: Any = None
+_intent_discovery: Any = None
+_async_fluid_executor: Any = None
+_jit_designer: Any = None
 
 # ── SSE broadcast queue ───────────────────────────────────────────────────────
 _sse_queues: list[asyncio.Queue[str]] = []
@@ -135,21 +78,22 @@ _sse_queues: list[asyncio.Queue[str]] = []
 def _broadcast(event: dict[str, Any]) -> None:
     data = json.dumps(event)
     for q in list(_sse_queues):
-        with suppress(asyncio.QueueFull):
+        try:
             q.put_nowait(data)
+        except asyncio.QueueFull:
+            pass
 
 
-_daemon = BackgroundDaemon(_broadcast)
+_director: Director | None = None
+_b_unit: BUnit | None = None
+_STATIC = Path(__file__).parent / "static"
+_STARTUP_TIME: str = datetime.now(UTC).isoformat()
 
-# ── NotificationBus — register SSE broadcaster so all alerts reach the UI ────
-_notification_bus = get_bus()
-_notification_bus.register_broadcast(_broadcast)
-
-# Subscribe RefinementSupervisor to CRITICAL bus events so tribunal poison
-# flags automatically queue a healing task (agent-to-agent signalling).
+_daemon: BackgroundDaemon | None = None
+_notification_bus: Any = None
 
 
-def _on_tribunal_critical(event: BusEvent) -> None:
+def _on_tribunal_critical(event: Any) -> None:
     """Internal subscriber: log CRITICAL Tribunal events to structured output."""
     import logging as _logging
     _logging.getLogger("studio.api.bus").critical(
@@ -157,66 +101,189 @@ def _on_tribunal_critical(event: BusEvent) -> None:
         event.message, event.source, event.payload,
     )
 
+_stance_engine: Any = None
 
-_notification_bus.subscribe("CRITICAL", _on_tribunal_critical)
+# ── Heavyweight singletons — lazy-initialized on first use ───────────────────
+# These are deferred to reduce startup memory below 512 MiB for Cloud Run.
+_self_improvement_engine: Any = None
+_bank_manager: Any = None
+_sota_ingestion: Any = None
+_validator_16d: Any = None
+_cognitive_map: Any = None
+_deep_introspector: Any = None
+_parallel_validation: Any = None
+_supervisor: Any = None
+_n_stroke_engine: Any = None
+_branch_executor: Any = None
+_roadmap: Any = None
+_sandbox_orchestrator: Any = None
 
-# ── CognitiveStanceEngine — process-level singleton ─────────────────────────
-_stance_engine = get_stance_engine()
 
-# ── CognitiveMap + ParallelValidationPipeline (after _broadcast) ───────────
-_cognitive_map = get_cognitive_map()          # builds on first call
-_cognitive_map.register_update_callback(_broadcast)  # SSE self_map_update
-_deep_introspector = get_deep_introspector()  # deep self-awareness engine
-_deep_introspector.register_update_callback(_broadcast)
-_parallel_validation = ParallelValidationPipeline(
-    broadcast_fn=_broadcast,
-    tribunal=_tribunal,
-    validator=_validator_16d,
-)
+def _get_heavy_singletons():
+    """Nuclear Lazy Load: performing all engine imports locally."""
+    global _router, _graph, _bank, _tribunal, _mcp_manager, _executor
+    global _sorter, _scope_evaluator, _refinement_loop, _conversation_engine
+    global _jit_booster, _engram_generator, _model_selector
+    global _director, _b_unit, _daemon, _notification_bus, _stance_engine
+    global _self_improvement_engine, _bank_manager, _sota_ingestion, _validator_16d
+    global _cognitive_map, _deep_introspector, _parallel_validation
+    global _supervisor, _n_stroke_engine, _branch_executor, _roadmap, _sandbox_orchestrator
+    global _refinement_supervisor, _intent_discovery, _async_fluid_executor, _jit_designer
+    global _buddy_memory
 
+    if _router is not None:
+        return  # Already initialized
 
-# ── Sandbox + Roadmap singletons (after _broadcast so they can be wired) ─────
-_supervisor = TwoStrokeEngine(
-    router=_router,
-    booster=_jit_booster,
-    tribunal=_tribunal,
-    sorter=_sorter,
-    executor=_executor,
-    scope_evaluator=_scope_evaluator,
-    refinement_loop=_refinement_loop,
-    broadcast_fn=_broadcast,
-)
-_n_stroke_engine = NStrokeEngine(
-    router=_router,
-    booster=_jit_booster,
-    tribunal=_tribunal,
-    sorter=_sorter,
-    executor=_executor,
-    scope_evaluator=_scope_evaluator,
-    refinement_loop=_refinement_loop,
-    mcp_manager=_mcp_manager,
-    model_selector=_model_selector,
-    refinement_supervisor=_refinement_supervisor,
-    broadcast_fn=_broadcast,
-    async_fluid_executor=_async_fluid_executor,
-)
-_branch_executor = BranchExecutor(
-    router=_router,
-    booster=_jit_booster,
-    tribunal=_tribunal,
-    sorter=_sorter,
-    jit_executor=_executor,
-    scope_evaluator=_scope_evaluator,
-    refinement_loop=_refinement_loop,
-    broadcast_fn=_broadcast,
-)
-_roadmap = RoadmapManager()
-_sandbox_orchestrator = SandboxOrchestrator(
-    max_workers=settings.sandbox_max_workers,
-    broadcast_fn=_broadcast,
-    booster=_jit_booster,
-    bank=_bank,
-)
+    # SURGICAL IMPORTS
+    from engine.config import settings
+    from engine.router import MandateRouter, ConversationalIntentDiscovery
+    from engine.graph import CognitiveGraph, TopologicalSorter
+    from engine.psyche_bank import PsycheBank
+    from engine.tribunal import Tribunal
+    from engine.mcp_manager import MCPManager
+    from engine.executor import JITExecutor
+    from engine.scope_evaluator import ScopeEvaluator
+    from engine.refinement import RefinementLoop
+    from engine.memory_tier_orchestrator import get_memory_orchestrator
+    from engine.conversation import ConversationEngine
+    from engine.jit_booster import JITBooster
+    from engine.engram_visual import VisualEngramGenerator
+    from engine.model_selector import ModelSelector
+    from engine.director import Director
+    from engine.b_unit import BUnit
+    from engine.daemon import BackgroundDaemon
+    from engine.bus import get_bus
+    from engine.stance import get_stance_engine
+    from engine.self_improvement import SelfImprovementEngine
+    from engine.knowledge_banks.manager import BankManager
+    from engine.sota_ingestion import SOTAIngestionEngine
+    from engine.validator_16d import Validator16D
+    from engine.cognitive_map import get_cognitive_map
+    from engine.deep_introspector import get_deep_introspector
+    from engine.pipeline import NStrokeEngine, TwoStrokeEngine
+    from engine.branch_executor import BranchExecutor
+    from engine.roadmap import RoadmapManager
+    from engine.sandbox import SandboxOrchestrator
+    from engine.refinement_supervisor import RefinementSupervisor
+    from engine.async_fluid_executor import AsyncFluidExecutor
+    from engine.jit_designer import JITDesigner
+    from engine.parallel_validation import ParallelValidationPipeline
+
+    # 1. Base components
+    _router = MandateRouter()
+    _graph = CognitiveGraph()
+    _bank = PsycheBank()
+    _tribunal = Tribunal(bank=_bank)
+    _mcp_manager = MCPManager()
+    _executor = JITExecutor(mcp_manager=_mcp_manager, tribunal=_tribunal)
+    _sorter = TopologicalSorter()
+    _scope_evaluator = ScopeEvaluator()
+    _refinement_loop = RefinementLoop()
+    _buddy_memory = get_memory_orchestrator().buddy_store
+    _conversation_engine = ConversationEngine(memory_store=_buddy_memory)
+    _jit_booster = JITBooster()
+    _engram_generator = VisualEngramGenerator()
+    _model_selector = ModelSelector()
+    _refinement_supervisor = RefinementSupervisor()
+    _intent_discovery = ConversationalIntentDiscovery()
+    _async_fluid_executor = AsyncFluidExecutor()
+    _jit_designer = JITDesigner()
+
+    _director = Director(_broadcast)
+    _b_unit = BUnit(_broadcast)
+    _daemon = BackgroundDaemon(_broadcast)
+
+    # Re-register notification bus with initialized components
+    _notification_bus = get_bus()
+    _notification_bus.register_broadcast(_broadcast)
+    _notification_bus.subscribe("ALL", lambda e: _director.on_bus_event(e.level, e.payload))
+    _notification_bus.subscribe("INSIGHT", lambda e: _b_unit.on_bus_event(e.level, e.payload))
+    _notification_bus.subscribe("CRITICAL", _on_tribunal_critical)
+
+    # 1.1 Stance engine
+    _stance_engine = get_stance_engine()
+
+    # 2. Heavy components
+    _self_improvement_engine = SelfImprovementEngine(booster=_jit_booster, bank=_bank)
+    _bank_manager = BankManager()
+    _sota_ingestion = SOTAIngestionEngine(manager=_bank_manager, tribunal=_tribunal)
+    _validator_16d = Validator16D()
+
+    _cognitive_map = get_cognitive_map()
+    _cognitive_map.register_update_callback(_broadcast)
+    _deep_introspector = get_deep_introspector()
+    _deep_introspector.register_update_callback(_broadcast)
+
+    _parallel_validation = ParallelValidationPipeline(
+        broadcast_fn=_broadcast, tribunal=_tribunal, validator=_validator_16d
+    )
+    _supervisor = TwoStrokeEngine(
+        router=_router, booster=_jit_booster, tribunal=_tribunal,
+        sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
+        refinement_loop=_refinement_loop, broadcast_fn=_broadcast,
+    )
+    _n_stroke_engine = NStrokeEngine(
+        router=_router, booster=_jit_booster, tribunal=_tribunal,
+        sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
+        refinement_loop=_refinement_loop, mcp_manager=_mcp_manager,
+        model_selector=_model_selector, refinement_supervisor=_refinement_supervisor,
+        broadcast_fn=_broadcast, async_fluid_executor=_async_fluid_executor,
+    )
+    _n_stroke_engine.register_director(_director)
+    _branch_executor = BranchExecutor(
+        router=_router, booster=_jit_booster, tribunal=_tribunal,
+        sorter=_sorter, jit_executor=_executor, scope_evaluator=_scope_evaluator,
+        refinement_loop=_refinement_loop, broadcast_fn=_broadcast,
+    )
+    _roadmap = RoadmapManager()
+    _sandbox_orchestrator = SandboxOrchestrator(
+        max_workers=_get_settings().sandbox_max_workers,
+        broadcast_fn=_broadcast, booster=_jit_booster, bank=_bank,
+    )
+    _loop_stats["interval_seconds"] = 600 if _get_settings().lean_mode else 30
+
+    # 3. Route initialization (Lazy-loaded to keep import memory low)
+    from studio.routes import introspection as ir
+    from studio.routes import buddy as br
+    from studio.routes import pipeline as pr
+    from studio.routes import sandbox as sr
+    from studio.routes import knowledge as kr
+    from studio.routes import vlt as vr
+    from studio.routes import core as cr
+    from studio.routes import studio as str_r
+
+    def __create_n_stroke(max_strokes: int):
+        from engine.pipeline import NStrokeEngine as _NSE
+        return _NSE(
+            router=_router, booster=_jit_booster, tribunal=_tribunal,
+            sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
+            refinement_loop=_refinement_loop, mcp_manager=_mcp_manager,
+            model_selector=_model_selector, refinement_supervisor=_refinement_supervisor,
+            broadcast_fn=_broadcast, max_strokes=max_strokes,
+            async_fluid_executor=_async_fluid_executor,
+        )
+
+    ir.set_broadcast(_broadcast)
+    br.init(buddy_memory=_buddy_memory, conversation_engine=_conversation_engine, broadcast_fn=_broadcast)
+    pr.init(
+        intent_discovery=_intent_discovery, supervisor=_supervisor,
+        n_stroke_engine=_n_stroke_engine, async_fluid_executor=_async_fluid_executor,
+        branch_executor=_branch_executor, mcp_manager=_mcp_manager,
+        broadcast_fn=_broadcast, create_n_stroke_fn=__create_n_stroke,
+    )
+    sr.init(sandbox_orchestrator=_sandbox_orchestrator, roadmap=_roadmap, broadcast_fn=_broadcast)
+    kr.init(bank_manager=_bank_manager, sota_ingestion=_sota_ingestion, broadcast_fn=_broadcast)
+    vr.init(broadcast_fn=_broadcast)
+    cr.init(parallel_validation=_parallel_validation, notification_bus=_notification_bus, stance_engine=_stance_engine)
+
+    app.include_router(ir.router)
+    app.include_router(br.router)
+    app.include_router(pr.router)
+    app.include_router(sr.router)
+    app.include_router(kr.router)
+    app.include_router(vr.router)
+    app.include_router(cr.router)
+    app.include_router(str_r.router)
 
 # ── Autonomous improvement loop state ─────────────────────────────────────────
 _loop_active: bool = False
@@ -227,7 +294,7 @@ _loop_stats: dict[str, Any] = {
     "cycles_completed": 0,
     "last_run_at": None,
     "next_run_at": None,
-    "interval_seconds": 30,  # DEV MODE: 90→30s for faster iteration
+    "interval_seconds": 600,  # Default for safety; refined in _get_heavy_singletons
     "proven_this_session": 0,
     "improvements_this_session": 0,
     "started_at": None,
@@ -307,6 +374,9 @@ async def _autonomous_loop() -> None:
 
 @asynccontextmanager
 async def _lifespan(_: FastAPI):
+    # DOCKER-OPTIMIZED: Do not call _get_heavy_singletons on boot.
+    # We want the container to listen on 8080 instantly to pass health-checks.
+    # Individual routes (and health checks) will call it on-demand.
     _jit_booster.start_background_refresh()
 
     async def _purge_psychebank_loop() -> None:
@@ -333,80 +403,8 @@ app = FastAPI(title="TooLoo V2 Governor Dashboard",
 
 # ── Routes ───────────────────────────────────────────────────────────────────
 
-# Wire extracted route modules
-from studio.routes import introspection as _introspection_routes
-from studio.routes import buddy as _buddy_routes
-from studio.routes import pipeline as _pipeline_routes
-from studio.routes import sandbox as _sandbox_routes
-
-def __create_n_stroke(max_strokes: int):
-    from engine.pipeline import NStrokeEngine as _NSE
-    return _NSE(
-        router=_router,
-        booster=_jit_booster,
-        tribunal=_tribunal,
-        sorter=_sorter,
-        executor=_executor,
-        scope_evaluator=_scope_evaluator,
-        refinement_loop=_refinement_loop,
-        mcp_manager=_mcp_manager,
-        model_selector=_model_selector,
-        refinement_supervisor=_refinement_supervisor,
-        broadcast_fn=_broadcast,
-        max_strokes=max_strokes,
-        async_fluid_executor=_async_fluid_executor,
-    )
-
-_introspection_routes.set_broadcast(_broadcast)
-_buddy_routes.init(
-    buddy_memory=_buddy_memory,
-    conversation_engine=_conversation_engine,
-    broadcast_fn=_broadcast,
-)
-_pipeline_routes.init(
-    intent_discovery=_intent_discovery,
-    supervisor=_supervisor,
-    n_stroke_engine=_n_stroke_engine,
-    async_fluid_executor=_async_fluid_executor,
-    branch_executor=_branch_executor,
-    mcp_manager=_mcp_manager,
-    broadcast_fn=_broadcast,
-    create_n_stroke_fn=__create_n_stroke,
-)
-_sandbox_routes.init(
-    sandbox_orchestrator=_sandbox_orchestrator,
-    roadmap=_roadmap,
-    broadcast_fn=_broadcast,
-)
-
-app.include_router(_introspection_routes.router)
-app.include_router(_buddy_routes.router)
-app.include_router(_pipeline_routes.router)
-app.include_router(_sandbox_routes.router)
-from studio.routes import knowledge as _knowledge_routes
-from studio.routes import vlt as _vlt_routes
-from studio.routes import core as _core_routes
-from studio.routes import studio as _studio_routes
-
-_knowledge_routes.init(
-    bank_manager=_bank_manager,
-    sota_ingestion=_sota_ingestion,
-    broadcast_fn=_broadcast,
-)
-_vlt_routes.init(
-    broadcast_fn=_broadcast,
-)
-_core_routes.init(
-    parallel_validation=_parallel_validation,
-    notification_bus=_notification_bus,
-    stance_engine=_stance_engine,
-    broadcast_fn=_broadcast,
-)
-
-app.include_router(_knowledge_routes.router)
-app.include_router(_vlt_routes.router)
-app.include_router(_core_routes.router)
-app.include_router(_studio_routes.router)
+# Route modules are now imported and initialized inside _get_heavy_singletons
+# to ensure they receive fully initialized singletons in Lean Mode.
 
 app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 
@@ -430,12 +428,32 @@ async def serve_buddy_demo() -> HTMLResponse:
 
 
 @app.get("/v2/health")
-async def health() -> dict[str, Any]:
-    mcp_tool_count = len(_mcp_manager.manifest())
-    dora = _executor.dora_metrics().to_dict()
+async def get_health():
+    # Health check MUST BE LIGHT to pass Cloud Run port probes within 512 MiB.
+    # We do NOT call _get_heavy_singletons() here; it will happen on the first mandate.
+    
+    import psutil
+    import os
+    try:
+        process = psutil.Process(os.getpid())
+        mem_info = process.memory_info()
+        rss_mb = round(mem_info.rss / (1024 * 1024), 2)
+        vms_mb = round(mem_info.vms / (1024 * 1024), 2)
+    except Exception:
+        rss_mb = 0.0
+        vms_mb = 0.0
+    
+    # Safely probe if singletons are loaded
+    ready = (_router is not None)
+    
     return {
-        "status": "ok",
+        "status": "ok" if ready else "warmup",
         "version": "2.1.0",
+        "lean_mode": _get_settings().lean_mode,
+        "memory": {
+            "rss_mb": rss_mb,
+            "vms_mb": vms_mb,
+        },
         "components": {
             "router": "up",
             "graph": f"{len(_graph.nodes())} nodes",
@@ -590,7 +608,7 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
         domain="conversation",
         mandate_level="L1",
     )
-    tribunal_result = _tribunal.evaluate(engram)
+    tribunal_result = await _tribunal.evaluate(engram)
 
     # 5. Generate response via ConversationEngine (ModelGarden inside)
     conv_result = _conversation_engine.process(
@@ -664,6 +682,7 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
         "design_directive": design_directive.to_dict(),
         "ui_components": [c.to_dict() for c in ui_components],
         "latency_ms": round((time.monotonic() - t0) * 1000, 2),
+        "goal_progress": conv_result.goal_progress,
     }
 
 
@@ -738,7 +757,7 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
         domain="conversation",
         mandate_level="L1",
     )
-    tribunal_result = _tribunal.evaluate(engram)
+    tribunal_result = await _tribunal.evaluate(engram)
 
     # ── 4. JIT Designer — design directive + thought cards ───────────────────
     memory_recalled = bool(_buddy_memory.find_relevant(req.text, limit=1))
@@ -863,6 +882,7 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
             "cache_hit": plan.cache_hit,
             "expertise_label": profile.expertise_label(),
             "cognitive_load": ct_load,
+            "goal_progress": int(round(len(profile.completed_goals) / max(1, len(profile.completed_goals) + len(profile.active_goals)) * 100)),
         })
 
     return StreamingResponse(_stream(), media_type="text/event-stream")
@@ -1054,6 +1074,11 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
     t0 = time.monotonic()
     mandate_id = f"m-{uuid.uuid4().hex[:8]}"
 
+    # 0. Cognitive Analysis (Emotional Rigging)
+    cog_turn = CognitiveLens.analyze(req.text)
+    # Map load to buddy scaling/bubbles
+    _director.handle_cognitive_state(mood="idle", load=cog_turn.cognitive_load)
+
     # 1. Route
     route = _router.route(req.text)
     _broadcast({"type": "route", "mandate_id": mandate_id,
@@ -1084,9 +1109,12 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
         domain="backend",
         mandate_level="L2",
     )
-    tribunal_result = _tribunal.evaluate(engram)
+    tribunal_result = await _tribunal.evaluate(engram)
     _broadcast({"type": "tribunal", "mandate_id": mandate_id,
                "result": tribunal_result.to_dict()})
+    
+    # Notify Director of tribunal outcome
+    _director.on_bus_event("ALL", {"type": "tribunal_result", "passed": tribunal_result.passed})
 
     # 4. Build a toy DAG plan from route
     spec: list[tuple[str, list[str]]] = [
@@ -1192,7 +1220,7 @@ async def buddy_chat(req: ChatRequest) -> dict[str, Any]:
         domain="conversation",
         mandate_level="L1",
     )
-    tribunal_result = _tribunal.evaluate(engram)
+    tribunal_result = await _tribunal.evaluate(engram)
 
     # 4. Conversational planning + generation (receives JIT-validated route)
     conv_result = _conversation_engine.process(
@@ -1649,9 +1677,9 @@ async def sse_stream() -> StreamingResponse:
 def main() -> None:
     uvicorn.run(
         "studio.api:app",
-        host=settings.studio_host,
-        port=settings.studio_port,
-        reload=settings.studio_reload,
+        host=_get_settings().studio_host,
+        port=_get_settings().studio_port,
+        reload=_get_settings().studio_reload,
         log_level="info",
     )
 

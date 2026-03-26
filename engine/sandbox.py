@@ -50,6 +50,7 @@ from engine.router import MandateRouter
 from engine.scope_evaluator import ScopeEvaluator
 from engine.tribunal import Engram, Tribunal
 from engine.vector_store import VectorStore
+# from engine.mcp_manager import MCPManager  # Moved to __init__ to fix circular import
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 # DEV MODE: promote threshold lowered 0.72→0.50; internal workers raised 4→8
@@ -232,8 +233,10 @@ class SandboxOrchestrator:
         self._refinement_loop = RefinementLoop()
         self._dimension_scorer = DimensionScorer()
         self._sorter = TopologicalSorter()
-        self._inner_executor = JITExecutor(max_workers=_INTERNAL_WORKERS)
-        self._outer_executor = JITExecutor(max_workers=max_workers)
+        from engine.mcp_manager import MCPManager
+        self._mcp_manager = MCPManager()
+        self._inner_executor = JITExecutor(mcp_manager=self._mcp_manager, tribunal=self._tribunal, max_workers=_INTERNAL_WORKERS)
+        self._outer_executor = JITExecutor(mcp_manager=self._mcp_manager, tribunal=self._tribunal, max_workers=max_workers)
         # Graph tracks sandbox dependency chains
         self._graph = CognitiveGraph()
         # Vector store deduplicates feature submissions (threshold 0.90)

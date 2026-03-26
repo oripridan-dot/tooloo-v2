@@ -29,6 +29,8 @@ dependencies = [
     "websockets>=16.0",
     "prometheus-client>=0.24.1",
     "numpy>=2.4.3",
+    "streamlit>=1.41.0",
+    "requests>=2.31.0",
 ]
 
 [project.optional-dependencies]

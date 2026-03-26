@@ -28,5 +28,5 @@ ENV PORT=8080
 ENV STUDIO_HOST=0.0.0.0
 ENV STUDIO_PORT=8080
 
-# Run API using uv
-CMD exec uv run uvicorn studio.api:app --host 0.0.0.0 --port ${PORT} --workers 1
+# Run API using uv run (with --no-sync to avoid runtime overhead)
+CMD ["uv", "run", "--no-sync", "uvicorn", "studio.api:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]

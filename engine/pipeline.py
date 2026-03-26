@@ -43,6 +43,7 @@ from engine.model_garden import get_garden
 from engine.meta_architect import MetaArchitect
 from engine.mcp_manager import MCPManager
 from engine.mandate_executor import make_live_work_fn
+from engine.reasoning_engine import get_reasoning_engine
 from engine.jit_booster import JITBooster, JITBoostResult
 from engine.graph import TopologicalSorter
 from engine.executor import Envelope, ExecutionResult, JITExecutor
@@ -96,6 +97,7 @@ _EXECUTE_ONLY_NODES: frozenset[str] = frozenset(
 
 # Mandatory discovery nodes injected at the front of every pipeline
 _MANDATORY_DISCOVERY: list[str] = ["audit_wave", "design_wave", "ux_eval"]
+from engine.director import Director
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -367,6 +369,11 @@ class NStrokeEngine:
         # Initialize VectorStore for metadata indexing
         self._cognitive_vector_store = VectorStore()
         self._kv_store = get_kv_store()
+        self._director: Director | None = None
+
+    def register_director(self, director: Director) -> None:
+        """Connect the cinematic director to this engine."""
+        self._director = director
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
@@ -508,6 +515,28 @@ class NStrokeEngine:
             )
         elif action == "COLLABORATE":
             self._broadcast({"type": "info", "msg": "Exploratory intent detected mathematically. COLLABORATE mode active."})
+
+        # ── 0b. Wave 0.5: Deliberation (Tier-5 Pre-Commitment Reasoning) ───────
+        strategy_audit: str | None = None
+        if action == "EXECUTE" and score > 0.8:
+            self._broadcast({"type": "status", "msg": "Wave 0.5: Initiating Cognitive Deliberation..."})
+            reasoner = get_reasoning_engine()
+            
+            # Use current workspace context for simulation
+            workspace_context = {
+                "files": [str(p.relative_to(_REPO_ROOT)) for p in _REPO_ROOT.rglob("*") if p.is_file()][:100],
+                "focus": _infer_workspace_file_target(locked_intent.mandate_text)
+            }
+            strategy_audit = await reasoner.deliberate(
+                intent=locked_intent.intent,
+                mandate=locked_intent.mandate_text,
+                context=workspace_context
+            )
+            self._broadcast({
+                "type": "strategy_audit_complete",
+                "pipeline_id": pipeline_id,
+                "audit": strategy_audit
+            })
 
         # ── Law 20 (Amended) — advisory consultation gate ─────────────────────
         # Broadcast a consultation_recommended signal when confidence is below
@@ -667,6 +696,9 @@ class NStrokeEngine:
             )
 
             # ── 4. Execute (Async variant) ────────────────────────────────────
+            if self._director:
+                self._director.on_dag_transition("EXECUTE", "start")
+
             stroke_record = await self._run_stroke(
                 locked_intent=locked_intent,
                 pipeline_id=pipeline_id,
@@ -677,6 +709,9 @@ class NStrokeEngine:
                 healing_report=healing_report,
                 cognitive_state=cognitive_state,
             )
+            if self._director:
+                verdict = stroke_record.refinement.verdict
+                self._director.on_dag_transition(verdict.upper(), "complete")
             strokes.append(stroke_record)
 
             # ── 5. Update per-node fail counters ──────────────────────────────
@@ -747,6 +782,7 @@ class NStrokeEngine:
         )
 
         # ── Final result ──────────────────────────────────────────────────────
+        crisis_payload = None
 
         # ── No Dead Ends Protocol: crisis synthesis on exhaustion ─────────────
         # When the loop exits without satisfaction (all MAX_STROKES consumed
@@ -764,10 +800,29 @@ class NStrokeEngine:
             self._broadcast({
                 "type": "actionable_intervention",
                 "pipeline_id": pipeline_id,
-                "crisis": crisis_payload,
+                "crisis": crisis_payload
             })
-        else:
-            crisis_payload = None
+
+        # ── 6. Phase 6: Buddy Active Expertise (Pedagogical Bridge) ─────────────
+        if satisfied:
+            try:
+                self._broadcast({"type": "status", "msg": "Buddy: Generating Active Insight..."})
+                insight = await self._generate_buddy_insight(locked_intent, strokes)
+                self._broadcast({
+                    "type": "buddy_active_insight",
+                    "pipeline_id": pipeline_id,
+                    "insight": insight
+                })
+                # Persist to PsycheBank for recurring pattern analysis
+                from engine.psyche_bank import PsycheBank
+                pb = PsycheBank()
+                await pb.record_pedagogical_insight({
+                    "mandate": locked_intent.mandate_text,
+                    "insight": insight,
+                    "strokes_count": len(strokes)
+                })
+            except Exception as e:
+                logger.error(f"BuddyStroke failed: {e}")
 
         result = NStrokeResult(
             pipeline_id=pipeline_id,
@@ -795,6 +850,29 @@ class NStrokeEngine:
         })
 
         return result
+
+    async def _generate_buddy_insight(self, locked_intent: LockedIntent, strokes: list[StrokeRecord]) -> str:
+        """
+        Generate a pedagogical insight after a successful mandate.
+        Uses a T2/T3 model to reflect on the process and extract a 'pro tip' for the user.
+        """
+        prompt = f"""
+        You are Buddy, a system-integrated pedagogical agent.
+        The user just executed a mandate: "{locked_intent.mandate_text}"
+        The system took {len(strokes)} strokes to satisfy it.
+        
+        Reflect on the technical steps taken and provide a single, sophisticated 'Buddy Insight'.
+        This should be a combination of technical praise, a deep-architectural 'why', and a pro-tip for future mandates.
+        Keep it to 2-3 sentences. Professional, high-agency, and slightly cinematic.
+        """
+        try:
+            model_id = self._garden.get_tier_model(tier=2, intent="EXPLAIN")
+            response = self._garden.call(model_id, prompt)
+            return response.strip()
+        except Exception as e:
+            logger.error(f"Failed to generate buddy insight: {e}")
+            return "Execution complete. System components are now aligned with the updated mandate."
+
 
     async def run_async(
         self,

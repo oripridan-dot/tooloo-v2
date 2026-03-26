@@ -129,12 +129,14 @@ class ParallelValidationPipeline:
         tribunal: Tribunal | None = None,
         validator: Validator16D | None = None,
         max_concurrent: int = _MAX_CONCURRENT_VALIDATIONS,
+        runtime_inputs: dict[str, Any] | None = None,
     ) -> None:
         self._broadcast = broadcast_fn or (lambda _: None)
         self._tribunal = tribunal or Tribunal()
         self._validator = validator or Validator16D()
         self._semaphore = asyncio.Semaphore(max_concurrent)
         self._write_queue: asyncio.Queue[tuple[str, str]] = asyncio.Queue()
+        self._runtime_inputs = runtime_inputs or {}
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -336,6 +338,10 @@ class ParallelValidationPipeline:
                 mandate_id=f"pv-{change.component}",
                 intent="AUDIT",
                 code_snippet=source[:8000],
+                # Pass real runtime metrics if available (Phase 4 fix)
+                test_pass_rate=self._runtime_inputs.get("test_pass_rate", 1.0),
+                latency_p50_ms=self._runtime_inputs.get("latency_p50_ms", 500.0),
+                latency_p90_ms=self._runtime_inputs.get("latency_p90_ms", 1000.0),
             )
             latency = round((time.monotonic() - t0) * 1000, 2)
 

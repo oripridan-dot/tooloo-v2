@@ -165,11 +165,19 @@ class VectorStore:
 
     def __init__(self, dup_threshold: float | None = None) -> None:
         from engine.config import settings as _cfg
+        from engine.memory.merkle_tree import MerkleTree
+        from pathlib import Path
+        
+        self._lock = threading.Lock()
         self._docs: dict[str, VectorDoc] = {}
         # term → IDF weight (recomputed on insert/remove)
         self._idf: dict[str, float] = {}
         self._df: dict[str, int] = {}       # term → document frequency count
-        self._lock = threading.RLock()
+        
+        # Tier-5: Structural Physics (Merkle Tree)
+        self._merkle = MerkleTree(str(Path(__file__).resolve().parents[1]))
+        self._last_state_hash: str | None = None
+        
         # Prefer explicit kwarg; fall back to NEAR_DUPLICATE_THRESHOLD from .env
         self.dup_threshold = dup_threshold if dup_threshold is not None else _cfg.near_duplicate_threshold
 
@@ -203,8 +211,8 @@ class VectorStore:
     ) -> list[SearchResult]:
         results: list[SearchResult] = []
         for doc in self._docs.values():
+            # Tier-5: Primary path is Dense Semantic Similarity
             if query_embedding is not None and doc.embedding is not None:
-                # Dense semantic similarity (Gemini gemini-embedding-001)
                 score = _cosine_dense(query_embedding, doc.embedding)
             else:
                 # Fallback: TF-IDF sparse cosine
@@ -212,6 +220,15 @@ class VectorStore:
             results.append(SearchResult(id=doc.id, score=score, doc=doc))
         results.sort(key=lambda r: r.score, reverse=True)
         return results[:top_k]
+
+    def validate_physics(self) -> bool:
+        """Verify the structural integrity of the workspace vs the indexed context."""
+        new_hash = self._merkle.build()
+        if self._last_state_hash and new_hash != self._last_state_hash:
+            logger.warning("Structural Physics Divergence detected. Workspace has changed.")
+            return False
+        self._last_state_hash = new_hash
+        return True
 
     # ── Public API ────────────────────────────────────────────────────────────
 

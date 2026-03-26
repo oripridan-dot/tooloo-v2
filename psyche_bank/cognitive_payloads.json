@@ -1195,89 +1195,220 @@
     "intent": "BUILD",
     "prior_failure_signal": ""
   },
-  "a9217f2883c4f3d234b1ce454b4c906a7b3f0540686b972fe4cf43a96a18c58d": {
-    "pipeline_id": "ouroboros-d2979ea4-router",
-    "satisfied": true,
-    "total_strokes": 1
-  },
-  "369c12b3c4269df401671126878736caac644b56a414bd48366777c1a8594f09": {
-    "pipeline_id": "ouroboros-d2979ea4-tribunal",
-    "stroke_num": 1,
-    "model": "publishers/google/models/gemini-2.0-flash-001",
-    "intent": "BUILD",
-    "prior_failure_signal": ""
-  },
-  "ab2524420d330bba5b73c0a9424d794d6292f39ac0268c7d3a94bb65f6f7310c": {
-    "pipeline_id": "crucible-full-cycle-si-c8acf5fe",
+  "1a19997896dddd0fc171df6c0fefa08e5d5f41d7e73f9540b7a1664a6ddcc7c9": {
+    "pipeline_id": "crucible-full-cycle-si-51e5a127",
     "stroke_num": 1,
     "model": "publishers/google/models/gemini-2.0-flash-001",
     "intent": "AUDIT",
     "prior_failure_signal": ""
   },
-  "c7973827ac3d1490f035a573e7ad80aea556109003d2b2b663ec7fab095560a6": {
-    "pipeline_id": "crucible-full-cycle-si-c8acf5fe",
-    "satisfied": true,
-    "total_strokes": 1
+  "9f790d58dd5c99db38eb1fa23763276f5b9c4070e19f6e1a2ca936eac7f90b7d": {
+    "pipeline_id": "crucible-full-cycle-si-51e5a127",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "AUDIT",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['crucible-full-cycle-si-51e5a127-s1-deep_research', 'crucible-full-cycle-si-51e5a127-s1-audit_wave', 'crucible-full-cycle-si-51e5a127-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
   },
-  "e837c523f622ded6c843d1e06eaac9dc19ea9b24d2e90fb247e1ff2e6a0a1e80": {
-    "pipeline_id": "ouroboros-61447b0b-router",
+  "c97d69ccfb77c73d05871f80ba6a424c3a77f65c8e60058e740bd3a3d3204feb": {
+    "pipeline_id": "crucible-full-cycle-si-51e5a127",
+    "stroke_num": 3,
+    "model": "gemini-2.5-pro",
+    "intent": "AUDIT",
+    "prior_failure_signal": "[retry-signal stroke=2] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['crucible-full-cycle-si-51e5a127-s2-deep_research', 'crucible-full-cycle-si-51e5a127-s2-audit_wave', 'crucible-full-cycle-si-51e5a127-s2-design_wave'], escalated_to=gemini-2.5-pro. Reapproach with corrections."
+  },
+  "3796060723f622c755976a5517c3b2e4a8fcc7a64c31cb659742b22518bd21f9": {
+    "pipeline_id": "crucible-full-cycle-si-51e5a127",
+    "stroke_num": 4,
+    "model": "mistral-large@2407",
+    "intent": "AUDIT",
+    "prior_failure_signal": "[retry-signal stroke=3] model=gemini-2.5-pro, verdict=fail, failed_nodes=['crucible-full-cycle-si-51e5a127-s3-deep_research', 'crucible-full-cycle-si-51e5a127-s3-audit_wave', 'crucible-full-cycle-si-51e5a127-s3-design_wave'], escalated_to=mistral-large@2407. Reapproach with corrections."
+  },
+  "9ba11dc3a916114f153c0930c1ec521a180076808f370bdee435d6de3845c60d": {
+    "pipeline_id": "crucible-full-cycle-si-51e5a127",
+    "satisfied": false,
+    "total_strokes": 4
+  },
+  "488198a2bbc9884263f4c46115a3fcb70eb00baf226675c1a465185e97af266e": {
+    "pipeline_id": "ouroboros-42c03557-router",
     "stroke_num": 1,
     "model": "publishers/google/models/gemini-2.0-flash-001",
     "intent": "BUILD",
     "prior_failure_signal": ""
   },
-  "319bca67600b427767041cdea459749b9f357cc8a1daf706ce0d24d20869c813": {
-    "pipeline_id": "ouroboros-61447b0b-router",
+  "2839d9eff2666b25b26ba7a868a076cf650a50e7939bcf7510a096e79fa7cd8f": {
+    "pipeline_id": "crucible-full-cycle-si-1b735ff4",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "AUDIT",
+    "prior_failure_signal": ""
+  },
+  "766e3e1d9200eaadc6967009d5be1b609b4e41d2e419348d485a0a5e59d9b21b": {
+    "pipeline_id": "crucible-full-cycle-si-1b735ff4",
+    "stroke_num": 2,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "AUDIT",
+    "prior_failure_signal": "[retry-signal stroke=1] model=publishers/google/models/gemini-2.0-flash-001, verdict=fail, failed_nodes=['crucible-full-cycle-si-1b735ff4-s1-deep_research', 'crucible-full-cycle-si-1b735ff4-s1-audit_wave', 'crucible-full-cycle-si-1b735ff4-s1-design_wave'], escalated_to=publishers/google/models/gemini-2.0-flash-001. Reapproach with corrections."
+  },
+  "dd1a72a9c7f22ccfdf1c28f57e10309ff3334355e562c615eb00b5cbf5778f81": {
+    "pipeline_id": "crucible-full-cycle-si-6317e7fa",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "AUDIT",
+    "prior_failure_signal": ""
+  },
+  "551180dcca140588fba757229e8dda9d36818f32d94b797a5c0290297ac4faae": {
+    "pipeline_id": "crucible-full-cycle-si-6317e7fa",
     "satisfied": true,
     "total_strokes": 1
   },
-  "4544f782d65d01b70eca3966e4bfb4d30c1fa50c46731920c49fb9b31a04c781": {
-    "pipeline_id": "ouroboros-61447b0b-tribunal",
+  "31f61d3495e8399ea888fed4b5c498bba4c7a8f67baae971b98dd80ee4dcdfb2": {
+    "pipeline_id": "ouroboros-d8b54db2-router",
     "stroke_num": 1,
     "model": "publishers/google/models/gemini-2.0-flash-001",
     "intent": "BUILD",
     "prior_failure_signal": ""
   },
-  "f98442f82c086c4550020dbd56491c06f013ea75e431eecfd076980fe33009e6": {
-    "pipeline_id": "api-e0a042",
+  "bedd7db4b7f5f2a125692db73542f4f4a71695b096b0cc44b9b65ed21c9a3825": {
+    "pipeline_id": "crucible-full-cycle-si-e681dbe2",
     "stroke_num": 1,
     "model": "publishers/google/models/gemini-2.0-flash-001",
-    "intent": "DEBUG",
+    "intent": "AUDIT",
     "prior_failure_signal": ""
   },
-  "49f36265feb3a06fa96491ed1e4ab34106f402d1f710761392d5a690184eced3": {
-    "pipeline_id": "api-f41980",
-    "stroke_num": 1,
-    "model": "publishers/google/models/gemini-2.0-flash-001",
-    "intent": "DEBUG",
-    "prior_failure_signal": ""
-  },
-  "88e93060ef4363ad081653009f859fc3e2c2f6f642384ba84b9eeecf5bf5e62d": {
-    "pipeline_id": "api-f41980",
+  "cc76f0e258c20d1cb5639da433f975412a811dbeb51334269dac172115c377df": {
+    "pipeline_id": "crucible-full-cycle-si-e681dbe2",
     "satisfied": true,
     "total_strokes": 1
   },
-  "ef9a27bb20bb388b3c4bb1c3fef417f1e1b87df44363208aa400263f3577ceba": {
-    "pipeline_id": "test-7a6c27",
+  "17651a700f23ac4288bf66a8a807ff942dd37abc8edfa314b57a86b2556c22c2": {
+    "pipeline_id": "ouroboros-fafe89c3-router",
     "stroke_num": 1,
     "model": "publishers/google/models/gemini-2.0-flash-001",
-    "intent": "DEBUG",
+    "intent": "BUILD",
     "prior_failure_signal": ""
   },
-  "25a521134deef0aefeaee027590deefeb9cc8eb9022fdaa04c5bff43d8d4370c": {
-    "pipeline_id": "test-7a6c27",
+  "75c4c57534917f68cbde424f61b0e2ce9fffe651dfa2248195e30e1306130ade": {
+    "pipeline_id": "ouroboros-fafe89c3-router",
     "satisfied": true,
     "total_strokes": 1
   },
-  "f7c6145aa12b078ea692b30b43b09043aa96cdd3616cbe5da0e42cc929da85b5": {
-    "pipeline_id": "api-eccc93",
+  "af49ecba01a3969ab9777140c4e35289b2682d549998258fc27d86a0aed43738": {
+    "pipeline_id": "ouroboros-fafe89c3-tribunal",
     "stroke_num": 1,
-    "model": "gemini-2.5-flash-lite",
-    "intent": "IDEATE",
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
     "prior_failure_signal": ""
   },
-  "5990a545e2b0facdd5b1756044b4d457595719fea6261c8cd629d2716dfd4f48": {
-    "pipeline_id": "api-eccc93",
+  "cc0a26aeebf03325d5b542b768068375b2b739b0911db87228ef0a971e4071c1": {
+    "pipeline_id": "ouroboros-fafe89c3-tribunal",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "6add682372df573686ffd63b5c34b45dcb1157b540e247617df9aebe5b2f47ce": {
+    "pipeline_id": "ouroboros-fafe89c3-psyche_bank",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "0e7bbec361c0a61a72de16704b314be4bcb017e3fd63cf4683e4119f5f82d1f0": {
+    "pipeline_id": "ouroboros-fafe89c3-psyche_bank",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "2865bb12fe87aa36559c499441f24cc8ad72f5f7c14e5f16167e96d8524406f3": {
+    "pipeline_id": "ouroboros-fafe89c3-jit_booster",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "9b6b95d85d2d7532fa2ef2f59729c7ceec261d488c3d5d642bb28be521deb8fe": {
+    "pipeline_id": "ouroboros-fafe89c3-jit_booster",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "9c73eb1f57c071609df1badbda5168d2e837f414cc1abdfb1c43e02da7065895": {
+    "pipeline_id": "ouroboros-fafe89c3-executor",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "4249d9a512c735400dd1f52fd7390a85d309235c76eb6da6fa2d581da5409998": {
+    "pipeline_id": "ouroboros-fafe89c3-executor",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "b14dfdb8f3d93efd0b3dafda54015e3de34562a58cfd9ecdc09b6334e3fa09f0": {
+    "pipeline_id": "ouroboros-fafe89c3-graph",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "cd275ae9fad35a8a651978ae17c9d61f06a17930b0b4deab305de4aaed8635b5": {
+    "pipeline_id": "ouroboros-fafe89c3-graph",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "86eaafd0dfad9cb82b58b12a5850d7b175b8984d0b1ad986f789f346c33fe002": {
+    "pipeline_id": "ouroboros-fafe89c3-scope_evaluator",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "a64ae0d32d21dde5611c687af9ee8a4189863def4859cd8a47fdc6b8ac6cfa88": {
+    "pipeline_id": "ouroboros-fafe89c3-scope_evaluator",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "d5445465c359e4a78ddb38efd393b0627c7b92f0d47a1c0a62b7cc52470ab7e6": {
+    "pipeline_id": "ouroboros-fafe89c3-refinement",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "a9b7760d0953366a0c1bae5b02c8ceaa528843ea6f50142c3cf0e65eaf7baff1": {
+    "pipeline_id": "ouroboros-fafe89c3-refinement",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "95a7cfca9cbc8f3c30b56219035268710dbdb7a6524a5d44cca827a745de4564": {
+    "pipeline_id": "ouroboros-fafe89c3-supervisor",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "30657bbddec94eb6923e1a566143af07d82d7a236684f91ee2d459b809b66efc": {
+    "pipeline_id": "ouroboros-fafe89c3-supervisor",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "20397b954b986fe2e5fa242f290f2fed479ee2a7243cf454efd6e9c4e76f2c76": {
+    "pipeline_id": "ouroboros-fafe89c3-conversation",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "b34c0f04af9f9ff17a3e6593fc5e19052dc4794d5ef52f475097296cd5192572": {
+    "pipeline_id": "ouroboros-fafe89c3-conversation",
+    "satisfied": true,
+    "total_strokes": 1
+  },
+  "91c78cc15cfd292531766ffd368b8dc7c9e902ebbff7d2bf746edaa6e907623e": {
+    "pipeline_id": "ouroboros-fafe89c3-config",
+    "stroke_num": 1,
+    "model": "publishers/google/models/gemini-2.0-flash-001",
+    "intent": "BUILD",
+    "prior_failure_signal": ""
+  },
+  "d6d3b3224e55d4aec37c0f979f933c0d9c1d0271aebb26ffb30eb8070da8e9a8": {
+    "pipeline_id": "ouroboros-fafe89c3-config",
     "satisfied": true,
     "total_strokes": 1
   }
