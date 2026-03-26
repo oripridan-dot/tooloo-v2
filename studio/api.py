@@ -84,12 +84,12 @@ def _broadcast(event: dict[str, Any]) -> None:
             pass
 
 
-_director: Director | None = None
-_b_unit: BUnit | None = None
+_director: Any = None
+_b_unit: Any = None
 _STATIC = Path(__file__).parent / "static"
 _STARTUP_TIME: str = datetime.now(UTC).isoformat()
-
-_daemon: BackgroundDaemon | None = None
+ 
+_daemon: Any = None
 _notification_bus: Any = None
 
 
@@ -168,6 +168,7 @@ def _get_heavy_singletons():
     from engine.async_fluid_executor import AsyncFluidExecutor
     from engine.jit_designer import JITDesigner
     from engine.parallel_validation import ParallelValidationPipeline
+    from engine.buddy_cognition import CognitiveLens
 
     # 1. Base components
     _router = MandateRouter()

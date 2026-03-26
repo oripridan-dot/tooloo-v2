@@ -29,5 +29,5 @@ EXPOSE 8080
 ENV STUDIO_HOST=0.0.0.0
 ENV STUDIO_PORT=8080
 
-# Run API using uvicorn directly
-CMD ["uvicorn", "studio.api:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
+# Run API using python3 -m uvicorn directly
+CMD ["python3", "-m", "uvicorn", "studio.api:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
