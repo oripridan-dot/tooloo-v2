@@ -106,6 +106,9 @@ CognitiveLens: Any = None
 Engram: Any = None
 Envelope: Any = None
 
+import threading
+_init_lock = threading.Lock()
+
 # ── Heavyweight singletons — lazy-initialized on first use ───────────────────
 # These are deferred to reduce startup memory below 512 MiB for Cloud Run.
 _self_improvement_engine: Any = None
@@ -123,7 +126,7 @@ _sandbox_orchestrator: Any = None
 
 
 def _get_heavy_singletons():
-    """Nuclear Lazy Load: performing all engine imports locally."""
+    """Nuclear Lazy Load: performing all engine imports locally and atomically."""
     global _router, _graph, _bank, _tribunal, _mcp_manager, _executor
     global _sorter, _scope_evaluator, _refinement_loop, _conversation_engine
     global _jit_booster, _engram_generator, _model_selector
@@ -136,6 +139,10 @@ def _get_heavy_singletons():
 
     if _router is not None:
         return  # Already initialized
+
+    with _init_lock:
+        if _router is not None:
+            return
 
     # SURGICAL IMPORTS
     from engine.config import settings

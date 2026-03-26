@@ -135,8 +135,15 @@ _LEDGER_LOCK = asyncio.Lock()
 
 def _create_event_hash(event: Dict[str, Any]) -> str:
     """Creates a SHA256 hash for an event's JSON representation."""
-    # Ensure deterministic hashing by sorting keys
-    return hashlib.sha256(json.dumps(event, sort_keys=True).encode()).hexdigest()
+    # Ensure deterministic hashing by sorting keys. 
+    # Handle datetime objects if they accidentally leak into the payload.
+    def default_encoder(obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat().replace('+00:00', 'Z')
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+    serialized = json.dumps(event, sort_keys=True, default=default_encoder)
+    return hashlib.sha256(serialized.encode()).hexdigest()
 
 async def _append_to_ledger(event: Dict[str, Any]) -> None:
     """Appends an event to the immutable audit ledger after hashing and chaining."""
@@ -156,13 +163,15 @@ async def _append_to_ledger(event: Dict[str, Any]) -> None:
 def create_rule_hash(rule: CogRule) -> str:
     """Creates a SHA256 hash for a CogRule's serialized JSON representation."""
     # Exclude rule_hash from hashing to avoid infinite recursion during validation
-    rule_dict = rule.model_dump(exclude={"rule_hash"})
+    # Use mode="json" to ensure datetimes are serialized to strings
+    rule_dict = rule.model_dump(exclude={"rule_hash"}, mode="json")
     return hashlib.sha256(json.dumps(rule_dict, sort_keys=True).encode()).hexdigest()
 
 def create_store_hash(store: CogStore) -> str:
     """Creates a SHA256 hash for a CogStore's serialized JSON representation."""
     # Exclude store_hash from hashing to avoid infinite recursion during validation
-    store_dict = store.model_dump(exclude={"store_hash"})
+    # Use mode="json" to ensure datetimes are serialized to strings
+    store_dict = store.model_dump(exclude={"store_hash"}, mode="json")
     # Sort rules by ID to ensure deterministic hashing for the same content
     store_dict['rules'] = sorted(store_dict.get('rules', []), key=lambda r: r.get('id', ''))
     return hashlib.sha256(json.dumps(store_dict, sort_keys=True, indent=2).encode()).hexdigest()
