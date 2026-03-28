@@ -1,10 +1,10 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining vector_store.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.918648
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.vector_store.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 """
@@ -35,8 +35,13 @@ import math
 import os
 import re
 import threading
-from dataclasses import dataclass, field
+import json
+from dataclasses import dataclass, field, asdict
 from typing import Any
+from pathlib import Path
+
+# ── Repository Root Logic ─────────────────────────────────────────────────────
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 
 # Control: rollback and circuit-breaker thresholds for corpus safety
 _MAX_CORPUS_SIZE = 50_000     # hard cap to prevent unbounded memory growth
@@ -67,7 +72,7 @@ try:
 except Exception:
     pass
 
-_EMBED_MODEL = "models/text-embedding-004"
+_EMBED_MODEL = "gemini-embedding-2-preview"
 
 
 def _get_embedding(text: str) -> list[float] | None:
@@ -186,7 +191,6 @@ class VectorStore:
     def __init__(self, dup_threshold: float | None = None, use_vertex: bool = False) -> None:
         from engine.config import settings as _cfg
         from engine.memory.merkle_tree import MerkleTree
-        from pathlib import Path
         
         self._lock = threading.Lock()
         self._docs: dict[str, VectorDoc] = {}
@@ -203,6 +207,13 @@ class VectorStore:
         self._last_state_hash: str | None = None
         
         self.dup_threshold = dup_threshold if dup_threshold is not None else _cfg.near_duplicate_threshold
+        
+        # Persistence
+        self._storage_path = Path(_REPO_ROOT) / "psyche_bank" / "vector_store.json"
+        self._storage_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Auto-load existing knowledge
+        self.load()
 
     # ── IDF management ────────────────────────────────────────────────────────
 
@@ -384,6 +395,38 @@ class VectorStore:
                 "dup_threshold": self.dup_threshold,
                 "documents": [d.to_dict() for d in self._docs.values()],
             }
+
+    def save(self) -> None:
+        """Persist the entire vector store to disk."""
+        with self._lock:
+            data = {
+                "docs": {doc_id: asdict(doc) for doc_id, doc in self._docs.items()},
+                "idf": self._idf,
+                "df": self._df
+            }
+            with open(self._storage_path, "w") as f:
+                json.dump(data, f)
+            logger.info(f"VectorStore persisted to {self._storage_path}")
+
+    def load(self) -> None:
+        """Load the vector store from disk."""
+        if not self._storage_path.exists():
+            return
+        
+        try:
+            with open(self._storage_path, "r") as f:
+                data = json.load(f)
+            
+            with self._lock:
+                self._docs = {
+                    doc_id: VectorDoc(**doc_data) 
+                    for doc_id, doc_data in data.get("docs", {}).items()
+                }
+                self._idf = data.get("idf", {})
+                self._df = data.get("df", {})
+            logger.info(f"VectorStore loaded {len(self._docs)} documents from {self._storage_path}")
+        except Exception as e:
+            logger.error(f"Failed to load VectorStore: {e}")
 
 _vector_store: VectorStore | None = None
 def get_vector_store() -> VectorStore:

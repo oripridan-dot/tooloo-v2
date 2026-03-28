@@ -1,10 +1,10 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining engram.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.915710
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.engram.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 from __future__ import annotations
@@ -13,6 +13,8 @@ import datetime
 import hashlib
 from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
+
+from engine.schemas.six_w import SixWProtocol
 
 # --- 22D VECTOR SPACE CONSTANTS ---
 CONTEXT_DIM = 6
@@ -30,24 +32,6 @@ MENTAL_DIMENSIONS_16D = [
 EMERGENCE_LABELS = [
     "Success", "Latency", "Stability", "Quality", "ROI", "Safety"
 ]
-
-class Context6W(BaseModel):
-    """The 'C' in (C+I) x E = EM. Dimensional Context."""
-    what: str = Field(..., description="Action/Payload identifier")
-    when: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
-    where: str = Field(..., description="Logical environment (e.g. 'me-west1')")
-    who: str = Field(..., description="Originating agent/entity ID")
-    how: str = Field(..., description="Procedural strategy")
-    why: str = Field(..., description="Teleological goal/Parent mandate")
-
-    def vectorize(self) -> np.ndarray:
-        """Normalized 6D hash vector [0, 1]."""
-        vals = []
-        for key in ["what", "when", "where", "who", "how", "why"]:
-            val_str = str(getattr(self, key))
-            h = hashlib.blake2b(val_str.encode(), digest_size=8).hexdigest()
-            vals.append(int(h, 16) / 0xFFFFFFFFFFFFFFFF)
-        return np.array(vals)
 
 class Intent16D(BaseModel):
     """The 'I' in (C+I) x E = EM. Mental Dimensions."""
@@ -74,7 +58,7 @@ class EmergenceVector(BaseModel):
 
 class Engram(BaseModel):
     """Unified D = C ⊕ I Payload. The atomic unit of TooLoo PURE."""
-    context: Context6W
+    context: SixWProtocol
     intent: Intent16D
     em_pred: Optional[EmergenceVector] = None
     em_actual: Optional[EmergenceVector] = None

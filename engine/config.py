@@ -1,10 +1,10 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining config.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.911688
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.config.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 """
@@ -104,8 +104,12 @@ try:
     env_path = _REPO_ROOT / ".env"
     if env_path.exists():
         load_dotenv(env_path, override=True)
-        # We don't log here yet as logging is being configured, 
-        # but we ensure the environment is ready.
+        # ── SOTA Hardening: Prevent SDK API Key Conflicts ──
+        # google-genai sometimes prioritizes GOOGLE_API_KEY over the 
+        # explicit Client(api_key=...) argument. We force-unset it 
+        # to ensure the explicitly provided GEMINI_API_KEY is used.
+        if os.getenv("GEMINI_API_KEY") and os.getenv("GOOGLE_API_KEY"):
+             os.environ.pop("GOOGLE_API_KEY", None)
     else:
         # Fallback to current working directory if not at dynamic root
         load_dotenv(Path.cwd() / ".env", override=True)
@@ -126,6 +130,7 @@ class Settings:
     anthropic_vertex_region: str = field(default_factory=lambda: os.getenv("ANTHROPIC_VERTEX_REGION", ""))
     deepseek_api_key: Optional[str] = field(default_factory=lambda: os.getenv("DEEPSEEK_API_KEY"))
     grok_api_key: Optional[str] = field(default_factory=lambda: os.getenv("GROK_API_KEY"))
+    hub_hmac_secret: str = field(default_factory=lambda: os.getenv("HUB_HMAC_SECRET", "SOTA_SECRET_2026_CHANGE_ME"))
 
     # --- Model Configurations ---
     # SOTA Tool Configuration for generative background narrative synthesis.
@@ -141,7 +146,7 @@ class Settings:
     function_calling_model: str = field(default=os.getenv("FUNCTION_CALLING_MODEL", "gpt-4-turbo-preview"))
 
     vertex_default_model: Optional[str] = field(default=os.getenv("VERTEX_DEFAULT_MODEL", "gemini-1.5-pro"))
-    gemini_model: Optional[str] = field(default=os.getenv("GEMINI_MODEL", "gemini-1.5-pro"))
+    gemini_model: Optional[str] = field(default=os.getenv("GEMINI_MODEL_TYPO")) 
     image_gen_model: Optional[str] = field(default=os.getenv("IMAGE_GEN_MODEL", "imagegeneration@006"))
     local_slm_model: str = field(default=os.getenv("LOCAL_SLM_MODEL", "ollama/llama3:8b-instruct-q5_K_M"))
     local_slm_endpoint: str = field(default=os.getenv("LOCAL_SLM_ENDPOINT", "http://localhost:11434/api/generate"))
@@ -502,6 +507,7 @@ GCP_REGION: str = settings.gcp_region
 ANTHROPIC_VERTEX_REGION: str = settings.anthropic_vertex_region
 DEEPSEEK_API_KEY: Optional[str] = settings.deepseek_api_key
 GROK_API_KEY: Optional[str] = settings.grok_api_key
+HUB_HMAC_SECRET: str = settings.hub_hmac_secret
 # Models for the incremental refinement pattern, aligned with the "Pattern" requirement.
 # These models are selected for their enhanced context window capabilities.
 IDEATION_THEME_MODEL: str = settings.ideation_theme_model
@@ -660,6 +666,7 @@ def get_workspace_roots() -> List[Path]:
 
 # Initialize Vertex AI client if GCP project ID is configured
 _vertex_client: Optional[Any] = None
+_vertex_global_client: Optional[Any] = None
 if settings.gcp_project_id:
     try:
         # Dynamically import google.generativeai to avoid runtime dependency issues
@@ -670,7 +677,13 @@ if settings.gcp_project_id:
             project=settings.gcp_project_id,
             location=settings.gcp_region
         )
-        logger.info(f"Vertex AI client initialized for project '{settings.gcp_project_id}' in region '{settings.gcp_region}'.")
+        # Secondary Global Client for reliable Pathway B failover
+        _vertex_global_client = _genai.Client(
+            vertexai=True,
+            project=settings.gcp_project_id,
+            location="us-central1"
+        )
+        logger.info(f"Vertex AI clients initialized for project '{settings.gcp_project_id}'. Regions: {settings.gcp_region}, us-central1.")
     except ImportError:
         logger.warning("google.generativeai not installed. Cannot initialize Vertex AI client.")
     except Exception as e:
@@ -682,9 +695,7 @@ if settings.gemini_api_key:
     try:
         from google import genai as _genai
         _gemini_client = _genai.Client(api_key=settings.gemini_api_key)
-        logger.info("Gemini Developer API client initialized.")
-    except ImportError:
-        logger.warning("google.generativeai not installed. Cannot initialize Gemini API client.")
+        logger.info("Gemini Developer API client initialized (AI Studio fallback).")
     except Exception as e:
         logger.warning(f"Gemini API client initialization failed: {e}")
 
@@ -729,8 +740,16 @@ VERTEX_DEFAULT_MODEL = "gemini-1.5-pro"
 
 # Exported clients for external use, making them accessible from other modules.
 vertex_client: Optional[Any] = _vertex_client
-_vertex_client = vertex_client # Alias for internal consistency
+vertex_global_client: Optional[Any] = _vertex_global_client
 gemini_client: Optional[Any] = _gemini_client
 openai_client: Optional[Any] = _openai_client
 deepseek_client: Optional[Any] = _deepseek_client
 grok_client: Optional[Any] = _grok_client
+
+# Internal Aliases for consistency
+_vertex_client = vertex_client 
+_vertex_global_client = vertex_global_client
+_gemini_client = gemini_client
+_openai_client = openai_client
+_deepseek_client = deepseek_client
+_grok_client = grok_client

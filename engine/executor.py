@@ -1,10 +1,10 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining executor.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.937820
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.executor.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 # ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
@@ -44,6 +44,7 @@ import json   # For JSON handling
 from engine.config import settings
 from engine.fleet_manager import AutonomyDial, AutonomyLevel
 from prometheus_client import Histogram
+from engine.schemas.six_w import SixWProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -1110,6 +1111,22 @@ class JITExecutor:
     ) -> ExecutionResult:
         """Executes a single work function for a given envelope and returns an ExecutionResult."""
         start_time = time.perf_counter()
+        
+        # Phase 3: JIT SOTA X-Point Injection
+        # Fetch fresh SOTA knowledge to ground the execution context
+        try:
+            from engine.vector_store import get_vector_store
+            vs = get_vector_store()
+            # Construct a query from the mandate ID and domain
+            query = f"{env.mandate_id} {env.domain} {env.intent}"
+            knowledge = await vs.search(query, top_k=2, threshold=0.1)
+            if knowledge:
+                logger.debug(f"JIT SOTA Injection for {env.mandate_id}: Found {len(knowledge)} signals.")
+                # Inject into metadata for the work_fn to utilize
+                env.metadata["sota_knowledge"] = [k.doc.text for k in knowledge]
+        except Exception as e:
+            logger.warning(f"JIT SOTA Injection failed for {env.mandate_id}: {e}")
+
         try:
             # FIX 4: Handle both synchronous and asynchronous work functions.
             # Integrate Assistant API interaction here if work_fn is an ideation task
@@ -1183,6 +1200,32 @@ class JITExecutor:
                 else:
                     result = res
 
+            # Phase 4: 6W Verification Gate
+            # If the task is critical, run an ephemeral sandbox verification
+            if env.metadata.get("critical", False):
+                try:
+                    from engine.sandbox import SandboxOrchestrator
+                    # Instantiate an isolated verifier (lazy)
+                    verifier = SandboxOrchestrator(max_workers=1)
+                    # Use the new lightweight verify_stamp
+                    # We expect the 'result' to be the artifact content and 'engram.context' to be the stamp
+                    engram = env.metadata.get("engram")
+                    if engram and hasattr(engram, "context"):
+                        passed = await verifier.verify_stamp(
+                            artifact_content=str(result),
+                            stamp=engram.context
+                        )
+                        if not passed:
+                            raise RuntimeError(f"Verification Gate Failed for {env.mandate_id}.")
+                        logger.info(f"Verification Gate Passed for {env.mandate_id}.")
+                    else:
+                        logger.warning(f"Verification Gate skipped for {env.mandate_id}: No engram/stamp found.")
+                except Exception as e:
+                    logger.error(f"Verification Gate Error: {e}")
+                    # Escalation or failure based on policy
+                    if env.metadata.get("strict_verification", False):
+                        raise
+
             end_time = time.perf_counter()
             latency_ms = (end_time - start_time) * 1000
             # FIX 2: Using the asyncio-native histogram.
@@ -1200,7 +1243,7 @@ class JITExecutor:
             latency_ms = (end_time - start_time) * 1000
             # FIX 2: Using the asyncio-native histogram.
             _MANDATE_EXECUTION_LATENCY_HISTOGRAM.observe(latency_ms)
-            logger.error("Mandate {env.mandate_id} failed: {e}", exc_info=True, env=env, e=e)
+            logger.error(f"Mandate {env.mandate_id} failed: {e}", exc_info=True)
             return ExecutionResult(
                 mandate_id=env.mandate_id,
                 success=False,

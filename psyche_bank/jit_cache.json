@@ -2,66 +2,66 @@
   "signals": {
     "BUILD": {
       "signals": [
-        "Automated CI/CD pipelines leveraging GitOps principles (e.g., Argo CD, Flux CD) for declarative build mandate management.",
-        "Real-time monitoring and alerting on build resource utilization and completion times using Prometheus and Grafana, integrating with AI-driven anomaly detection.",
-        "Adherence to ISO 27001 and NIST cybersecurity frameworks for secure build artifact generation and mandate version control."
+        "DORA metrics (deployment frequency, lead time for changes, MTTR, change failure rate) anchor engineering strategy discussions",
+        "FastAPI + Pydantic v2 are the production standard for async Python services in 2026",
+        "Feature flags (OpenFeature standard) decouple deployment from release, enabling hypothesis testing"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-28T04:51:12.155082+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-28T22:23:41.705379+00:00"
     },
     "DEBUG": {
       "signals": [
-        "**SOTA Tool:** AI-driven log analysis platforms (e.g., Datadog AI, Splunk InsightOps) automatically correlating debug events across distributed systems.",
-        "**Pattern:** Event-driven debugging architectures utilizing serverless functions for real-time log stream processing and anomaly detection.",
-        "**Risk:** Over-reliance on automated debuggers leading to missed subtle logic errors or \"false positive\" debug alerts requiring manual validation."
+        "OpenTelemetry 2.0 with AI-powered root-cause analysis via Jaeger + Grafana is the 2026 observability standard",
+        "LLM-assisted debugging (GitHub Copilot Workspace, Cursor, Aider) reduces mean time to resolution by 60%",
+        "Flamegraph profiling (py-spy / async-profiler) localises hot paths in under 60 seconds"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-28T04:51:13.070111+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-28T22:23:41.705410+00:00"
     },
     "AUDIT": {
       "signals": [
-        "Federated learning for privacy-preserving audit data analysis.",
-        "AI-driven anomaly detection in real-time transaction streams.",
-        "ISO 27701 compliance for privacy information management."
+        "OWASP Top 10 2025 edition promotes Broken Object-Level Authorisation to the #1 priority",
+        "OSS supply-chain audits (Sigstore + Rekor transparency log) are required in regulated environments",
+        "CSPM tools (Wiz, Orca, Prisma Cloud) provide real-time cloud posture scoring in 2026"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-28T04:51:13.684971+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-28T22:23:41.705431+00:00"
     },
     "DESIGN": {
       "signals": [
-        "**Tool:** Figma's AI-powered \"Design Brain\" (hypothetical for 2026) automates iterative background refreshes of design systems based on usage analytics.",
-        "**Pattern:** Event-driven design updates, where component changes trigger automatic versioning and validation across all linked projects.",
-        "**Risk:** \"Design Drift\" due to unchecked automated refreshes, leading to inconsistencies and increased technical debt if not governed by strict AI-assisted review workflows."
+        "Radix UI + Tailwind CSS v4 is the dominant headless component stack for 2026 projects",
+        "WCAG 2.2 is the current accessibility compliance target; Level AA is the minimum bar",
+        "Design tokens managed via Style Dictionary v4 enable cross-platform design-system consistency"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-28T04:51:14.748746+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-28T22:23:41.705446+00:00"
     },
     "EXPLAIN": {
       "signals": [
-        "Federated Learning for on-device model updates without central data aggregation.",
-        "Context-aware prompting techniques leveraging attention mechanisms to dynamically adjust explanations.",
-        "Differential privacy standards (e.g., DP-SGD) to mitigate privacy risks during model retraining."
+        "Di\u00e1taxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure",
+        "Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams",
+        "LLM-generated runbooks require mandatory human review before operational use per SOX/ISO-27001"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-28T04:51:15.427009+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-28T22:23:41.705459+00:00"
     },
     "IDEATE": {
       "signals": [
-        "**SOTA Tools:** Integration with real-time knowledge graphs (e.g., Neo4j) and LLM-based summarization APIs (e.g., OpenAI GPT-4 Turbo) for dynamic ideation content analysis.",
-        "**Patterns:** Event-driven architecture with Kafka or Pulsar for asynchronous background processing of ideation triggers and data ingestion.",
-        "**Risks:** Potential for \"hallucination\" or biased output from LLMs in synthesized background refresh data, requiring robust validation loops."
+        "DORA metrics (deployment frequency, lead time, MTTR, CFR) anchor engineering strategy discussions",
+        "Two-pizza team + async RFC process (Notion/Linear) is the standard ideation workflow",
+        "Feature flags (OpenFeature standard) decouple deployment from release, enabling hypothesis testing"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-28T04:51:16.420859+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-28T22:23:41.705471+00:00"
     },
     "SPAWN_REPO": {
       "signals": [
-        "GitOps platforms (e.g., Argo CD, Flux CD) for automated, declarative repo provisioning and management.",
-        "Infrastructure as Code (IaC) tools (e.g., Terraform, Pulumi) for defining and managing repository configurations and access controls.",
-        "Supply chain security scanning (e.g., Sigstore, SLSA) integrated into CI/CD pipelines to verify the provenance and integrity of spawned repositories."
+        "GitHub Actions + Dependabot + CodeQL is the baseline secure CI/CD starter pack in 2026",
+        "devcontainer.json (Dev Containers spec 2.0) ensures reproducible contributor environments",
+        "Semantic versioning + Conventional Commits enables automated CHANGELOG and release notes"
       ],
-      "source": "gemini",
-      "fetched_at": "2026-03-28T04:51:17.270340+00:00"
+      "source": "structured",
+      "fetched_at": "2026-03-28T22:23:41.705484+00:00"
     }
   }
 }

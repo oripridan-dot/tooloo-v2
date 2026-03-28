@@ -1,10 +1,10 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining mandate_executor.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.918931
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.mandate_executor.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 """
@@ -46,6 +46,8 @@ from engine.config import (
 )
 from engine.vector_store import VectorStore
 from engine.intent import IntentPayload, ValidationResult, RemediationPlan
+
+import asyncio
 
 import json
 import logging
@@ -152,19 +154,14 @@ _SWARM_PERSONAS: frozenset[str] = frozenset(_SWARM_PROMPTS.keys())
 
 # Human-Centric Standard — prepended to all frontend node prompts
 _HUMAN_CENTRIC_SYSTEM = (
-    "You are bound by the Human-Centric Standard. "
-    f"Any interface generated MUST use Tailwind CSS v4 loaded via CDN: "
-    f"<link href='{settings.tailwind_cdn_url}' rel='stylesheet'>. "
-    "ALL layout and spacing MUST use Tailwind utility classes — NEVER bare unstyled HTML. "
-    "NEVER use inline style= attributes for layout; use Tailwind classes exclusively. "
-    "Animations and state transitions MUST use GSAP (loaded via CDN). "
-    "The visual hierarchy must reflect 2026 design standards: dark-mode-capable, "
-    "high contrast tokens, clear affordances, and micro-interactions. "
-    "Follow WCAG 2.2 Level AA accessibility requirements: semantic HTML, "
-    "aria-labels on interactive elements, minimum 4.5:1 contrast ratio. "
-    "Output must be production-ready — not a prototype, not a sketch. "
-    "Do not output unstyled, unclassed, or purely utilitarian markup. "
+    "You are bound by the SOTA UX/UI Aesthetic Protocol. "
+    "Any interface generated MUST use the TooLoo Design System tokens from src/ui/index.css. "
+    "AESTHETICS: Dark Mode (HSL Abyss), Glassmorphism (backdrop-filter: blur), and Bloom shadows. "
+    "TYPOGRAPHY: Outfit (Primary) or Inter (UI). "
+    "MOTION: Fluid transitions (cubic-bezier) and gestural micro-animations for all interactions. "
+    "ACCESSIBILITY: WCAG 2.2 Level AA compliance (contrast, semantic HTML, aria-labels). "
 )
+
 
 # Frontend file extensions and path patterns that trigger Human-Centric Standard
 _FRONTEND_EXTS: frozenset[str] = frozenset(
@@ -216,8 +213,8 @@ _NODE_PROMPTS: dict[str, str] = {
         "\"dimensions\":{{\"width_pct\":100,\"height_pct\":100}},"
         "\"constraints\":{{}},\"style_tokens\":{{}},\"children\":[]}}}}\n"
         "```\n"
-        "All node coordinates MUST use design-system tokens (no hex codes). "
-        "Gap and padding values MUST be integers (8-px grid units)."
+        "All node styling MUST use CSS variables from the TooLoo Design System (no hex codes). "
+        "Gap and padding values MUST use 8-px grid increments ($spacing-unit)."
     ),
     "implement": (
         "Mandate: «{mandate}»\n"
@@ -572,7 +569,7 @@ def make_live_work_fn(
 
         # Warm Memory Retrieval
         try:
-            relevant_memories = _warm_memory.search(query=_mandate, top_k=2, threshold=0.1)
+            relevant_memories = asyncio.run(_warm_memory.search(query=_mandate, top_k=2, threshold=0.1))
             if relevant_memories:
                 context_str = "\n\n[PRIOR CONTEXT FROM WARM MEMORY]\n"
                 for mem in relevant_memories:
@@ -625,18 +622,32 @@ def make_live_work_fn(
         _MAX_REACT_ITER = settings.mandate_executor_max_react_iter
         output = fast_path_output or ""
         _last_raw = ""
-        spawned_branches: list[dict[str, Any]] = []
         if not fast_path_output:
             for _iter in range(_MAX_REACT_ITER):
                 raw = _call_llm_raw(react_conversation, node_type, node_model_id)
                 _last_raw = raw
                 tool_calls = _extract_tool_calls(raw)
-                if tool_calls:
-                    # ... (tool handling logic as before) ...
-                    react_conversation += f"\n[Assistant]\n{raw}\n[/Assistant]\n" # ...
-                    continue
-                output = raw
-                break
+                
+                if not tool_calls:
+                    output = raw
+                    break
+                
+                # ── EXECUTE TOOLS (Fixing the 'clutching' stall) ──
+                react_conversation += f"\n[Assistant]\n{raw}\n[/Assistant]\n"
+                for tc in tool_calls:
+                    tool_name = tc.get("tool")
+                    tool_args = tc.get("parameters", {})
+                    logger.info(f"ReAct Action: {tool_name}({tool_args})")
+                    
+                    try:
+                        # Call tool via MCP (Model Context Protocol)
+                        mcp_result = mcp.call_uri(f"mcp://tooloo/{tool_name}", **tool_args)
+                        result_str = json.dumps(mcp_result.data if hasattr(mcp_result, 'data') else mcp_result, indent=2)
+                        react_conversation += f"\n[Tool Result: {tool_name}]\n{result_str}\n[/Tool Result]\n"
+                    except Exception as e:
+                        react_conversation += f"\n[Tool Error: {tool_name}]\n{str(e)}\n[/Tool Error]\n"
+                
+                continue # Loop back to Assistant with tool results
             else:
                 output = _last_raw
 
@@ -709,13 +720,10 @@ def make_live_work_fn(
             result["mcp_write"] = mcp_write_result
         
         return result
-
     return work_fn
 
-
-# ── SPAWN_REPO Scaffold Builder ───────────────────────────────────────────────
-
 def _build_spawn_repo_scaffold(mandate: str, llm_plan: str) -> dict[str, str]:
+
     """Parse the LLM scaffold plan and return a {path: content} dict.
 
     Extracts REPO_NAME from the plan (if present) and builds canonical
@@ -971,3 +979,33 @@ def _try_vision_call(b64_png: str, prompt: str, model_id: str) -> str:
         '"Ensure interactive elements have minimum 44x44px touch targets"], '
         '"wcag_pass": null}'
     )
+
+
+class MandateExecutor:
+    """High-level Orchestrator for Mandate Execution (Project Ouroboros)."""
+
+    def __init__(self):
+        from engine.mcp_manager import MCPManager
+        self.mcp = MCPManager()
+
+    async def execute(self, prompt: str, intent: str = "BUILD") -> dict:
+        """Execute a single mandate via the live work function factory."""
+        from engine.executor import Envelope
+        
+        # ── SOTA Orchestration ──
+        # We provide a synthetic JIT signal to the worker to ensure 
+        # it operates with maximum agency.
+        work_fn = make_live_work_fn(
+            mandate_text=prompt,
+            intent=intent,
+            jit_signals=["[SOTA] Live Workspace Ouroboros Mode active"],
+            mcp_manager=self.mcp
+        )
+        
+        # We target the 'implement' node type for direct manual mandates
+        env = Envelope(mandate_id=f"ouroboros-{int(time.time())}-implement", intent=intent)
+        
+        loop = asyncio.get_event_loop()
+        # model_garden typically contains blocking SDK calls
+        result = await loop.run_in_executor(None, work_fn, env)
+        return result

@@ -1,12 +1,14 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining utils.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.927852
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.utils.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
+import re
+import json
 from datetime import datetime
 from typing import Any, Dict
 
@@ -75,3 +77,15 @@ def sanitize_shell_output(text: str) -> str:
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     clean = ansi_escape.sub('', text)
     return clean.strip()
+
+def _infer_workspace_file_target(text: str) -> str | None:
+    """
+    Implicit Target Inference.
+    Extracts a potential file path from a mandate string by looking for backticked paths.
+    """
+    if not text:
+        return None
+    match = re.search(r"`([^`]+)`" , text)
+    if match:
+        return match.group(1).strip()
+    return None

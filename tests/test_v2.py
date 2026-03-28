@@ -18,7 +18,7 @@ import pytest
 from engine.executor import Envelope, JITExecutor
 from engine.graph import CognitiveGraph, CycleDetectedError, TopologicalSorter, CausalProvenanceTracker
 from engine.mcp_manager import MCPManager
-from engine.pipeline import _infer_workspace_file_target
+from engine.utils import _infer_workspace_file_target
 from engine.psyche_bank import CogRule, PsycheBank
 from engine.router import MandateRouter
 from engine.tribunal import Engram, Tribunal

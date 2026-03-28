@@ -1,10 +1,10 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining sota_ingestion.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.930553
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.sota_ingestion.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 """
@@ -34,6 +34,7 @@ from engine.config import GEMINI_API_KEY, VERTEX_DEFAULT_MODEL, _vertex_client a
 from engine.knowledge_banks.base import KnowledgeEntry
 from engine.knowledge_banks.manager import BankManager
 from engine.model_garden import get_garden
+from engine.bootloader import SOTABootloader
 
 # ── AI clients ────────────────────────────────────────────────────────────────
 _vertex_client = _vertex_client_cfg
@@ -240,6 +241,16 @@ class SOTAIngestionEngine:
                     bank_id, 0) + added
             except Exception as exc:
                 report.errors.append(f"{bank_id}/{domain}: {exc}")
+
+        # Tier-1: Bootloader (Deep Web Ingestion via Jina Reader)
+        try:
+            bootloader = SOTABootloader()
+            bootloader_count = await bootloader.ingest_targets()
+            report.per_bank["sota_vectors"] = bootloader_count
+            report.entries_added += bootloader_count
+            await bootloader.close()
+        except Exception as exc:
+            report.errors.append(f"Bootloader: {exc}")
 
         report.completed_at = datetime.now(UTC).isoformat()
         return report

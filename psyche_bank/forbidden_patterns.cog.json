@@ -347,8 +347,21 @@
         "achieved_delta": 0.000017613536878594376
       },
       "rule_hash": "6d402bdfada51bdf035ebfdfab27d34f9cf9bd76707aa51cf9749008d4d380c3"
+    },
+    {
+      "id": "test-block-google",
+      "description": "Block google",
+      "pattern": "google.com",
+      "enforcement": "block",
+      "category": "security",
+      "source": "manual",
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-28T19:23:15.155127Z",
+      "metadata": null,
+      "rule_hash": "65018d62b193fde566fe762351b74e3be75b29485bfa0899250d642dfc18a9c5"
     }
   ],
   "acceptance_history": [],
-  "store_hash": "d73ae1db5cda608f0a3aca643873ce9251907036dfa82660b8c306e7a99a873e"
+  "store_hash": "3816dc264eaf55415f88c14e181678e0806c344df93a78e45b80b21475f60e88"
 }

@@ -1,10 +1,10 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining daemon.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.937484
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.daemon.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 import asyncio
@@ -107,8 +107,10 @@ class BackgroundDaemon:
             last_sha = recent_cycles[0].git_sha
             if last_sha != "unknown" and current_sha != "unknown" and last_sha != current_sha:
                 self._broadcast({
-                    "type": "daemon_rt",
-                    "msg": f"[Reality Anchor] External mutation detected (SHA {last_sha[:7]} → {current_sha[:7]}). Forcing fresh environment scan..."
+                    "type": "reality_pulse",
+                    "msg": f"REALITY_MUTATION_DETECTED: {current_sha[:7]}",
+                    "sha": current_sha,
+                    "delta": f"External mutation detected (SHA {last_sha[:7]} → {current_sha[:7]}). Forcing environment sync..."
                 })
                 # Here we could invalidate Hot memory assumptions if appropriate
         
@@ -161,8 +163,11 @@ class BackgroundDaemon:
                 if is_high_risk:
                     proposal["status"] = "awaiting_approval"
                     self.awaiting_approval.append(proposal)
-                    self._broadcast(
-                        {"type": "daemon_approval_needed", "proposal": proposal})
+                    self._broadcast({
+                        "type": "daemon_approval_needed", 
+                        "proposal": proposal,
+                        "msg": f"CRITICAL: {a.component} improvement required. Approval required for patch {proposal_id}."
+                    })
                 else:
                     await self._auto_execute(proposal)
 
@@ -478,7 +483,7 @@ class BackgroundDaemon:
 
     # ── Approval flow ─────────────────────────────────────────────────────────
 
-    def approve(self, proposal_id: str):
+    async def approve(self, proposal_id: str):
         for p in self.awaiting_approval:
             if p["id"] == proposal_id:
                 p["status"] = "approved"
@@ -488,7 +493,7 @@ class BackgroundDaemon:
                 return {"status": "success"}
         return {"status": "not_found"}
 
-    def reject(self, proposal_id: str):
+    async def reject(self, proposal_id: str):
         for p in self.awaiting_approval:
             if p["id"] == proposal_id:
                 p["status"] = "rejected"

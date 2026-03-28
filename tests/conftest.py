@@ -50,13 +50,13 @@ def offline_vertex():
         patch("engine.conversation._gemini_client", None),
         patch("engine.jit_booster._gemini_client", None),
         patch("engine.engram_visual._gemini_client", None),
-        patch("engine.mandate_executor._vertex_client", None),
-        patch("engine.mandate_executor._gemini_client", None),
         patch("engine.self_improvement._vertex_client", None),
         patch("engine.self_improvement._gemini_client", None),
         # ModelGarden — disable both providers so all LLM calls fall through
         # to the structured catalogue (keyword-fallback path).
         patch("engine.model_garden._google_client", None),
+        patch("engine.model_garden._gemini_api_client", None),
+        patch("engine.model_garden._openai_client", None),
         patch("engine.model_garden._anthropic_client", None),
         patch("engine.model_garden._anthropic_available", False),
         patch("engine.sota_ingestion._vertex_client", None),

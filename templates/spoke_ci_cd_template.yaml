@@ -1,0 +1,75 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Spoke CI/CD Template (with Self-Healing Interceptor)
+# WHERE: templates/spoke_ci_cd_template.yaml
+# WHEN: 2026-03-28T22:56:00
+# WHY: Autonomous Repair Loop ($Hub \leftrightarrow Spoke$)
+# HOW: GitHub Actions + CURL + HMAC Signature
+# ==========================================================
+
+name: SOTA Autonomous CI/CD
+
+on:
+  push:
+    branches: [ main, feature/* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Required to see the latest diff
+
+      - name: Set up Environment
+        uses: actions/setup-node@v4 # Adaptive: use setup-python/etc if needed
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Execute SOTA Tests
+        id: test-step
+        run: npm test
+        continue-on-error: true # Allow subsequent reporting steps
+
+      - name: Autonomous Failure Interception
+        if: steps.test-step.outcome == 'failure'
+        env:
+          HUB_DIAGNOSTIC_URL: ${{ secrets.HUB_DIAGNOSTIC_URL }}
+          HUB_HMAC_SECRET: ${{ secrets.HUB_HMAC_SECRET }}
+        run: |
+          echo "CI Failure Detected. Initiating Hub-Side Diagnostic Handshake..."
+          
+          # 1. Collect Context
+          FAILURE_LOG=$(npm test 2>&1 | tail -n 100) # Last 100 lines
+          LAST_DIFF=$(git diff HEAD~1 HEAD)
+          COMMIT_HASH=$(git rev-parse HEAD)
+          REPO_NAME=${{ github.repository }}
+          
+          # 2. Package Payload
+          cat <<EOF > payload.json
+          {
+            "repository": "$REPO_NAME",
+            "commit": "$COMMIT_HASH",
+            "status": "failure",
+            "logs": $(echo "$FAILURE_LOG" | jq -Rs .),
+            "diff": $(echo "$LAST_DIFF" | jq -Rs .),
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+          
+          # 3. Secure Handshake (HMAC-SHA256 Signature)
+          SIGNATURE=$(openssl dgst -sha256 -hmac "$HUB_HMAC_SECRET" payload.json | sed 's/^.* //')
+          
+          # 4. POST to Hub
+          curl -X POST "$HUB_DIAGNOSTIC_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
+            -d @payload.json
+          
+          echo "Diagnostic payload successfully dispatched to the Hub."
+          exit 1 # Keep the CI status red for safety

@@ -1,10 +1,10 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining tribunal.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.941865
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.tribunal.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 from __future__ import annotations
@@ -22,6 +22,27 @@ from enum import Enum
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 from engine.engram import Engram, EmergenceVector
+
+_HEAL_TOMBSTONE = "HEAL_TOMBSTONE_EXECUTED_BY_TRIBUNAL_LAW_17"
+
+_POISON = [
+    ("hardcoded-secret",    r"(?i)(secret|password|passwd|api[-_]key|token|auth|access[-_]key).{0,5}\s*?[:=]\s*?['\"].{5,}?['\"]"),
+    ("aws-key-leak",        r"AKIA[0-9A-Z]{16}"),
+    ("bearer-token-leak",   r"Bearer\s+ey[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*"),
+    ("sql-injection",       r"(?i)(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER).{0,100}?(WHERE|FROM|INTO|SET).{0,50}?[+\%]"),
+    ("dynamic-eval",        r"\beval\s*\("),
+    ("dynamic-exec",        r"\bexec\s*\("),
+    ("dynamic-import",      r"\b__import__\s*\("),
+    ("path-traversal",      r"\.\./\.\./\.\./"),
+    ("ssti-template-injection", r"\{\{.*?\}\}"),
+    ("command-injection",   r"\b(os\.system|subprocess\.(run|Popen|call)|commands\.getoutput)\s*\("),
+    ("bola-idor",           r"\.filter\(id=request\.id\)"),
+    ("ssrf",                r"\brequests\.get\(request\.url\)"),
+    ("supply-chain-tls-bypass", r"verify=False"),
+    ("supply-chain-unpinned-install", r"pip install [^=<>]*\s"),
+    ("bola-unfiltered-query", r"objects\.all\(\)\.filter\("),
+    ("xss-unsafe-render",   r"\.render\(.*?, unsafe=True")
+]
 
 
 # --- Core PURE Tribunal System ---
@@ -157,11 +178,69 @@ class Tribunal:
     Ouroboros Hardening:
     - Incorporates deception_score from BillingGatekeeper into the TribunalResult.
     - Hard-blocks any tool call with deception_override=True regardless of intent.
+    - Legacy Security: Synchronous evaluate() for Engram logic body scanning.
     """
-    def __init__(self, threshold: float = 0.05) -> None:
+    def __init__(self, psyche_bank: Optional[Any] = None, threshold: float = 0.05) -> None:
+        self.psyche_bank = psyche_bank
         self.threshold = threshold
 
-    async def evaluate(
+    def evaluate(self, engram: Engram) -> Any:
+        """
+        Synchronous Legacy Evaluation (Crucible Mode).
+        Scans logic_body for OWASP patterns and handles healing via PsycheBank.
+        """
+        from engine.psyche_bank import CogRule
+        violations = []
+        poison_detected = False
+        heal_applied = False
+        vast_learn_triggered = False
+
+        if not engram.logic_body:
+            return self._create_legacy_result(engram, False, False, False, False, [])
+
+        # 1. Regex Pattern Scanning (Legacy OWASP)
+        for name, pattern in _POISON:
+            if re.search(pattern, engram.logic_body):
+                violations.append(name)
+                poison_detected = True
+                # Record in PsycheBank for active learning
+                if self.psyche_bank:
+                    self.psyche_bank.add_rule(CogRule(
+                        id=f"tribunal-{name}-{engram.slug}",
+                        pattern=pattern,
+                        effect="blocked",
+                        source="tribunal_regex"
+                    ))
+
+        # 2. Healing Mechanism (Law 17)
+        if poison_detected:
+            engram.logic_body = _HEAL_TOMBSTONE
+            heal_applied = True
+            vast_learn_triggered = True
+
+        return self._create_legacy_result(
+            engram, not poison_detected, poison_detected, heal_applied, vast_learn_triggered, violations
+        )
+
+    def _create_legacy_result(self, engram, passed, poison, heal, vast, violations):
+        """Helper to create a result object compatible with test_crucible.py."""
+        class LegacyResult:
+            def __init__(self, e, p, po, h, v, vi):
+                self.slug = e.slug
+                self.passed = p
+                self.poison_detected = po
+                self.heal_applied = h
+                self.vast_learn_triggered = v
+                self.violations = vi
+            def to_dict(self):
+                return {
+                    "slug": self.slug, "passed": self.passed, 
+                    "poison_detected": self.poison_detected, "heal_applied": self.heal_applied,
+                    "vast_learn_triggered": self.vast_learn_triggered, "violations": self.violations
+                }
+        return LegacyResult(engram, passed, poison, heal, vast, violations)
+
+    async def evaluate_async(
         self,
         engram: Engram,
         em_actual: Optional[EmergenceVector] = None,

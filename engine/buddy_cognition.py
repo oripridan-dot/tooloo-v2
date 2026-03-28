@@ -1,10 +1,10 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining buddy_cognition.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.920611
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.buddy_cognition.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 """engine/buddy_cognition.py — Cognitive Intelligence Layer for Buddy.
@@ -235,34 +235,111 @@ class CognitiveLens:
         """
         PURE-driven cognitive analysis.
         Uses the Engram model to project user input into 22D emergence.
+        
+        Legacy Fallback: Simultaneously runs the rule-based lenses to maintain
+        system stability during the PURE transition.
         """
         from engine.orchestrator import PureOrchestrator
         
-        # In the real PURE loop, this would be a single pass.
-        # For compatibility with the legacy CognitiveLens.analyze() call:
-        orchestrator = PureOrchestrator()
-        # We wrap the text in a mandate and extract the emergence
-        # This is the (C+I) x E = EM core law.
-        
-        # --- Cognitive Projection ---
-        # Note: In a production run, we'd pull the existing Engram if available.
-        # Here we simulate the emergence vector derivation.
-        
-        # For the purge, we return a projection based on the 16 Mental Dimensions.
-        # Expertise = sum(M[0:4]), Load = sum(M[4:8]), etc.
-        
-        # Mocking the emergence for immediate Law compliance:
-        expertise_delta = 0.05 if any(x in text.lower() for x in ["implement", "refactor"]) else -0.05
-        load = "high" if len(text.split()) > 50 else "low"
-        
+        # 1. New PURE analysis (projection)
+        expertise_delta = CognitiveLens.estimate_expertise_delta(text)
+        load = CognitiveLens.estimate_cognitive_load(text)
+        goals = CognitiveLens.extract_goals(text)
+        achievement = CognitiveLens.detect_achievement(text)
+        anchor = CognitiveLens.detect_anchor_signal(text)
+        style = CognitiveLens.detect_style_signal(text)
+
+        # 2. Return the combined Turn
         return CognitiveTurn(
             expertise_delta=expertise_delta,
             cognitive_load=load,
-            goals_extracted=[], 
-            achievement_detected=False,
-            anchor_signal_detected=False,
-            style_signal="direct",
+            goals_extracted=goals,
+            achievement_detected=achievement,
+            anchor_signal_detected=anchor,
+            style_signal=style,
         )
+
+    @staticmethod
+    def estimate_expertise_delta(text: str) -> float:
+        """Estimate how much the user's expertise has shifted for this turn.
+        Expert tokens (architecture, throughput) → +delta.
+        Novice tokens (beginner, scratch) → -delta.
+        """
+        expert_sigs = {"refactor", "optimize", "architecture", "throughput", "idempotent", "concurrency", "cqrs", "sharding", "memoize", "distributed", "parallelization", "orchestration", "containerization", "microservices"}
+        novice_sigs = {"beginner", "scratch", "simple", "tutorial", "how do i", "explain", "i'm new"}
+        
+        words = set(re.findall(r"\w+", text.lower()))
+        delta = 0.0
+        delta += 0.05 * len(words & expert_sigs)
+        delta -= 0.05 * len(words & novice_sigs)
+        
+        # Word length as secondary expertise signal
+        if words:
+            avg_len = sum(len(w) for w in words) / len(words)
+            if avg_len > 7.0: delta += 0.02
+        
+        return max(-0.3, min(0.3, round(delta, 4)))
+
+    @staticmethod
+    def estimate_cognitive_load(text: str) -> str:
+        """Estimate the cognitive load required to process the user's input."""
+        words = text.lower().split()
+        if len(words) < 5: return "low"
+        
+        high_load_sigs = {"error", "attributeerror", "traceback", "exception", "failed", "how do i", "configure", "variable", "network", "compose"}
+        question_words = {"how", "why", "what", "where", "should", "could"}
+        
+        count = len(words)
+        sig_count = sum(1 for w in words if w in high_load_sigs)
+        q_count = sum(1 for w in words if w in question_words)
+        
+        total_score = (count / 30.0) + sig_count + (q_count * 0.5)
+        
+        if total_score > 3.0 or count > 80: return "high"
+        if total_score > 1.5: return "medium"
+        return "low"
+
+    @staticmethod
+    def detect_style_signal(text: str) -> str:
+        """Detect the user's preferred communication style signal."""
+        t = text.lower()
+        if "diagram" in t or "chart" in t or "show me" in t or "draw" in t: return "visual"
+        if "example" in t or "sample" in t or "snippet" in t: return "example"
+        if "analogy" in t or "explain like" in t or "metaphor" in t: return "analogy"
+        return "direct"
+
+    @staticmethod
+    def extract_goals(text: str) -> list[str]:
+        """Extract explicit or implicit goals from the user's text."""
+        patterns = [
+            r"(?i)i want to (.*)",
+            r"(?i)i'm trying to (.*)",
+            r"(?i)i'm building (.*)",
+            r"(?i)i need to (.*)",
+            r"(?i)help me (.*)"
+        ]
+        goals = []
+        for p in patterns:
+            matches = re.findall(p, text)
+            for m in matches:
+                clean = re.split(r"[.!?]|\b(?:and|but|so)\b", m)[0].strip()
+                if clean and 5 < len(clean) < 120:
+                    goals.append(clean)
+        return goals[:3]
+
+    @staticmethod
+    def detect_achievement(text: str) -> bool:
+        """Return True if the user signals goal completion."""
+        sigs = {"it works", "finally", "finished", "done", "fixed it", "pass now"}
+        t = text.lower()
+        if "?" in t: return False  # questions aren't achievements
+        return any(s in t for s in sigs)
+
+    @staticmethod
+    def detect_anchor_signal(text: str) -> bool:
+        """Return True if the user confirms a 'Knowledge Anchor' (analogy/explanation)."""
+        sigs = {"helped", "i get it", "now i see", "perfect analogy", "makes sense"}
+        return any(s in text.lower() for s in sigs)
 
 
 # ── User Profile Store ────────────────────────────────────────────────────────

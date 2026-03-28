@@ -1,10 +1,10 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining evolution_sota.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.931457
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.evolution_sota.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 from __future__ import annotations
@@ -14,7 +14,8 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-from engine.evolution import Context6W, EmergenceVector, TribunalAudit
+from engine.schemas.six_w import SixWProtocol
+from engine.evolution import EmergenceVector, TribunalAudit
 
 # --- 22D VECTOR SPACE DEFINITION ---
 # 6W Context Dimensions
@@ -46,7 +47,7 @@ class SurrogateWorldModel:
         self.b2 = np.zeros((1, output_dim))
         self.lr = 0.05
 
-    def predict(self, context: Context6W, intent_16d: np.ndarray) -> np.ndarray:
+    def predict(self, context: SixWProtocol, intent_16d: np.ndarray) -> np.ndarray:
         """
         Predict EM_pred from 22D Unified Engram.
         """
@@ -63,7 +64,7 @@ class SurrogateWorldModel:
         z2 = np.dot(a1, self.w2) + self.b2
         return z2.flatten()
 
-    def train_batch(self, inputs: List[Tuple[Context6W, np.ndarray]], targets: List[np.ndarray], lr: float | None = None) -> float:
+    def train_batch(self, inputs: List[Tuple[SixWProtocol, np.ndarray]], targets: List[np.ndarray], lr: float | None = None) -> float:
         """
         Batch SGD for 22D space.
         """
@@ -145,7 +146,7 @@ class MonteCarloGenerator:
         return context, intent_16d
 
     @staticmethod
-    def ground_truth_physics_22d(context: Context6W, intent_16d: np.ndarray) -> np.ndarray:
+    def ground_truth_physics_22d(context: SixWProtocol, intent_16d: np.ndarray) -> np.ndarray:
         """
         Simulated 'Real World' physics for the 22D space.
         """

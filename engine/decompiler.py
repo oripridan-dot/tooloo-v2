@@ -1,17 +1,18 @@
 # 6W_STAMP
-# WHO: TooLoo V2 (Principal Systems Architect)
-# WHAT: Refining decompiler.py
-# WHERE: engine
-# WHEN: 2026-03-28T15:54:38.927948
-# WHY: System-wide 6W Stamping Hardening
-# HOW: Autonomous Meta-Refinement
+# WHO: TooLoo V2 (Sovereign Architect)
+# WHAT: ASCENSION v2.1.0 — Sovereign Cognitive OS
+# WHERE: engine.decompiler.py
+# WHEN: 2026-03-29T02:00:00.101010
+# WHY: Final Repository Consolidation & Galactic Handover
+# HOW: PURE Architecture Protocol
 # ==========================================================
 
 import bs4
 import numpy as np
 import json
 from typing import Any, Dict, List, Optional
-from engine.engram import Engram, Context6W, Intent16D, EmergenceVector
+from engine.model_garden import ModelGarden, CognitiveProfile
+from engine.engram import Engram, Context6W, Intent16D, EmergenceVector, TOTAL_DIM, EMERGENCE_DIM, CONTEXT_DIM
 
 class Decompiler:
     """
@@ -23,7 +24,8 @@ class Decompiler:
     def __init__(self, env_matrix: Optional[np.ndarray] = None):
         # Default E_sim matrix (22x6) if none provided
         # In a real scenario, this would be loaded from PsycheBank
-        self.env_matrix = env_matrix if env_matrix is not None else np.random.rand(22, 6)
+        self.env_matrix = env_matrix if env_matrix is not None else np.random.rand(TOTAL_DIM, EMERGENCE_DIM)
+        self.garden = ModelGarden()
 
     def decompile_html(self, html_content: str, url: str) -> Engram:
         """
@@ -35,18 +37,12 @@ class Decompiler:
         context = self._extract_context(soup, url)
         
         # 2. Extract Emergence (EM_actual) - Observed outcome of the legacy app
-        # Since we are decompiling the *state*, we infer the 'EM' it currently produces.
         em_actual = self._infer_emergence_state(soup)
         
         # 3. Apply Anti-Formula for Intent (I)
-        # We use the inverse physics to find what intent would produce this emergence
         d_inferred = Engram.infer_from_emergence(em_actual, self.env_matrix)
         
-        # Split d_inferred back into Context and Intent components
-        # (Though we already have context from structural analysis, 
-        # the inferred 'I' is what matters for optimization)
-        intent_vec = d_inferred[6:] # The last 16 dimensions
-        
+        intent_vec = d_inferred[CONTEXT_DIM:] # Correct dimensional slice
         intent = self._vector_to_intent(intent_vec)
         
         return Engram(
@@ -64,12 +60,10 @@ class Decompiler:
         """Structural analysis of the DOM to fill 6W fields."""
         title = soup.title.string if soup.title else "Unknown Portal"
         
-        # 'What' inference
         what = f"Legacy App: {title}"
         if soup.find('form'):
             what += " (Form-based Interaction)"
         
-        # 'Who' inference
         who = "Anonymous User"
         if soup.find(id=lambda x: x and 'agent' in x.lower()):
             who = "Support Agent"
@@ -89,12 +83,10 @@ class Decompiler:
         Infers the 'Emergence' (EM) vector representing the current state of the app.
         EM = [Success, Latency, Stability, Quality, ROI, Safety]
         """
-        # Legacy apps usually have low ROI/Quality/Speed metrics in TooLoo's view
         vals = [0.8, 0.4, 0.9, 0.5, 0.3, 0.7] # Mocked legacy baseline
         
-        # Heuristic adjustments
         if soup.find_all('input'):
-            vals[1] *= 0.8 # Higher latency for manual input
+            vals[1] *= 0.8
         if "error" in soup.get_text().lower():
             vals[0] *= 0.5
             vals[2] *= 0.6
@@ -132,6 +124,96 @@ class Decompiler:
             intent=upgraded_intent,
             metadata={**legacy_engram.metadata, "upgraded": True}
         )
+
+class SiteDecompiler(Decompiler):
+    """
+    SOTA Site Decompiler (Phase 2).
+    Uses high-reasoning LLMs to extract intents from real-world sites.
+    """
+
+    def deconstruct(self, url: str, html: str, accessibility_tree: Optional[str] = None) -> Engram:
+        """
+        High-fidelity deconstruction using ModelGarden Tier-3+ reasoning.
+        """
+        print(f"[Deconstructor] Analyzing {url}...")
+        
+        # 1. High-Reasoning Analysis Pass
+        analysis = self._run_llm_analysis(url, html, accessibility_tree)
+        
+        # 2. Extract 6W Context from Analysis
+        context = Context6W(
+            what=analysis.get("context", {}).get("what", "Unknown Site"),
+            where=url,
+            who=analysis.get("context", {}).get("who", "Global User"),
+            how=analysis.get("context", {}).get("how", "Inferred modern stack"),
+            why=analysis.get("context", {}).get("why", "Commercial use case"),
+        )
+        
+        # 3. Extract Emergence from Analysis
+        # EM = [Success, Latency, Stability, Quality, ROI, Safety]
+        em_actual = EmergenceVector(val=analysis.get("emergence", [0.5]*6))
+        
+        # 4. Invert Physics to find Intent
+        d_inferred = Engram.infer_from_emergence(em_actual, self.env_matrix)
+        intent_vec = d_inferred[6:]
+        intent = self._vector_to_intent(intent_vec)
+        
+        return Engram(
+            context=context,
+            intent=intent,
+            em_actual=em_actual,
+            metadata={
+                "source_url": url,
+                "analysis_raw": analysis,
+                "decompiler_version": "2.0.0-SOTA"
+            }
+        )
+
+    def _run_llm_analysis(self, url: str, html: str, a11y: Optional[str]) -> Dict[str, Any]:
+        """Calls ModelGarden to perform architectural reverse-engineering."""
+        model_id = self.garden.get_tier_model(tier=3, intent="AUDIT")
+        
+        prompt = f"""
+        ROLES: Principal Systems Architect, TooLoo V2.
+        TASK: Reverse-engineer the provided website into its underlying Intent and Context vectors.
+        URL: {url}
+        ACCESSIBILITY_TREE: {a11y if a11y else "Not provided"}
+        
+        INSTRUCTIONS:
+        1. Analyze the DOM/Structure to infer the 6W Context (What, Who, How, Why).
+        2. Evaluate the observable 'Emergence' (EM) metrics on a scale of 0.0 to 1.0:
+           - Success (Does it fulfill its goal?)
+           - Latency (Estimated performance/responsiveness)
+           - Stability (Robustness markers)
+           - Quality (Design/UX/Accessibility excellence)
+           - ROI (Business value densification)
+           - Safety (Security/Privacy markers)
+        
+        RETURN JSON ONLY:
+        {{
+          "context": {{ "what": "...", "who": "...", "how": "...", "why": "..." }},
+          "emergence": [Success, Latency, Stability, Quality, ROI, Safety],
+          "rationale": "..."
+        }}
+        
+        HTML SNIPPET (TRUNCATED):
+        {html[:10000]}
+        """
+        
+        resp_raw = self.garden.call(model_id, prompt, intent="AUDIT")
+        try:
+            # Strip markdown if present
+            clean_resp = resp_raw.strip()
+            if clean_resp.startswith("```json"):
+                clean_resp = clean_resp[7:-3]
+            return json.loads(clean_resp)
+        except Exception as e:
+            print(f"Error parsing LLM response: {e}")
+            return {
+                "context": {"what": "Failed Parse", "who": "Error", "how": "None", "why": "None"},
+                "emergence": [0.1] * 6
+            }
+
 
 class ClaudioDecompiler:
     """

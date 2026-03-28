@@ -1,6 +1,0 @@
-{% macro render_testimonial(testimonial, is_first) %}
-<div class="carousel-slide flex-shrink-0 w-full text-center px-8 {{ 'active' if is_first }}">
-    <p class="text-2xl italic font-light mb-6">"{{ testimonial.quote }}"</p>
-    <p class="text-lg font-semibold">- {{ testimonial.author }}</p>
-</div>
-{% endmacro %}

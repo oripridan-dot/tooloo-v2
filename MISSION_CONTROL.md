@@ -8,25 +8,22 @@
 
 ## Current State
 - branch: main
-- live-mode status: FULLY OPERATIONAL (Vertex AI live, SA JSON wired)
-- Tests: 67 passed, 1 xfailed. All green.
-- **Intent-Driven Cognitive OS LIVE**: `LockedIntent` now carries strict `success_criteria`.
-- **IntentReconciliationGate** injected directly into N-Stroke Engine using Tier-3 LLM gap evaluation before completing tasks.
-- **GlobalAlignmentContext** injected into `MetaArchitect`. Swarm hierarchy is dynamically shaped based on recent user behavior from `psyche_bank/buddy_memory.json`.
-- Remaining systems active: DeepIntrospector, Cognitive Dreamer, CognitiveMap ENRICHED.
-- Total REST endpoints: ~92.
+- live-mode status: **GALACTIC SOVEREIGN ENGINE (ASCENDED)**
+- **Deployment**: `sovereign-hub-v2` LIVE in `me-west1` (Tel Aviv).
+- **URL**: `https://sovereign-hub-v2-gru3xdvw6a-zf.a.run.app`
+- **Sovereign Tier**: 22D Cognitive state persistent via GitHub-backed Soul-Sync.
+- **Stage 6 Mega-SOTA Synthesis**: O1-Reasoning, Action Telemetry, and Local-Failover (Ollama) implemented and verified.
+- **Stage 7 Galactic Ascension**: Permanent Cloud Run Hub established with 100% operational autonomy.
 
 ## Active Blockers
 - No critical blockers. System is fully operational.
 
 ## Immediate Next Steps
-1. **Critical Architecture Objective:** Build out the Tiered Vector-Symbolic Architecture for optimal memory (Hot Memory Buffer, Warm Memory Vector DB, Cold Memory Knowledge Graph) using recursive summarization. Verify and calibrate on outsourced data.
-2. **Global Codebase Audit:** Run a comprehensive sweep for duplications, overlaps, conflicts, and confusing code across the entire codebase. Resolve issues and formulate a prevention protocol.
-1. Expose the newly tracked metrics (Intent Gap and Remediation) in the Genesis UI / Buddy Chat, allowing explicit conversational overrides if the model gets the user's intent misaligned.
-2. Push mandate_executor HC from 0.98 → 0.99
-3. Add cascade preview visualization to UI (interactive dependency impact)
+1. **Autonomous Scale-Out:** Trigger galactic spawning of Spoke instances for high-concurrency audio synthesis tasks.
+2. **Path C Integration:** (In Progress) Finalizing the DeepSeek-V3 rescue pathway for ultra-low-latency 6W-stamped audits.
+3. **Galactic Dashboard:** Expose the Sovereign 22D model drift and convergence metrics in the Studio UI.
 
-*Last updated: 2026-03-22 (DeepIntrospector — full self-awareness engine)*
+*Last updated: 2026-03-29 (Sovereign Architect — Galactic Ascension achieved)*
 
 ## JIT Bank (Last 5 Rules)
 
@@ -38,15 +35,16 @@
 
 ---
 
-## Engine Quick-Reference
+## Sovereign Organ Map
 
-```
-Mandate → StanceEngine(detect) → MandateRouter(CB:0.85+overlap) → JITBooster
-       → Tribunal(OWASP→Bus:CRITICAL) → TopologicalSorter
-       → NStrokeEngine(7 strokes, stance_weights→16D)
-            ├─ sync:  JITExecutor.fan_out()
-            └─ async: AsyncFluidExecutor.fan_out_dag_async()
-       → RefinementLoop → RefinementSupervisor(blast_radius→Bus:WARNING)
+```mermaid
+graph TD
+    Hub[Sovereign Orchestrator] -->|6W Mandate| Spoke[Spoke Organ: Execution]
+    Hub -->|Audit Trigger| Tribunal[Tribunal: Governance]
+    Spoke -->|6W Artifact| Hub
+    Audio[Audio Organ: Claudio] -->|Spectral Δ-RMS| Memory[Memory Organ: Tier 1/2/3]
+    Memory -->|Engram Refinement| Hub
+    Hub -->|Fit/Retrain| Sim[Surrogate World Model: 22D]
 ```
 
 | What | Where |
@@ -62,4 +60,4 @@ Mandate → StanceEngine(detect) → MandateRouter(CB:0.85+overlap) → JITBoost
 | Autonomous loop | `ouroboros_cycle.py` (gated by `TOOLOO_LIVE_TESTS`) |
 | Run tests | `pytest tests/ --ignore=tests/test_ingestion.py --ignore=tests/test_playwright_ui.py` |
 
-*Last updated: 2026-03-22 (DeepIntrospector full wiring)*
+*Last updated: 2026-03-29 (Sovereign Hub-Spoke Final V2)*
