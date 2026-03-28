@@ -1,0 +1,25 @@
+{
+  "version": "2.5.0",
+  "rules": [
+    {
+      "id": "auto-harden-lofi_test.wav-1774642890",
+      "description": "Decoupled hardening for lofi_test.wav",
+      "pattern": "lofi_test.wav",
+      "enforcement": "warn",
+      "category": "claudio_hardening",
+      "source": "tooloo-core",
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T20:21:30.582882Z",
+      "metadata": {
+        "params": {
+          "hop_size": 0.002
+        },
+        "delta": 0.000017604636734842365
+      },
+      "rule_hash": "436fa5dcf98507ebe22bf5d9f9706772734c6a83b18bf130a8f0715715bfcd36"
+    }
+  ],
+  "acceptance_history": [],
+  "store_hash": "3cb91025085d06aae0b1e4ac28ab2ad0fb61c83cb62e6d388d53015bef526714"
+}

@@ -1,0 +1,52 @@
+{
+  "version": "1.0.0",
+  "sequence_id": 0,
+  "timestamp_us": 0,
+  "context": {
+    "source": {
+      "id": "claudio_source_01",
+      "type": "analog_mic",
+      "location": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      }
+    },
+    "environment": {
+      "preamp_model": "Neve_1073_EM_Sim",
+      "env_hash": "a1b2c3d4e5f6",
+      "latency_compensation_ns": 450
+    },
+    "instrument": {
+      "class": "string_instrument",
+      "subclass": "electric_guitar",
+      "articulation": "plucked"
+    }
+  },
+  "intent": {
+    "fundamental": {
+      "f0_hz": 440.0,
+      "confidence": 0.99
+    },
+    "velocity": {
+      "amplitude_db": -6.0,
+      "attack_ms": 1.2,
+      "decay_ms": 45.0
+    },
+    "timbre_16d": [
+      0.12, 0.45, 0.67, 0.23, 0.89, 0.11, 0.34, 0.56,
+      0.78, 0.90, 0.12, 0.34, 0.56, 0.78, 0.90, 0.12
+    ],
+    "modulation": {
+      "pitch_cents": 2.5,
+      "vibrato_hz": 5.2,
+      "tremolo_depth": 0.05
+    },
+    "spatial_intent": {
+      "azimuth": 45.0,
+      "elevation": 10.0,
+      "distance": 2.5
+    }
+  },
+  "delta_mode": false
+}

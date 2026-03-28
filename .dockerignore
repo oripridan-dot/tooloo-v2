@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__
+**/*.pyc
+.agents
+.agent
+.devcontainer
+.hypothesis
+.pytest_cache
+logs/
+psyche_bank/
+tests/
+studio/static/node_modules/
+uv.lock
