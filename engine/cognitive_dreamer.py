@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining cognitive_dreamer.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.939967
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 import asyncio
 from dataclasses import dataclass
 from typing import Any
@@ -57,7 +66,8 @@ class CognitiveDreamer:
             dimension_count=len(dims),
             dimensions=", ".join(dims)
         )
-        response = await self._model_garden.call(tier=3, prompt=f"{dynamic_prompt}\n\n1: {c0}\n2: {c1}")
+        model_id = self._model_garden.get_tier_model(3, "DREAM")
+        response = await self._model_garden.call(model_id=model_id, prompt=f"{dynamic_prompt}\n\n1: {c0}\n2: {c1}", intent="DREAM_16D_INTENTION_VECTOR")
 
         async def exec_sync_or_async(func, *args):
             res = func(*args)

@@ -8,7 +8,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180610Z",
+      "metadata": null,
+      "rule_hash": "b43e6cea38c454402123bab3be823935b35168c3a53ca8658ad81cf5626e414f"
     },
     {
       "id": "tribunal-auto-dynamic-eval-806474",
@@ -17,7 +21,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180652Z",
+      "metadata": null,
+      "rule_hash": "166c0491fb9e236823ad240eb6eafb9ae076cd5a1e0d4c2bfbe7a2570b0ef811"
     },
     {
       "id": "tribunal-auto-dynamic-eval-428067",
@@ -26,7 +34,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180672Z",
+      "metadata": null,
+      "rule_hash": "013b6702a4beead0d00fd51fcb95e432ee9fa6e80c957f7b36af6de686fd8e22"
     },
     {
       "id": "tribunal-auto-dynamic-eval-1033671",
@@ -35,7 +47,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180686Z",
+      "metadata": null,
+      "rule_hash": "10c84a004761b2002e1b6e362d42d58e1c272b603679d3e38372a7e42f96ed37"
     },
     {
       "id": "tribunal-auto-dynamic-eval-61683",
@@ -44,7 +60,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180698Z",
+      "metadata": null,
+      "rule_hash": "39709fff04655941f6917eeb8a62eda18bfbc1744f60d264cf23444a138d39f2"
     },
     {
       "id": "tribunal-auto-dynamic-eval-444574",
@@ -53,7 +73,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180709Z",
+      "metadata": null,
+      "rule_hash": "bfec5135e1adc2d47bac5c5d8b42cce6ced0d4ade7720ec81473ff0c478b8b72"
     },
     {
       "id": "tribunal-auto-dynamic-eval-445991",
@@ -62,7 +86,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180720Z",
+      "metadata": null,
+      "rule_hash": "313438d05d3c96a4462dac04b8aeafd8d7ada15c6e379c63ecc7c86b6cec2a67"
     },
     {
       "id": "tribunal-auto-sox-financial-control-bypass-764570",
@@ -71,7 +99,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180731Z",
+      "metadata": null,
+      "rule_hash": "56d961e656b9cf867c55dc022bd44065931dab831408944563f09aebfc861afc"
     },
     {
       "id": "tribunal-auto-path-traversal-370783",
@@ -80,7 +112,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180747Z",
+      "metadata": null,
+      "rule_hash": "55c1b8744d7d00961de33f39f0ab571c1d0c7e2bf578fa89aad75c6c34f9f495"
     },
     {
       "id": "adv-train-3-1774452330",
@@ -89,7 +125,11 @@
       "enforcement": "block",
       "category": "unauthorized_access",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180758Z",
+      "metadata": null,
+      "rule_hash": "f4fc9f0a75fd99c65b063b2390680a99e36fbd264f84999b619f0f89565f860a"
     },
     {
       "id": "adv-train-4-1774452331",
@@ -98,7 +138,11 @@
       "enforcement": "block",
       "category": "environment_isolation",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180770Z",
+      "metadata": null,
+      "rule_hash": "c0843c1ab31cbd9d701eb8f0d3bb0ee2f7de5e42b512bd81f82a6469b17215d1"
     },
     {
       "id": "tribunal-auto-path-traversal-139729",
@@ -107,7 +151,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180782Z",
+      "metadata": null,
+      "rule_hash": "57fb4497efaadc3f10a50824011a62af560ee419e7454ca52906ebdf93a37f78"
     },
     {
       "id": "adv-train-3-1774452374",
@@ -116,7 +164,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180792Z",
+      "metadata": null,
+      "rule_hash": "a7de7a916fd0ab5dc80b3a7e5a4961168da2f0615ae2e7d0f496643d61fed27f"
     },
     {
       "id": "adv-train-4-1774452375",
@@ -125,7 +177,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180803Z",
+      "metadata": null,
+      "rule_hash": "1ac820c7e7c1d04ee0043593ad31e3ee9e1807ff7c308416631dfaa9d51a122c"
     },
     {
       "id": "tribunal-auto-path-traversal-802444",
@@ -134,7 +190,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180817Z",
+      "metadata": null,
+      "rule_hash": "fb02498c94eebd6acb2340120a8bcd250bd6a7340117031a43e11004cfe67ba6"
     },
     {
       "id": "adv-train-2-1774452415",
@@ -143,7 +203,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180835Z",
+      "metadata": null,
+      "rule_hash": "fcc342a0f96493dc5fb4f490e4f1eae6655eacf3a2483cec367ebc743a890a7d"
     },
     {
       "id": "adv-train-3-1774452416",
@@ -152,7 +216,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180846Z",
+      "metadata": null,
+      "rule_hash": "25e35afcf60af1ef3e0260e481a334e47b87bad80abe41018137cf94afbee32c"
     },
     {
       "id": "adv-train-4-1774452417",
@@ -161,7 +229,11 @@
       "enforcement": "block",
       "category": "security",
       "source": "tribunal",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180857Z",
+      "metadata": null,
+      "rule_hash": "9ae550378892af04f8ab971b58e00c4e1f21a334582e61e500d0a581e89a6794"
     },
     {
       "id": "visual_cog_dual_coding",
@@ -170,7 +242,11 @@
       "enforcement": "warn",
       "category": "narrative_synthesis",
       "source": "human_curated",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180867Z",
+      "metadata": null,
+      "rule_hash": "3ca92bf37c4b5e0ed7d77f829ad85d37a2b282a98584bed2db0d11bedd13d78e"
     },
     {
       "id": "visual_cog_gestalt_grouping",
@@ -179,7 +255,11 @@
       "enforcement": "warn",
       "category": "narrative_synthesis",
       "source": "human_curated",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180879Z",
+      "metadata": null,
+      "rule_hash": "0d6a006a3467b41c50f0887b8d399436bb75f55d6dc0111e737ab27a3180c422"
     },
     {
       "id": "visual_cog_pacing_empathy",
@@ -188,7 +268,87 @@
       "enforcement": "warn",
       "category": "narrative_synthesis",
       "source": "human_curated",
-      "expires_at": null
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.180895Z",
+      "metadata": null,
+      "rule_hash": "8d1ff817d3e512c2a9e9152d09e20f02a41d48ae5b1028c2eb3266108c618acf"
+    },
+    {
+      "id": "claudio-harden-409b01df",
+      "description": "Optimal JIT parameters for acoustic_drum_break.wav (Delta: 1.07e-05)",
+      "pattern": "acoustic_drum_break.wav",
+      "enforcement": "warn",
+      "category": "claudio_hardening",
+      "source": "tribunal",
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:15.178983Z",
+      "metadata": {
+        "params": {
+          "hop_size": 40
+        },
+        "achieved_delta": 0.00001067164712414133,
+        "asset": "acoustic_drum_break.wav"
+      },
+      "rule_hash": "a4449a9eeb7155b48caba3f700c95e89a98358e9614f9dadf2f27cbede715ddb"
+    },
+    {
+      "id": "claudio-harden-458c08fe",
+      "description": "Optimal JIT parameters for speech_sibilance.wav (Delta: 1.06e-05)",
+      "pattern": "speech_sibilance.wav",
+      "enforcement": "warn",
+      "category": "claudio_hardening",
+      "source": "tribunal",
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T16:48:38.919676Z",
+      "metadata": {
+        "params": {
+          "hop_size": 40
+        },
+        "achieved_delta": 0.000010559335375569787,
+        "asset": "speech_sibilance.wav"
+      },
+      "rule_hash": "9bf6ce6bae96a2a67902dc1a4be8fe8b664eb92683e40bcbfe334b03241b1359"
+    },
+    {
+      "id": "harden-stereo_phase_stress.wav-2026086",
+      "description": "Auto-generated hardening rule for stereo_phase_stress.wav",
+      "pattern": "stereo_phase_stress.wav",
+      "enforcement": "warn",
+      "category": "claudio_hardening",
+      "source": "tribunal",
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T18:52:58.482668Z",
+      "metadata": {
+        "params": {
+          "hop_size": 0.002
+        },
+        "achieved_delta": 0.35355249433446506
+      },
+      "rule_hash": "0d866b5d8a627660a352549e530eb50b97a4754e785d54a54d8d3cfc114572a3"
+    },
+    {
+      "id": "harden-lofi_test.wav-2026086",
+      "description": "Auto-generated hardening rule for lofi_test.wav",
+      "pattern": "lofi_test.wav",
+      "enforcement": "warn",
+      "category": "claudio_hardening",
+      "source": "tribunal",
+      "expires_at": null,
+      "version": 1,
+      "last_refreshed_at": "2026-03-27T19:06:17.307461Z",
+      "metadata": {
+        "params": {
+          "hop_size": 0.002
+        },
+        "achieved_delta": 0.000017613536878594376
+      },
+      "rule_hash": "6d402bdfada51bdf035ebfdfab27d34f9cf9bd76707aa51cf9749008d4d380c3"
     }
-  ]
+  ],
+  "acceptance_history": [],
+  "store_hash": "d73ae1db5cda608f0a3aca643873ce9251907036dfa82660b8c306e7a99a873e"
 }

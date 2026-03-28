@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining roi_feedback.py
+# WHERE: engine/calibration
+# WHEN: 2026-03-28T15:54:38.946568
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/calibration/roi_feedback.py — 16D ROI Self-Calibration Loop
 

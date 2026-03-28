@@ -31,6 +31,11 @@ dependencies = [
     "numpy>=2.4.3",
     "streamlit>=1.41.0",
     "requests>=2.31.0",
+    "soundfile>=0.12.1",
+    "matplotlib>=3.8.0",
+    "beautifulsoup4>=4.12.3",
+    "pytest>=8.0.0",
+    "numba",
 ]
 
 [project.optional-dependencies]
@@ -46,7 +51,7 @@ dev = [
 tooloo-studio = "studio.api:main"
 
 [tool.setuptools.packages.find]
-include = ["engine*", "studio*", "sandbox*", "src*"]
+include = ["engine*", "studio*", "sandbox*", "src*", "scripts*"]
 
 [tool.pytest.ini_options]
 # Exclude tests that require external environment not present in offline CI:
@@ -69,3 +74,9 @@ ignore = []
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.uv.workspace]
+members = [
+    "workspace_v3/claudio-engine",
+    "workspace_v3/tooloo-core",
+]

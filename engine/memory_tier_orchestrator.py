@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining memory_tier_orchestrator.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.926148
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/memory_tier_orchestrator.py — Unified Tiered Memory Architecture.
 
@@ -124,7 +133,7 @@ class MemoryTierOrchestrator:
         else:
             return False
 
-        was_added = self.vector_store.add(
+        was_added = await self.vector_store.add(
             doc_id=f"warm_{session_id}",
             text=doc_text,
             metadata=metadata,
@@ -147,7 +156,7 @@ class MemoryTierOrchestrator:
         try:
             from engine.recursive_summarizer import RecursiveSummaryAgent
             agent = RecursiveSummaryAgent(batch_size=5)
-            result = agent.distill_pending()
+            result = await agent.distill_pending()
             logger.info(f"MemoryTier: Warm→Cold promotion result: {result}")
             return result
         except Exception as e:

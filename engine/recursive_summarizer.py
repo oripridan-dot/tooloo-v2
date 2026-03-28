@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining recursive_summarizer.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.921779
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/recursive_summarizer.py — The Recursive Summary Agent for Tiered Memory.
 
@@ -61,7 +70,7 @@ class RecursiveSummaryAgent:
             logger.warning(f"Failed to load calibration context: {e}")
             return "Error loading calibration data."
 
-    def distill_pending(self) -> dict[str, Any]:
+    async def distill_pending(self) -> dict[str, Any]:
         """Find non-distilled memory entries and extract pure facts."""
         all_entries = self.buddy_store.recent(limit=1000)
         pending = [e for e in all_entries if getattr(
@@ -92,14 +101,13 @@ class RecursiveSummaryAgent:
             "Rules:\n"
             "1. Extract concrete knowledge: technical stack, user preferences, API choices, or project goals.\n"
             "2. Prioritize facts that address the 'Critical Focus' areas identified in the calibration context.\n"
-            "3. Ignore ephemeral chatter or immediate tool errors that are already resolved.\n"
-            "4. Output a strictly valid JSON array of objects, where each object has:\n"
-            "   - 'id': A short snake_case slug (e.g. 'user_prefers_rust')\n"
-            "   - 'description': One-sentence factual summary\n"
-            "   - 'confidence': float 0.0 to 1.0\n"
-            "5. If no long-term facts are worth keeping, return an empty array [].\n\n"
+            "3. Identify relationships: If fact A is a prerequisite or cause of fact B, include it.\n"
+            "4. Output a strictly valid JSON object with two keys:\n"
+            "   - 'facts': array of objects {id, description, confidence}\n"
+            "   - 'relations': array of objects {source_id, target_id, relation_type}\n"
+            "5. If no facts are worth keeping, return {'facts': [], 'relations': []}.\n\n"
             f"Hot Memory Batch:\n{json.dumps(payload, indent=2)}\n\n"
-            "Return ONLY the JSON array."
+            "Return ONLY the JSON object."
         )
 
         model_id = self.garden.get_tier_model(tier=3, intent="DISTILL")
@@ -113,45 +121,41 @@ class RecursiveSummaryAgent:
             if text.endswith("```"):
                 text = text[:-3]
 
-            facts = json.loads(text.strip())
+            res_json = json.loads(text.strip())
+            facts = res_json.get("facts", [])
+            relations = res_json.get("relations", [])
 
             added_count = 0
             for f in facts:
-                if not isinstance(f, dict):
-                    continue
                 fid = str(f.get("id", "fact"))
                 desc = str(f.get("description", ""))
                 conf = float(f.get("confidence", 0.8))
 
-                if not desc:
+                if not desc: continue
+
+                # Vector-Symbolic Integrity Check
+                if await self._fact_collides_with_warm_memory(desc):
                     continue
 
-                # Vector-Symbolic Integrity Check: Ensure fact doesn't collide with existing semantic memory
-                if self._fact_collides_with_warm_memory(desc):
-                    logger.info(f"Skipping fact candidate '{fid}' due to high semantic similarity with existing Warm Memory.")
-                    continue
-
-                # Store in PsycheBank as category class 'pure_fact'
                 rule = CogRule(
-                    id=fid,
-                    description=desc,
-                    pattern=".*",  # Match-all or generic pattern for pure facts
-                    enforcement="warn",
-                    category="pure_fact",
-                    source="recursive_summary_agent",
-                    expires_at=""
+                    id=fid, description=desc, pattern=".*",
+                    enforcement="warn", category="pure_fact",
+                    source="recursive_summary_agent", expires_at=""
                 )
                 if self.psyche_bank.capture(rule):
                     added_count += 1
                 
-                # Push the distilled fact up the hierarchy to GCP Cold Memory 
                 self.cold_memory.store_fact(
                     fact_id=fid, 
-                    payload={
-                        "description": desc, 
-                        "confidence": conf,
-                        "distilled_at": "auto"
-                    }
+                    payload={"description": desc, "confidence": conf, "distilled_at": "auto"}
+                )
+
+            # Process relationships
+            for rel in relations:
+                self.cold_memory.link_facts(
+                    source_id=rel.get("source_id"),
+                    target_id=rel.get("target_id"),
+                    relation=rel.get("relation_type", "related_to")
                 )
 
             # Also distill the raw summary into the warm vector store for semantic search
@@ -168,7 +172,7 @@ class RecursiveSummaryAgent:
                     "last_turn_at": entry.last_turn_at,
                     "turn_count": entry.turn_count,
                 }
-                was_added = self.vector_store.add(
+                was_added = await self.vector_store.add(
                     doc_id=entry.session_id, text=doc_text, metadata=metadata
                 )
                 if was_added:
@@ -189,10 +193,39 @@ class RecursiveSummaryAgent:
             logger.error(f"RecursiveSummaryAgent failed: {e}")
             return {"status": "error", "error": str(e)}
 
-    def _fact_collides_with_warm_memory(self, description: str) -> bool:
+    async def _fact_collides_with_warm_memory(self, description: str) -> bool:
         """Check if a new fact is semantically redundant via VectorStore search."""
-        results = self.vector_store.search(description, top_k=1)
+        results = await self.vector_store.search(description, top_k=1)
         if not results:
             return False
-        # If similarity is extremely high (e.g., > 0.98), consider it a collision
         return results[0].score > 0.98
+
+    async def migrate_adversarial_logs(self) -> dict[str, Any]:
+        """Specialized one-time migration of hardening logs to Cold Memory."""
+        log_path = _REPO_ROOT / "psyche_bank" / "adversarial_evolution_log.jsonl"
+        if not log_path.exists():
+            return {"status": "no_logs_found"}
+        
+        try:
+            lines = log_path.read_text().splitlines()
+            records = [json.loads(l) for l in lines]
+            
+            # Distill the latest state
+            latest = records[-1]
+            fact_id = f"hardening_calibration_{latest['epoch']}"
+            desc = (
+                f"Adversarial training completed epoch {latest['epoch']} with "
+                f"Architectural_Foresight at {latest['weights_after']['Architectural_Foresight']:.4f}. "
+                f"Stability detected at {latest.get('stability', 0.0):.4f}."
+            )
+            
+            self.cold_memory.store_fact(fact_id, {
+                "description": desc,
+                "confidence": 1.0,
+                "source": "manual_migration",
+                "weights": latest['weights_after']
+            })
+            
+            return {"status": "success", "migrated_epochs": len(records)}
+        except Exception as e:
+            return {"status": "error", "error": str(e)}

@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining fleet_manager.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.943548
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 import asyncio
 import json
 import uuid

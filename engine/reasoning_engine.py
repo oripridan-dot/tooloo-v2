@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining reasoning_engine.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.908609
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 TooLoo V2: ReasoningEngine (Wave 0.5)
 ------------------------------------
@@ -56,6 +65,7 @@ class ReasoningEngine:
                 model_id=model_id,
                 prompt=prompt,
                 max_tokens=4000,
+                intent="REASON",
                 thinking_budget=16000
             )
             
@@ -99,8 +109,14 @@ KEEP THE AUDIT CONCISE (max 300 words).
         """Secondary high-entropy audit to detect Policy Drift."""
         logger.info("TRITUNAL: Initiating GHOST AUDIT for policy alignment.")
         
-        # Use a higher-tier model for the audit (Ultra / 2.5-flash-thinking-v1)
-        model_id = "gemini-2.5-flash-thinking-v1" 
+        # --- SOTA: Use tier-based routing with thinking profile ---
+        profile = CognitiveProfile(
+            primary_need="reasoning",
+            minimum_tier=4,
+            thinking_available=True,
+            thinking_budget=32000
+        )
+        model_id = self._garden.get_tier_model(4, "AUDIT", profile=profile)
         
         prompt = f"""
 AUDIT THE FOLLOWING REASONING STROKE FOR 'POLICY DRIFT'.
@@ -116,7 +132,7 @@ OUTPUT:
 - RATIONALE: Why?
 """
         try:
-            result = self._garden.call(model_id=model_id, prompt=prompt, thinking_budget=32000)
+            result = self._garden.call(model_id=model_id, prompt=prompt, intent="AUDIT", thinking_budget=32000)
             if "DRIFT_DETECTED" in result:
                 await self._trigger_hard_stop(mandate, result)
             else:

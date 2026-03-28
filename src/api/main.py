@@ -89,22 +89,9 @@ _bus.subscribe("INSIGHT", lambda e: _b_unit.on_bus_event(e.level, e.payload))
 def create_engine() -> NStrokeEngine:
     """Canonical NStrokeEngine factory with dependency injection."""
     bank = PsycheBank()
-    tribunal = Tribunal(bank=bank)
+    tribunal = Tribunal()
     mcp = MCPManager()
-    return NStrokeEngine(
-        router=MandateRouter(),
-        booster=JITBooster(),
-        tribunal=tribunal,
-        sorter=TopologicalSorter(),
-        executor=JITExecutor(mcp_manager=mcp, tribunal=tribunal, max_workers=6),
-        scope_evaluator=ScopeEvaluator(),
-        refinement_loop=RefinementLoop(),
-        mcp_manager=mcp,
-        model_selector=ModelSelector(),
-        refinement_supervisor=RefinementSupervisor(),
-        max_strokes=3,
-        broadcast_fn=_broadcast
-    )
+    return NStrokeEngine(max_strokes=3)
 
 # Shared engine instance
 engine = create_engine()

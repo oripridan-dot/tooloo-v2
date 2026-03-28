@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining mcp_manager.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.936782
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/mcp_manager.py — MCP (Model Context Protocol) Tool Manager.
 

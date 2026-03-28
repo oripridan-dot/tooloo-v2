@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining self_improvement.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.911221
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/self_improvement.py — TooLoo V2 self-improvement loop.
 
@@ -582,7 +591,7 @@ class SelfImprovementEngine:
         self._router = MandateRouter()
         self._booster = booster or JITBooster()
         self._bank = bank or PsycheBank()
-        self._tribunal = Tribunal(bank=self._bank)
+        self._tribunal = Tribunal()
         self._mcp = MCPManager()
         self._executor = JITExecutor(mcp_manager=self._mcp, tribunal=self._tribunal, max_workers=6)
         self._sorter = TopologicalSorter()

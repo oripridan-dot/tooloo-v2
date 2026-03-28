@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining runtime_metrics.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.934769
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/runtime_metrics.py — Runtime Metrics Collector for 16D Scoring.
 

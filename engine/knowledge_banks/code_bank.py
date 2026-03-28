@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining code_bank.py
+# WHERE: engine/knowledge_banks
+# WHEN: 2026-03-28T15:54:38.948740
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/knowledge_banks/code_bank.py — SOTA Software Engineering Knowledge Bank.
 

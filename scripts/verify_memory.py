@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining verify_memory.py
+# WHERE: scripts
+# WHEN: 2026-03-28T15:54:43.408083
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 from engine.graph import CognitiveGraph
 from engine.graph_store import memory_manager
 import logging

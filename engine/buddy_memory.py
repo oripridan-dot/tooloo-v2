@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining buddy_memory.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.936104
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/buddy_memory.py — Persistent cross-session memory for Buddy.
 

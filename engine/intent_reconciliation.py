@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining intent_reconciliation.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.936222
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/intent_reconciliation.py — Validates whether an executed wave matches the original LockedIntent.
 """
@@ -63,7 +72,7 @@ Analyze the results against the criteria. Return ONLY a valid JSON object like t
             # Use Tier 3 for robust validation
             selection = self._model_selector.select(stroke=4, intent="intent_validation", prior_verdict="pass")
             garden = get_garden()
-            raw_resp = garden.call(selection.model_id, prompt, max_tokens=1024)
+            raw_resp = garden.call(selection.model_id, prompt, max_tokens=1024, intent="AUDIT")
             
             # Clean markdown if present
             if raw_resp.startswith("```json"):

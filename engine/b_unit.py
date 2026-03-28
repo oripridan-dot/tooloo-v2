@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining b_unit.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.941484
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """engine/b_unit.py — The B-Roll Unit for TooLoo V2.
 
 This component handles asynchronous generation of background imagery (B-Roll)

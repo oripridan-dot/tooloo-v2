@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining meta_architect.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.935044
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/meta_architect.py — Dynamic DAG synthesis for AI-native execution.
 

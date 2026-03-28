@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining mandate_executor.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.918931
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/mandate_executor.py — LLM-powered DAG node executor.
 
@@ -44,6 +53,9 @@ import re
 import time
 from collections.abc import Callable
 from typing import Any
+
+from engine.utils import extract_json, get_6w_template
+from engine.stamping_engine import StampingEngine
 
 logger = logging.getLogger(__name__)
 
@@ -424,6 +436,64 @@ def make_live_work_fn(
     _constraints: str = constraints or "TooLoo V2 engine/ boundary; no hardcoded secrets"
     _warm_memory = VectorStore()
 
+    # --- Modernized Helpers (Inward Refinement) ---
+
+    def _generate_intent_payload(node_model_id: str) -> IntentPayload | None:
+        """Phase 1: Generate structured execution intent."""
+        try:
+            intent_prompt = (
+                f"Based on the following mandate, define your execution intent. "
+                f"Respond with ONLY a valid JSON object matching this Pydantic model:\n"
+                f"```json\n{IntentPayload.model_json_schema()}\n```\n\n"
+                f"Mandate: {_mandate}"
+            )
+            raw = _call_llm(f"intent", intent_prompt, node_model_id)
+            data = extract_json(raw)
+            return IntentPayload.model_validate(data) if data else None
+        except Exception as e:
+            logger.error(f"Inward Refinement: Intent generation failed: {e}")
+            return None
+
+    def _validate_outcome(
+        node_model_id: str, 
+        intent_payload: IntentPayload, 
+        outcome_summary: str
+    ) -> ValidationResult | None:
+        """Phase 3: Compare intent with actual outcome."""
+        try:
+            validation_prompt = (
+                f"Compare the original intent with the actual outcome. Respond with ONLY a valid JSON object matching this Pydantic model:\n"
+                f"```json\n{ValidationResult.model_json_schema()}\n```\n\n"
+                f"Original Intent:\n{intent_payload.model_dump_json(indent=2)}\n\n"
+                f"Actual Outcome:\n{outcome_summary}"
+            )
+            raw = _call_llm(f"validate", validation_prompt, node_model_id)
+            data = extract_json(raw)
+            return ValidationResult.model_validate(data) if data else None
+        except Exception as e:
+            logger.error(f"Inward Refinement: Outcome validation failed: {e}")
+            return None
+
+    def _generate_remediation(
+        node_model_id: str, 
+        intent_payload: IntentPayload, 
+        validation_result: ValidationResult
+    ) -> RemediationPlan | None:
+        """Phase 4: Generate remediation if the intent-outcome gap is too wide."""
+        try:
+            remediation_prompt = (
+                f"An intent gap was detected. Generate a remediation plan. Respond with ONLY a valid JSON object matching this Pydantic model:\n"
+                f"```json\n{RemediationPlan.model_json_schema()}\n```\n\n"
+                f"Original Intent:\n{intent_payload.model_dump_json(indent=2)}\n\n"
+                f"Detected Gap:\n{validation_result.intent_gap}"
+            )
+            raw = _call_llm(f"remediate", remediation_prompt, node_model_id)
+            data = extract_json(raw)
+            return RemediationPlan.model_validate(data) if data else None
+        except Exception as e:
+            logger.error(f"Inward Refinement: Remediation generation failed: {e}")
+            return None
+
     def _call_llm(node_type: str, prompt: str, model_id: str) -> str:
         """Call ModelGarden for provider-agnostic inference with symbolic fallback."""
 
@@ -432,7 +502,7 @@ def make_live_work_fn(
         
         try:
             # Use ModelGarden to dispatch to the correct provider (Vertex or Gemini)
-            return _garden.call(model_id, full_prompt)
+            return _garden.call(model_id, full_prompt, intent=intent)
         except Exception as e:
             logger.warning(f"ModelGarden call failed for {model_id} (node={node_type}): {e}")
             # Fall through to symbolic fallback
@@ -457,7 +527,7 @@ def make_live_work_fn(
                 return "No UI required for core DSP loop."
 
         try:
-            return _garden.call(model_id, full_prompt)
+            return _garden.call(model_id, full_prompt, intent=intent)
         except Exception as e:
             logger.warning(f"ModelGarden raw call failed for {model_id} (node={_node_type}): {e}")
             return (
@@ -479,23 +549,9 @@ def make_live_work_fn(
         validation_result: ValidationResult | None = None
         remediation_plan: RemediationPlan | None = None
         
-        # 1. Generate Intent
-        if node_type == "implement": # Only generate intent for implement nodes for now
-            try:
-                intent_prompt = (
-                    f"Based on the following mandate, define your execution intent. "
-                    f"Respond with ONLY a valid JSON object matching this Pydantic model:\n"
-                    f"```json\n{IntentPayload.model_json_schema()}\n```\n\n"
-                    f"Mandate: {_mandate}"
-                )
-                raw_intent = _call_llm(f"{node_type}-intent", intent_prompt, node_model_id)
-                import re
-                m = re.search(r"\{.*\}", raw_intent, re.DOTALL)
-                clean_intent = m.group(0) if m else raw_intent
-                intent_payload = IntentPayload.model_validate_json(clean_intent)
-            except Exception as e:
-                logger.error(f"Failed to generate intent payload: {e}")
-                pass
+        # 1. Generate Intent (Modular)
+        if node_type == "implement":
+            intent_payload = _generate_intent_payload(node_model_id)
 
         # Build original execution prompt
         if node_type in ("ux_eval", "art_director"):
@@ -584,8 +640,23 @@ def make_live_work_fn(
             else:
                 output = _last_raw
 
-        # ... (rest of the function, including mcp_write_result, etc.) ...
+        # 2. Execute Mandate (ReAct loop)
+        # ... (ReAct logic) ...
         
+        # 3. Apply 6W Stamping (Inward Refinement)
+        if node_type == "implement" and output and not output.startswith("[symbolic-"):
+            # Generate 6W metadata for the implemented code
+            meta = {
+                "who": f"TooLoo V2 ({node_type.upper()} Node)",
+                "what": _mandate[:100],
+                "where": target or env.metadata.get("file_path", "unknown"),
+                "why": intent or "Feature Implementation",
+                "how": f"LLM Generation ({node_model_id})"
+            }
+            stamp = get_6w_template(meta)
+            if not StampingEngine.is_stamped(output):
+                output = stamp + "\n" + output
+
         mcp_write_result: dict[str, Any] | None = None
         if node_type == "implement":
             write_path = env.metadata.get("file_path") or target

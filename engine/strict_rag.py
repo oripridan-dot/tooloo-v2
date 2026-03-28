@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining strict_rag.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.918299
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """engine/strict_rag.py — The Deterministic Cage Implementation.
 
 This module implements Strict RAG, forcing the LLM to output ONLY verified ground truth.

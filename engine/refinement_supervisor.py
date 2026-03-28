@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining refinement_supervisor.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.922050
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/refinement_supervisor.py — Autonomous Healing Supervisor.
 
@@ -45,6 +54,8 @@ from engine.healing_guards import (
     ReversibilityGuard,
     check_healing_gates,
 )
+from engine.utils import extract_json
+from engine.model_garden import get_garden
 
 # Production default: 3 failures before healing is triggered.
 # Override via NODE_FAIL_THRESHOLD env var for extended dev tolerance.
@@ -527,12 +538,13 @@ class SpeculativeHealingEngine:
                 intent=intent,
                 primary_need="coding",
             )
-            raw = garden.call(model_id, spec.patch_hint)
-            # Extract JSON from the response
-            m = re.search(r"\{.*\}", raw, re.DOTALL)
-            if not m:
+            raw = garden.call(model_id, spec.patch_hint, intent=intent)
+            
+            # Step 4: Extract JSON via shared utility (Inward Refinement)
+            data = extract_json(raw)
+            if not data:
                 return None
-            data = _json.loads(m.group(0))
+            
             search_block = str(data.get("search_block", "")).strip()
             replace_block = str(data.get("replace_block", "")).strip()
             if not search_block or not replace_block:

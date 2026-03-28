@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining psyche_bank.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.931851
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/psyche_bank.py — SOAR-integrated, event-driven rule store with AI-driven auditing and blockchain immutability.
 
@@ -270,7 +279,8 @@ class CogRule(pydantic.BaseModel):
             "tribunal", "manual", "vast_learn", "gpt4_turbo_function_call",
             "federated_insights", "user_feedback", "human_curated",
             "decentralized_graph", "federated_learning_aggregator", "contextual_refresh_engine",
-            "rag_ideation", "iso_evaluator", "anomaly_detector_rule_creation"
+            "rag_ideation", "iso_evaluator", "anomaly_detector_rule_creation",
+            "tooloo-core", "claudio-engine"
         }
         if self.source not in allowed_sources:
             raise ValueError(f"CogRule.source must be one of {allowed_sources}")
@@ -466,17 +476,19 @@ class PsycheBank:
         return CogStore() # Should not be reached, but satisfies linters
 
     async def _persist(self) -> None:
-        """Atomically persists the current rule store to disk, including its hash."""
-        async with self._lock:
-            if not self._store: return
-            try:
-                # Update the store hash before persisting
-                self._store.store_hash = create_store_hash(self._store)
-                data = self._store.model_dump_json(indent=2)
-                await asyncio.to_thread(self._path.write_text, data, encoding="utf-8")
-                logger.debug(f"Persisted rule store to {self._path} (Hash: {self._store.store_hash})")
-            except Exception as e:
-                logger.error(f"Failed to persist PsycheBank to {self._path}: {e}", exc_info=True)
+        """
+        Atomically persists the current rule store to disk, including its hash.
+        NOTE: Must be called while holding self._lock.
+        """
+        if not self._store: return
+        try:
+            # Update the store hash before persisting
+            self._store.store_hash = create_store_hash(self._store)
+            data = self._store.model_dump_json(indent=2)
+            await asyncio.to_thread(self._path.write_text, data, encoding="utf-8")
+            logger.debug(f"Persisted rule store to {self._path} (Hash: {self._store.store_hash})")
+        except Exception as e:
+            logger.error(f"Failed to persist PsycheBank to {self._path}: {e}", exc_info=True)
 
     async def update_acceptance_ratio(self, mandate_id: str, accepted: bool, modified_lines: int, domain: str, rationale: Optional[str] = None) -> float:
         """Records a user acceptance event and returns the updated ROI score."""
@@ -903,7 +915,7 @@ class PsycheBank:
             "compliance", "accessibility", "function_output_validation",
             "hypothesis", "adversarial_test_case", "bias_drift_metric",
             "ai_generated_idea", "code_quality_insight", "configuration_security",
-            "anomaly_detection_rule" # Category for rules created by anomaly detector
+            "anomaly_detection_rule", "claudio_hardening" # Category for rules created by anomaly detector or claudio hardener
         }
 
     def _get_suspicious_patterns(self, rule: CogRule) -> List[str]:

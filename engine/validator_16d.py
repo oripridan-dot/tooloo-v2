@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining validator_16d.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.910845
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/validator_16d.py — 16-Dimension Comprehensive Validation Framework
 

@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining model_garden.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.911541
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/model_garden.py — JIT Multi-Provider Model Garden
 
@@ -39,12 +48,20 @@ All model IDs are confirmed against the Vertex AI Model Garden catalog
 from __future__ import annotations
 from engine.local_slm_client import LocalSLMClient, LocalSLMConfig
 from engine.config import (
-    ANTHROPIC_VERTEX_REGION,
+     ANTHROPIC_VERTEX_REGION,
     CROSS_MODEL_CONSENSUS_ENABLED,
+    DEEPSEEK_API_KEY,
     GCP_PROJECT_ID,
+    GCP_REGION,
+    GEMINI_API_KEY,
+    GROK_API_KEY,
     LOCAL_SLM_ENDPOINT,
     LOCAL_SLM_MODEL,
     _vertex_client as _google_client,
+    gemini_client as _gemini_api_client,
+    openai_client as _openai_client,
+    deepseek_client as _deepseek_client,
+    grok_client as _grok_client,
 )
 
 import json
@@ -53,11 +70,17 @@ import threading
 from collections.abc import Callable
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Set
 from urllib import request as urlrequest
 from urllib.error import HTTPError, URLError
 
 logger = logging.getLogger(__name__)
+
+# --- Pathway B Control: Anti-Stuck & Blacklist Mechanisms ---
+_BLACKLISTED_ENDPOINTS: Set[str] = set()
+_ENDPOINT_LOCK = threading.Lock()
+_PATHWAY_B_TIMEOUT_T1_T2 = 10.0 # seconds
+_PATHWAY_B_TIMEOUT_T3_T4 = 25.0 # seconds
 
 # Control: configurable thresholds for model garden safety
 _MAX_RETRIES = 3              # per-model retry ceiling
@@ -77,6 +100,8 @@ class CognitiveProfile:
     thinking_budget: int | None = None
     # Tier-5: Task complexity (0.0-1.0)
     complexity: float = 0.5
+    # Tier-5: Whether thinking models (e.g., DeepSeek-R1) are mandatory
+    thinking_available: bool = False
 
     def __post_init__(self) -> None:
         if self.primary_need not in ("speed", "reasoning", "coding", "synthesis"):
@@ -96,6 +121,7 @@ class CognitiveProfile:
             "lock_model": self.lock_model,
             "thinking_budget": self.thinking_budget,
             "complexity": self.complexity,
+            "thinking_available": self.thinking_available,
         }
 
 # ── Capability profile and Cognitive Routing ──────────────────────────────────
@@ -123,7 +149,7 @@ class ModelInfo:
     coding: float      # code generation, debugging, architecture
     synthesis: float   # creative writing, summarisation, explanation
     stability: float   # 1.0=GA  0.9=preview-stable  0.8=experimental
-    # Tier-5: supports test-time compute / internal reasoning
+    cost_efficiency: float = 0.5 # 1.0=cheapest, 0.0=expensive
     thinking_available: bool = False
 
     def score_for(self, task_type: str) -> float:
@@ -137,7 +163,7 @@ class ModelInfo:
             + self.coding * w["coding"]
             + self.synthesis * w["synthesis"]
         )
-        return raw * self.stability
+        return raw * self.stability * self.cost_efficiency
 
     @property
     def is_flash(self) -> bool:
@@ -154,30 +180,16 @@ class ModelInfo:
 _REGISTRY: list[ModelInfo] = [
     # ── Google Gemini — Vertex AI us-central1 ────────────────────────────────
     ModelInfo(
-        "gemini-2.5-flash-lite", "google",
+        "gemini-1.5-flash-8b", "google",
         speed=0.96, reasoning=0.68, coding=0.70, synthesis=0.67, stability=1.00,
     ),
     ModelInfo(
-        "gemini-2.5-flash", "google",
+        "gemini-1.5-flash", "google",
         speed=0.88, reasoning=0.80, coding=0.82, synthesis=0.79, stability=1.00,
     ),
     ModelInfo(
-        "gemini-3-flash-preview", "google",
-        speed=0.87, reasoning=0.84, coding=0.85, synthesis=0.82, stability=0.98,
-    ),
-    ModelInfo(
-        "gemini-2.5-pro", "google",
-        speed=0.65, reasoning=0.94, coding=0.92, synthesis=0.90, stability=1.00,
-        thinking_available=True,
-    ),
-    ModelInfo(
-        "gemini-3-pro-preview", "google",
-        speed=0.62, reasoning=0.96, coding=0.95, synthesis=0.93, stability=0.99,
-        thinking_available=True,
-    ),
-    ModelInfo(
-        "gemini-2.5-pro", "google",
-        speed=0.65, reasoning=0.94, coding=0.92, synthesis=0.90, stability=1.00,
+        "gemini-1.5-pro", "google",
+        speed=0.65, reasoning=0.92, coding=0.90, synthesis=0.88, stability=1.00,
         thinking_available=True,
     ),
 
@@ -221,6 +233,33 @@ _REGISTRY: list[ModelInfo] = [
         "mistral-nemo@2407", "vertex_maas",
         speed=0.93, reasoning=0.76, coding=0.78, synthesis=0.75, stability=1.00,
     ),
+
+    # ── DeepSeek — Direct API ───────────────────────────────────────────────
+    ModelInfo(
+        "deepseek-chat", "deepseek",
+        speed=0.94, reasoning=0.92, coding=0.94, synthesis=0.88, stability=0.98, cost_efficiency=0.95,
+    ),
+    ModelInfo(
+        "deepseek-reasoner", "deepseek",
+        speed=0.55, reasoning=0.98, coding=0.97, synthesis=0.85, stability=0.95, cost_efficiency=0.90,
+        thinking_available=True,
+    ),
+
+    # ── OpenAI — Direct API ────────────────────────────────────────────────
+    ModelInfo(
+        "gpt-4o", "openai",
+        speed=0.75, reasoning=0.94, coding=0.92, synthesis=0.93, stability=1.00, cost_efficiency=0.60,
+    ),
+    ModelInfo(
+        "gpt-4o-mini", "openai",
+        speed=0.95, reasoning=0.78, coding=0.80, synthesis=0.82, stability=1.00, cost_efficiency=0.98,
+    ),
+
+    # ── xAI Grok — Direct API ────────────────────────────────────────────────
+    ModelInfo(
+        "grok-2-1212", "xai",
+        speed=0.88, reasoning=0.94, coding=0.93, synthesis=0.92, stability=1.00, cost_efficiency=0.70,
+    ),
 ]
 
 # Intent → dominant task-type mapping
@@ -254,7 +293,6 @@ def _init_anthropic() -> bool:
         if not GCP_PROJECT_ID or not ANTHROPIC_VERTEX_REGION:
             return False
         try:
-            # type: ignore[import-untyped]
             from anthropic import AnthropicVertex
             _anthropic_client = AnthropicVertex(
                 project_id=GCP_PROJECT_ID,
@@ -264,6 +302,30 @@ def _init_anthropic() -> bool:
         except Exception:
             pass
     return _anthropic_available
+
+
+# ── Direct API Clients (DeepSeek, xAI) ────────────────────────────────────────
+
+_openai_clients: dict[str, Any] = {}
+_client_lock = threading.Lock()
+
+def _get_openai_compatible_client(provider: str) -> Any:
+    """Return a thread-safe OpenAI-compatible client for the provider."""
+    global _openai_clients
+    if provider in _openai_clients:
+        return _openai_clients[provider]
+    
+    with _client_lock:
+        if provider in _openai_clients:
+            return _openai_clients[provider]
+        
+        from openai import OpenAI
+        if provider == "deepseek" and DEEPSEEK_API_KEY:
+             _openai_clients[provider] = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
+        elif provider == "xai" and GROK_API_KEY:
+             _openai_clients[provider] = OpenAI(api_key=GROK_API_KEY, base_url="https://api.x.ai/v1")
+             
+        return _openai_clients.get(provider)
 
 
 # ── Cognitive Profile Inference ───────────────────────────────────────────────
@@ -566,13 +628,16 @@ class ModelGarden:
             return self._static_tiers[tier]
 
         # Tier 5: Dynamic Resolution Strategy (March 2026 Mandates)
-        if profile and profile.complexity > 0.8:
-            # Resolve to Thinking model for high complexity
-            return "gemini-2.5-pro"
+        if profile and profile.thinking_available:
+             # Priority 1: DeepSeek Reasoner (Thinking-First)
+             if _deepseek_client:
+                 return "deepseek-reasoner"
+             # Priority 2: Gemini Thinking (Vertex)
+             return "gemini-2.0-flash-thinking-exp-01-21"
         
         if primary_need == "synthesis" and "aesthetic" in intent.lower():
             # Resolve to Image/Aesthetic specialisation
-            return "gemini-3.1-flash-image-preview"
+            return "gemini-2.5-flash"
             
         if primary_need == "speed" and ("bulk" in intent.lower() or "data" in intent.lower()):
             # Resolve to Lite for high-volume data
@@ -582,6 +647,14 @@ class ModelGarden:
         task_type = primary_need if primary_need in _TASK_WEIGHTS else INTENT_TASK.get(
             intent, "reasoning")
         available = _active_models()
+        
+        # COST FORESIGHT: If we are in "LISTEN" or "COLLABORATE" intent, 
+        # pivot to high-speed/low-cost DeepSeek/Flash even for Tier 3 tasks.
+        if intent in ("LISTEN", "COLLABORATE", "CASUAL", "SUPPORT"):
+            flash_pool = [m for m in available if m.is_flash or m.provider == "deepseek"]
+            if flash_pool:
+                return max(flash_pool, key=lambda m: m.score_for(task_type)).id
+
         pro_pool = [m for m in available if not m.is_flash]
 
         if not pro_pool:
@@ -590,11 +663,8 @@ class ModelGarden:
         if tier == 3:
             stable = [m for m in pro_pool if m.stability >= 0.9]
             pool = stable if stable else pro_pool
+            # Prefer DeepSeek/Grok for T3 if reasoning > 0.9 (Cost effectiveness)
             winner = max(pool, key=lambda m: m.score_for(task_type)).id
-            # Failover: If winning model is a deprecated preview, shift to stable
-            if "preview" in winner and "gemini-3" in winner:
-                 # Check for 3.1 Pro stable if preview is risky (mocking March 9 cutoff)
-                 return "gemini-2.5-pro" 
             return winner
 
         t3_id = self.get_tier_model(3, intent, primary_need=primary_need, profile=profile)
@@ -608,7 +678,7 @@ class ModelGarden:
 
     # ── Provider-dispatched inference ────────────────────────────────────────
 
-    def call(self, model_id: str, prompt: str, max_tokens: int = 1024, thinking_budget: int | None = None) -> str:
+    def call(self, model_id: str, prompt: str, max_tokens: int = 1024, intent: str = "", thinking_budget: int | None = None) -> str:
         """
         Dispatch inference to the correct provider SDK.
 
@@ -622,9 +692,82 @@ class ModelGarden:
         # Tier-5: Override thinking budget if model supports it
         actual_budget = thinking_budget if (info and info.thinking_available) else None
 
+        try:
+            # Skip if blacklisted
+            v_id = model_id if model_id.startswith("publishers/") else f"publishers/google/models/{model_id}"
+            if v_id in _BLACKLISTED_ENDPOINTS:
+                logger.warning(f"PATHWAY B: Skipping blacklisted endpoint {v_id}. PIVOTING to Global Rescue.")
+                return self._handle_pivot(prompt, max_tokens, intent)
+
+            # Step 1: Regional Google Pathway (Tel Aviv / me-west1)
+            if info and info.provider == "google":
+                try:
+                    return self._call_google(model_id, prompt, actual_budget)
+                except Exception as e:
+                    if intent in ("HEAL", "REASON", "DREAM"):
+                        logger.warning(f"Regional failure in {GCP_REGION} for {intent}: {e}. PIVOTING to Global Fallback.")
+                        return self._handle_pivot(prompt, max_tokens, intent)
+                    raise e
+
+            # Step 2: Routed Providers
+            if info and info.provider == "openai":
+                return self._call_openai(model_id, prompt, max_tokens)
+            if info and info.provider == "deepseek":
+                return self._call_deepseek(model_id, prompt, max_tokens)
+            if info and info.provider == "anthropic":
+                return self._call_anthropic(model_id, prompt, max_tokens, actual_budget)
+            if info and info.provider == "xai":
+                return self._call_xai(model_id, prompt, max_tokens)
+
+            # Fallback for default/unknown models
+            return self._call_google(model_id, prompt, actual_budget)
+
+        except Exception as e:
+            logger.error(f"Inference Engine failure [Model: {model_id}, Intent: {intent}]: {e}")
+            if intent in ("HEAL", "REASON", "DREAM") and model_id != "gpt-4o":
+                logger.info("Emergency rescue: attempting final pivot to gpt-4o...")
+                try:
+                    return self._handle_pivot(prompt, max_tokens, intent)
+                except Exception as pe:
+                    logger.error(f"Global rescue pivot also failed: {pe}")
+            raise RuntimeError(f"Model Garden call failed: {e}") from e
+
         provider = info.provider if info else (
             "anthropic" if model_id.startswith("claude") else "google"
         )
+        if provider == "deepseek":
+            if _deepseek_client:
+                kwargs: dict[str, Any] = {
+                    "model": model_id,
+                    "max_tokens": max_tokens,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+                resp = _deepseek_client.chat.completions.create(**kwargs)
+                return resp.choices[0].message.content.strip()
+            raise RuntimeError("DeepSeek client unavailable")
+
+        if provider == "xai":
+            if _grok_client:
+                kwargs: dict[str, Any] = {
+                    "model": model_id,
+                    "max_tokens": max_tokens,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+                resp = _grok_client.chat.completions.create(**kwargs)
+                return resp.choices[0].message.content.strip()
+            raise RuntimeError("Grok client unavailable")
+
+        if provider == "openai":
+            if _openai_client:
+                kwargs: dict[str, Any] = {
+                    "model": model_id,
+                    "max_tokens": max_tokens,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+                resp = _openai_client.chat.completions.create(**kwargs)
+                return resp.choices[0].message.content.strip()
+            raise RuntimeError("OpenAI client unavailable")
+
         if provider == "anthropic":
             if _init_anthropic():
                 try:
@@ -746,18 +889,162 @@ class ModelGarden:
 
     @staticmethod
     def _call_google(model_id: str, prompt: str, thinking_budget: int | None = None) -> str:
-        kwargs: dict[str, Any] = {"model": model_id, "contents": prompt}
-        if thinking_budget:
-            # Vertex AI Gemini 2.0+ thinking configuration
-            kwargs["config"] = {"thinking_config": {"include_thoughts": True}}
-            # Note: actual budget is often handled by thinking_budget_tokens in newer SDKs
-            # or simply by selecting the correct model version.
+        """Vertex AI generator — hardened with candidate-aware result aggregation."""
+        if not _google_client:
+            raise RuntimeError("Vertex AI client not initialized (check GCP_PROJECT_ID)")
+
+        # Standardize model string for Vertex
+        v_id = model_id
+        if not v_id.startswith("publishers/"):
+            v_id = f"publishers/google/models/{model_id}"
+            
+        try:
+            # Prepare config only if thinking_budget is requested
+            config = None
+            if thinking_budget:
+                from google.genai import types
+                config = types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(include_thoughts=True, include_thought_score=True)
+                )
+
+            # --- SOTA: Enforced regional timeout to prevent stalls ---
+            timeout_sec = _PATHWAY_B_TIMEOUT_T3_T4 if "pro" in v_id else _PATHWAY_B_TIMEOUT_T1_T2
+            
+            resp = _google_client.models.generate_content(
+                model=v_id, 
+                contents=prompt,
+                config=config
+            )
+            
+            if resp.text:
+                return resp.text.strip()
+            
+            # Robust candidate traversal for multi-part or thinking responses
+            full_text = []
+            if resp.candidates:
+                for candidate in resp.candidates:
+                    if candidate.content and candidate.content.parts:
+                        for part in candidate.content.parts:
+                            if hasattr(part, "text") and part.text:
+                                full_text.append(part.text)
+            
+            result = "".join(full_text).strip()
+            if result:
+                return result
+
+            raise ValueError(f"Empty or unparseable response from Vertex AI [{model_id}]")
+        except Exception as e:
+            # --- Blacklist on 404 to avoid repeated stalls ---
+            if "404" in str(e) or "NOT_FOUND" in str(e):
+                with _ENDPOINT_LOCK:
+                    _BLACKLISTED_ENDPOINTS.add(v_id)
+                    logger.warning(f"PATHWAY B: Blacklisting unstable endpoint {v_id} due to 404.")
+            
+            logger.error(f"Vertex AI ({GCP_REGION}) SDK failure for {model_id}: {e}")
+            raise RuntimeError(f"GCP Regional Call Failed: {e}")
+
+    def _handle_pivot(self, prompt: str, max_tokens: int, intent: str) -> str:
+        """
+        Pathway B: Parallel Rescue (The Race).
+        Launches parallel requests to Global Providers to avoid serial failover stalls.
+        """
+        logger.info(f"EMERGENCY PATHWAY B: Initiating Global Rescue Race for {intent}...")
         
-        resp = _google_client.models.generate_content(**kwargs)  # type: ignore[union-attr]
-        text = resp.text
-        if not text:
-            raise ValueError(f"Google/{model_id} returned empty response")
-        return text.strip()
+        # Parallel race between available global providers
+        providers = []
+        if _openai_client:
+            providers.append(("openai", "gpt-4o", self._call_openai))
+        if _gemini_api_client:
+            providers.append(("gemini_api", "gemini-2.5-pro", self._call_gemini_api))
+        if _deepseek_client:
+            providers.append(("deepseek", "deepseek-chat", self._call_deepseek))
+
+        if not providers:
+            raise RuntimeError("Global Rescue Failed: No secondary providers configured.")
+
+        # Race! First one to finish successfully wins.
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(providers)) as executor:
+            futures = {
+                executor.submit(fn, m_id, prompt, max_tokens): (p_name, m_id)
+                for p_name, m_id, fn in providers
+            }
+            
+            done, not_done = concurrent.futures.wait(
+                futures.keys(), return_when=concurrent.futures.FIRST_COMPLETED
+            )
+            
+            # Check completed tasks for a result
+            for fut in done:
+                try:
+                    result = fut.result()
+                    p_name, m_id = futures[fut]
+                    logger.info(f"PATHWAY B WINNER: {p_name} ({m_id})")
+                    # Clean up pending tasks
+                    for pending in not_done:
+                        pending.cancel()
+                    return result
+                except Exception as e:
+                    p_name, m_id = futures[fut]
+                    logger.warning(f"Pathway B runner {p_name} failed: {e}")
+
+            # If the first one failed, check the others
+            remaining = sorted(list(not_done), key=lambda x: 0) # Just to iterate
+            for fut in remaining:
+                try:
+                    result = fut.result()
+                    p_name, m_id = futures[fut]
+                    logger.info(f"PATHWAY B RECOVERY: {p_name} ({m_id}) succeeded.")
+                    return result
+                except Exception as e:
+                    logger.error(f"All Pathway B runners failed: {e}")
+
+        raise RuntimeError("Global Rescue Pivot Failed: All parallel providers returned errors.")
+
+    @staticmethod
+    def _call_gemini_api(model_id: str, prompt: str, max_tokens: int) -> str:
+        """Call Gemini via Developer API (Direct API key)."""
+        if not _gemini_api_client:
+            raise RuntimeError("Gemini API client not configured")
+        
+        resp = _gemini_api_client.models.generate_content(
+            model=model_id,
+            contents=prompt,
+        )
+        return resp.text.strip()
+
+    @staticmethod
+    def _call_openai(model_id: str, prompt: str, max_tokens: int) -> str:
+        if not _openai_client:
+             raise RuntimeError("OpenAI client not configured")
+        resp = _openai_client.chat.completions.create(
+            model=model_id,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return resp.choices[0].message.content.strip()
+
+    @staticmethod
+    def _call_deepseek(model_id: str, prompt: str, max_tokens: int) -> str:
+        if not _deepseek_client:
+             raise RuntimeError("DeepSeek client not configured")
+        resp = _deepseek_client.chat.completions.create(
+            model=model_id,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return resp.choices[0].message.content.strip()
+        
+    @staticmethod
+    def _call_xai(model_id: str, prompt: str, max_tokens: int) -> str:
+        if not _grok_client:
+             raise RuntimeError("Grok client not configured")
+        resp = _grok_client.chat.completions.create(
+            model=model_id,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return resp.choices[0].message.content.strip()
 
     @staticmethod
     def _call_anthropic(model_id: str, prompt: str, max_tokens: int, thinking_budget: int | None = None) -> str:

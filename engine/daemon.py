@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining daemon.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.937484
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 import asyncio
 import json
 import re
@@ -11,6 +20,7 @@ from engine.calibration_engine import CalibrationEngine
 from engine.psyche_bank import PsycheBank
 from engine.recursive_summarizer import RecursiveSummaryAgent
 from engine.self_improvement import SelfImprovementEngine
+from engine.claudio_hardener import ClaudioHardener
 
 # Re-calibration interval (Ebbinghaus half-life rule: every 7 days)
 _RECAL_INTERVAL = timedelta(days=7)
@@ -48,6 +58,7 @@ class BackgroundDaemon:
         self._bank = PsycheBank()
         self._cal_engine = CalibrationEngine()
         self._summarizer = RecursiveSummaryAgent()
+        self._claudio_hardener = ClaudioHardener()
         self.awaiting_approval: list[dict[str, Any]] = []
 
         # Cognitive Dreamer — noctural optimization and memory consolidation
@@ -108,6 +119,10 @@ class BackgroundDaemon:
                              "msg": f"PsycheBank: purged {removed} expired rule(s)"})
         # 7-day auto-recalibration (Ebbinghaus rule)
         await self._maybe_recalibrate()
+        
+        # Claudio Autonomous Hardening Loop (Always Autonomous)
+        await self._claudio_hardener.harden()
+
         # Run recursive summary agent on Hot Memory
         loop = asyncio.get_event_loop()
         distill_result = await loop.run_in_executor(None, self._summarizer.distill_pending)

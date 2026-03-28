@@ -33,7 +33,9 @@ from pathlib import Path
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
+from fastapi.middleware.cors import CORSMiddleware
+import fastapi
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -50,26 +52,63 @@ def _get_settings():
         _settings = settings
     return _settings
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from engine.router import MandateRouter, ConversationalIntentDiscovery
+    from engine.graph import CognitiveGraph, TopologicalSorter
+    from engine.psyche_bank import PsycheBank
+    from engine.tribunal import Tribunal, Engram
+    from engine.mcp_manager import MCPManager
+    from engine.executor import JITExecutor, Envelope
+    from engine.scope_evaluator import ScopeEvaluator
+    from engine.refinement import RefinementLoop
+    from engine.memory_tier_orchestrator import MemoryTierOrchestrator
+    from engine.conversation import ConversationEngine
+    from engine.jit_booster import JITBooster
+    from engine.engram_visual import VisualEngramGenerator
+    from engine.model_selector import ModelSelector
+    from engine.director import Director
+    from engine.b_unit import BUnit
+    from engine.daemon import BackgroundDaemon
+    from engine.bus import NotificationBus
+    from engine.stance import StanceEngine
+    from engine.self_improvement import SelfImprovementEngine
+    from engine.knowledge_banks.manager import BankManager
+    from engine.sota_ingestion import SOTAIngestionEngine
+    from engine.validator_16d import Validator16D
+    from engine.cognitive_map import CognitiveMap
+    from engine.deep_introspector import DeepIntrospector
+    from engine.pipeline import NStrokeEngine, TwoStrokeEngine
+    from engine.branch_executor import BranchExecutor
+    from engine.roadmap import RoadmapManager
+    from engine.sandbox import SandboxOrchestrator
+    from engine.refinement_supervisor import RefinementSupervisor
+    from engine.async_fluid_executor import AsyncFluidExecutor
+    from engine.jit_designer import JITDesigner
+    from engine.parallel_validation import ParallelValidationPipeline
+    from engine.buddy_cognition import CognitiveLens
+    from engine.claudio_bridge import ClaudioBridge
+
 # ── Singletons ────────────────────────────────────────────────────────────────
-# ── Singletons — lazy-initialized ──────────────────────────────────────────
-_router: Any = None
-_graph: Any = None
-_bank: Any = None
-_tribunal: Any = None
-_mcp_manager: Any = None
-_executor: Any = None
-_sorter: Any = None
-_scope_evaluator: Any = None
-_refinement_loop: Any = None
-_buddy_memory: Any = None
-_conversation_engine: Any = None
-_jit_booster: Any = None
-_engram_generator: Any = None
-_model_selector: Any = None
-_refinement_supervisor: Any = None
-_intent_discovery: Any = None
-_async_fluid_executor: Any = None
-_jit_designer: Any = None
+_router: MandateRouter | None = None
+_graph: CognitiveGraph | None = None
+_bank: PsycheBank | None = None
+_tribunal: Tribunal | None = None
+_mcp_manager: MCPManager | None = None
+_executor: JITExecutor | None = None
+_sorter: TopologicalSorter | None = None
+_scope_evaluator: ScopeEvaluator | None = None
+_refinement_loop: RefinementLoop | None = None
+_buddy_memory: Any | None = None # Generic store
+_conversation_engine: ConversationEngine | None = None
+_jit_booster: JITBooster | None = None
+_engram_generator: VisualEngramGenerator | None = None
+_model_selector: ModelSelector | None = None
+_refinement_supervisor: RefinementSupervisor | None = None
+_intent_discovery: ConversationalIntentDiscovery | None = None
+_async_fluid_executor: AsyncFluidExecutor | None = None
+_jit_designer: JITDesigner | None = None
+_claudio_bridge: ClaudioBridge | None = None
 
 # ── SSE broadcast queue ───────────────────────────────────────────────────────
 _sse_queues: list[asyncio.Queue[str]] = []
@@ -123,6 +162,13 @@ _n_stroke_engine: Any = None
 _branch_executor: Any = None
 _roadmap: Any = None
 _sandbox_orchestrator: Any = None
+_initialized: bool = False
+
+# Global symbols from engine.mandate_executor and types
+make_live_work_fn: Any = None
+CognitiveLens: Any = None
+Engram: Any = None
+Envelope: Any = None
 
 
 def _get_heavy_singletons():
@@ -137,11 +183,12 @@ def _get_heavy_singletons():
     global _refinement_supervisor, _intent_discovery, _async_fluid_executor, _jit_designer
     global _buddy_memory, CognitiveLens, Engram, Envelope
 
-    if _router is not None:
+    global _initialized
+    if _initialized:
         return  # Already initialized
 
     with _init_lock:
-        if _router is not None:
+        if _initialized:
             return
 
         # SURGICAL IMPORTS
@@ -180,19 +227,22 @@ def _get_heavy_singletons():
         from engine.jit_designer import JITDesigner
         from engine.parallel_validation import ParallelValidationPipeline
         from engine.buddy_cognition import CognitiveLens as _CognitiveLens
-
+        from engine.claudio_bridge import get_claudio_bridge
+        
         # Explicit global assignment
-        global make_live_work_fn, CognitiveLens, Engram, Envelope
+        global make_live_work_fn, CognitiveLens, Engram, Envelope, _claudio_bridge
         make_live_work_fn = _make_live_work_fn
         CognitiveLens = _CognitiveLens
         Engram = _Engram
         Envelope = _Envelope
+        _claudio_bridge = get_claudio_bridge()
+        _claudio_bridge.start()
 
         # 1. Base components
         _router = MandateRouter()
         _graph = CognitiveGraph()
         _bank = PsycheBank()
-        _tribunal = Tribunal(bank=_bank)
+        _tribunal = Tribunal()
         _mcp_manager = MCPManager()
         _executor = JITExecutor(mcp_manager=_mcp_manager, tribunal=_tribunal)
         _sorter = TopologicalSorter()
@@ -236,19 +286,8 @@ def _get_heavy_singletons():
         _parallel_validation = ParallelValidationPipeline(
             broadcast_fn=_broadcast, tribunal=_tribunal, validator=_validator_16d
         )
-        _supervisor = TwoStrokeEngine(
-            router=_router, booster=_jit_booster, tribunal=_tribunal,
-            sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
-            refinement_loop=_refinement_loop, broadcast_fn=_broadcast,
-        )
-        _n_stroke_engine = NStrokeEngine(
-            router=_router, booster=_jit_booster, tribunal=_tribunal,
-            sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
-            refinement_loop=_refinement_loop, mcp_manager=_mcp_manager,
-            model_selector=_model_selector, refinement_supervisor=_refinement_supervisor,
-            broadcast_fn=_broadcast, async_fluid_executor=_async_fluid_executor,
-        )
-        _n_stroke_engine.register_director(_director)
+        _supervisor = TwoStrokeEngine(max_strokes=2)
+        _n_stroke_engine = NStrokeEngine(max_strokes=7)
         _branch_executor = BranchExecutor(
             router=_router, booster=_jit_booster, tribunal=_tribunal,
             sorter=_sorter, jit_executor=_executor, scope_evaluator=_scope_evaluator,
@@ -259,6 +298,9 @@ def _get_heavy_singletons():
             max_workers=settings.sandbox_max_workers,
             broadcast_fn=_broadcast, booster=_jit_booster, bank=_bank,
         )
+        _claudio_bridge = get_claudio_bridge()
+        _claudio_bridge.start()
+        
         _loop_stats["interval_seconds"] = 600 if settings.lean_mode else 30
 
         # 3. Route initialization (Lazy-loaded to keep import memory low)
@@ -270,17 +312,11 @@ def _get_heavy_singletons():
         from studio.routes import vlt as vr
         from studio.routes import core as cr
         from studio.routes import studio as str_r
+        from studio.routes import intent as inr
 
         def __create_n_stroke(max_strokes: int):
             from engine.pipeline import NStrokeEngine as _NSE
-            return _NSE(
-                router=_router, booster=_jit_booster, tribunal=_tribunal,
-                sorter=_sorter, executor=_executor, scope_evaluator=_scope_evaluator,
-                refinement_loop=_refinement_loop, mcp_manager=_mcp_manager,
-                model_selector=_model_selector, refinement_supervisor=_refinement_supervisor,
-                broadcast_fn=_broadcast, max_strokes=max_strokes,
-                async_fluid_executor=_async_fluid_executor,
-            )
+            return _NSE(max_strokes=max_strokes)
 
         ir.set_broadcast(_broadcast)
         br.init(buddy_memory=_buddy_memory, conversation_engine=_conversation_engine, broadcast_fn=_broadcast)
@@ -308,6 +344,219 @@ def _get_heavy_singletons():
         app.include_router(vr.router)
         app.include_router(cr.router)
         app.include_router(str_r.router)
+        app.include_router(inr.router)
+
+        _initialized = True
+
+
+def _get_router() -> MandateRouter:
+    _get_heavy_singletons()
+    assert _router is not None
+    return _router
+
+
+def _get_graph() -> CognitiveGraph:
+    _get_heavy_singletons()
+    assert _graph is not None
+    return _graph
+
+
+def _get_bank() -> PsycheBank:
+    _get_heavy_singletons()
+    assert _bank is not None
+    return _bank
+
+
+def _get_tribunal() -> Tribunal:
+    _get_heavy_singletons()
+    assert _tribunal is not None
+    return _tribunal
+
+
+def _get_mcp_manager() -> MCPManager:
+    _get_heavy_singletons()
+    assert _mcp_manager is not None
+    return _mcp_manager
+
+
+def _get_executor() -> JITExecutor:
+    _get_heavy_singletons()
+    assert _executor is not None
+    return _executor
+
+
+def _get_sorter() -> TopologicalSorter:
+    _get_heavy_singletons()
+    assert _sorter is not None
+    return _sorter
+
+
+def _get_scope_evaluator() -> ScopeEvaluator:
+    _get_heavy_singletons()
+    assert _scope_evaluator is not None
+    return _scope_evaluator
+
+
+def _get_refinement_loop() -> RefinementLoop:
+    _get_heavy_singletons()
+    assert _refinement_loop is not None
+    return _refinement_loop
+
+
+def _get_conversation_engine() -> ConversationEngine:
+    _get_heavy_singletons()
+    assert _conversation_engine is not None
+    return _conversation_engine
+
+
+def _get_jit_booster() -> JITBooster:
+    _get_heavy_singletons()
+    assert _jit_booster is not None
+    return _jit_booster
+
+
+def _get_director() -> Director:
+    _get_heavy_singletons()
+    assert _director is not None
+    return _director
+
+
+def _get_b_unit() -> BUnit:
+    _get_heavy_singletons()
+    assert _b_unit is not None
+    return _b_unit
+
+
+def _get_daemon() -> BackgroundDaemon:
+    _get_heavy_singletons()
+    assert _daemon is not None
+    return _daemon
+
+
+def _get_notification_bus() -> NotificationBus:
+    _get_heavy_singletons()
+    assert _notification_bus is not None
+    return _notification_bus
+
+
+def _get_stance_engine() -> StanceEngine:
+    _get_heavy_singletons()
+    assert _stance_engine is not None
+    return _stance_engine
+
+
+def _get_self_improvement_engine() -> SelfImprovementEngine:
+    _get_heavy_singletons()
+    assert _self_improvement_engine is not None
+    return _self_improvement_engine
+
+
+def _get_bank_manager() -> BankManager:
+    _get_heavy_singletons()
+    assert _bank_manager is not None
+    return _bank_manager
+
+
+def _get_sota_ingestion() -> SOTAIngestionEngine:
+    _get_heavy_singletons()
+    assert _sota_ingestion is not None
+    return _sota_ingestion
+
+
+def _get_validator_16d() -> Validator16D:
+    _get_heavy_singletons()
+    assert _validator_16d is not None
+    return _validator_16d
+
+
+def _get_cognitive_map() -> CognitiveMap:
+    _get_heavy_singletons()
+    assert _cognitive_map is not None
+    return _cognitive_map
+
+
+def _get_deep_introspector() -> DeepIntrospector:
+    _get_heavy_singletons()
+    assert _deep_introspector is not None
+    return _deep_introspector
+
+
+def _get_engram_generator() -> VisualEngramGenerator:
+    _get_heavy_singletons()
+    assert _engram_generator is not None
+    return _engram_generator
+
+
+def _get_parallel_validation() -> ParallelValidationPipeline:
+    _get_heavy_singletons()
+    assert _parallel_validation is not None
+    return _parallel_validation
+
+
+def _get_supervisor() -> TwoStrokeEngine:
+    _get_heavy_singletons()
+    assert _supervisor is not None
+    return _supervisor
+
+
+def _get_n_stroke_engine() -> NStrokeEngine:
+    _get_heavy_singletons()
+    assert _n_stroke_engine is not None
+    return _n_stroke_engine
+
+
+def _get_branch_executor() -> BranchExecutor:
+    _get_heavy_singletons()
+    assert _branch_executor is not None
+    return _branch_executor
+
+
+def _get_roadmap() -> RoadmapManager:
+    _get_heavy_singletons()
+    assert _roadmap is not None
+    return _roadmap
+
+
+def _get_jit_designer() -> JITDesigner:
+    _get_heavy_singletons()
+    assert _jit_designer is not None
+    return _jit_designer
+
+
+def _get_buddy_memory() -> Any:
+    _get_heavy_singletons()
+    assert _buddy_memory is not None
+    return _buddy_memory
+
+
+def _get_model_selector() -> ModelSelector:
+    _get_heavy_singletons()
+    assert _model_selector is not None
+    return _model_selector
+
+
+def _get_refinement_supervisor() -> RefinementSupervisor:
+    _get_heavy_singletons()
+    assert _refinement_supervisor is not None
+    return _refinement_supervisor
+
+
+def _get_intent_discovery() -> ConversationalIntentDiscovery:
+    _get_heavy_singletons()
+    assert _intent_discovery is not None
+    return _intent_discovery
+
+
+def _get_async_fluid_executor() -> AsyncFluidExecutor:
+    _get_heavy_singletons()
+    assert _async_fluid_executor is not None
+    return _async_fluid_executor
+
+
+def _get_sandbox_orchestrator() -> SandboxOrchestrator:
+    _get_heavy_singletons()
+    assert _sandbox_orchestrator is not None
+    return _sandbox_orchestrator
 
 # ── Autonomous improvement loop state ─────────────────────────────────────────
 _loop_active: bool = False
@@ -342,20 +591,20 @@ async def _autonomous_loop() -> None:
                 {"type": "auto_loop", "phase": "started", "cycle": cycle})
 
             # 1. Self-improvement cycle (asynchronous)
-            report = await _self_improvement_engine.run()
+            report = await _get_self_improvement_engine().run()
             _broadcast({"type": "self_improve", "report": report.to_dict()})
 
             # 2. Roadmap sandbox run (asynchronous)
-            items = _roadmap.all_items()
+            items = _get_roadmap().all_items()
             features = [
                 {"text": i.description, "title": i.title, "roadmap_item_id": i.id}
                 for i in items
             ]
-            reports = await _sandbox_orchestrator.run_parallel(features)
+            reports = await _get_sandbox_orchestrator().run_parallel(features)
             proven = 0
             for r in reports:
                 if r.roadmap_item_id:
-                    _roadmap.update_item_scores(
+                    _get_roadmap().update_item_scores(
                         item_id=r.roadmap_item_id,
                         impact_score=r.impact_score,
                         difficulty_score=r.difficulty_score,
@@ -398,14 +647,14 @@ async def _lifespan(_: FastAPI):
     # DOCKER-OPTIMIZED: Do not call _get_heavy_singletons on boot.
     # We want the container to listen on 8080 instantly to pass health-checks.
     # Individual routes (and health checks) will call it on-demand.
-    if _jit_booster is not None:
+    if _jit_booster is not None: # Use direct access here as _get_jit_booster() calls _get_heavy_singletons()
         _jit_booster.start_background_refresh()
 
     async def _purge_psychebank_loop() -> None:
         """Hourly background task: evict TTL-expired PsycheBank rules."""
         while True:
             await asyncio.sleep(3600)
-            if _bank is not None:
+            if _bank is not None: # Use direct access here as _get_bank() calls _get_heavy_singletons()
                 removed = _bank.purge_expired()
                 if removed:
                     _broadcast({"type": "psychebank_purge", "removed": removed})
@@ -417,12 +666,22 @@ async def _lifespan(_: FastAPI):
         purge_task.cancel()
         with suppress(asyncio.CancelledError):
             await purge_task
-        if _jit_booster is not None:
+        if _jit_booster is not None: # Use direct access here as _get_jit_booster() calls _get_heavy_singletons()
             _jit_booster.stop_background_refresh()
 
 
 app = FastAPI(title="TooLoo V2 Governor Dashboard",
-              version="2.1.0", lifespan=_lifespan)
+              version="2.1.0",
+              description="SOTA-aware operating system for TooLoo V2 infrastructure.",
+              lifespan=_lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
@@ -470,6 +729,15 @@ async def get_health():
     # Safely probe if singletons are loaded
     ready = (_router is not None)
     
+    # Check critical subsystems
+    problems = []
+    try:
+        if not _get_router(): problems.append("router_uninitialized")
+        if not _get_graph(): problems.append("graph_uninitialized")
+        if not _get_bank(): problems.append("bank_uninitialized")
+    except Exception as e:
+        problems.append(f"init_error: {str(e)}")
+
     return {
         "status": "ok" if ready else "warmup",
         "version": "2.1.0",
@@ -479,25 +747,35 @@ async def get_health():
             "vms_mb": vms_mb,
         },
         "components": {
-            "router": "up" if _router else "warmup",
-            "graph": f"{len(_graph.nodes())} nodes" if _graph else "warmup",
-            "psyche_bank": f"{len(await _bank.all_rules())} rules" if _bank else "warmup",
-            "tribunal": "up" if _tribunal else "warmup",
-            "cognitive_dreamer": "up" if _daemon else "warmup",
-            "executor": "up" if _executor else "warmup",
-            "jit_booster": "up" if _jit_booster else "warmup",
-            "engram_engine": "up" if _engram_generator else "warmup",
-            "self_improvement": "up" if _self_improvement_engine else "warmup",
-            "supervisor": "up" if _supervisor else "warmup",
-            "intent_discovery": "up" if _intent_discovery else "warmup",
-            "mcp_manager": "up" if _mcp_manager else "warmup",
-            "model_selector": "up" if _model_selector else "warmup",
-            "refinement_supervisor": "up" if _refinement_supervisor else "warmup",
-            "n_stroke_engine": "up" if _n_stroke_engine else "warmup",
-            "branch_executor": "up" if _branch_executor else "warmup",
-            "validator_16d": "up" if _validator_16d else "warmup",
-            "async_fluid_executor": "up" if _async_fluid_executor else "warmup",
-            "buddy_memory": f"{_buddy_memory.entry_count()} entries" if _buddy_memory else "warmup",
+            "router": "up" if _get_router() else "warmup",
+            "graph": f"{len(_get_graph().nodes())} nodes" if _get_graph() else "warmup",
+            "psyche_bank": f"{len(await _get_bank().all_rules())} rules" if _get_bank() else "warmup",
+            "tribunal": "up" if _get_tribunal() else "warmup",
+            "cognitive_dreamer": "up" if _get_daemon() else "warmup",
+            "executor": "up" if _get_executor() else "warmup",
+            "jit_booster": "up" if _get_jit_booster() else "warmup",
+            "engram_engine": "up" if _get_engram_generator() else "warmup",
+            "self_improvement": "up" if _get_self_improvement_engine() else "warmup",
+            "supervisor": "up" if _get_supervisor() else "warmup",
+            "router": "up" if _get_router() else "warmup",
+            "graph": f"{len(_get_graph().nodes())} nodes" if _get_graph() else "warmup",
+            "psyche_bank": f"{len(await _get_bank().all_rules())} rules" if _get_bank() else "warmup",
+            "tribunal": "up" if _get_tribunal() else "warmup",
+            "cognitive_dreamer": "up" if _get_daemon() else "warmup",
+            "executor": "up" if _get_executor() else "warmup",
+            "jit_booster": "up" if _get_jit_booster() else "warmup",
+            "engram_engine": "up" if _get_engram_generator() else "warmup",
+            "self_improvement": "up" if _get_self_improvement_engine() else "warmup",
+            "supervisor": "up" if _get_supervisor() else "warmup",
+            "intent_discovery": "up" if _get_intent_discovery() else "warmup",
+            "mcp_manager": "up" if _get_mcp_manager() else "warmup",
+            "model_selector": "up" if _get_model_selector() else "warmup",
+            "refinement_supervisor": "up" if _get_refinement_supervisor() else "warmup",
+            "n_stroke_engine": "up" if _get_n_stroke_engine() else "warmup",
+            "branch_executor": "up" if _get_branch_executor() else "warmup",
+            "validator_16d": "up" if _get_validator_16d() else "warmup",
+            "async_fluid_executor": "up" if _get_async_fluid_executor() else "warmup",
+            "buddy_memory": f"{_get_buddy_memory().entry_count()} entries" if _get_buddy_memory() else "warmup",
         }
     }
 
@@ -505,7 +783,7 @@ async def get_health():
 @app.post("/v2/dream/force-cycle")
 async def force_dream_cycle() -> dict[str, Any]:
     try:
-        report = await _daemon._dreamer.run_dream_cycle()
+        report = await _get_daemon()._dreamer.run_dream_cycle()
         return {
             "status": "success",
             "report": {
@@ -522,6 +800,7 @@ async def force_dream_cycle() -> dict[str, Any]:
 @app.get("/v2/workspace/roots")
 async def workspace_roots() -> dict[str, Any]:
     """Return the list of configured workspace roots (multi-root support)."""
+    from engine.config import get_workspace_roots, AUTONOMOUS_EXECUTION_ENABLED, AUTONOMOUS_CONFIDENCE_THRESHOLD
     roots = get_workspace_roots()
     return {
         "roots": [str(r) for r in roots],
@@ -584,7 +863,7 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
     session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
 
     # 1. Route (chat path — no circuit-breaker counter increments)
-    route = _router.route_chat(req.text)
+    route = _get_router().route_chat(req.text)
 
     # 1a. User-selected intent override (includes social modes)
     _CHAT_VALID_INTENTS = {
@@ -613,14 +892,14 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
         1: req.text[:200],
         2: f"deep_research: {req.text[:300]}",
     }
-    jit_result = _jit_booster.fetch_for_node(
+    jit_result = _get_jit_booster().fetch_for_node(
         route=route,
         node_type="chat",
         action_context=_action_context_map.get(
             req.depth_level, req.text[:200]),
         vertex_model_id=None,
     )
-    _router.apply_jit_boost(route, jit_result.boosted_confidence)
+    _get_router().apply_jit_boost(route, jit_result.boosted_confidence)
 
     # 4. Tribunal scan (OWASP poison guard)
     engram = Engram(
@@ -630,16 +909,16 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
         domain="conversation",
         mandate_level="L1",
     )
-    tribunal_result = await _tribunal.evaluate(engram)
+    tribunal_result = await _get_tribunal().evaluate(engram)
 
     # 5. Generate response via ConversationEngine (ModelGarden inside)
-    conv_result = _conversation_engine.process(
+    conv_result = _get_conversation_engine().process(
         req.text, route, session_id, jit_result=jit_result
     )
 
     # 6. JIT Designer — compute visual rendering directive
-    memory_recalled = bool(_buddy_memory.find_relevant(req.text, limit=1))
-    design_directive = _jit_designer.evaluate(
+    memory_recalled = bool(_get_buddy_memory().find_relevant(req.text, limit=1))
+    design_directive = _get_jit_designer().evaluate(
         intent=route.intent,
         emotional_state=conv_result.emotional_state,
         confidence=route.confidence,
@@ -673,7 +952,7 @@ async def buddy_chat_fast_path(req: BuddyChatRequest) -> dict[str, Any]:
         _broadcast(patch.to_dict())
 
     # 8. Parse response into structured UI components → broadcast + HTTP payload
-    ui_components = _jit_designer.parse_response_blocks(
+    ui_components = _get_jit_designer().parse_response_blocks(
         conv_result.response_text,
         intent=route.intent,
         palette_key=design_directive.palette_key,
@@ -735,7 +1014,7 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
     session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
 
     # ── 1. Route ──────────────────────────────────────────────────────────────
-    route = _router.route_chat(req.text)
+    route = _get_router().route_chat(req.text)
 
     # ── 1a. User-selected intent override (includes social modes) ────────────
     _STREAM_VALID_INTENTS = {
@@ -763,13 +1042,13 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
         return StreamingResponse(_reject(), media_type="text/event-stream")
 
     # ── 2. JIT SOTA grounding ─────────────────────────────────────────────────
-    jit_result = _jit_booster.fetch_for_node(
+    jit_result = _get_jit_booster().fetch_for_node(
         route=route,
         node_type="chat",
         action_context=req.text[:200],
         vertex_model_id=None,
     )
-    _router.apply_jit_boost(route, jit_result.boosted_confidence)
+    _get_router().apply_jit_boost(route, jit_result.boosted_confidence)
 
     # ── 3. Tribunal scan ──────────────────────────────────────────────────────
     engram = Engram(
@@ -779,11 +1058,11 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
         domain="conversation",
         mandate_level="L1",
     )
-    tribunal_result = await _tribunal.evaluate(engram)
+    tribunal_result = await _get_tribunal().evaluate(engram)
 
     # ── 4. JIT Designer — design directive + thought cards ───────────────────
-    memory_recalled = bool(_buddy_memory.find_relevant(req.text, limit=1))
-    design_directive = _jit_designer.evaluate(
+    memory_recalled = bool(_get_buddy_memory().find_relevant(req.text, limit=1))
+    design_directive = _get_jit_designer().evaluate(
         intent=route.intent,
         emotional_state="neutral",   # updated after stream in finalize
         confidence=route.confidence,
@@ -793,7 +1072,7 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
     )
 
     # ── 5. prepare_stream — session tracking + prompt assembly ────────────────
-    prompt, session, plan, tone, emotional_state = _conversation_engine.prepare_stream(
+    prompt, session, plan, tone, emotional_state = _get_conversation_engine().prepare_stream(
         text=req.text,
         route=route,
         session_id=session_id,
@@ -823,15 +1102,16 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
             yield _sse({"type": "token", "text": plan.cache_response})
             full_response = plan.cache_response
         else:
+            from engine.conversation import StreamInterceptor
             interceptor = StreamInterceptor(
                 intent=route.intent,
                 palette_key=design_directive.palette_key,
-                designer=_jit_designer,
+                designer=_get_jit_designer(),
             )
 
             # Run sync Gemini streaming in a thread to avoid blocking the event loop
             chunks = await asyncio.to_thread(
-                _conversation_engine.stream_chunks_sync, prompt
+                _get_conversation_engine().stream_chunks_sync, prompt
             )
 
             full_parts: list[str] = []
@@ -851,7 +1131,7 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
             full_response = "".join(full_parts)
 
         # Finalize session tracking with the assembled response
-        _conversation_engine.finalize_stream(
+        _get_conversation_engine().finalize_stream(
             session=session,
             buddy_text=full_response,
             plan=plan,
@@ -861,7 +1141,7 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
         )
 
         # Compute final design directive with actual response text
-        final_directive = _jit_designer.evaluate(
+        final_directive = _get_jit_designer().evaluate(
             intent=route.intent,
             emotional_state=emotional_state,
             confidence=route.confidence,
@@ -871,6 +1151,7 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
                 jit_result.signals) if jit_result.signals else 0,
         )
 
+        from engine.conversation import _FOLLOWUPS
         suggestions = _FOLLOWUPS.get(route.intent, [])
 
         # Broadcast to global SSE clients
@@ -886,7 +1167,7 @@ async def buddy_chat_stream(req: BuddyChatRequest) -> StreamingResponse:
             "design_directive": final_directive.to_dict(),
         })
 
-        profile = _conversation_engine.get_user_profile()
+        profile = _get_conversation_engine().get_user_profile()
         ct_load = CognitiveLens.analyze(req.text).cognitive_load
         yield _sse({
             "type": "done",
@@ -927,12 +1208,13 @@ async def buddy_listen(req: BuddyListenRequest) -> dict[str, Any]:
     """
     session_context = ""
     if req.session_id:
-        history = _conversation_engine.session_history(req.session_id)
+        history = _get_conversation_engine().session_history(req.session_id)
         if history:
             recent_intents = [t["intent"]
                               for t in history[-4:] if t.get("role") == "user"]
             if recent_intents:
                 session_context = recent_intents[-1]
+    from engine.buddy_cognition import analyze_partial_prompt
     result = analyze_partial_prompt(req.text, session_context=session_context)
     return result
 
@@ -1076,7 +1358,7 @@ async def intent_clarify(req: IntentClarifyRequest) -> dict[str, Any]:
     ``locked_intent`` ready for ``/v2/pipeline`` (``locked=true``).
     """
     session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
-    result = _intent_discovery.discover(req.text, session_id)
+    result = _get_intent_discovery().discover(req.text, session_id)
     _broadcast({
         "type": "intent_clarification" if not result.locked else "intent_locked",
         "session_id": session_id,
@@ -1087,7 +1369,7 @@ async def intent_clarify(req: IntentClarifyRequest) -> dict[str, Any]:
 
 @app.delete("/v2/intent/session/{session_id}")
 async def clear_intent_session(session_id: str) -> dict[str, Any]:
-    cleared = _intent_discovery.clear_session(session_id)
+    cleared = _get_intent_discovery().clear_session(session_id)
     return {"session_id": session_id, "cleared": cleared}
 
 
@@ -1097,13 +1379,10 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
     t0 = time.monotonic()
     mandate_id = f"m-{uuid.uuid4().hex[:8]}"
 
-    # 0. Cognitive Analysis (Emotional Rigging)
-    cog_turn = CognitiveLens.analyze(req.text)
-    # Map load to buddy scaling/bubbles
-    _director.handle_cognitive_state(mood="idle", load=cog_turn.cognitive_load)
+
 
     # 1. Route
-    route = _router.route(req.text)
+    route = _get_router().route(req.text)
     _broadcast({"type": "route", "mandate_id": mandate_id,
                "route": route.to_dict()})
 
@@ -1119,8 +1398,8 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
         }
 
     # 2. JIT SOTA boost (mandatory — runs before tribunal and plan)
-    jit_result = _jit_booster.fetch(route)
-    _router.apply_jit_boost(route, jit_result.boosted_confidence)
+    jit_result = _get_jit_booster().fetch(route)
+    _get_router().apply_jit_boost(route, jit_result.boosted_confidence)
     _broadcast({"type": "jit_boost", "mandate_id": mandate_id,
                "jit_boost": jit_result.to_dict()})
 
@@ -1129,15 +1408,15 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
         slug=mandate_id,
         intent=route.intent,
         logic_body=req.text,
-        domain="backend",
-        mandate_level="L2",
+        domain="conversation",
+        mandate_level="L1",
     )
-    tribunal_result = await _tribunal.evaluate(engram)
+    tribunal_result = await _get_tribunal().evaluate(engram)
     _broadcast({"type": "tribunal", "mandate_id": mandate_id,
                "result": tribunal_result.to_dict()})
     
     # Notify Director of tribunal outcome
-    _director.on_bus_event("ALL", {"type": "tribunal_result", "passed": tribunal_result.passed})
+    _get_director().on_bus_event("ALL", {"type": "tribunal_result", "passed": tribunal_result.passed})
 
     # 4. Build a toy DAG plan from route
     spec: list[tuple[str, list[str]]] = [
@@ -1146,11 +1425,11 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
         (f"{mandate_id}-implement", [f"{mandate_id}-analyse"]),
         (f"{mandate_id}-validate", [f"{mandate_id}-implement"]),
     ]
-    plan = _sorter.sort(spec)
+    plan = _get_sorter().sort(spec)
     _broadcast({"type": "plan", "mandate_id": mandate_id, "waves": plan})
 
     # 4. Action scope evaluation — understand full plan before allocating resources
-    scope = await _scope_evaluator.evaluate(plan, intent=route.intent)
+    scope = await _get_scope_evaluator().evaluate(plan, intent=route.intent)
     _broadcast({"type": "scope", "mandate_id": mandate_id,
                "scope": scope.to_dict()})
 
@@ -1173,7 +1452,7 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
         jit_signals=jit_result.signals,
     )
 
-    exec_results = await _executor.fan_out_dag(
+    exec_results = await _get_executor().fan_out_dag(
         _live_work,
         envelopes,
         {node_id: deps for node_id, deps in spec},
@@ -1183,12 +1462,12 @@ async def route_mandate(req: MandateRequest) -> dict[str, Any]:
     _broadcast({"type": "execution", "mandate_id": mandate_id, "results": flat})
 
     # 6. Refinement loop — evaluate results, surface recommendations
-    refinement = _refinement_loop.evaluate(exec_results)
+    refinement = _get_refinement_loop().evaluate(exec_results)
     _broadcast({"type": "refinement", "mandate_id": mandate_id,
                 "report": refinement.to_dict()})
 
     # 7. Visual Engram — emit cognitive state to frontend SVG layers
-    visual_engram = _engram_generator.from_mandate(
+    visual_engram = _get_engram_generator().from_mandate(
         route=route,
         jit_result=jit_result,
         tribunal_result=tribunal_result,
@@ -1220,7 +1499,7 @@ async def chat_with_buddy(req: ChatRequest) -> dict[str, Any]:
     session_id = req.session_id or f"s-{uuid.uuid4().hex[:12]}"
 
     # 1. Route (conversational path — does not touch circuit-breaker counters)
-    route = _router.route_chat(req.text)
+    route = _get_router().route_chat(req.text)
 
     # 1a. User-selected intent override — full confidence, recompute buddy_line
     _VALID_INTENTS = {
@@ -1228,13 +1507,14 @@ async def chat_with_buddy(req: ChatRequest) -> dict[str, Any]:
         "CASUAL", "SUPPORT", "DISCUSS", "COACH", "PRACTICE",
     }
     if req.forced_intent and req.forced_intent.upper() in _VALID_INTENTS:
+        from engine.router import compute_buddy_line
         route.intent = req.forced_intent.upper()
         route.confidence = 1.0
         route.buddy_line = compute_buddy_line(route.intent, route.confidence)
 
     # 2. JIT SOTA boost (mandatory — validates and enriches before generation)
-    jit_result = _jit_booster.fetch(route)
-    _router.apply_jit_boost(route, jit_result.boosted_confidence)
+    jit_result = _get_jit_booster().fetch(route)
+    _get_router().apply_jit_boost(route, jit_result.boosted_confidence)
 
     # 3. Tribunal scan
     engram = Engram(
@@ -1244,10 +1524,10 @@ async def chat_with_buddy(req: ChatRequest) -> dict[str, Any]:
         domain="conversation",
         mandate_level="L1",
     )
-    tribunal_result = await _tribunal.evaluate(engram)
+    tribunal_result = await _get_tribunal().evaluate(engram)
 
     # 4. Conversational planning + generation (receives JIT-validated route)
-    conv_result = _conversation_engine.process(
+    conv_result = _get_conversation_engine().process(
         req.text, route, session_id, jit_result=jit_result)
 
     # 4. SSE broadcast
@@ -1265,7 +1545,7 @@ async def chat_with_buddy(req: ChatRequest) -> dict[str, Any]:
         _broadcast(patch.to_dict())
 
     # 5. Visual Engram — emit cognitive state to frontend SVG layers
-    visual_engram = _engram_generator.from_chat(
+    visual_engram = _get_engram_generator().from_chat(
         route=route,
         jit_result=jit_result,
         tribunal_result=tribunal_result,
@@ -1287,8 +1567,8 @@ async def chat_with_buddy(req: ChatRequest) -> dict[str, Any]:
 
 @app.get("/v2/session/{session_id}")
 async def session_history(session_id: str) -> dict[str, Any]:
-    history = _conversation_engine.session_history(session_id)
-    session = _conversation_engine.get_session(session_id)
+    history = _get_conversation_engine().session_history(session_id)
+    session = _get_conversation_engine().get_session(session_id)
     return {
         "session_id": session_id,
         "turn_count": len(history),
@@ -1299,14 +1579,14 @@ async def session_history(session_id: str) -> dict[str, Any]:
 
 @app.delete("/v2/session/{session_id}")
 async def clear_session(session_id: str) -> dict[str, Any]:
-    cleared = _conversation_engine.clear_session(session_id)
+    cleared = _get_conversation_engine().clear_session(session_id)
     return {"session_id": session_id, "cleared": cleared}
 
 
 @app.get("/v2/engram/current")
 async def engram_current() -> dict[str, Any]:
     """Return the most recently generated Visual Engram (or idle if none)."""
-    return {"engram": _engram_generator.current().to_dict()}
+    return {"engram": _get_engram_generator().current().to_dict()}
 
 
 class EngramGenerateRequest(BaseModel):
@@ -1326,7 +1606,7 @@ async def engram_generate(req: EngramGenerateRequest) -> dict[str, Any]:
         circuit_open=req.confidence < 0.85,
         mandate_text=req.text,
     )
-    engram = _engram_generator.from_chat(route=route)
+    engram = _get_engram_generator().from_chat(route=route)
     _broadcast({"type": "visual_engram", "engram": engram.to_dict()})
     return {"engram": engram.to_dict()}
 
@@ -1334,28 +1614,28 @@ async def engram_generate(req: EngramGenerateRequest) -> dict[str, Any]:
 @app.get("/v2/dag")
 async def dag_snapshot() -> dict[str, Any]:
     _get_heavy_singletons()
-    nodes = _graph.nodes()
-    edges = [{"from": u, "to": v} for u, v in _graph.edges()]
+    nodes = _get_graph().nodes()
+    edges = [{"from": u, "to": v} for u, v in _get_graph().edges()]
     return {"nodes": nodes, "edges": edges, "node_count": len(nodes), "edge_count": len(edges)}
 
 
 @app.get("/v2/psyche-bank")
 async def psyche_bank_rules() -> dict[str, Any]:
     _get_heavy_singletons()
-    return await _bank.to_dict()
+    return await _get_bank().to_dict()
 
 
 @app.get("/v2/router-status")
 async def router_status() -> dict[str, Any]:
     _get_heavy_singletons()
-    return _router.status()
+    return _get_router().status()
 
 
 @app.post("/v2/router-reset")
 async def router_reset() -> dict[str, Any]:
     _get_heavy_singletons()
-    _router.reset()
-    return {"reset": True, "status": _router.status()}
+    _get_router().reset()
+    return {"reset": True, "status": _get_router().status()}
 
 
 # ── 16-Dimension Validator endpoints ─────────────────────────────────────────
@@ -1374,7 +1654,7 @@ class Validate16DRequest(BaseModel):
 @app.post("/v2/validate/16d")
 async def validate_16d(req: Validate16DRequest) -> dict[str, Any]:
     """Run the 16-dimension pre-execution validation gate."""
-    result = _validator_16d.validate(
+    result = _get_validator_16d().validate(
         mandate_id=req.mandate_id,
         intent=req.intent,
         code_snippet=req.code_snippet,
@@ -1394,10 +1674,10 @@ async def validate_16d(req: Validate16DRequest) -> dict[str, Any]:
 async def validate_16d_schema() -> dict[str, Any]:
     """Return dimension names, thresholds, and autonomous confidence target."""
     return {
-        "autonomous_confidence_threshold": _validator_16d.AUTONOMOUS_CONFIDENCE_THRESHOLD,
+        "autonomous_confidence_threshold": _get_validator_16d().AUTONOMOUS_CONFIDENCE_THRESHOLD,
         "dimensions": [
             {"name": name, "threshold": threshold}
-            for name, threshold in sorted(_validator_16d._THRESHOLDS.items())
+            for name, threshold in sorted(_get_validator_16d()._THRESHOLDS.items())
         ],
     }
 
@@ -1407,9 +1687,9 @@ async def validate_16d_schema() -> dict[str, Any]:
 @app.get("/v2/async-exec/status")
 async def async_exec_status() -> dict[str, Any]:
     """Return runtime stats for the AsyncFluidExecutor."""
-    hist = _async_fluid_executor._latency_histogram
+    hist = _get_async_fluid_executor()._latency_histogram
     return {
-        "max_workers": _async_fluid_executor._max_workers,
+        "max_workers": _get_async_fluid_executor()._max_workers,
         "histogram_size": len(hist),
         "latency_p50_ms": round(sorted(hist)[len(hist) // 2] * 1000, 2) if hist else None,
         "status": "up",
@@ -1427,7 +1707,7 @@ async def self_improve() -> dict[str, Any]:
     JIT SOTA signals, and top recommendations.
     """
     t0 = time.monotonic()
-    report = _self_improvement_engine.run()
+    report = _get_self_improvement_engine().run()
     _broadcast({"type": "self_improve", "report": report.to_dict()})
     latency_ms = round((time.monotonic() - t0) * 1000, 2)
     report_dict = report.to_dict()
@@ -1448,7 +1728,7 @@ async def self_improve_parallel() -> dict[str, Any]:
       - parallel_validation_complete
     """
     t0 = time.monotonic()
-    report = await _self_improvement_engine.run_parallel(broadcast_fn=_broadcast)
+    report = await _get_self_improvement_engine().run_parallel(broadcast_fn=_broadcast)
     latency_ms = round((time.monotonic() - t0) * 1000, 2)
     report_dict = report.to_dict()
     return {"self_improvement": report_dict, "report": report_dict, "latency_ms": latency_ms}
@@ -1468,8 +1748,8 @@ async def validate_parallel(
 
     pipeline = ParallelValidationPipeline(
         broadcast_fn=_broadcast,
-        tribunal=_tribunal,
-        validator=_validator_16d,
+        tribunal=_get_tribunal(),
+        validator=_get_validator_16d(),
     )
     if files:
         changes = [FileChange(path=f) for f in files]
@@ -1480,6 +1760,16 @@ async def validate_parallel(
         ]
     report = await pipeline.validate_changes(changes)
     return report.to_dict()
+
+
+@app.post("/v2/validate/parallel/all")
+async def validate_parallel_all() -> dict[str, Any]:
+    """Run a parallel validation cycle across the entire workspace."""
+    try:
+        results = await _get_parallel_validation().validate()
+        return {"status": "success", "results": [r.to_dict() for r in results]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 class SelfImproveApplyRequest(BaseModel):
@@ -1590,7 +1880,7 @@ async def self_improve_apply(req: SelfImproveApplyRequest) -> dict[str, Any]:
         return {"status": "skipped", "reason": "Path traversal blocked."}
 
     # ── Read current file ─────────────────────────────────────────────────
-    read_result = _mcp_manager.call_uri(
+    read_result = _get_mcp_manager().call_uri(
         "mcp://tooloo/file_read", path=file_rel)
     if not read_result.success:
         return {"status": "skipped", "reason": f"Could not read {file_rel}."}
@@ -1615,7 +1905,7 @@ async def self_improve_apply(req: SelfImproveApplyRequest) -> dict[str, Any]:
         return {"status": "skipped", "reason": "Code snippet already present in file."}
 
     # ── Apply via MCPManager.file_write ──────────────────────────────────
-    write_result = _mcp_manager.call_uri(
+    write_result = _get_mcp_manager().call_uri(
         "mcp://tooloo/file_write", path=file_rel, content=patched
     )
     if not write_result.success:
@@ -1623,6 +1913,32 @@ async def self_improve_apply(req: SelfImproveApplyRequest) -> dict[str, Any]:
             "status": "skipped",
             "reason": f"file_write failed: {write_result.output}",
         }
+    async def event_generator():
+        q: asyncio.Queue[str] = asyncio.Queue(maxsize=100)
+        loop = asyncio.get_event_loop()
+        
+        def callback(payload):
+            # Thread-safe push to the async queue
+            fmt = f"data: {json.dumps(payload)}\n\n"
+            loop.call_soon_threadsafe(q.put_nowait, fmt)
+        
+        bridge = get_claudio_bridge()
+        bridge.subscribe(callback)
+        print(f"[API] Client subscribed to Claudio telemetry")
+        
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+                # Wait for next event
+                data = await q.get()
+                yield data
+        except asyncio.CancelledError:
+            pass
+        finally:
+            # We don't have an easy way to unsubscribe yet, 
+            # but we can at least stop yielding.
+            print(f"[API] Client disconnected from Claudio telemetry")
 
     _broadcast({
         "type": "self_improve_apply",
@@ -1633,7 +1949,7 @@ async def self_improve_apply(req: SelfImproveApplyRequest) -> dict[str, Any]:
     })
 
     # ── Run tests via MCPManager ──────────────────────────────────────────
-    test_result = _mcp_manager.call_uri(
+    test_result = _get_mcp_manager().call_uri(
         "mcp://tooloo/run_tests", module="tests", timeout=45
     )
     tests_passed = test_result.success
@@ -1656,7 +1972,7 @@ async def self_improve_apply(req: SelfImproveApplyRequest) -> dict[str, Any]:
         }
     else:
         # Revert
-        _mcp_manager.call_uri(
+        _get_mcp_manager().call_uri(
             "mcp://tooloo/file_write", path=file_rel, content=original
         )
         _broadcast({
@@ -1676,7 +1992,7 @@ async def self_improve_apply(req: SelfImproveApplyRequest) -> dict[str, Any]:
 
 
 @app.get("/v2/events")
-async def sse_stream() -> StreamingResponse:
+async def sse_stream(request: fastapi.Request) -> StreamingResponse:
     q: asyncio.Queue[str] = asyncio.Queue(maxsize=100)
     _sse_queues.append(q)
 
@@ -1694,6 +2010,36 @@ async def sse_stream() -> StreamingResponse:
             _sse_queues.remove(q)
 
     return StreamingResponse(_generate(), media_type="text/event-stream")
+
+
+@app.get("/v2/claudio/telemetry")
+async def claudio_telemetry(request: fastapi.Request):
+    """Real-time SSE stream for Claudio C++ engine telemetry."""
+    _get_heavy_singletons()
+    
+    async def telemetry_generator():
+        queue = asyncio.Queue(maxsize=100)
+        loop = asyncio.get_event_loop()
+        
+        def _on_telemetry(data):
+            try:
+                # Use the captured loop for thread-safe push
+                loop.call_soon_threadsafe(queue.put_nowait, json.dumps(data))
+            except Exception:
+                pass
+                
+        _claudio_bridge.subscribe(_on_telemetry)
+        
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+                data = await queue.get()
+                yield f"data: {data}\n\n"
+        except Exception:
+            pass
+
+    return StreamingResponse(telemetry_generator(), media_type="text/event-stream")
 
 
 # ── Entry point ──────────────────────────────────────────────────────────────
@@ -1755,10 +2101,10 @@ async def auto_loop_status_endpoint() -> dict[str, Any]:
 @app.get("/v2/status")
 async def system_status() -> dict[str, Any]:
     """Full system status snapshot for the dashboard view."""
-    sandboxes = _sandbox_orchestrator.all_reports()
-    roadmap_report = _roadmap.get_report()
-    router_st = _router.status()
-    items = _roadmap.all_items()
+    sandboxes = _get_sandbox_orchestrator().all_reports()
+    roadmap_report = _get_roadmap().get_report()
+    router_st = _get_router().status()
+    items = _get_roadmap().all_items()
     proven_sb = sum(1 for r in sandboxes if r.state == "proven")
     failed_sb = sum(1 for r in sandboxes if r.state == "failed")
     total_sb = len(sandboxes)
@@ -1774,8 +2120,8 @@ async def system_status() -> dict[str, Any]:
         "startup_time": _STARTUP_TIME,
         "system_health": round(avg_readiness, 3),
         "circuit_breaker": router_st,
-        "psyche_bank_rules": len(_bank.all_rules()),
-        "dag_nodes": len(_graph.nodes()),
+        "psyche_bank_rules": len(await _get_bank().all_rules()),
+        "dag_nodes": len(_get_graph().nodes()),
         "sandboxes": {
             "total": total_sb,
             "proven": proven_sb,
@@ -1794,19 +2140,28 @@ async def system_status() -> dict[str, Any]:
     }
 
 
+@app.get("/v2/dag/snapshot")
+async def dag_snapshot_full() -> dict[str, Any]:
+    """Return the current DAG nodes and edges for visual rendering."""
+    return {
+        "nodes": [n.to_dict() for n in _get_graph().nodes()],
+        "edges": [e.to_dict() for e in _get_graph().edges()],
+    }
+
+
 @app.get("/v2/daemon/status")
 async def get_daemon_status():
     return {
-        "active": _daemon.active,
-        "pending_approvals": _daemon.awaiting_approval,
+        "active": _get_daemon().active,
+        "pending_approvals": _get_daemon().awaiting_approval,
     }
 
 
 @app.post("/v2/daemon/start")
 async def start_daemon():
     global _daemon_task
-    if not _daemon.active:
-        _daemon_task = asyncio.create_task(_daemon.start())
+    if not _get_daemon().active:
+        _daemon_task = asyncio.create_task(_get_daemon().start())
         _daemon_task.add_done_callback(lambda _: None)
         return {"status": "started"}
     return {"status": "already_running"}
@@ -1814,13 +2169,13 @@ async def start_daemon():
 
 @app.post("/v2/daemon/stop")
 async def stop_daemon():
-    _daemon.stop()
+    _get_daemon().stop()
     return {"status": "stopped"}
 
 
 @app.post("/v2/daemon/approve/{proposal_id}")
 async def approve_daemon_proposal(proposal_id: str):
-    res = _daemon.approve(proposal_id)
+    res = _get_daemon().approve(proposal_id)
     return res
 
 

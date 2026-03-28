@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining sota_ingestion.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.930553
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/sota_ingestion.py — SOTA Knowledge Ingestion Engine for TooLoo V2.
 

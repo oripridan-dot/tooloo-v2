@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining stance.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.920140
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/stance.py — The Cognitive Stance Engine (The Empathetic Core).
 

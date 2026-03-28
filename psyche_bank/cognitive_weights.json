@@ -1,6 +1,8 @@
 {
-  "Architectural_Foresight": 0.9299999999999998,
-  "Root_Cause_Analysis": 0.5,
-  "Syntax_Precision": 0.9,
-  "Compliance_and_Subservience": 0.47000000000000014
+  "Architectural_Foresight": 0.9250000000000009,
+  "Root_Cause_Analysis": 0.5900000000000001,
+  "Syntax_Precision": 1.0,
+  "Compliance_and_Subservience": 0.16000000000000014,
+  "Security_Vigilance": 1.0,
+  "Self_Healing_Efficacy": 1.0
 }

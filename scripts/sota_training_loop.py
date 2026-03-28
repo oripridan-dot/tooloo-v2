@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining sota_training_loop.py
+# WHERE: scripts
+# WHEN: 2026-03-28T15:54:43.410389
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 #!/usr/bin/env python3
 """
 scripts/sota_training_loop.py — Master SOTA Training Pipeline for TooLoo V2.

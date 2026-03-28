@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining calibrate_cognitive_router.py
+# WHERE: scripts
+# WHEN: 2026-03-28T15:54:43.396724
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 scripts/calibrate_cognitive_router.py
 

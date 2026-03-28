@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining config.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.911688
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/config.py — Global configuration and client factory.
 
@@ -83,34 +92,40 @@ Features:
 import os
 import logging
 import time
-from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Any, Dict, Optional, Union, List
 
 # Configure logging early
 logger = logging.getLogger(__name__)
 
-# Define repository root based on the current file's location
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-
+# --- Environment Bootloader (MUST be before any other imports) ---
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 try:
-    # Attempt to load environment variables from a .env file in the repository root
     from dotenv import load_dotenv
-    load_dotenv(_REPO_ROOT / ".env")
-except ImportError:
-    logger.debug("python-dotenv not installed, skipping .env loading.")
-except Exception as e:
-    logger.warning(f"Error loading .env file: {e}")
+    env_path = _REPO_ROOT / ".env"
+    if env_path.exists():
+        load_dotenv(env_path, override=True)
+        # We don't log here yet as logging is being configured, 
+        # but we ensure the environment is ready.
+    else:
+        # Fallback to current working directory if not at dynamic root
+        load_dotenv(Path.cwd() / ".env", override=True)
+except Exception:
+    pass
+
+from dataclasses import dataclass, field, asdict
+from typing import Any, Dict, Optional, Union, List
 
 @dataclass
 class Settings:
     """Immutable configuration snapshot — single source of truth for all engine modules."""
 
     # --- API Keys & Project IDs ---
-    gemini_api_key: Optional[str] = field(default=os.getenv("GEMINI_API_KEY"))
-    gcp_project_id: Optional[str] = field(default=os.getenv("GCP_PROJECT_ID"))
-    gcp_region: str = field(default=os.getenv("GCP_REGION", "us-central1"))
-    anthropic_vertex_region: str = field(default=os.getenv("ANTHROPIC_VERTEX_REGION", ""))
+    gemini_api_key: Optional[str] = field(default_factory=lambda: os.getenv("GEMINI_API_KEY"))
+    gcp_project_id: Optional[str] = field(default_factory=lambda: os.getenv("GCP_PROJECT_ID"))
+    gcp_region: str = field(default_factory=lambda: os.getenv("GCP_REGION", "me-west1"))
+    anthropic_vertex_region: str = field(default_factory=lambda: os.getenv("ANTHROPIC_VERTEX_REGION", ""))
+    deepseek_api_key: Optional[str] = field(default_factory=lambda: os.getenv("DEEPSEEK_API_KEY"))
+    grok_api_key: Optional[str] = field(default_factory=lambda: os.getenv("GROK_API_KEY"))
 
     # --- Model Configurations ---
     # SOTA Tool Configuration for generative background narrative synthesis.
@@ -485,6 +500,8 @@ GEMINI_API_KEY: Optional[str] = settings.gemini_api_key
 GCP_PROJECT_ID: Optional[str] = settings.gcp_project_id
 GCP_REGION: str = settings.gcp_region
 ANTHROPIC_VERTEX_REGION: str = settings.anthropic_vertex_region
+DEEPSEEK_API_KEY: Optional[str] = settings.deepseek_api_key
+GROK_API_KEY: Optional[str] = settings.grok_api_key
 # Models for the incremental refinement pattern, aligned with the "Pattern" requirement.
 # These models are selected for their enhanced context window capabilities.
 IDEATION_THEME_MODEL: str = settings.ideation_theme_model
@@ -671,17 +688,37 @@ if settings.gemini_api_key:
     except Exception as e:
         logger.warning(f"Gemini API client initialization failed: {e}")
 
-# Initialize OpenAI client if OpenAI API key and assistant ID are configured
+# Initialize OpenAI client if OpenAI API key is configured
 _openai_client: Optional[Any] = None
-if settings.openai_api_key and settings.openai_assistant_id:
+if settings.openai_api_key:
     try:
         from openai import OpenAI
         _openai_client = OpenAI(api_key=settings.openai_api_key)
-        logger.info(f"OpenAI client initialized for Assistant ID: {settings.openai_assistant_id}.")
+        logger.info("OpenAI client initialized.")
     except ImportError:
         logger.warning("openai library not installed. Cannot initialize OpenAI client.")
     except Exception as e:
         logger.warning(f"OpenAI client initialization failed: {e}")
+
+# Initialize DeepSeek client
+_deepseek_client: Optional[Any] = None
+if settings.deepseek_api_key:
+    try:
+        from openai import OpenAI
+        _deepseek_client = OpenAI(api_key=settings.deepseek_api_key, base_url="https://api.deepseek.com")
+        logger.info("DeepSeek client initialized.")
+    except Exception as e:
+        logger.warning(f"DeepSeek client initialization failed: {e}")
+
+# Initialize Grok/xAI client
+_grok_client: Optional[Any] = None
+if settings.grok_api_key:
+    try:
+        from openai import OpenAI
+        _grok_client = OpenAI(api_key=settings.grok_api_key, base_url="https://api.x.ai/v1")
+        logger.info("Grok client initialized.")
+    except Exception as e:
+        logger.warning(f"Grok client initialization failed: {e}")
 
 
 # --- Model Identifiers (Module Level) ---
@@ -695,3 +732,5 @@ vertex_client: Optional[Any] = _vertex_client
 _vertex_client = vertex_client # Alias for internal consistency
 gemini_client: Optional[Any] = _gemini_client
 openai_client: Optional[Any] = _openai_client
+deepseek_client: Optional[Any] = _deepseek_client
+grok_client: Optional[Any] = _grok_client

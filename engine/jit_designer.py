@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining jit_designer.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.909021
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """engine/jit_designer.py — JIT Designer: Dynamic SOTA UI Heuristics Engine.
 
 The JITDesigner evaluates conversational output and maps it to a

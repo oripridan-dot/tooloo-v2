@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining dynamic_scorer.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.923473
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/dynamic_scorer.py — Dynamic Code Quality Scorer for TooLoo V2.
 

@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining image_gen.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.924965
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/image_gen.py — Gemini-powered image generation engine.
 

@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining cognitive_map.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.914875
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/cognitive_map.py — Live Cognitive Self-Map for TooLoo V2.
 

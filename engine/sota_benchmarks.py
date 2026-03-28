@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining sota_benchmarks.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.915429
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/sota_benchmarks.py — Real external SOTA benchmark catalogue.
 

@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining executor.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.937820
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 # ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
 # Cycle: 2026-03-20T20:00:29.746044+00:00
 # Component: executor  Source: engine/executor.py

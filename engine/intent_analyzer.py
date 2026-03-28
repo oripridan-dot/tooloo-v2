@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining intent_analyzer.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.927072
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/intent_analyzer.py - Vector Mathematics for Human Intent
 

@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining director.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.934311
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """engine/director.py — The Cinematic Director for TooLoo V2.
 
 This component translates raw system events (DAG transitions, tool calls,

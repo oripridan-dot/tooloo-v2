@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining router.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.932373
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 import hashlib
 import logging
 import re
@@ -31,6 +40,7 @@ openai = None
 # ─────────────────────────────────────────────────────────────────────────────
 
 from engine.config import CIRCUIT_BREAKER_MAX_FAILS, OPENAI_API_KEY
+from engine.stamping_engine import StampingEngine
 
 logger = logging.getLogger(__name__)
 
@@ -428,21 +438,27 @@ class SemanticEmbeddingClassifier:
         import threading
         self._lock = threading.Lock()
         self._prototypes: Optional[Dict[str, List[float]]] = None
-        self._client = None
         try:
-            from engine.config import GEMINI_API_KEY as _K
-            if _K:
-                import google.generativeai as genai
-                genai.configure(api_key=_K)
-                self._client = genai
-        except (ImportError, Exception) as e:
-            logger.warning(f"Google GenAI client unavailable: {e}. Semantic embedding disabled.")
+            from engine.config import vertex_client as _vc
+            self._client = _vc
+            if self._client is None:
+                 logger.warning("Vertex AI client unavailable in config. Semantic embedding disabled.")
+        except Exception as e:
+            logger.warning(f"Failed to access Vertex AI client from config: {e}. Semantic embedding disabled.")
 
     def _embed(self, text: str) -> Optional[List[float]]:
         if self._client is None: return None
         try:
-            resp = self._client.embed_content(model=self.EMBEDDING_MODEL_DEFAULT, content=text[:2000], task_type="RETRIEVAL_DOCUMENT")
-            return resp.get("embedding")
+            # Standardize on new google-genai Client API
+            resp = self._client.models.embed_content(
+                model=self.EMBEDDING_MODEL_DEFAULT,
+                contents=text[:2000],
+                config={"task_type": "RETRIEVAL_DOCUMENT"}
+            )
+            # Handle list of embeddings (usually 1 for single text)
+            if hasattr(resp, 'embeddings'):
+                 return resp.embeddings[0].values
+            return resp.get("embedding") # Fallback for old SDK response if any
         except Exception as e:
             logger.error(f"Failed to embed text: {e}")
             return None
@@ -621,6 +637,14 @@ class MandateRouter:
 
         # AI-driven anomaly detection: enrich log with dynamic context.
         dynamic_context = _llm_kg.retrieve_context(text)
+        
+        # 6W-Aware Navigation (Inward Refinement): Load 'Mission Context' from 6W stamps
+        mission_report = StampingEngine.get_6w_report("engine")
+        if mission_report:
+            relevant_missions = [m for m in mission_report if any(word in m["what"].lower() for word in text.lower().split())]
+            if relevant_missions:
+                dynamic_context["mission_context"] = str(relevant_missions[:2])
+                logger.info(f"6W-Aware Navigation: Grounding intent in {len(relevant_missions)} mission stamps.")
 
         kw_scores = _score(text)
         sem_scores = _semantic_clf.classify(text)

@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining async_fluid_executor.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.934046
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/async_fluid_executor.py — Event-Driven Async Execution Fabric
 

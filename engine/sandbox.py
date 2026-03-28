@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining sandbox.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.925571
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/sandbox.py — Mirror Sandbox Orchestrator.
 
@@ -225,7 +234,7 @@ class SandboxOrchestrator:
         self._max_workers = max_workers
         self._broadcast = broadcast_fn or (lambda _: None)
         self._bank = bank or PsycheBank()
-        self._tribunal = Tribunal(bank=self._bank)
+        self._tribunal = Tribunal()
         # Isolated router — never trips the shared circuit-breaker
         self._router = MandateRouter()
         self._booster = booster or JITBooster()
@@ -259,9 +268,9 @@ class SandboxOrchestrator:
         feature_title = feature_title or feature_text[:60].strip()
 
         # 1. Vector deduplication — search before adding to corpus
-        similar = self._vector_store.search(
+        similar = await self._vector_store.search(
             feature_text, top_k=3, threshold=0.2)
-        is_new = self._vector_store.add(
+        is_new = await self._vector_store.add(
             doc_id=sandbox_id,
             text=feature_text,
             metadata={"title": feature_title, "sandbox_id": sandbox_id},

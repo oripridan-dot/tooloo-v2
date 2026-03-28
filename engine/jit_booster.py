@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining jit_booster.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.908136
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 # ── Ouroboros SOTA Annotations (auto-generated, do not edit) ─────
 # Cycle: 2026-03-20T20:00:07.116134+00:00
 # Component: jit_booster  Source: engine/jit_booster.py

@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining tool_ocean.py
+# WHERE: engine
+# WHEN: 2026-03-28T15:54:38.926736
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """
 engine/tool_ocean.py — Dynamic registry for JIT-synthesized Python tools.
 

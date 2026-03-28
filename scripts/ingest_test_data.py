@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining ingest_test_data.py
+# WHERE: scripts
+# WHEN: 2026-03-28T15:54:43.404403
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 """scripts/ingest_test_data.py — Seeds the Cloud RAG Firestore DB."""
 import os
 import sys

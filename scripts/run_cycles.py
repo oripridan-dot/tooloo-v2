@@ -1,3 +1,12 @@
+# 6W_STAMP
+# WHO: TooLoo V2 (Principal Systems Architect)
+# WHAT: Refining run_cycles.py
+# WHERE: scripts
+# WHEN: 2026-03-28T15:54:43.403071
+# WHY: System-wide 6W Stamping Hardening
+# HOW: Autonomous Meta-Refinement
+# ==========================================================
+
 #!/usr/bin/env python3
 """run_cycles.py -- TooLoo V2 Batch Improvement Cycle Runner.
 
