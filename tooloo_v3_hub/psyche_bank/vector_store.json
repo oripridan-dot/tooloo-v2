@@ -1,0 +1,137 @@
+{
+  "": {
+    "id": "",
+    "text": "{}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "ouroboros-fix-ouroboros.py": {
+    "id": "ouroboros-fix-ouroboros.py",
+    "text": "{'file': 'tooloo_v3_hub/kernel/ouroboros.py', 'status': 'healed', 'stamp': {'who': 'Ouroboros-Supervisor', 'what': 'HEAL_LEGACY_CONTAMINATION', 'where': 'tooloo_v3_hub/kernel/ouroboros.py', 'when': '2026-03-29T06:34:14.868108+00:00', 'why': 'Maintain Sovereign Purity', 'how': 'Surgical Patch Synthesis', 'signature': None, 'em_verified': False, 'telemetry': {}}}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "validation-pulse": {
+    "id": "validation-pulse",
+    "text": "{'status': 'val-start'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "academy_openai": {
+    "id": "academy_openai",
+    "text": "{'source': 'openai', 'principals': ['Foundational AI Literacy', 'Safety Integration', 'O1-Reasoning'], 'manifestation': 'Marble'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "academy_anthropic": {
+    "id": "academy_anthropic",
+    "text": "{'source': 'anthropic', 'principals': ['AI Fluency', 'Constitutional Alignment', 'Claude-3.5-Sonnet'], 'manifestation': 'Basalt'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "academy_google": {
+    "id": "academy_google",
+    "text": "{'source': 'google', 'principals': ['Vertex Scalability', 'Multimodal Reasoning', 'Gemini-1.5-Pro'], 'manifestation': 'Clay'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "academy_meta": {
+    "id": "academy_meta",
+    "text": "{'source': 'meta', 'principals': ['Open-Source Scale', 'Llama-3-Reliability', 'PyTorch Core'], 'manifestation': 'Granite'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "academy_deepseek": {
+    "id": "academy_deepseek",
+    "text": "{'source': 'deepseek', 'principals': ['Inference Efficiency', 'Math/Coding Specialists', 'MoE-Architecture'], 'manifestation': 'Obsidian'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "academy_cursor": {
+    "id": "academy_cursor",
+    "text": "{'source': 'cursor', 'principals': ['Agentic IDE UX', 'Codebase Grounding', 'Composer Patterns'], 'manifestation': 'Jade'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "academy_vercel": {
+    "id": "academy_vercel",
+    "text": "{'source': 'vercel', 'principals': ['Edge Deployment', 'Frontend Excellence', 'AI SDK Optimization'], 'manifestation': 'Steel'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "academy_lovable": {
+    "id": "academy_lovable",
+    "text": "{'source': 'lovable', 'principals': ['No-Code Reasoning', 'Visual Diffing', 'Rapid Prototyping'], 'manifestation': 'Ruby'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "academy_design_sota": {
+    "id": "academy_design_sota",
+    "text": "{'source': 'design_sota', 'principals': ['Spatial UI', 'Glassmorphism', 'Micro-interactions', 'PBR Principles'], 'manifestation': 'Oak'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "jit_rescue_-6093475964040092279": {
+    "id": "jit_rescue_-6093475964040092279",
+    "text": "{'query': 'Manifest Buddy avatar', 'timestamp': '2026-03-29', 'findings': \"SOTA Analysis: Latest results for 'SOTA documentation for Manifest Buddy avatar' found on GitHub and AI Academies.\"}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "jit_rescue_477391484937913813": {
+    "id": "jit_rescue_477391484937913813",
+    "text": "{'query': 'Manifest a Marble Shard for OpenAI Academy', 'timestamp': '2026-03-29', 'findings': \"SOTA Analysis: Latest results for 'SOTA documentation for Manifest a Marble Shard for OpenAI Academy' found on GitHub and AI Academies.\"}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  },
+  "jit_rescue_906566649009466603": {
+    "id": "jit_rescue_906566649009466603",
+    "text": "{'query': 'Synthesize a 3D avatar pose that expresses both Curiosity and Caution, and harden the spectral proof.', 'timestamp': '2026-03-29', 'findings': \"{'status': 'success', 'results': [{'title': 'Cached SOTA', 'snippet': 'Architecture: Pure Sovereign Hub. Logic: Federated MCP.'}]}\"}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  }
+}

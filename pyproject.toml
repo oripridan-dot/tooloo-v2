@@ -37,6 +37,7 @@ dependencies = [
     "pytest>=8.0.0",
     "openai>=1.50.0",
     "numba",
+    "mcp>=1.26.0",
 ]
 
 [project.optional-dependencies]
@@ -52,7 +53,7 @@ dev = [
 tooloo-studio = "studio.api:main"
 
 [tool.setuptools.packages.find]
-include = ["engine*", "studio*", "sandbox*", "src*", "scripts*"]
+include = ["engine*", "studio*", "sandbox*", "src*", "scripts*", "tooloo_v3_hub*", "lab*"]
 
 [tool.pytest.ini_options]
 # Exclude tests that require external environment not present in offline CI:

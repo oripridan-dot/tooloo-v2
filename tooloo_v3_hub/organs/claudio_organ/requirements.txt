@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+mcp[server]
+pydantic
+asyncio
+numpy
+scipy
+soundfile

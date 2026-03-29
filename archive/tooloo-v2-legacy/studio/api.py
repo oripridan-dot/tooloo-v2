@@ -684,6 +684,41 @@ app.add_middleware(
 )
 
 
+@app.websocket("/v2/spatial/tether")
+async def spatial_tether(websocket: WebSocket):
+    """WebSocket endpoint for local spatial host (Blender/Unity) tethering."""
+    from engine.tether_server import get_tether_server
+    tether = get_tether_server()
+    spoke_id = "unknown"
+    try:
+        # Wait for registration message
+        await websocket.accept()
+        data = await websocket.receive_text()
+        reg = json.loads(data)
+        if reg.get("type") == "register":
+            spoke_id = reg.get("spoke_id", f"spoke-{uuid.uuid4().hex[:4]}")
+            await tether.connect(spoke_id, websocket)
+            
+            # Keep-alive loop
+            while True:
+                msg = await websocket.receive_text()
+                try:
+                    payload = json.loads(msg)
+                    rid = payload.get("request_id")
+                    if rid:
+                        tether.handle_response(rid, payload)
+                    else:
+                        # Echo or process status updates from spoke
+                        _broadcast({"type": "spatial_status", "spoke_id": spoke_id, "data": payload})
+                except json.JSONDecodeError:
+                    continue
+    except WebSocketDisconnect:
+        tether.disconnect(spoke_id)
+    except Exception as e:
+        print(f"[Tether API] Socket Error: {e}")
+        tether.disconnect(spoke_id)
+
+
 # ── Routes ───────────────────────────────────────────────────────────────────
 
 # Route modules are now imported and initialized inside _get_heavy_singletons

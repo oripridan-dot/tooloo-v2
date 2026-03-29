@@ -1,0 +1,43 @@
+{
+  "6W_STAMP": {
+    "who": "TooLoo V3 (Design Architect)",
+    "what": "PSYCHE_BANK_DESIGN_PRINCIPLES_v1.0.0",
+    "where": "tooloo_v3_hub/psyche_bank/design_principles.json",
+    "why": "Grounding physical sculpting in SOTA design theory",
+    "how": "Vectorized Architectural Tokens"
+  },
+  "domains": {
+    "3d_design": {
+      "principals": ["Spatial Integrity", "Procedural Materiality", "Light Sculpting"],
+      "tokens": {
+        "depth_buffer": "Cognitive depth mapping",
+        "mesh_density": "Poly-count vs. Visual fidelity balance",
+        "pbr": "Physically Based Rendering for reality anchoring"
+      }
+    },
+    "ui_ux": {
+      "principals": ["Cognitive Load Minimization", "Emotional Feedback", "Micro-interaction Rituals"],
+      "tokens": {
+        "glassmorphism": "Depth and transparency for digital layering",
+        "haptic_sync": "Visual-to-tactile timing",
+        "aesthetic_usability": "The wow-factor as a functional requirement"
+      }
+    },
+    "ai_ux": {
+      "principals": ["Latency Transparency", "Intent Reconciliation", "Proactive Soul"],
+      "tokens": {
+        "thought_clouds": "Visualizing Buddy's inner reasoning",
+        "streaming_energy": "Real-time visual data flow indicators",
+        "uncertainty_states": "Graceful visual degradation during low-confidence"
+      }
+    },
+    "human_interaction": {
+      "principals": ["Non-verbal Resonance", "Tonal Alignment", "Active Presence"],
+      "tokens": {
+        "micro_gestures": "Subtle humanoid movements (blink, jitter, head-tilt)",
+        "musical_prosody": "Melodic speech synthesis",
+        "spatial_eye_contact": "Buddy tracking the Architect's cursor/focus"
+      }
+    }
+  }
+}

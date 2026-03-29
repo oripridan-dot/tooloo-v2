@@ -184,6 +184,16 @@ _STANCE_BUDDY_PERSONA: dict[Stance, str] = {
     Stance.UNKNOWN: "",
 }
 
+# ── Buddy Spatial Manifestation Mapping ───────────────────────────────────────
+# Maps internal Stance back to Blender buddy_morph() states.
+_STANCE_BUDDY_MORPH: dict[Stance, str] = {
+    Stance.IDEATION:        "THINKING",
+    Stance.DEEP_EXECUTION:  "NEUTRAL",   # focused/stable
+    Stance.SURGICAL_REPAIR: "URGENT",    # sharp topology
+    Stance.MAINTENANCE:     "SPEAKING",  # fluid/active
+    Stance.UNKNOWN:         "NEUTRAL",
+}
+
 
 # ── Detection Keywords ────────────────────────────────────────────────────────
 
@@ -356,6 +366,15 @@ class CognitiveStanceEngine:
             except ValueError:
                 stance = Stance.UNKNOWN
         return _STANCE_BUDDY_PERSONA.get(stance, "")
+
+    def morph_for(self, stance: Stance | str) -> str:
+        """Return the spatial morph state for a given stance."""
+        if isinstance(stance, str):
+            try:
+                stance = Stance(stance.upper())
+            except ValueError:
+                stance = Stance.UNKNOWN
+        return _STANCE_BUDDY_MORPH.get(stance, "NEUTRAL")
 
 
 # ── Process-Level Active Stance ───────────────────────────────────────────────

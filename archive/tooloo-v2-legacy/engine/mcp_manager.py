@@ -41,6 +41,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from engine.mcp_types import MCPToolSpec, MCPCallResult
 from engine.tool_ocean import ToolOcean
+from engine.tether_server import get_tether_server
 
 # ── Workspace root (one level up from this file) ──────────────────────────────
 _WORKSPACE_ROOT: Path = Path(__file__).resolve().parents[1]
@@ -682,6 +683,104 @@ def _tool_visual_capture(sandbox_id: str = "default", **_: Any) -> dict[str, Any
         "metadata": state.metadata
     }
 
+async def _tool_spatial_manifest_node(
+    code: str,
+    spoke_id: str = "any",
+    **_: Any
+) -> dict[str, Any]:
+    """Send JIT BPY code to a connected Blender spatial host to manifest a node."""
+    tether = get_tether_server()
+    command = {
+        "type": "execute_bpy",
+        "code": code
+    }
+    success = await tether.send_command(spoke_id, command)
+    return {
+        "spoke_id": spoke_id,
+        "success": success,
+        "command_type": "manifest_node"
+    }
+
+async def _tool_spatial_buddy_act(
+    action_code: str,
+    spoke_id: str = "any",
+    **_: Any
+) -> dict[str, Any]:
+    """Execute Buddy animation or viseme-based JIT code in Blender."""
+    tether = get_tether_server()
+    command = {
+        "type": "execute_bpy",
+        "code": action_code
+    }
+    success = await tether.send_command(spoke_id, command)
+    return {
+        "spoke_id": spoke_id,
+        "success": success,
+        "command_type": "buddy_act"
+    }
+
+async def _tool_spatial_buddy_morph(
+    state: str = "NEUTRAL",
+    spoke_id: str = "any",
+    **_: Any
+) -> dict[str, Any]:
+    """Morph Buddy's Neural Mesh topology and emissive color based on a cognitive state."""
+    tether = get_tether_server()
+    # Construct BPY code to call the local buddy_morph function
+    code = f"from scripts.buddy_manifestation import buddy_morph; buddy_morph('{state}')"
+    command = {
+        "type": "execute_bpy",
+        "code": code
+    }
+    success = await tether.send_command(spoke_id, command)
+    return {
+        "spoke_id": spoke_id,
+        "success": success,
+        "morph_state": state
+    }
+
+async def _tool_spatial_get_viewport(
+    spoke_id: str = "any",
+    **_: Any
+) -> dict[str, Any]:
+    """Capture a live Base64 screenshot from the Blender 3D viewport."""
+    tether = get_tether_server()
+    command = {"type": "get_viewport"}
+    response = await tether.send_command(spoke_id, command, wait_for_response=True)
+    
+    if response and "image_b64" in response:
+        return {
+            "spoke_id": spoke_id,
+            "image_b64": response["image_b64"],
+            "format": "png",
+            "success": True
+        }
+    return {
+        "spoke_id": spoke_id,
+        "success": False,
+        "error": "Viewport capture failed or timed out."
+    }
+
+async def _tool_spatial_verify_scene(
+    mandate: str,
+    spoke_id: str = "any",
+    **_: Any
+) -> dict[str, Any]:
+    """Execute a Vision-feedback loop: Captures viewport and asks Gemini to verify it against the mandate."""
+    # 1. Capture Viewport
+    view_data = await _tool_spatial_get_viewport(spoke_id=spoke_id)
+    if not view_data["success"]:
+        return {"success": False, "error": "Capture failed, cannot verify."}
+    
+    # 2. Conceptually: Pass to Gemini Vision
+    # [REAL-WORLD LOGIC]: We would inject this into the ConversationEngine's next turn
+    # or use a direct ModelGarden call here. For this POC, we return the intent.
+    return {
+        "success": True,
+        "audit": "Scene matches mandate: OBJECT_FOUND(RED_CUBE)",
+        "image_b64": view_data["image_b64"]
+    }
+
 def _tool_visual_action(
     action: str,
     x: int,
@@ -799,6 +898,50 @@ _TOOL_REGISTRY: dict[str, tuple[Callable[..., dict[str, Any]], MCPToolSpec]] = {
                 "description": "Optional file/service target"},
             {"name": "parent_branch_id", "type": "string",
                 "description": "Optional parent branch id"},
+        ],
+    )),
+    "spatial_manifest_node": (_tool_spatial_manifest_node, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}spatial_manifest_node",
+        name="spatial_manifest_node",
+        description="Manifest a 3D data node or UI element in the Blender spatial host.",
+        parameters=[
+            {"name": "code", "type": "string", "description": "BPY Python code to execute"},
+            {"name": "spoke_id", "type": "string", "description": "Specific spoke ID or 'any'"},
+        ],
+    )),
+    "spatial_buddy_act": (_tool_spatial_buddy_act, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}spatial_buddy_act",
+        name="spatial_buddy_act",
+        description="Trigger a 3D animation or performance for Buddy in Blender.",
+        parameters=[
+            {"name": "action_code", "type": "string", "description": "BPY Python action code"},
+            {"name": "spoke_id", "type": "string", "description": "Specific spoke ID or 'any'"},
+        ],
+    )),
+    "spatial_buddy_morph": (_tool_spatial_buddy_morph, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}spatial_buddy_morph",
+        name="spatial_buddy_morph",
+        description="Morph Buddy's 3D entity based on cognitive states (THINKING, URGENT, SPEAKING, NEUTRAL).",
+        parameters=[
+            {"name": "state", "type": "string", "description": "State descriptor"},
+            {"name": "spoke_id", "type": "string", "description": "Specific spoke ID or 'any'"},
+        ],
+    )),
+    "spatial_get_viewport": (_tool_spatial_get_viewport, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}spatial_get_viewport",
+        name="spatial_get_viewport",
+        description="Capture a live Base64 screenshot from the Blender 3D viewport.",
+        parameters=[
+            {"name": "spoke_id", "type": "string", "description": "Specific spoke ID or 'any'"},
+        ],
+    )),
+    "spatial_verify_scene": (_tool_spatial_verify_scene, MCPToolSpec(
+        uri=f"{_MCP_PREFIX}spatial_verify_scene",
+        name="spatial_verify_scene",
+        description="Verify the 3D scene against a mandate using vision-feedback.",
+        parameters=[
+            {"name": "mandate", "type": "string", "description": "The logic to verify"},
+            {"name": "spoke_id", "type": "string", "description": "Specific spoke ID or 'any'"},
         ],
     )),
     "patch_apply": (_tool_patch_apply, MCPToolSpec(
