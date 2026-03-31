@@ -42,17 +42,20 @@ async def main():
     # 4. Integrate Cognitive Background Loops
     from tooloo_v3_hub.kernel.cognitive.calibration import get_calibration_engine
     from tooloo_v3_hub.kernel.cognitive.proactive_agent import get_proactive_agent
+    from tooloo_v3_hub.kernel.cognitive.ouroboros import get_ouroboros
     
     calibration = get_calibration_engine()
     proactive = get_proactive_agent()
+    ouroboros = get_ouroboros()
     
     logger.info("Sovereign Context Established. Launching Federated Hub Pulse.")
     
-    # We run the initial strategic goal, the proactive soul, and the autonomous calibration in parallel
+    # We run the initial strategic goal, the proactive soul, the autonomous calibration, and Ouroboros in parallel
     await asyncio.gather(
-        orchestrator.execute_goal(goal, context),
+        orchestrator.execute_goal(goal, context, mode="PATHWAY_B"),
         proactive.start_proactive_loop(),
-        calibration.start_calibration_loop(interval=180) # Pulse every 3 minutes
+        calibration.start_calibration_loop(interval=180), # Pulse every 3 minutes
+        ouroboros.start_self_healing_loop(interval=300)   # Self-heal every 5 minutes
     )
 
 if __name__ == "__main__":

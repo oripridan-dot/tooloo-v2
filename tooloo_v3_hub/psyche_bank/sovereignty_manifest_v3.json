@@ -20,7 +20,7 @@
     },
     "final_audit": {
       "score": 0.0,
-      "total": 14,
+      "total": 17,
       "verified": 0,
       "breaches": [
         "MISSING_STAMP: ",
@@ -36,7 +36,10 @@
         "MISSING_STAMP: academy_lovable",
         "MISSING_STAMP: academy_design_sota",
         "MISSING_STAMP: jit_rescue_-6093475964040092279",
-        "MISSING_STAMP: jit_rescue_477391484937913813"
+        "MISSING_STAMP: jit_rescue_477391484937913813",
+        "MISSING_STAMP: jit_rescue_906566649009466603",
+        "MISSING_STAMP: sota_spectral_engram_physics_in_agentic_ai",
+        "MISSING_STAMP: sota_pbr_manifestation_design_patterns"
       ]
     }
   }

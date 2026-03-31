@@ -1,0 +1,11 @@
+{
+  "test_mutation_winner": {
+    "id": "test_mutation_winner",
+    "text": "{'type': 'resolution_winner', 'drift_score': 0.5, 'domain': 'logic'}",
+    "metadata": {
+      "type": "engram",
+      "tier": 2
+    },
+    "embedding": null
+  }
+}

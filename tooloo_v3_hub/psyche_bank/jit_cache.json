@@ -38,7 +38,7 @@
     },
     "EXPLAIN": {
       "signals": [
-        "Di\u00e1taxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure",
+        "Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure",
         "Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams",
         "LLM-generated runbooks require mandatory human review before operational use per SOX/ISO-27001"
       ],

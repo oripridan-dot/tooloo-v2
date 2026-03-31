@@ -1,0 +1,11 @@
+{
+  "test_mutation_winner": {
+    "data": {
+      "type": "resolution_winner",
+      "drift_score": 0.5,
+      "domain": "logic"
+    },
+    "tier": 2,
+    "timestamp": "2026-03-31T00:09:43.050666+00:00"
+  }
+}
