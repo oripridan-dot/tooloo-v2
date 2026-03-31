@@ -1,17 +1,21 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: PATHWAY_B_DEMO_v1.0.0
-# WHERE: lab/pathway_b_demo.py
-# WHEN: 2026-03-29T16:50:00.000000
-# WHY: Visualize the Hub's competitive reasoning logic
-# HOW: Integrated Lab Environment (Standalone Pulse)
+# WHAT: PATHWAY_B_DEMO.PY | Version: 1.0.0 | Version: 1.0.0
+# WHERE: tooloo_v3_hub/tools/pathway_b_demo.py
+# WHEN: 2026-03-31T14:26:13.335991+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: tool, unmapped, initial-v3
+# PURITY: 1.00
 # ==========================================================
 
 import asyncio
 import logging
 import sys
 from tooloo_v3_hub.kernel.orchestrator import get_orchestrator
-from tooloo_v3_hub.kernel.mcp_nexus import get_nexus
+from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus
 
 # Setup structured logging for terminal clarity
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -23,7 +27,7 @@ async def run_demo():
     print("="*60 + "\n")
     
     # 1. Initialize Nexus and Mock Organs
-    nexus = get_nexus()
+    nexus = get_mcp_nexus()
     
     # We'll mock the organs for this demo session
     # In a real run, these are tethered MCP servers

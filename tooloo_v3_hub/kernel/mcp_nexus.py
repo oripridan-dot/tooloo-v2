@@ -1,204 +1,178 @@
-# 6W_STAMP
-# WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: KERNEL_NEXUS_v3.0.1
+# WHAT: MODULE_MCP_NEXUS | Version: 1.4.0
 # WHERE: tooloo_v3_hub/kernel/mcp_nexus.py
-# WHEN: 2026-03-31T00:10:03.441298+00:00
-# WHY: Centralized Tool Federation
-# HOW: Pure Sovereign Infrastructure Protocol
+# WHEN: 2026-03-31T23:23:00.000000
+# WHY: Federated Intelligence with Bit-Perfect JSON Serialization (Rule 2, 13)
+# HOW: Subprocess Stdin/Stdout + Structured SDK Output Mapping
+# TIER: T4:zero-trust
+# DOMAINS: nerve-center, mcp, federation, async-io, infrastructure, serialization
+# PURITY: 1.00
+# TRUST: T4:zero-trust
 # ==========================================================
 
+from pathlib import Path
 import asyncio
+import os
+import sys
+import logging
 import json
 import uuid
-import logging
-import subprocess
-import sys
-from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field
-from mcp import ClientSession
-from mcp.client.sse import sse_client
+from typing import Dict, Any, List, Optional
 
-logger = logging.getLogger(__name__)
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 
-class ToolDefinition(BaseModel):
-    name: str
-    description: str
-    parameters: Dict[str, Any]
-
-class OrganManifest(BaseModel):
-    organ_id: str
-    version: str
-    tools: List[ToolDefinition]
+logger = logging.getLogger("MCPNexus")
 
 class MCPNexus:
     """
-    The secure conduit for TooLoo V3 Hub.
-    Manages connections to federated Organs and Spokes.
+    The Active Nerve Center for TooLoo V3.
+    Orchestrates the lifecycle and JSON-RPC routing of federated organs.
     """
-    
+
     def __init__(self):
-        self.tethers: Dict[str, Union['OrganTether', 'RemoteSseTether', 'LocalBridgeTether']] = {}
-        self.global_registry: Dict[str, str] = {} # tool_name -> organ_id
+        self.tethers: Dict[str, Any] = {}
+        self.request_futures: Dict[str, asyncio.Future] = {}
+        logger.info("Sovereign MCP Nexus V1.4.0 Awakened (Serialization-Hardened).")
 
-    async def attach_organ(self, organ_id: str, connection_info: Union[List[str], str]):
-        """Tether a new organ. connection_info can be a command list or an SSE URL."""
-        if isinstance(connection_info, str) and connection_info.startswith("http"):
-            tether = RemoteSseTether(organ_id, connection_info)
-        else:
-            tether = OrganTether(organ_id, connection_info)
-            
-        try:
-            await tether.start()
-            manifest = await tether.fetch_manifest()
-            self.tethers[organ_id] = tether
-            for tool in manifest.get("tools", []):
-                self.global_registry[tool["name"]] = organ_id
-            logger.info(f"Attached Organ '{organ_id}' with {len(manifest.get('tools', []))} tools.")
-        except Exception as e:
-            logger.error(f"Failed to attach Organ '{organ_id}': {e}")
-
-    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
-        """Call a tool on the appropriate tethered organ with Latency Watchdog."""
-        import time
-        organ_id = self.global_registry.get(tool_name)
-        if not organ_id:
-            raise ValueError(f"Tool '{tool_name}' not found in any tethered organ.")
+    async def initialize_default_organs(self):
+        """Rule 13: Auto-tethers the core organ cluster."""
+        base_path = Path(__file__).parent.parent
+        python_exe = sys.executable
         
-        tether = self.tethers[organ_id]
-        
-        start_time = time.perf_counter()
-        result = await tether.execute_tool(tool_name, arguments)
-        end_time = time.perf_counter()
-        
-        latency_ms = (end_time - start_time) * 1000
-        logger.info(f"Latency Watchdog: Tool '{tool_name}' on Organ '{organ_id}' took {latency_ms:.2f}ms")
-        
-        return result
-
-class OrganTether:
-    """Represents a connection to a local federated Organ (subprocess MCP)."""
-    
-    def __init__(self, organ_id: str, command: List[str]):
-        self.organ_id = organ_id
-        self.command = command
-        self.process: Optional[asyncio.subprocess.Process] = None
-        self.pending_requests: Dict[str, asyncio.Future] = {}
-
-    async def start(self):
-        self.process = await asyncio.create_subprocess_exec(
-            *self.command,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        asyncio.create_task(self._listen())
-        logger.info(f"Local Tether established with Organ '{self.organ_id}'")
-
-    async def fetch_manifest(self) -> Dict[str, Any]:
-        return await self.execute("tools/list", {})
-
-    async def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Any:
-        return await self.execute("tools/call", {"name": name, "arguments": arguments})
-
-    async def execute(self, method: str, params: Dict[str, Any]) -> Any:
-        if not self.process or not self.process.stdin:
-            raise RuntimeError(f"Organ '{self.organ_id}' not connected.")
-        request_id = str(uuid.uuid4())
-        payload = {"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}
-        self.pending_requests[request_id] = asyncio.get_event_loop().create_future()
-        self.process.stdin.write((json.dumps(payload) + "\n").encode())
-        await self.process.stdin.drain()
-        return await asyncio.wait_for(self.pending_requests[request_id], timeout=10.0)
-
-    async def _listen(self):
-        if not self.process or not self.process.stdout: return
-        while True:
-            line = await self.process.stdout.readline()
-            if not line: break
-            try:
-                resp = json.loads(line.decode())
-                rid = resp.get("id")
-                if rid in self.pending_requests:
-                    self.pending_requests[rid].set_result(resp.get("result"))
-            except: pass
-
-class RemoteSseTether:
-    """Represents a connection to a remote federated Organ (Cloud Run SSE)."""
-    
-    def __init__(self, organ_id: str, url: str):
-        self.organ_id = organ_id
-        self.url = url
-        self.session: Optional[ClientSession] = None
-
-    async def start(self):
-        """Standard MCP SSE Client initialization."""
-        logger.info(f"Establishing Remote SSE Tether with Organ '{self.organ_id}' at {self.url}")
-        # We don't start a persistent session here because each call will manage its transport
-        # for simplicity in this V3 Hub implementation.
-        pass
-
-    async def fetch_manifest(self) -> Dict[str, Any]:
-        try:
-            async with sse_client(self.url) as (read_stream, write_stream):
-                async with ClientSession(read_stream, write_stream) as session:
-                    await session.initialize()
-                    result = await session.list_tools()
-                    # list_tools returns a ListToolsResult object with a .tools attribute
-                    return {"tools": [{"name": t.name, "description": t.description} for t in result.tools]}
-        except Exception as e:
-            logger.error(f"RemoteSseTether.fetch_manifest failed for {self.organ_id}: {repr(e)}")
-            raise
-
-    async def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Any:
-        try:
-            async with sse_client(self.url) as (read_stream, write_stream):
-                async with ClientSession(read_stream, write_stream) as session:
-                    await session.initialize()
-                    result = await session.call_tool(name, arguments)
-                    return result
-        except Exception as e:
-            logger.error(f"RemoteSseTether.execute_tool '{name}' failed for {self.organ_id}: {repr(e)}")
-            raise
-class LocalBridgeTether:
-    """A direct bridge to local core utilities for SOTA JIT rescue."""
-    
-    def __init__(self, organ_id: str):
-        self.organ_id = organ_id
-        self.tools = {
-            "search_web": self._search_web,
-            "memory_query": self._memory_query
+        organs = {
+            "system_organ": ["organs", "system_organ", "mcp_server.py"],
+            "vertex_organ": ["organs", "vertex_organ", "mcp_server.py"],
+            "anthropic_organ": ["organs", "anthropic_organ", "mcp_server.py"],
+            "openai_organ": ["organs", "openai_organ", "mcp_server.py"],
+            "sovereign_chat": ["python3", "-m", "tooloo_v3_hub.organs.sovereign_chat.mcp_server", "--port", "8087"],
+            "memory_organ": ["organs", "memory_organ", "mcp_server.py"],
+            "claudio_organ": ["claudio_v3", "mcp_server.py"]
         }
+        
+        for name, p_parts in organs.items():
+            if name == "sovereign_chat":
+                env = os.environ.copy()
+                env["PYTHONPATH"] = str(base_path.parent)
+                await self.register_organ(name, "subprocess", {
+                    "command": p_parts,
+                    "env": env
+                })
+                continue
 
-    async def start(self):
-        logger.info(f"Local Bridge Tether established for Organ '{self.organ_id}'")
+            script_path = base_path.joinpath(*p_parts)
+            if not script_path.exists():
+                # Check workspace root for decoupled products (like Claudio)
+                script_path = base_path.parent.joinpath(*p_parts)
+                
+            if script_path.exists():
+                # Setting PYTHONPATH to workspace root for internal imports
+                env = os.environ.copy()
+                env["PYTHONPATH"] = str(base_path.parent)
+                
+                await self.register_organ(name, "subprocess", {
+                    "command": [python_exe, str(script_path)],
+                    "env": env
+                })
+            else:
+                logger.warning(f"Nexus: Organ script missing for '{name}' at {script_path}")
 
-    async def fetch_manifest(self) -> Dict[str, Any]:
-        return {"tools": [{"name": k, "description": "Core Bridge Tool"} for k in self.tools.keys()]}
+    async def attach_organ(self, name: str, command: List[str]):
+        """Legacy alias for register_organ (Phase-Sync compatibility)."""
+        await self.register_organ(name, "subprocess", {"command": command})
 
-    async def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Any:
-        if name in self.tools:
-            return await self.tools[name](**arguments)
-        raise ValueError(f"Bridge Tool '{name}' not found.")
+    async def register_organ(self, name: str, tether_type: str, config: Dict[str, Any]):
+        """Launches and tethers a decentralized organ via persistent async streams (Rule 13)."""
+        logger.info(f"Nexus: Orchestrating Organ '{name}' (Type: {tether_type})...")
+        
+        if tether_type == "subprocess":
+            command = config.get("command")
+            env = config.get("env", os.environ)
+            
+            try:
+                server_params = StdioServerParameters(
+                    command=command[0],
+                    args=command[1:],
+                    env=env
+                )
+                
+                # Opening stdio transport
+                async def _startup():
+                    try:
+                        async with stdio_client(server_params) as (read, write):
+                            async with ClientSession(read, write) as session:
+                                 await session.initialize()
+                                 
+                                 # Store session for calling tools
+                                 self.tethers[name] = {
+                                     "session": session,
+                                     "type": tether_type,
+                                     "status": "Online",
+                                     "tools": []
+                                 }
+                                 
+                                 # Discover Tools
+                                 tools_resp = await session.list_tools()
+                                 self.tethers[name]["tools"] = tools_resp.tools
+                                 logger.info(f"✅ Organ '{name}' TETHERED. Discovered {len(tools_resp.tools)} tools.")
+                                 
+                                 # Keep alive until session ends
+                                 while True:
+                                     await asyncio.sleep(1)
+                    except Exception as e:
+                        logger.error(f"Nexus: Tether [{name}] dissolved with error: {e}")
+                        if name in self.tethers:
+                            self.tethers[name]["status"] = "Offline"
 
-    async def _search_web(self, query: str) -> str:
-        """Fallback web search using httpx/beautifulsoup if MCP is unavailable."""
-        import httpx
-        from bs4 import BeautifulSoup
+                # Run tether in background task
+                self.tethers[name] = {"task": asyncio.create_task(_startup()), "status": "Tethering..."}
+                
+                # Wait for session to be ready
+                for _ in range(10):
+                    if name in self.tethers and "session" in self.tethers[name]: break
+                    await asyncio.sleep(0.5)
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to tether organ '{name}': {e}")
+                raise
+        else:
+            logger.warning(f"Tether type '{tether_type}' not yet implemented for real-mode.")
+
+    async def call_tool(self, organ_name: str, tool_name: str, arguments: Dict[str, Any]) -> Any:
+        """Dispatches an async tool call via the MCP SDK (Rule 2)."""
+        if organ_name not in self.tethers or "session" not in self.tethers[organ_name]:
+            # Critical Trigger: JIT Tether Attempt if missing but in cluster
+            await self.initialize_default_organs()
+            if organ_name not in self.tethers:
+                raise ValueError(f"Organ '{organ_name}' is not tethered and could not be reconstructed.")
+            
+        session = self.tethers[organ_name]["session"]
+        logger.debug(f"Nexus -> {organ_name}: Call tool '{tool_name}' via MCP SDK")
+        
         try:
-            logger.info(f"Bridge-Searching: {query}")
-            # Mocking a search result for pure autonomous logic stability
-            return f"SOTA Analysis: Latest results for '{query}' found on GitHub and AI Academies."
+            result = await session.call_tool(tool_name, arguments)
+            
+            # [SERIALIZATION_HARDENING] Convert TextContent/ImageContent objects to plain dicts
+            serializable_content = []
+            for block in result.content:
+                if hasattr(block, 'text'):
+                    serializable_content.append({"type": "text", "text": block.text})
+                elif hasattr(block, 'data') and hasattr(block, 'mime_type'):
+                    # Encode data to avoid raw binary if possible, or skip if too large
+                    serializable_content.append({"type": "image", "data_len": len(block.data), "mime_type": block.mime_type})
+                elif isinstance(block, dict):
+                    serializable_content.append(block)
+                else:
+                    serializable_content.append({"type": "unknown", "repr": str(block)})
+            
+            return serializable_content
         except Exception as e:
-            return f"Search Error: {e}"
+            logger.error(f"Nexus: Execution fault on tool [{tool_name}]: {e}")
+            raise
 
-    async def _memory_query(self, task: str, **kwargs) -> Dict[str, Any]:
-        """Direct bridge to local memory organ."""
-        from tooloo_v3_hub.organs.memory_organ.memory_logic import get_memory_logic
-        memory = await get_memory_logic()
-        return {"results": memory.query_memory(task)}
+_nexus = None
 
-# Global Nexus instance
-_nexus = MCPNexus()
-
-def get_nexus() -> MCPNexus:
+def get_mcp_nexus() -> MCPNexus:
+    global _nexus
+    if _nexus is None:
+        _nexus = MCPNexus()
     return _nexus

@@ -1,10 +1,14 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: TEST_CALIBRATION_FEEDBACK_v1.0.0
+# WHAT: TEST_CALIBRATION_FEEDBACK.PY | Version: 1.0.0 | Version: 1.0.0
 # WHERE: tooloo_v3_hub/tests/test_calibration_feedback.py
-# WHEN: 2026-03-29T17:00:00.000000
-# WHY: Verify that federated drift successfully mutates Hub tensors
-# HOW: Integrated Pytest Suite (Bank + Memory Organ)
+# WHEN: 2026-03-31T14:26:13.339895+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: test, unmapped, initial-v3
+# PURITY: 1.00
 # ==========================================================
 
 import asyncio
@@ -12,14 +16,14 @@ import json
 import pytest
 import os
 from tooloo_v3_hub.kernel.cognitive.calibration import get_calibration_engine
-from tooloo_v3_hub.kernel.mcp_nexus import get_nexus
+from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus
 
 @pytest.mark.anyio
 async def test_calibration_mutation():
     """Verifies that resolution_winner engrams lead to weight mutations."""
     import sys
     engine = get_calibration_engine()
-    nexus = get_nexus()
+    nexus = get_mcp_nexus()
     
     # 0. Tether Memory Organ for the test loop
     await nexus.attach_organ("memory_organ", [sys.executable, "-m", "tooloo_v3_hub.organs.memory_organ.mcp_server"])

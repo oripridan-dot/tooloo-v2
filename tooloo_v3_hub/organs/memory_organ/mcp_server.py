@@ -1,64 +1,42 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: MEMORY_ORGAN_MCP_v3.0.0 — The Federated Service
+# WHAT: MCP_SERVER.PY | Version: 1.0.0 | Version: 1.0.0
 # WHERE: tooloo_v3_hub/organs/memory_organ/mcp_server.py
-# WHEN: 2026-03-29T09:40:00.000000
-# WHY: Standalone MCP bridge for cognitive persistence
-# HOW: Stdout JSON-RPC Protocol (MCP Compliant)
+# WHEN: 2026-03-31T14:26:13.351488+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: organ, unmapped, initial-v3
+# PURITY: 1.00
 # ==========================================================
 
-import sys
-import json
 import asyncio
 import logging
-from tooloo_v3_hub.shared.base_mcp import BaseMCPServer
+from mcp.server.fastmcp import FastMCP
 from tooloo_v3_hub.organs.memory_organ.memory_logic import MemoryOrganLogic
 
-class MemoryMCPServer(BaseMCPServer):
-    """
-    Consolidated MCP Server for the Memory Organ.
-    Inherits from BaseMCPServer for standardized JSON-RPC communication.
-    """
-    
-    def __init__(self):
-        super().__init__("MemoryOrgan")
-        self.logic = MemoryOrganLogic(".")
+# 1. Initialize FastMCP
+mcp = FastMCP("memory_organ")
+logger = logging.getLogger("MemoryMCPServer")
 
-    async def initialize_logic(self):
-        """Pre-run logic initialization."""
-        # Register Memory-specific tools
-        self.register_tool(
-            "memory_store", 
-            "Store an engram in the sovereign tier.", 
-            {"type": "object", "properties": {"engram_id": {"type": "string"}, "data": {"type": "object"}}},
-            self.memory_store_handler
-        )
-        self.register_tool(
-            "memory_query", 
-            "Search the cognitive memory for context.", 
-            {"type": "object", "properties": {"query": {"type": "string"}}},
-            self.memory_query_handler
-        )
-        self.register_tool(
-            "soul_sync", 
-            "Trigger galactic persistence.", 
-            {"type": "object"},
-            self.soul_sync_handler
-        )
+# 2. Logic Instance
+logic = MemoryOrganLogic(".")
 
-    async def memory_store_handler(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        return self.logic.store_engram(arguments.get("engram_id", ""), arguments.get("data", {}))
+@mcp.tool()
+async def memory_store(engram_id: str, data: dict) -> dict:
+    """Store an engram in the sovereign tier (Rule 9)."""
+    return logic.store_engram(engram_id, data)
 
-    async def memory_query_handler(self, arguments: Dict[str, Any]) -> List[Dict[str, Any]]:
-        return self.logic.query_memory(arguments.get("query", ""))
+@mcp.tool()
+async def memory_query(query: str) -> list:
+    """Search the cognitive memory for context and engrams."""
+    return logic.query_memory(query)
 
-    async def soul_sync_handler(self, arguments: Dict[str, Any]) -> bool:
-        return await self.logic.soul_sync()
-
-async def main():
-    server = MemoryMCPServer()
-    await server.initialize_logic()
-    await server.run()
+@mcp.tool()
+async def soul_sync() -> bool:
+    """Trigger galactic persistence and cross-node synchronization."""
+    return await logic.soul_sync()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    mcp.run()

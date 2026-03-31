@@ -1,3 +1,20 @@
+<!--
+6W_STAMP
+WHO: TooLoo V3 (Sovereign Architect)
+WHAT: INDEX.HTML | Version: 1.0.0 | Version: 1.0.0
+WHERE: tooloo_v3_hub/organs/circus_spoke/index.html
+WHEN: 2026-03-31T14:26:13.351829+00:00
+WHY: new - no history
+HOW: Safe Mass Saturation Pulse
+TRUST: T3:arch-purity
+TIER: T3:architectural-purity
+DOMAINS: organ, unmapped, initial-v3
+PURITY: 1.00
+==========================================================
+-->
+
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +23,16 @@
     <title>TooLoo V3.2 | Conversational Sanctum</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Outfit', sans-serif; color: #fff; }
+        :root {
+            --hub-vitality: 0.5;
+            --hub-drift: 0;
+            --hub-purity: 1.0;
+        }
+        body { 
+            margin: 0; overflow: hidden; background: #000; font-family: 'Outfit', sans-serif; color: #fff; 
+            transition: filter 0.5s ease;
+            filter: contrast(calc(1 + var(--hub-drift) * 0.5)) brightness(calc(0.8 + var(--hub-vitality) * 0.4));
+        }
         #canvas-container { width: 100vw; height: 100vh; cursor: crosshair; }
         
         #overlay-hud {
@@ -66,6 +92,23 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
         .log { margin-top: 35px; font-family: 'JetBrains Mono'; font-size: 11px; max-height: 120px; overflow: hidden; opacity: 0.4; }
+
+        /* Planning HUD */
+        #planning-hud {
+            position: absolute; bottom: 180px; right: 30px;
+            width: 320px; background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(50px); border-radius: 24px;
+            border: 1px solid rgba(0, 204, 255, 0.2);
+            padding: 24px; display: none; flex-direction: column;
+            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } }
+        
+        .planning-stat { margin-bottom: 12px; }
+        .planning-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+        .planning-bar-bg { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+        .planning-bar-fill { height: 100%; width: 0%; background: #00ccff; border-radius: 2px; transition: width 0.8s ease-out; box-shadow: 0 0 10px #00ccff; }
+        #total-value-score { font-family: 'JetBrains Mono'; font-size: 28px; color: #ffcc00; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -74,12 +117,30 @@
         <div id="status-bar">
             <div id="status-dot"></div>
             <span id="status-text">CONVERSATIONAL MODE | ACTIVE</span>
+            <div id="vitality-spark" style="width: 20px; height: 2px; background: #00ff88; margin-left: 20px; box-shadow: 0 0 10px #00ff88; transition: all 0.2s;"></div>
         </div>
         <div id="thought-hud" class="thought-scroll"></div>
         <div id="log-container" class="log"></div>
     </div>
 
     <div id="chat-hud"></div>
+
+    <div id="planning-hud">
+        <h1>Value Plan</h1>
+        <div id="total-value-score">0.00</div>
+        <div class="planning-stat">
+            <div class="planning-label">User Value</div>
+            <div class="planning-bar-bg"><div id="bar-user" class="planning-bar-fill"></div></div>
+        </div>
+        <div class="planning-stat">
+            <div class="planning-label">Compliance</div>
+            <div class="planning-bar-bg"><div id="bar-compl" class="planning-bar-fill" style="background: #00ff88; box-shadow: 0 0 10px #00ff88;"></div></div>
+        </div>
+        <div class="planning-stat">
+            <div class="planning-label">Foresight</div>
+            <div class="planning-bar-bg"><div id="bar-fore" class="planning-bar-fill" style="background: #ffcc00; box-shadow: 0 0 10px #ffcc00;"></div></div>
+        </div>
+    </div>
 
     <div id="command-hud">
         <input type="text" id="command-input" placeholder="Converse with Buddy..." autocomplete="off">
@@ -94,14 +155,66 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+        // --- CONFIG (Architectural Logic: Simple to Adjust) ---
+        const CONFIG = {
+            bloom: 1.5,
+            exposure: 1.0,
+            fog_near: 1,
+            fog_far: 3000,
+            ambient_color: 0x4040ff,
+            ambient_intensity: 0.5,
+            point_color: 0xffcc00,
+            point_intensity: 3.0,
+            grid_active: true
+        };
+
         // --- Core ---
         const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x000000, CONFIG.fog_near, CONFIG.fog_far);
+        
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 3000);
         camera.position.set(0, 50, 150);
+        
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ReinhardToneMapping;
         document.getElementById('canvas-container').appendChild(renderer.domElement);
+        
         const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // --- Environment Update Logic ---
+        function updateEnvironment(settings) {
+            Object.assign(CONFIG, settings);
+            if (settings.ambient_color !== undefined) ambient.color.setHex(settings.ambient_color);
+            if (settings.ambient_intensity !== undefined) ambient.intensity = settings.ambient_intensity;
+            if (settings.point_color !== undefined) point.color.setHex(settings.point_color);
+            if (settings.point_intensity !== undefined) point.intensity = settings.point_intensity;
+            if (settings.fog_near !== undefined) scene.fog.near = settings.fog_near;
+            if (settings.fog_far !== undefined) scene.fog.far = settings.fog_far;
+            if (settings.exposure !== undefined) renderer.toneMappingExposure = settings.exposure;
+            if (settings.grid === false) grid.visible = false;
+            if (settings.grid === true) grid.visible = true;
+            
+            // Visual feedback of shift
+            const line = document.createElement('div');
+            line.className = 'thought-line';
+            line.style.color = '#ffcc00';
+            line.innerText = `> ATMOSPHERE_SYNC: ${JSON.stringify(settings)}`;
+            document.getElementById('thought-hud').prepend(line);
+        }
+
+        // --- Soul Cloud (Engram Particles) ---
+        const soulGeometry = new THREE.BufferGeometry();
+        const soulCount = 500;
+        const soulPos = new Float32Array(soulCount * 3);
+        for(let i=0; i<soulCount*3; i++) soulPos[i] = (Math.random() - 0.5) * 300;
+        soulGeometry.setAttribute('position', new THREE.BufferAttribute(soulPos, 3));
+        const soulMaterial = new THREE.PointsMaterial({ color: 0x00ccff, size: 0.5, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+        const soulCloud = new THREE.Points(soulGeometry, soulMaterial);
+        scene.add(soulCloud);
 
         // --- Ethereal Voice Synth ---
         let audioCtx;
@@ -130,6 +243,9 @@
             basalt: new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9, metalness: 0.1 }),
             steel: new THREE.MeshPhysicalMaterial({ color: 0xcccccc, metalness: 1, roughness: 0.2, clearcoat: 0.5 }),
             obsidian: new THREE.MeshPhysicalMaterial({ color: 0x111111, roughness: 0, transmission: 0.9, ior: 1.5, thickness: 1.5 }),
+            gold: new THREE.MeshPhysicalMaterial({ color: 0xffcc00, metalness: 1, roughness: 0.1, clearcoat: 1 }),
+            jade: new THREE.MeshPhysicalMaterial({ color: 0x00ff88, roughness: 0.1, transmission: 0.5, thickness: 1 }),
+            ruby: new THREE.MeshPhysicalMaterial({ color: 0xff3300, roughness: 0.1, transmission: 0.5, thickness: 1 }),
             oak: new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.7 })
         };
         const createArch = (x, z, r) => {
@@ -198,7 +314,7 @@
                     if (pose.speaking && Math.random() > 0.7) playSovereignChirp(440 + Math.random()*440, 0.05);
                 } else { 
                     this.material.emissiveIntensity = 0.3; 
-                    this.ring.scale.setScalar(THREE_Math_Lerp(this.ring.scale.x, 1, 0.1));
+                    this.ring.scale.setScalar(THREE.MathUtils.lerp(this.ring.scale.x, 1, 0.1));
                     this.ring.material.opacity = 0.1;
                 }
             }
@@ -237,7 +353,7 @@
             item.className = `chat-msg ${role}`;
             item.innerText = msg;
             hud.appendChild(item); hud.scrollTop = hud.scrollHeight;
-            if (role === 'buddy') buddy.updateThought(msg.substring(0, 30) + "...");
+            // Removed recursive call to buddy.updateThought to prevent stack overflow
         }
 
         const input = document.getElementById('command-input');
@@ -256,8 +372,16 @@
         });
 
         // --- Lights & Loop ---
-        scene.add(new THREE.AmbientLight(0x4040ff, 0.5));
-        const point = new THREE.PointLight(0xffcc00, 3, 500); point.position.set(50, 100, 50); scene.add(point);
+        const ambient = new THREE.AmbientLight(CONFIG.ambient_color, CONFIG.ambient_intensity);
+        scene.add(ambient);
+        
+        const point = new THREE.PointLight(CONFIG.point_color, CONFIG.point_intensity, 500);
+        point.position.set(50, 100, 50);
+        scene.add(point);
+
+        const grid = new THREE.GridHelper(1000, 100, 0x111111, 0x050505);
+        grid.position.y = -2.6;
+        scene.add(grid);
 
         function animate() {
             requestAnimationFrame(animate);
@@ -286,6 +410,22 @@
                     const data = JSON.parse(event.data);
                     if (data.type === 'pose_update') {
                         buddy.applyPose(data);
+                        
+                        // Sovereign Pulse Mapping
+                        if (data.vitality_index !== undefined) {
+                            document.documentElement.style.setProperty('--hub-vitality', data.vitality_index);
+                            document.documentElement.style.setProperty('--hub-drift', data.drift);
+                            
+                            const spark = document.getElementById('vitality-spark');
+                            spark.style.width = (data.vitality_index * 100) + "px";
+                            spark.style.opacity = 0.5 + Math.sin(Date.now() * 0.01) * 0.5;
+                            
+                            // Soul Cloud reaction
+                            soulCloud.rotation.y += data.drift * 0.1;
+                            soulMaterial.opacity = 0.2 + data.vitality_index * 0.4;
+                            if (data.sync_active) soulMaterial.color.setHex(0xffcc00);
+                        }
+
                         if (data.current_thought && data.current_thought !== buddy.lastText) {
                             addThought(data.current_thought);
                             buddy.lastText = data.current_thought;
@@ -294,13 +434,67 @@
                     else if (data.type === 'buddy_chat') addChatMessage(data.response, 'buddy');
                     else if (data.type === 'status_update') statusText.innerText = data.status;
                     else if (data.type === 'inner_thought') addThought(data.thought);
+                    else if (data.type === 'scaling_pulse') {
+                        const count = data.active_tasks;
+                        if (count > 1) {
+                            statusText.innerText = `HYPER-SCALE | ${count} PARALLEL TASKS`;
+                            statusText.style.color = "#ffcc00";
+                            // Accelerate Soul Cloud
+                            soulCloud.rotation.y += 0.5; 
+                            document.documentElement.style.setProperty('--hub-drift', count * 0.1);
+                        } else {
+                            statusText.innerText = "CONVERSATIONAL MODE | ACTIVE";
+                            statusText.style.color = "#fff";
+                            document.documentElement.style.setProperty('--hub-drift', 0);
+                        }
+                    }
+                    else if (data.type === 'value_update') {
+                        const hud = document.getElementById('planning-hud');
+                        hud.style.display = 'flex';
+                        document.getElementById('total-value-score').innerText = data.score.total.toFixed(2);
+                        document.getElementById('bar-user').style.width = (data.score.user * 100) + '%';
+                        document.getElementById('bar-compl').style.width = (data.score.compliance * 100) + '%';
+                        document.getElementById('bar-fore').style.width = (data.score.foresight * 100) + '%';
+                        if (data.score.total >= 0.75) playSovereignChirp(880, 0.05); // High value chirp
+                    }
                     else if (data.type === 'manifest_shard') {
                         const mat = materialRegistry[data.material] || materialRegistry.oak;
-                        const geom = new THREE.IcosahedronGeometry(4, 1);
+                        const geom = data.material === 'obsidian' ? new THREE.OctahedronGeometry(6, 0) : new THREE.IcosahedronGeometry(4, 1);
                         const shard = new THREE.Mesh(geom, mat);
                         shard.position.set(data.pos.x, data.pos.y, data.pos.z);
                         shard.name = data.id;
+                        
+                        // Add Label
+                        const label = buddy.createLabel(data.id);
+                        label.position.set(0, 8, 0);
+                        label.scale.set(12, 3, 1);
+                        shard.add(label);
+                        
                         scene.add(shard); shards.set(data.id, shard);
+                    }
+                    else if (data.type === 'drift_pulse') {
+                        const shard = shards.get(data.id.split("/").pop());
+                        if (shard) {
+                            const pulseGeom = new THREE.SphereGeometry(shard.geometry.parameters.radius * 1.5, 32, 32);
+                            const pulseMat = new THREE.MeshBasicMaterial({ color: parseInt(data.color), transparent: true, opacity: 0.5 });
+                            const pulse = new THREE.Mesh(pulseGeom, pulseMat);
+                            shard.add(pulse);
+                            
+                            // Animate outward and fade
+                            new Promise(resolve => {
+                                let scale = 1;
+                                const iv = setInterval(() => {
+                                    scale += 0.1; pulse.scale.setScalar(scale);
+                                    pulse.material.opacity -= 0.05;
+                                    if (pulse.material.opacity <= 0) {
+                                        shard.remove(pulse); clearInterval(iv); resolve();
+                                    }
+                                }, 50);
+                            });
+                        }
+                    }
+                    else if (data.type === 'environment_update') {
+                        updateEnvironment(data.settings);
                     }
                 } catch (e) { console.error("Telemetry Error:", e); }
             };

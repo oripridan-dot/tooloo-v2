@@ -1,10 +1,14 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: CIRCUS_SPoke_MCP_v3.0.0 — The Visual Interface
+# WHAT: MCP_SERVER.PY | Version: 1.0.0 | Version: 1.0.0
 # WHERE: tooloo_v3_hub/organs/circus_spoke/mcp_server.py
-# WHEN: 2026-03-29T09:50:00.000000
-# WHY: Standalone MCP bridge for spatial manifestation
-# HOW: Stdout JSON-RPC Protocol (MCP Compliant)
+# WHEN: 2026-03-31T14:26:13.352987+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: organ, unmapped, initial-v3
+# PURITY: 1.00
 # ==========================================================
 
 import sys
@@ -64,6 +68,7 @@ class CircusMCPServer:
                 result = {"tools": [
                     {"name": "manifest_node", "description": "Manifest a 3D node in the spatial environment.", "inputSchema": {"type": "object"}},
                     {"name": "buddy_act", "description": "Execute a procedural animation on the Buddy avatar.", "inputSchema": {"type": "object"}},
+                    {"name": "adjust_environment", "description": "Live-sculpt the 3D sanctuary settings (color, fog, intensity).", "inputSchema": {"type": "object"}},
                     {"name": "capture_viewport", "description": "Capture the current visual state.", "inputSchema": {"type": "object"}}
                 ]}
             elif method == "tools/call":
@@ -82,6 +87,10 @@ class CircusMCPServer:
                     directive = arguments.get("directive", "idle")
                     await self.logic.buddy_act(directive)
                     result = {"status": "success", "action": directive}
+                elif tool_name == "adjust_environment":
+                    settings = arguments.get("settings", {})
+                    await self.logic.adjust_environment(settings)
+                    result = {"status": "success", "adjusted": True}
                 elif tool_name == "capture_viewport":
                     # Placeholder for screenshot logic
                     result = {"status": "success", "image_b64": "MOCK_VIEWPORT_PNK"}

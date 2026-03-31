@@ -1,10 +1,14 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: CIRCUS_LOGIC_v3.0.0 — The Spatial Bridge
+# WHAT: CIRCUS_LOGIC.PY | Version: 1.0.0 | Version: 1.0.0
 # WHERE: tooloo_v3_hub/organs/circus_spoke/circus_logic.py
-# WHEN: 2026-03-29T09:45:00.000000
-# WHY: Centralized visual orchestration for federated spokes
-# HOW: FastAPI + WebSockets + Three.js JIT
+# WHEN: 2026-03-31T14:26:13.352723+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: organ, unmapped, initial-v3
+# PURITY: 1.00
 # ==========================================================
 
 import os
@@ -90,9 +94,9 @@ class CircusSpokeLogic:
     async def execute_hub_goal(self, goal: str):
         """Asynchronously executes a goal via the Hub Kernel with the Validation Protocol."""
         from tooloo_v3_hub.kernel.orchestrator import get_orchestrator
-        from tooloo_v3_hub.kernel.mcp_nexus import get_nexus
+        from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus as get_mcp_nexus
         
-        nexus = get_nexus()
+        nexus = get_mcp_nexus()
         if "circus" not in nexus.tethers:
             await nexus.attach_organ("memory", ["python3", "-m", "tooloo_v3_hub.organs.memory_organ.mcp_server"])
             await nexus.attach_organ("circus", ["python3", "-m", "tooloo_v3_hub.organs.circus_spoke.mcp_server"])
@@ -118,6 +122,102 @@ class CircusSpokeLogic:
         tasks = [asyncio.ensure_future(c.send_json(msg)) for c in self.active_connections]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def broadcast_value_score(self, total: float, user: float, compliance: float, foresight: float):
+        """Specifically broadcasts the 4D Value Planning metrics to the HUD."""
+        await self.broadcast({
+            "type": "value_update",
+            "score": {
+                "total": total,
+                "user": user,
+                "compliance": compliance,
+                "foresight": foresight
+            }
+        })
+
+    async def broadcast_inner_thought(self, thought: str):
+        """Broadcasts a cognitive 'Inner Thought' from the calibration engine."""
+        await self.broadcast({
+            "thought": thought,
+            "type": "inner_thought"
+        })
+
+    async def adjust_environment(self, settings: Dict[str, Any]) -> Dict[str, Any]:
+        """Live-sculpts the 3D sanctuary settings (color, fog, intensity)."""
+        await self.broadcast({
+            "type": "environment_update",
+            "settings": settings
+        })
+        logger.info(f"Sanctum Atmosphere Adjusted: {settings}")
+        return {"status": "success", "settings": settings}
+
+    async def flag_node_drift(self, node_id: str, delta: float):
+        """Visually flags a node in the 3D sanctuary as drifting (Rule 11)."""
+        await self.broadcast({
+            "type": "drift_pulse",
+            "id": node_id,
+            "delta": delta,
+            "color": "0xff3300" if delta < 0 else "0x00ff88"
+        })
+        logger.info(f"Drift Pulse emitted for node: {node_id}")
+
+    async def sync_topography(self) -> Dict[str, Any]:
+        """Manifests the entire Living Map as 3D PBR Shards in the Sanctum."""
+        logger.info("Syncing Hub Topography to Viewport...")
+        from tooloo_v3_hub.kernel.governance.living_map import get_living_map
+        living_map = get_living_map()
+        nodes = living_map.nodes
+        
+        import math
+        shards = []
+        
+        # Tier-based Radial Distribution
+        # T1 (Kernel): Core circle (Radius 20)
+        # T2 (Organs): Mid circle (Radius 50)
+        # T3 (Others): Outer circle (Radius 100)
+        
+        for i, (node_id, metadata) in enumerate(nodes.items()):
+            # Categorize by path
+            material = "basalt"
+            radius = 100.0
+            y = 5.0
+            
+            if "kernel" in node_id:
+                material = "obsidian"
+                radius = 25.0
+                y = 15.0
+            elif "organs" in node_id or "mcp_server" in node_id:
+                material = "steel"
+                radius = 60.0
+                y = 8.0
+            elif "tests" in node_id:
+                material = "marble"
+                radius = 130.0
+                y = 2.0
+            
+            # Use deterministic angle based on ID hash for stable positioning
+            import hashlib
+            angle_hash = int(hashlib.md5(node_id.encode()).hexdigest(), 16)
+            angle = (angle_hash % 360) * (math.pi / 180)
+            
+            x = math.cos(angle) * radius
+            z = math.sin(angle) * radius
+            
+            directive = {
+                "type": "manifest_shard",
+                "id": node_id.split("/")[-1], # Basename for the label
+                "full_id": node_id,
+                "material": material,
+                "pos": {"x": x, "y": y, "z": z},
+                "purity": metadata.get("purity_score", 1.0),
+                "version": metadata.get("version", "1.0.0")
+            }
+            shards.append(directive)
+            await self.broadcast(directive)
+            self.manifest_history.append(directive)
+            
+        logger.info(f"Topography Synced: {len(shards)} nodes manifested.")
+        return {"status": "success", "count": len(shards)}
 
     async def manifest_sota_matrix(self) -> Dict[str, Any]:
         """Manifests the entire SOTA matrix as 3D PBR Shards in the Sanctuary."""
@@ -154,6 +254,10 @@ class CircusSpokeLogic:
         logger.info(f"SOTA Matrix Manifested: {len(shards)} shards.")
         return {"status": "success", "count": len(shards)}
 
+    async def manifest_node(self, id: str, shape: str = "sphere", color: str = "0x00ccff") -> Dict[str, Any]:
+        """Alias for manifest, used by the Orchestrator's parallel DAG engine."""
+        return await self.manifest(id, shape=shape, color=color)
+
     async def manifest(self, id: str, shape: str = "cube", color: str = "0x00ff88") -> Dict[str, Any]:
         """Broadcast a manifestation directive to all connected viewports (Safe)."""
         directive = {
@@ -181,17 +285,35 @@ class CircusSpokeLogic:
         return {"status": "success", "directive": directive}
 
     async def start_pose_stream(self):
-        """Dedicated high-priority loop for 30Hz 3D Pose Streaming."""
+        """Dedicated high-priority loop for 30Hz 3D Pose Streaming with Sovereign Pulse."""
         from tooloo_v3_hub.kernel.cognitive.pose_engine import get_pose_engine
+        from tooloo_v3_hub.kernel.cognitive.audit_agent import get_audit_agent as get_audit_agent
+        from tooloo_v3_hub.kernel.cognitive.calibration import get_calibration_engine
+        
         engine = get_pose_engine()
+        auditor = get_audit_agent()
+        calibration = get_calibration_engine()
         
         logger.info("Sovereign Pose Stream: Pulse-30 Active.")
+        tick = 0
         while True:
-            # 1. 6W-Telemetry Check (Latency Watchdog)
-            # 2. Compute the frame at 33ms intervals
+            # 1. Compute the frame at 33ms intervals
             frame = engine.compute_next_frame(0.033)
+            
+            # 2. Inject Sovereign Pulse (Vitality/Drift) every 10 ticks (~3Hz)
+            if tick % 10 == 0:
+                vitality = await auditor.calculate_vitality_index()
+                drift = await calibration.compute_drift()
+                frame.update({
+                    "vitality_index": vitality["vitality"],
+                    "purity": vitality["purity"],
+                    "drift": drift,
+                    "sync_active": True # Soul Sync loop check
+                })
+            
             # 3. Broadcast to all viewports
             await self.broadcast(frame)
+            tick += 1
             await asyncio.sleep(0.033)
             
     async def run_in_background(self):
@@ -202,15 +324,22 @@ class CircusSpokeLogic:
         config = uvicorn.Config(self.app, host="0.0.0.0", port=self.port, log_level="info")
         server = uvicorn.Server(config)
         
-        # 1. Proactive Soul Agent
+        # 1. Proactive Soul Agent + Calibration + Soul Sync
         from tooloo_v3_hub.kernel.cognitive.proactive_agent import get_proactive_agent
-        proactive_agent = get_proactive_agent()
+        from tooloo_v3_hub.kernel.cognitive.calibration import get_calibration_engine
+        from tooloo_v3_hub.kernel.cognitive.soul_sync import get_soul_sync
         
-        # 2. Parallel Orchestration: Visual Server + 30Hz Pose Pulse
+        proactive_agent = get_proactive_agent()
+        calibration = get_calibration_engine()
+        soul_sync = get_soul_sync()
+        
+        # 2. Parallel Orchestration
         await asyncio.gather(
             server.serve(),
             self.start_pose_stream(),
-            proactive_agent.start_proactive_loop()
+            proactive_agent.start_proactive_loop(),
+            calibration.start_calibration_loop(interval=120),
+            soul_sync.start_sync_loop(interval=300)
         )
 
 # --- Global Logic instance ---

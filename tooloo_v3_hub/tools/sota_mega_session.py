@@ -1,10 +1,14 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: SOTA_MEGA_SESSION_EXECUTOR_v1.0.0
-# WHERE: tooloo-v2/sota_mega_session.py
-# WHEN: 2026-03-29T13:30:00.000000
-# WHY: Executing the Largest Learning Session Yet in GCP
-# HOW: Autonomous Workload Management & Parallel Ingestion
+# WHAT: SOTA_MEGA_SESSION.PY | Version: 1.0.0 | Version: 1.0.0
+# WHERE: tooloo_v3_hub/tools/sota_mega_session.py
+# WHEN: 2026-03-31T14:26:13.337372+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: tool, unmapped, initial-v3
+# PURITY: 1.00
 # ==========================================================
 
 import asyncio
@@ -16,7 +20,7 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from tooloo_v3_hub.kernel.orchestrator import get_orchestrator
-from tooloo_v3_hub.kernel.mcp_nexus import get_nexus
+from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus
 from tooloo_v3_hub.kernel.stamping import StampingEngine
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -32,7 +36,7 @@ async def main():
     
     # Tether local bridge for Search and Memory
     from tooloo_v3_hub.kernel.mcp_nexus import LocalBridgeTether
-    nexus = get_nexus()
+    nexus = get_mcp_nexus()
     bridge = LocalBridgeTether("core_bridge")
     # Manually register tools for the bridge
     manifest = await bridge.fetch_manifest()

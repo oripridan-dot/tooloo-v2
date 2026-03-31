@@ -1,24 +1,28 @@
 # 6W_STAMP
-# WHO: TooLoo V4 (Architect)
-# WHAT: V4_REASONING_GATE_BENCHMARK_v1.0.0
-# WHERE: tooloo-v2/v4_benchmark.py
-# WHEN: 2026-03-29T13:35:00.000000
-# WHY: Verifying the efficacy of the O1-inspired reasoning gate
-# HOW: Comparative Execution Simulation
+# WHO: TooLoo V3 (Sovereign Architect)
+# WHAT: V4_BENCHMARK.PY | Version: 1.0.0 | Version: 1.0.0
+# WHERE: tooloo_v3_hub/tools/v4_benchmark.py
+# WHEN: 2026-03-31T14:26:13.337206+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: tool, unmapped, initial-v3
+# PURITY: 1.00
 # ==========================================================
 
 import asyncio
 import time
 import logging
 from tooloo_v3_hub.kernel.orchestrator import get_orchestrator
-from tooloo_v3_hub.kernel.mcp_nexus import get_nexus, LocalBridgeTether
+from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus, LocalBridgeTether
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("V4Benchmark")
 
 async def run_benchmark():
     orchestrator = get_orchestrator()
-    nexus = get_nexus()
+    nexus = get_mcp_nexus()
     
     # Tether local bridge for Search and Memory
     bridge = LocalBridgeTether("core_bridge")

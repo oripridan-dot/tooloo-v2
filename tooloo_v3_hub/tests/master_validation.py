@@ -1,10 +1,14 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: MASTER_VALIDATION_PULSE_v1.0.0
-# WHERE: tooloo-v3-hub/tests/master_validation.py
-# WHEN: 2026-03-29T11:45:00.000000
-# WHY: Verify Entire Federated Architecture in a Single Stroke
-# HOW: Multi-Domain Chaos + Audit Pulse
+# WHAT: MASTER_VALIDATION.PY | Version: 1.0.0 | Version: 1.0.0
+# WHERE: tooloo_v3_hub/tests/master_validation.py
+# WHEN: 2026-03-31T14:26:13.339981+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: test, unmapped, initial-v3
+# PURITY: 1.00
 # ==========================================================
 
 import os
@@ -12,9 +16,9 @@ import json
 import asyncio
 import logging
 from pathlib import Path
-from tooloo_v3_hub.kernel.mcp_nexus import get_nexus
+from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus
 from tooloo_v3_hub.kernel.cognitive.ouroboros import get_ouroboros
-from tooloo_v3_hub.kernel.governance.audit import get_auditor
+from tooloo_v3_hub.kernel.cognitive.audit_agent import get_audit_agent
 from tooloo_v3_hub.kernel.cognitive.calibration import get_calibration_engine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -25,17 +29,17 @@ class MasterValidationPulse:
     
     def __init__(self):
         self.root = Path("tooloo_v3_hub")
-        self.nexus = get_nexus()
         self.manifest_path = self.root / "psyche_bank" / "sovereignty_manifest_v3.json"
 
     async def execute(self):
+        self.nexus = get_mcp_nexus()
         logger.info("Initializing Master Validation Pulse...")
         
         # Step 0: Tether Federated Organs (Crucial for out-of-loop execution)
         import sys
         await self.nexus.attach_organ("memory_organ", [sys.executable, "-m", "tooloo_v3_hub.organs.memory_organ.mcp_server"])
         await self.nexus.attach_organ("circus_spoke", [sys.executable, "-m", "tooloo_v3_hub.organs.circus_spoke.mcp_server"])
-        await self.nexus.attach_organ("audio_organ", [sys.executable, "-m", "tooloo_v3_hub.organs.claudio_organ.mcp_server"])
+        await self.nexus.attach_organ("audio_organ", "https://claudio-organ-v3-gru3xdvw6a-ew.a.run.app/sse")
         
         report = {"timestamp": "2026-03-29T11:45:00.000000", "results": {}}
         
@@ -82,10 +86,10 @@ class MasterValidationPulse:
         await calibrator.refine_weights(domain="logic", delta=0.01)
         report["results"]["autopoietic_refinement"] = {"status": "PASS"}
 
-        # 5. 6W Final Audit
-        logger.info("Performing Final 6W Audit...")
-        auditor = get_auditor()
-        audit_res = await auditor.perform_audit()
+        # 2. Sovereignty Audit (6W/SOTA Integrity)
+        from tooloo_v3_hub.kernel.cognitive.audit_agent import get_audit_agent as get_audit_agent
+        auditor = get_audit_agent()
+        audit_res = await auditor.calculate_vitality_index()
         report["results"]["final_audit"] = audit_res
 
         # 6. Save Manifest

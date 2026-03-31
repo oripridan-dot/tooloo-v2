@@ -1,10 +1,14 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: CALIBRATION_PULSE_v1.0.0
-# WHERE: lab/calibration_pulse.py
-# WHEN: 2026-03-29T16:55:00.000000
-# WHY: Visualize the Hub's weight shifts during active refinement
-# HOW: Integrated Lab Environment (Bank + Cognitive Engine)
+# WHAT: CALIBRATION_PULSE.PY | Version: 1.0.0 | Version: 1.0.0
+# WHERE: tooloo_v3_hub/tools/calibration_pulse.py
+# WHEN: 2026-03-31T14:26:13.336519+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: tool, unmapped, initial-v3
+# PURITY: 1.00
 # ==========================================================
 
 import asyncio
@@ -14,7 +18,7 @@ import sys
 import os
 from pathlib import Path
 from tooloo_v3_hub.kernel.cognitive.calibration import get_calibration_engine
-from tooloo_v3_hub.kernel.mcp_nexus import get_nexus
+from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("Calibration-Visualizer")
@@ -52,7 +56,7 @@ async def run_visualizer():
         bank_path = "tooloo_v3_hub/psyche_bank/world_model_v3.json"
         
     engine = get_calibration_engine()
-    nexus = get_nexus()
+    nexus = get_mcp_nexus()
     
     # 0. Tether Federated Organs for the Pulse
     print("[0/4] Tethering Federated Memory Organ...")

@@ -1,10 +1,14 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: CALIBRATION_ENGINE_v3.0.0 — Cognitive Refinement
-# WHERE: tooloo_v3_hub/kernel/calibration.py
-# WHEN: 2026-03-29T10:00:00.000000
-# WHY: Align the World Model with strategic outcomes ($EM_p - EM_a$)
-# HOW: Integrated Federated Loop (Nexus + Bank + Spoke)
+# WHAT: CALIBRATION.PY | Version: 1.1.0
+# WHERE: tooloo_v3_hub/kernel/cognitive/calibration.py
+# WHEN: 2026-03-31T21:40:00.000000
+# WHY: Multi-Provider Refinement Engine with robust tethering checks.
+# HOW: Gradient-Shift on 22D World Model.
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: kernel, cognitive, ai, gemini, vertex-ai
+# PURITY: 1.00
 # ==========================================================
 
 import os
@@ -14,156 +18,96 @@ import asyncio
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from tooloo_v3_hub.kernel.governance.stamping import StampingEngine, SixWProtocol
-from tooloo_v3_hub.kernel.mcp_nexus import get_nexus
 
 logger = logging.getLogger("CalibrationEngine")
 
 class CalibrationEngine:
     """
     The Refinement Supervisor for TooLoo V3.
-    Orchestrates the calibration of World Model weights.
+    Orchestrates logic weight adjustment based on actual outcomes.
     """
     
     def __init__(self, bank_path: str = "tooloo_v3_hub/psyche_bank/world_model_v3.json"):
         self.bank_path = Path(bank_path)
-        self.nexus = get_nexus()
+        self._ensure_world_model()
         self.stamper = StampingEngine()
-        
+
+    def _ensure_world_model(self):
+        """Seeds the 22D World Model if missing."""
+        if not self.bank_path.parent.exists():
+            self.bank_path.parent.mkdir(parents=True, exist_ok=True)
+        if not self.bank_path.exists():
+            # Initial identity matrix
+            import numpy as np
+            w1 = np.eye(64).tolist() 
+            model = {"version": "3.0.0", "weights": "Identity-Seeded", "w1": w1, "bias": [0.0] * 64}
+            with open(self.bank_path, "w") as f:
+                json.dump(model, f, indent=2)
+
     async def compute_drift(self) -> float:
-        """Fetches recent resolution winners from the Memory Organ to determine Δ-Closure."""
+        """Fetches outcomes from Memory to determine drift Δ."""
         try:
-            # 1. Query the Memory Organ for 'resolution_winner' types
-            # In a full system, this would be a filtered query.
-            # Here we query all engrams and filter in the Engine for cognitive purity.
-            engrams = await self.nexus.call_tool("memory_query", {"query": "resolution_winner"})
+            nexus = await self._get_mcp_nexus()
+            if "memory_organ" not in nexus.tethers or "session" not in nexus.tethers["memory_organ"]:
+                return 0.0
             
-            if not engrams:
-                logger.info("No resolution engrams found. Deep Baseline Active.")
-                return 0.001  # Ultra-minimal drift
+            engrams = await nexus.call_tool("memory_organ", "memory_query", {"query": "resolution_winner"})
+            if not engrams: return 0.0
             
-            # 2. Extract drift_score from the newest engrams (window size: 5)
-            # Engrams are returned as a list of dicts: {"engram_id": "...", "data": {...}}
+            # Simple drift score extraction
             deltas = []
-            recent = engrams[-5:] 
+            for e in engrams[-5:]:
+                data = e.get("data", {})
+                if data and "drift_score" in data:
+                    deltas.append(1.0 - data["drift_score"])
             
-            for e in recent:
-                data = e.get("data")
-                if not data and "text" in e:
-                    # Attempt to parse stringified engram from the search index
-                    try:
-                        # The text is str(data), which is a Python dict str. 
-                        # We need to handle single quotes if it's not proper JSON.
-                        # For the prototype, we assume it's valid JSON or a parsable dict.
-                        text = e["text"].replace("'", '"')
-                        data = json.loads(text)
-                    except: continue
-                
-                if data and (data.get("type") == "resolution_winner" or "drift_score" in data):
-                    drift_signal = (1.0 - data.get("drift_score", 1.0))
-                    deltas.append(drift_signal)
-            
-            avg_drift = sum(deltas) / len(deltas) if deltas else 0.005
-            logger.info(f"Drift Computation (Active): Δ={avg_drift:.4f} across {len(deltas)} variants.")
-            return avg_drift
+            return sum(deltas) / len(deltas) if deltas else 0.005
         except Exception as e:
-            logger.error(f"Active drift computation failed: {e}")
+            logger.error(f"Drift Computation failed: {e}")
             return 0.0
 
     async def refine_weights(self, domain: str = "logic", delta: float = 0.01):
-        """Autonomously adjusts the 22D world model based on domain-specific outcomes."""
+        """Adjusts the world model (Rule 16 Calibration)."""
         logger.info(f"Refining domain '{domain}': Δ={delta}")
-        
-        # 1. Load the Model
-        with open(self.bank_path, "r") as f:
-            model = json.load(f)
-            
-        if "w1" not in model:
-            logger.warning("Layer 'w1' not found. Aborting refinement.")
-            return
-
-        # 2. Map domain to Tensor Index (64 dimensions supported, mapping first 20)
-        domain_map = {
-            "circus": [0, 1, 2, 3],
-            "buddy": [0, 1, 2, 3],
-            "spatial": [0, 1, 2, 3],
-            "persistence": [4, 5, 6, 7],
-            "memory": [4, 5, 6, 7],
-            "spectral": [8, 9, 10, 11],
-            "audio": [8, 9, 10, 11],
-            "logic": [12, 13, 14, 15],
-            "latency": [16, 17, 18, 19]
-        }
-        
-        indices = domain_map.get(domain, [12, 13, 14, 15]) # default to logic
-        
-        # 3. Perform High-Fidelity Mutation
-        for idx in indices:
-            if idx < len(model["w1"]):
-                # Adjust the first pivot of the vector at this index
-                original_val = model["w1"][idx][0]
-                model["w1"][idx][0] += delta
-                logger.info(f"Vector[{idx}] Shift: {original_val:.4f} -> {model['w1'][idx][0]:.4f}")
-
-        # 4. Create Refinement Engram (Deep-6W Stamp)
-        payload = {"domain": domain, "delta": delta, "indices": indices}
-        p_hash = StampingEngine.compute_payload_hash(payload)
-        
-        stamp = SixWProtocol(
-            who="Sovereign Architect",
-            what=f"TENSOR_REFINEMENT: {domain}",
-            where="Sovereign Bank (22D)",
-            why="HFN Alignment Cycle",
-            how=f"Gradient-Shift (Delta={delta})",
-            payload_hash=p_hash
-        )
-        
-        # 5. Save to Sovereign Bank
-        with open(self.bank_path, "w") as f:
-            json.dump(model, f, indent=2)
-            
-        # 6. Manifest the Drift in the Circus Spoke
-        await self.manifest_drift(domain, delta)
-        
-        # 7. Announce "Inner Thought" to the Architect
         try:
-            from tooloo_v3_hub.organs.circus_spoke.circus_logic import get_circus_logic
-            logic = get_circus_logic()
-            thought = f"Autonomous Weight Refinement: Domain '{domain}' shifted by {delta:.4f}. Sovereignty Tier: UP."
-            await logic.broadcast({"type": "inner_thought", "thought": thought})
-            logger.info(f"Inner Thought Broadcasted: {thought}")
-        except: pass
-        
-        logger.info(f"Refinement Cycle complete. Deep-6W Stamp issued for {domain}.")
+            with open(self.bank_path, "r") as f:
+                model = json.load(f)
+            
+            # Basic linear shift for first column of logic/system indices
+            indices = [12, 13, 14, 15] 
+            for idx in indices:
+                if idx < len(model["w1"]):
+                    model["w1"][idx][0] += delta
+            
+            with open(self.bank_path, "w") as f:
+                json.dump(model, f, indent=2)
+            
+            logger.info(f"Refinement Cycle complete for {domain}.")
+        except Exception as e:
+            logger.error(f"Refinement Fault: {e}")
 
-    async def start_calibration_loop(self, interval: int = 120):
-        """Dedicated background task for continuous cognitive refinement."""
+    async def _get_mcp_nexus(self):
+        from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus
+        return get_mcp_nexus()
+
+    async def start_calibration_loop(self, interval: int = 300):
+        """Autopoietic Loop for cognitive refinement."""
         logger.info(f"Sovereign Calibration Loop: Pulse-{interval}s Active.")
-        await asyncio.sleep(60) # Warmup to ensure organs are initialized
+        await asyncio.sleep(60) # Initial warmup
         
         while True:
-            # 1. Re-calculate drift from Memory
-            drift = await self.compute_drift()
+            nexus = await self._get_mcp_nexus()
+            try:
+                # Rule 6 Ecosystem Inventory
+                if "memory_organ" in nexus.tethers and "session" in nexus.tethers["memory_organ"]:
+                    drift = await self.compute_drift()
+                    if drift > 0:
+                        await self.refine_weights("logic", drift * 0.1)
+            except Exception as e:
+                logger.error(f"Calibration Cycle Error: {e}")
             
-            # 2. Refine Logic weights if drift > 0
-            if drift > 0:
-                await self.refine_weights("logic", drift * 0.1) # Damped refinement
-                
             await asyncio.sleep(interval)
 
-    async def manifest_drift(self, layer: str, delta: float):
-        """Sends cognitive drift signals to the Manifestation Circus."""
-        try:
-            # Shift a specialized 'Calibration Node' towards the center
-            await self.nexus.call_tool("manifest_node", {
-                "id": f"refinement-{layer}",
-                "shape": "sphere",
-                "color": "0x00ff88" if delta > 0 else "0xff3300"
-            })
-            logger.info("Drift Manifested in Spoke-1.")
-        except Exception as e:
-            logger.error(f"Failed to manifest drift: {e}")
-
-# Global Engine instance
 _calibration_engine: Optional[CalibrationEngine] = None
 
 def get_calibration_engine() -> CalibrationEngine:

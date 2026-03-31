@@ -1,14 +1,27 @@
+# 6W_STAMP
+# WHO: TooLoo V3 (Sovereign Architect)
+# WHAT: MANIFEST_BUDDY_DEMO.PY | Version: 1.0.0 | Version: 1.0.0
+# WHERE: tooloo_v3_hub/tools/manifest_buddy_demo.py
+# WHEN: 2026-03-31T14:26:13.336705+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: tool, unmapped, initial-v3
+# PURITY: 1.00
+# ==========================================================
+
 import asyncio
 import logging
 import json
 from tooloo_v3_hub.kernel.orchestrator import get_orchestrator
-from tooloo_v3_hub.kernel.mcp_nexus import get_nexus
+from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus
 
 logging.basicConfig(level=logging.INFO)
 
 async def main():
     orchestrator = get_orchestrator()
-    nexus = get_nexus()
+    nexus = get_mcp_nexus()
     
     # 1. Attach the Federated Organs
     await nexus.attach_organ("memory", ["python3", "-m", "tooloo_v3_hub.organs.memory_organ.mcp_server"])

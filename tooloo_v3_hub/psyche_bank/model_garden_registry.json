@@ -1,0 +1,424 @@
+{
+  "timestamp": "2026-03-31T21:45:00",
+  "models": {
+    "google": [
+      {
+        "id": "gemini-1.5-pro",
+        "tier": "sovereign",
+        "capabilities": {
+          "Architectural_Foresight": 0.9,
+          "Syntax_Precision": 0.75546875,
+          "Constitutional": 0.6554687499999999,
+          "Speed": 0.50784375,
+          "Complexity": 0.8
+        }
+      },
+      {
+        "id": "gemini-1.5-flash",
+        "tier": "balanced",
+        "capabilities": {
+          "Speed": 0.85784375,
+          "Efficiency": 0.9,
+          "Quality": 0.7,
+          "Financial": 0.9,
+          "Syntax_Precision": 0.45546875000000003,
+          "Constitutional": 0.45546875000000003
+        }
+      }
+    ],
+    "anthropic": [
+      {
+        "id": "claude-3-5-sonnet",
+        "tier": "constitutional",
+        "capabilities": {
+          "Constitutional": 0.9054687499999999,
+          "Quality": 0.9,
+          "Human_Factor": 0.85,
+          "Syntax_Precision": 0.75546875,
+          "Speed": 0.40784375000000006
+        }
+      }
+    ],
+    "meta": [
+      {
+        "id": "nvidia/llama-nemotron-super@49b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3-3@llama-3.3-70b-instruct",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3-2@llama-3.2-90b-vision-instruct",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3-2@llama-3.2-90b-vision",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3-2@llama-3.2-3b-instruct",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3-2@llama-3.2-3b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3-2@llama-3.2-1b-instruct",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3-2@llama-3.2-1b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3-2@llama-3-2-11b-vision-instruct",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3-2@llama-3-2-11b-vision",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/prompt-guard@llama-prompt-guard-2-86m",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/prompt-guard@llama-prompt-guard-2-22m",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3_1@llama-3.1-8b-instruct",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3_1@llama-3.1-8b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3_1@llama-3.1-70b-instruct",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3_1@llama-3.1-70b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3_1@llama-3.1-405b-instruct-fp8",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3_1@llama-3.1-405b-fp8",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama4@llama-4-scout-17b-16e",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama4@llama-4-maverick-17b-128e-instruct-fp8",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama4@llama-4-maverick-17b-128e-instruct",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama4@llama-4-maverick-17b-128e",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "deepseek-ai/deepseek-r1@deepseek-r1-distill-llama-8b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "deepseek-ai/deepseek-r1@deepseek-r1-distill-llama-70b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "liuhaotian/pytorch-llava@llama3-llava-next-8b-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-guard@llama-guard-4-12b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-guard@llama-guard-3-8b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-guard@llama-guard-3-1b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-guard@llama-guard-3-11b-vision",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3@meta-llama-3-8b-instruct",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3@meta-llama-3-8b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3@meta-llama-3-70b-instruct",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama3@meta-llama-3-70b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-7b-gptq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-7b-chat-gptq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-7b-chat-awq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-7b-awq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-70b-gptq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-70b-chat-gptq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-70b-chat-awq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-70b-awq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-13b-gptq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-13b-chat-gptq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-13b-chat-awq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama-2-quantized@llama-2-13b-awq",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama2@llama-2-7b-chat",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama2@llama-2-7b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama2@llama-2-70b-chat",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama2@llama-2-70b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama2@llama-2-13b-chat",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/llama2@llama-2-13b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-7b-python-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-7b-instruct-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-7b-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-70b-python-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-70b-instruct-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-70b-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-34b-python-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-34b-instruct-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-34b-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-13b-python-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-13b-instruct-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "meta/codellama-7b-hf@codellama-13b-hf",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "openlm-research/openllama@open_llama_7b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "openlm-research/openllama@open_llama_3b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "openlm-research/openllama@open_llama_13b",
+        "tier": "sota",
+        "task": "unknown"
+      },
+      {
+        "id": "llama-3-1-405b",
+        "tier": "maximalist",
+        "task": "deep_reasoning"
+      }
+    ],
+    "mistral": [
+      {
+        "id": "mistral-large-2",
+        "tier": "efficient",
+        "task": "logic_purity"
+      }
+    ],
+    "openai": [
+      {
+        "id": "gpt-5.4",
+        "tier": "sota",
+        "capabilities": {
+          "Syntax_Precision": 0.9054687499999999,
+          "Complexity": 0.95,
+          "Architectural_Foresight": 0.9,
+          "Quality": 0.95,
+          "Speed": 0.40784375000000006,
+          "Constitutional": 0.45546875000000003
+        }
+      },
+      {
+        "id": "o1-reasoning",
+        "tier": "sota",
+        "capabilities": {
+          "Root_Cause_Analysis": 0.98,
+          "Complexity": 0.95,
+          "Architectural_Foresight": 0.9,
+          "Speed": 0.40784375000000006,
+          "Syntax_Precision": 0.45546875000000003,
+          "Constitutional": 0.45546875000000003
+        }
+      },
+      {
+        "id": "gpt-5-mini",
+        "tier": "efficient",
+        "capabilities": {
+          "Speed": 0.8078437500000001,
+          "Financial": 0.85,
+          "Human_Factor": 0.8,
+          "Syntax_Precision": 0.45546875000000003,
+          "Constitutional": 0.45546875000000003
+        }
+      }
+    ]
+  }
+}

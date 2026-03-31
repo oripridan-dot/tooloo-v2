@@ -1,10 +1,23 @@
+# 6W_STAMP
+# WHO: TooLoo V3 (Sovereign Architect)
+# WHAT: TEST_V3_1_OPTIMIZATION.PY | Version: 1.0.0 | Version: 1.0.0
+# WHERE: tooloo_v3_hub/tools/test_v3_1_optimization.py
+# WHEN: 2026-03-31T14:26:13.336904+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: tool, unmapped, initial-v3
+# PURITY: 1.00
+# ==========================================================
+
 import asyncio
 import logging
 import json
 import hashlib
 from pathlib import Path
 from tooloo_v3_hub.kernel.orchestrator import get_orchestrator
-from tooloo_v3_hub.kernel.mcp_nexus import get_nexus
+from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus
 from tooloo_v3_hub.kernel.stamping import StampingEngine
 
 logging.basicConfig(level=logging.INFO)
@@ -12,7 +25,7 @@ logger = logging.getLogger("V3.1-Verification")
 
 async def verify_optimization():
     orchestrator = get_orchestrator()
-    nexus = get_nexus()
+    nexus = get_mcp_nexus()
     bank_path = Path("tooloo_v3_hub/psyche_bank/world_model_v3.json")
     
     # 1. Capture Initial Weights (Spatial domain is index 0)

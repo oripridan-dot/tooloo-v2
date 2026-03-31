@@ -1,10 +1,14 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
-# WHAT: KERNEL_PATHWAY_B_v3.0.0 — Competitive Reasoning
+# WHAT: PATHWAY_B.PY | Version: 1.0.0 | Version: 1.0.0
 # WHERE: tooloo_v3_hub/kernel/cognitive/pathway_b.py
-# WHEN: 2026-03-29T16:45:00.000000
-# WHY: Multi-variant resolution ensures the most aligned & performant outcome
-# HOW: Parallel Async Dispatches + Weighted Scoring
+# WHEN: 2026-03-31T14:26:13.348487+00:00
+# WHY: new - no history
+# HOW: Safe Mass Saturation Pulse
+# TRUST: T3:arch-purity
+# TIER: T3:architectural-purity
+# DOMAINS: kernel, unmapped, initial-v3
+# PURITY: 1.00
 # ==========================================================
 
 import asyncio
@@ -94,8 +98,11 @@ class PathwayBManager:
             # 2. Telemetry: 6W Compliance
             variant.six_w_score = self._calculate_6w_compliance(variant.result)
             
-            # 3. Telemetry: Drift (Mocked for current implementation)
-            variant.drift_score = strategy.get("drift_bias", 0.5) 
+            # 3. [REAL_MODE] Telemetry: Drift Audit
+            # Calculate real drift based on 6W compliance and result status.
+            # Pure result (1.0 6W) with success = 0.0 drift (Perfect).
+            variant.drift_score = 1.0 - (variant.six_w_score * 0.9 + (0.1 if variant.status == "SUCCESS" else 0.0))
+            variant.drift_score = max(0.0, min(1.0, variant.drift_score))
             
             # Finalize Scoring
             variant.total_score = self._compute_score(variant)
@@ -117,7 +124,7 @@ class PathwayBManager:
         # Weight vectors
         w_latency = -0.001  # penalized high latency
         w_6w = 1.0          # rewarded compliance
-        w_drift = -2.0      # penalized drift from target (Sovereign Purity)
+        w_drift = -10.0     # penalized drift from target (Sovereign Purity)
         
         # Base score starts with 1.0
         score = 10.0 

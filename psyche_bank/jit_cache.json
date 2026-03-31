@@ -1,0 +1,67 @@
+{
+  "signals": {
+    "BUILD": {
+      "signals": [
+        "DORA metrics (deployment frequency, lead time for changes, MTTR, change failure rate) anchor engineering strategy discussions",
+        "FastAPI + Pydantic v2 are the production standard for async Python services in 2026",
+        "Feature flags (OpenFeature standard) decouple deployment from release, enabling hypothesis testing"
+      ],
+      "source": "structured",
+      "fetched_at": "2026-03-31T22:07:03.261709+00:00"
+    },
+    "DEBUG": {
+      "signals": [
+        "OpenTelemetry 2.0 with AI-powered root-cause analysis via Jaeger + Grafana is the 2026 observability standard",
+        "LLM-assisted debugging (GitHub Copilot Workspace, Cursor, Aider) reduces mean time to resolution by 60%",
+        "Flamegraph profiling (py-spy / async-profiler) localises hot paths in under 60 seconds"
+      ],
+      "source": "structured",
+      "fetched_at": "2026-03-31T22:07:03.516144+00:00"
+    },
+    "AUDIT": {
+      "signals": [
+        "OWASP Top 10 2025 edition promotes Broken Object-Level Authorisation to the #1 priority",
+        "OSS supply-chain audits (Sigstore + Rekor transparency log) are required in regulated environments",
+        "CSPM tools (Wiz, Orca, Prisma Cloud) provide real-time cloud posture scoring in 2026"
+      ],
+      "source": "structured",
+      "fetched_at": "2026-03-31T22:07:04.356964+00:00"
+    },
+    "DESIGN": {
+      "signals": [
+        "Radix UI + Tailwind CSS v4 is the dominant headless component stack for 2026 projects",
+        "WCAG 2.2 is the current accessibility compliance target; Level AA is the minimum bar",
+        "Design tokens managed via Style Dictionary v4 enable cross-platform design-system consistency"
+      ],
+      "source": "structured",
+      "fetched_at": "2026-03-31T22:07:04.605444+00:00"
+    },
+    "EXPLAIN": {
+      "signals": [
+        "Di\u00e1taxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure",
+        "Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams",
+        "LLM-generated runbooks require mandatory human review before operational use per SOX/ISO-27001"
+      ],
+      "source": "structured",
+      "fetched_at": "2026-03-31T22:07:05.336406+00:00"
+    },
+    "IDEATE": {
+      "signals": [
+        "DORA metrics (deployment frequency, lead time, MTTR, CFR) anchor engineering strategy discussions",
+        "Two-pizza team + async RFC process (Notion/Linear) is the standard ideation workflow",
+        "Feature flags (OpenFeature standard) decouple deployment from release, enabling hypothesis testing"
+      ],
+      "source": "structured",
+      "fetched_at": "2026-03-31T22:07:05.594775+00:00"
+    },
+    "SPAWN_REPO": {
+      "signals": [
+        "GitHub Actions + Dependabot + CodeQL is the baseline secure CI/CD starter pack in 2026",
+        "devcontainer.json (Dev Containers spec 2.0) ensures reproducible contributor environments",
+        "Semantic versioning + Conventional Commits enables automated CHANGELOG and release notes"
+      ],
+      "source": "structured",
+      "fetched_at": "2026-03-31T22:07:06.316297+00:00"
+    }
+  }
+}

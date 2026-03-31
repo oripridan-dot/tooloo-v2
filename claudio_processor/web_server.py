@@ -1,5 +1,31 @@
 # 6W_STAMP
 # WHO: TooLoo V3 (Sovereign Architect)
+# WHAT: MODULE_WEB_SERVER
+# WHERE: tooloo_v3_hub/organs/claudio_organ/web_server.py
+# WHEN: 2026-03-31T00:45:43.022378+00:00
+# WHY: Audio ingestion and neural processing
+# HOW: Python standard execution
+# TIER: T2:organ-integration
+# DOMAINS: organ, federated, peripheral, audio, claudio, dsp
+# NEXUS: claudio_audio_processing_v3
+# PURITY: 1.00
+# ==========================================================
+
+# 6W_STAMP
+# WHO: TooLoo V3 (Sovereign Architect)
+# WHAT: MODULE_WEB_SERVER
+# WHERE: tooloo_v3_hub/organs/claudio_organ/web_server.py
+# WHEN: 2026-03-31T00:21:44.964378+00:00
+# WHY: Audio ingestion and neural processing
+# HOW: Python standard execution
+# TIER: T2:organ-integration
+# DOMAINS: organ, federated, peripheral, audio, claudio, dsp
+# NEXUS: claudio_audio_processing_v3
+# PURITY: 1.00
+# ==========================================================
+
+# 6W_STAMP
+# WHO: TooLoo V3 (Sovereign Architect)
 # WHAT: CLAUDIO_WEB_SERVER_v3.0.0 — SSE Wrapper
 # WHERE: tooloo_v3_hub/organs/claudio_organ/web_server.py
 # WHY: Federated access to DSP synthesis
