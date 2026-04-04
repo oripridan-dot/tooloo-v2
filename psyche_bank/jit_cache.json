@@ -7,7 +7,7 @@
         "Feature flags (OpenFeature standard) decouple deployment from release, enabling hypothesis testing"
       ],
       "source": "structured",
-      "fetched_at": "2026-03-31T22:07:03.261709+00:00"
+      "fetched_at": "2026-04-02T16:11:33.448601+00:00"
     },
     "DEBUG": {
       "signals": [
@@ -16,7 +16,7 @@
         "Flamegraph profiling (py-spy / async-profiler) localises hot paths in under 60 seconds"
       ],
       "source": "structured",
-      "fetched_at": "2026-03-31T22:07:03.516144+00:00"
+      "fetched_at": "2026-04-02T16:11:33.712619+00:00"
     },
     "AUDIT": {
       "signals": [
@@ -25,7 +25,7 @@
         "CSPM tools (Wiz, Orca, Prisma Cloud) provide real-time cloud posture scoring in 2026"
       ],
       "source": "structured",
-      "fetched_at": "2026-03-31T22:07:04.356964+00:00"
+      "fetched_at": "2026-04-02T16:11:34.546000+00:00"
     },
     "DESIGN": {
       "signals": [
@@ -34,7 +34,7 @@
         "Design tokens managed via Style Dictionary v4 enable cross-platform design-system consistency"
       ],
       "source": "structured",
-      "fetched_at": "2026-03-31T22:07:04.605444+00:00"
+      "fetched_at": "2026-04-02T16:11:34.813897+00:00"
     },
     "EXPLAIN": {
       "signals": [
@@ -43,7 +43,7 @@
         "LLM-generated runbooks require mandatory human review before operational use per SOX/ISO-27001"
       ],
       "source": "structured",
-      "fetched_at": "2026-03-31T22:07:05.336406+00:00"
+      "fetched_at": "2026-04-02T16:11:35.533031+00:00"
     },
     "IDEATE": {
       "signals": [
@@ -52,7 +52,7 @@
         "Feature flags (OpenFeature standard) decouple deployment from release, enabling hypothesis testing"
       ],
       "source": "structured",
-      "fetched_at": "2026-03-31T22:07:05.594775+00:00"
+      "fetched_at": "2026-04-02T16:11:35.811723+00:00"
     },
     "SPAWN_REPO": {
       "signals": [
@@ -61,7 +61,7 @@
         "Semantic versioning + Conventional Commits enables automated CHANGELOG and release notes"
       ],
       "source": "structured",
-      "fetched_at": "2026-03-31T22:07:06.316297+00:00"
+      "fetched_at": "2026-04-02T16:11:36.522232+00:00"
     }
   }
 }

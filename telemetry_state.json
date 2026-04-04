@@ -1,0 +1,26 @@
+{
+  "purity": {
+    "purity_score": 1.0,
+    "stamped_count": 299,
+    "total_nodes": 299,
+    "unstamped": []
+  },
+  "latency": {
+    "latency_ms": 1420.17,
+    "latency_score": 0.0
+  },
+  "efficiency": {
+    "audit_overhead_ms": 0.0175,
+    "efficiency_score": 0.9965,
+    "complexity_bloat_delta": 0.0012
+  },
+  "market_parity": {
+    "parity_score": 0.176,
+    "target_latency_ms": 250.0,
+    "actual_latency_ms": 1420.17,
+    "delta_ms": 1170.17
+  },
+  "svi": 0.5843,
+  "status": "DEGRADED",
+  "timestamp": 1775257623.0773618
+}

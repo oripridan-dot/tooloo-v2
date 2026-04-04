@@ -1,0 +1,83 @@
+[
+  {
+    "round": 1,
+    "goal": "Refactor the Claudio Realtime Product root for high-throughput WebRTC GA 1.5 concurrency.",
+    "comparisons": [
+      {
+        "provider": "google",
+        "dimension": "Speed",
+        "predicted": 2.4215624999999994,
+        "actual": 1.7999999999999998,
+        "delta": -0.6215624999999996
+      },
+      {
+        "provider": "anthropic",
+        "dimension": "Speed",
+        "predicted": 2.4215624999999994,
+        "actual": 1.7999999999999998,
+        "delta": -0.6215624999999996
+      },
+      {
+        "provider": "openai",
+        "dimension": "Speed",
+        "predicted": 2.4215624999999994,
+        "actual": 1.7999999999999998,
+        "delta": -0.6215624999999996
+      }
+    ]
+  },
+  {
+    "round": 2,
+    "goal": "Harden the MCP Nexus serialization logic to ensure bit-perfect JSON transparency across all federated organs.",
+    "comparisons": [
+      {
+        "provider": "google",
+        "dimension": "Syntax_Precision",
+        "predicted": 1.9453124999999998,
+        "actual": 1.7999999999999998,
+        "delta": -0.14531249999999996
+      },
+      {
+        "provider": "anthropic",
+        "dimension": "Syntax_Precision",
+        "predicted": 1.9453124999999998,
+        "actual": 1.7999999999999998,
+        "delta": -0.14531249999999996
+      },
+      {
+        "provider": "openai",
+        "dimension": "Syntax_Precision",
+        "predicted": 1.9453124999999998,
+        "actual": 1.7999999999999998,
+        "delta": -0.14531249999999996
+      }
+    ]
+  },
+  {
+    "round": 3,
+    "goal": "Perform a recursive Constitutional Audit of the Sovereign Hub core to eliminate all Rule 11/13 violations.",
+    "comparisons": [
+      {
+        "provider": "google",
+        "dimension": "Constitutional",
+        "predicted": 1.9453124999999998,
+        "actual": 1.7999999999999998,
+        "delta": -0.14531249999999996
+      },
+      {
+        "provider": "anthropic",
+        "dimension": "Constitutional",
+        "predicted": 1.9453124999999998,
+        "actual": 1.7999999999999998,
+        "delta": -0.14531249999999996
+      },
+      {
+        "provider": "openai",
+        "dimension": "Constitutional",
+        "predicted": 1.9453124999999998,
+        "actual": 1.7999999999999998,
+        "delta": -0.14531249999999996
+      }
+    ]
+  }
+]

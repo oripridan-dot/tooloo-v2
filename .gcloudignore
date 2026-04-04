@@ -10,6 +10,32 @@ __pycache__
 .pytest_cache
 logs/
 psyche_bank/
-tests/
-studio/static/node_modules/
 uv.lock
+build/
+bin/
+*.dylib
+*.so
+audio_proofs/
+.env
+# TEMPORARILY IGNORING HEAVY AUDIO ORGANS FOR HUB STRESS DEPLOYMENT
+# 6W Grounding (Cloud Readiness)
+# Rule 11/12: Prioritize Cloud Run environment over local .env collision
+CLOUD_AUDIO_URL = os.getenv("CLOUD_AUDIO_URL", "https://claudio-supreme-sota-gru3xdvw6a-uc.a.run.app")
+LEAN_MODE = os.getenv("LEAN_MODE", "true").lower() == "true"
+
+# Federated Cloud Logic
+if os.getenv("CLOUD_NATIVE_WORKSPACE") == "true":
+    # If in cloud, we MUST have organs tethered unless explicitly overridden
+    LEAN_MODE = os.getenv("LEAN_MODE", "false").lower() == "true"
+.env
+.env.*
+claudio_processor/
+isolated_claudio_engine/
+claudio_v3/
+claudio_batch_processor
+tests/
+studio/
+archive/
+psyche_bank/
+build/
+bin/

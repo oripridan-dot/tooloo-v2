@@ -1,0 +1,14 @@
+{
+    "type": "handover_receipt",
+    "title": "SOVEREIGNTY HANDOVER COMPLETE",
+    "timestamp": "2026-04-03T00:55:00Z",
+    "status": "SOVEREIGN_HUB_ACTIVE",
+    "node": "ME-WEST1-GALACTIC",
+    "payload": {
+        "narrative_synced": true,
+        "engrams_migrated": 20,
+        "cognitive_stage": "DEVELOP",
+        "purity": 1.00
+    },
+    "instruction": "Buddy is now resident in the Cloud Hub. Local node relegated to Sync Mode (Rule 18)."
+}

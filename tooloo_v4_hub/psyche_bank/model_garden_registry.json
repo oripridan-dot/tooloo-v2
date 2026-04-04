@@ -1,0 +1,87 @@
+{
+  "timestamp": "2026-03-31T21:45:00",
+  "models": {
+    "google": [
+      {
+        "id": "gemini-1.5-pro",
+        "tier": "sovereign",
+        "task": "reasoning",
+        "cost_per_1M": 3.5,
+        "capabilities": {
+          "logic": 0.95,
+          "vision": 0.96,
+          "context": 1.0,
+          "constitutional": 0.9
+        }
+      },
+      {
+        "id": "gemini-1.5-flash",
+        "tier": "speed",
+        "task": "summarization",
+        "cost_per_1M": 0.075,
+        "capabilities": {
+          "logic": 0.85,
+          "coding": 0.82,
+          "creative": 0.7,
+          "vision": 0.9
+        }
+      }
+    ],
+    "anthropic": [
+      {
+        "id": "claude-3-5-sonnet-20240620",
+        "tier": "sovereign",
+        "task": "coding",
+        "cost_per_1M": 3.0,
+        "capabilities": {
+          "logic": 0.99,
+          "coding": 0.99,
+          "constitutional": 0.98,
+          "creative": 0.95
+        }
+      }
+    ],
+    "openai": [
+      {
+        "id": "gpt-4o",
+        "tier": "sovereign",
+        "task": "general",
+        "cost_per_1M": 5.0,
+        "capabilities": {
+          "logic": 0.97,
+          "coding": 0.95,
+          "creative": 0.98,
+          "vision": 0.99,
+          "constitutional": 0.92
+        }
+      }
+    ],
+    "meta": [
+      {
+        "id": "meta/llama3-3@llama-3.3-70b-instruct",
+        "tier": "sovereign",
+        "task": "reasoning",
+        "cost_per_1M": 0.2,
+        "capabilities": {
+          "logic": 0.93,
+          "coding": 0.88,
+          "constitutional": 0.85,
+          "efficiency": 0.98
+        }
+      },
+      {
+        "id": "llama-3-70b-instruct-v1",
+        "tier": "efficient",
+        "task": "chat",
+        "cost_per_1M": 0.2,
+        "capabilities": {
+          "logic": 0.9,
+          "coding": 0.85,
+          "creative": 0.88,
+          "vision": 0.0
+        }
+      }
+    ],
+    "mistral": []
+  }
+}

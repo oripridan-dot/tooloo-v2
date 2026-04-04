@@ -1,32 +1,42 @@
 steps:
-  # Build the container image
+  # 1. Create GCS Workspace Bucket (Rule 17: Physical Preservation)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gsutil mb -p $PROJECT_ID -l me-west1 gs://too-loo-workspace-v4-$PROJECT_ID || echo "Bucket already exists."
+
+  # 2. Build the Sovereign Hub Container
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/tooloo-v2:$_IMAGE_TAG', '.']
+    args: ['build', '-f', 'Dockerfile.hub', '-t', 'gcr.io/$PROJECT_ID/tooloo-v4-hub:$_IMAGE_TAG', '.']
   
-  # Push the container image to Container Registry
+  # 3. Push to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/tooloo-v2:$_IMAGE_TAG']
+    args: ['push', 'gcr.io/$PROJECT_ID/tooloo-v4-hub:$_IMAGE_TAG']
     
-  # Deploy to Cloud Run
+  # 4. Deploy to Cloud Run (Industrial Tier)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
-      - 'tooloo-v2'
+      - 'tooloo-v4-hub'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/tooloo-v2:$_IMAGE_TAG'
+      - 'gcr.io/$PROJECT_ID/tooloo-v4-hub:$_IMAGE_TAG'
       - '--region'
       - 'us-central1'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
       - '--memory'
-      - '1Gi'
+      - '4Gi'
       - '--cpu'
-      - '1'
+      - '4'
+      - '--timeout'
+      - '300'
       - '--set-env-vars'
-      - 'WORKSPACE_ROOT=/app,GCP_REGION=us-central1,GCP_PROJECT_ID=$PROJECT_ID,LEAN_MODE=true,STARTUP_TIMEOUT=120'
+      - 'WORKSPACE_ROOT=/app,GCP_REGION=me-west1,GCP_PROJECT_ID=$PROJECT_ID,LEAN_MODE=false,CLOUD_NATIVE_WORKSPACE=true,HUB_VERSION=4.2.0,DEFAULT_ORGAN=system_organ'
 
 images:
-  - 'gcr.io/$PROJECT_ID/tooloo-v2:$_IMAGE_TAG'
+  - 'gcr.io/$PROJECT_ID/tooloo-v4-hub:$_IMAGE_TAG'

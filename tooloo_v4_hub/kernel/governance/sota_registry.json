@@ -1,0 +1,23 @@
+{
+    "market_targets": {
+        "llm_performance": {
+            "huggingface_open_llm_top_avg": 78.5,
+            "gpt4_o_mmu": 85.0,
+            "gemini_1_5_pro_mmu": 83.2
+        },
+        "cloud_latency": {
+            "p50_ms": 250.0,
+            "p95_ms": 750.0,
+            "cold_start_limit_ms": 2500.0
+        },
+        "quality_gates": {
+            "critical_lint_limit": 0,
+            "unit_test_coverage_min": 0.85,
+            "integration_pass_rate": 1.0
+        }
+    },
+    "tooloo_current_benchmarks": {
+        "description": "Baseline metrics used for Rule 16 calibration",
+        "last_updated": "2026-04-03T16:00:00Z"
+    }
+}

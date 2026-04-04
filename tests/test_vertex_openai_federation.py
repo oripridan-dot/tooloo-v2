@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import json
-from tooloo_v3_hub.kernel.cognitive.llm_client import get_llm_client
-from tooloo_v3_hub.kernel.mcp_nexus import get_mcp_nexus
+from tooloo_v4_hub.kernel.cognitive.llm_client import get_llm_client
+from tooloo_v4_hub.kernel.mcp_nexus import get_mcp_nexus
 
 # Configure logging for bit-perfect transparency
 logging.basicConfig(level=logging.INFO)

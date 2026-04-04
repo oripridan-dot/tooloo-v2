@@ -1,0 +1,215 @@
+<!--
+6W_STAMP
+WHO: TooLoo V3 (Sovereign Architect)
+WHAT: SOVEREIGN_CHAT | Version: 1.0.0
+WHERE: tooloo_v4_hub/organs/sovereign_chat/index.html
+WHEN: 2026-03-31T21:50:00.000000
+WHY: Pivot to Logic Foundations and Developer-Centric Interaction (Rule 7)
+HOW: Minimalist 2D Premium UI (Vanilla CSS/JS)
+TIER: T3:architectural-purity
+DOMAINS: organ, interface, chat, developer, logic
+PURITY: 1.00
+TRUST: T4:zero-trust
+==========================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TooLoo V3.3 | Sovereign Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600&family=JetBrains+Mono&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --sidebar: #0a0a0a;
+            --accent: #ffcc00;
+            --buddy: #00ccff;
+            --text: #ffffff;
+            --muted: rgba(255, 255, 255, 0.4);
+            --border: rgba(255, 204, 0, 0.1);
+            --glass: rgba(10, 10, 10, 0.6);
+        }
+
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; padding: 0; background: var(--bg); color: var(--text); 
+            font-family: 'Inter', sans-serif; height: 100vh; display: flex; overflow: hidden;
+        }
+
+        /* Sidebar: System Telemetry */
+        #sidebar {
+            width: 320px; background: var(--sidebar); border-right: 1px solid var(--border);
+            padding: 40px 24px; display: flex; flex-direction: column;
+        }
+        h1 { font-family: 'Outfit'; font-size: 18px; letter-spacing: 4px; text-transform: uppercase; color: var(--accent); margin: 0 0 40px 0; }
+        
+        .stat-card { margin-bottom: 24px; }
+        .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 8px; }
+        .stat-value { font-family: 'JetBrains Mono'; font-size: 24px; color: var(--text); }
+        .stat-bar-bg { height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; width: 0%; background: var(--accent); transition: width 1s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 0 10px var(--accent); }
+
+        #system-log { 
+            margin-top: auto; font-family: 'JetBrains Mono'; font-size: 10px; color: var(--muted); 
+            max-height: 200px; overflow-y: auto; padding-top: 20px; border-top: 1px solid var(--border);
+        }
+        .log-entry { margin-bottom: 6px; }
+
+        /* Main: Chat View */
+        #main { flex: 1; display: flex; flex-direction: column; position: relative; }
+        
+        #chat-scroller { 
+            flex: 1; overflow-y: auto; padding: 100px 15% 150px 15%; 
+            display: flex; flex-direction: column; scroll-behavior: smooth;
+        }
+        
+        .message { margin-bottom: 40px; max-width: 80%; animation: fadeIn 0.4s ease-out forwards; opacity: 0; transform: translateY(10px); }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        .message.user { align-self: flex-end; text-align: right; }
+        .message.buddy { align-self: flex-start; }
+
+        .bubble { 
+            padding: 20px 30px; border-radius: 24px; font-size: 17px; line-height: 1.6;
+            background: var(--glass); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .user .bubble { background: rgba(255, 204, 0, 0.05); border-color: rgba(255, 204, 0, 0.2); }
+        .buddy .bubble { background: rgba(0, 204, 255, 0.05); border-color: rgba(0, 204, 255, 0.2); border-left: 4px solid var(--buddy); }
+
+        .meta { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 8px; }
+        code { font-family: 'JetBrains Mono'; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+        pre { 
+            background: #000; padding: 20px; border-radius: 12px; border: 1px solid var(--border); 
+            overflow-x: auto; margin: 15px 0; font-family: 'JetBrains Mono'; font-size: 14px;
+        }
+
+        /* Input Area */
+        #input-container {
+            position: absolute; bottom: 50px; left: 15%; right: 15%;
+            background: var(--sidebar); border: 1px solid var(--border);
+            border-radius: 60px; padding: 12px 30px;
+            display: flex; align-items: center; box-shadow: 0 32px 128px rgba(0,0,0,1);
+            backdrop-filter: blur(40px);
+        }
+        #chat-input {
+            background: transparent; border: none; color: #fff; font-family: 'Inter'; font-size: 18px;
+            flex: 1; outline: none; padding: 12px 0;
+        }
+        #chat-input::placeholder { color: var(--muted); }
+        
+        .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 20px; box-shadow: 0 0 10px var(--accent); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h1>Sovereign Hub</h1>
+        
+        <div class="stat-card">
+            <div class="stat-label">System Purity</div>
+            <div id="purity-val" class="stat-value">1.00</div>
+            <div class="stat-bar-bg"><div id="purity-bar" class="stat-bar-fill" style="width: 100%;"></div></div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Vitality Index</div>
+            <div id="vitality-val" class="stat-value">0.85</div>
+            <div class="stat-bar-bg"><div id="vitality-bar" class="stat-bar-fill" style="width: 85%; background: #00ff88; box-shadow: 0 0 10px #00ff88;"></div></div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Emergence Drift</div>
+            <div id="drift-val" class="stat-value">0.00</div>
+            <div class="stat-bar-bg"><div id="drift-bar" class="stat-bar-fill" style="width: 10%; background: #00ccff; box-shadow: 0 0 10px #00ccff;"></div></div>
+        </div>
+
+        <div id="system-log">
+            <div class="log-entry">> Hub Operational Reality 1.2.0 Active</div>
+            <div class="log-entry">> Formula Engine Pulse: GOOD</div>
+        </div>
+    </div>
+
+    <div id="main">
+        <div id="chat-scroller">
+            <div class="message buddy">
+                <div class="meta">Buddy · Sovereign Architect</div>
+                <div class="bubble">Greetings, Principal Architect. The Sanctuary has been simplified for maximum logic density. How shall we develop the Hub today?</div>
+            </div>
+        </div>
+
+        <div id="input-container">
+            <div class="pulse-dot"></div>
+            <input type="text" id="chat-input" placeholder="Issue a mandate or use /commands..." autocomplete="off">
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('chat-input');
+        const scroller = document.getElementById('chat-scroller');
+        const ws = new WebSocket(`ws://${window.location.host}/ws`);
+
+        function addMessage(text, role) {
+            const msg = document.createElement('div');
+            msg.className = `message ${role}`;
+            const meta = role === 'buddy' ? 'Buddy · Sovereign Architect' : 'Principal Architect';
+            
+            // Basic Markdown-ish formatting for line breaks and code
+            let formatted = text.replace(/\n/g, '<br>');
+            formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            msg.innerHTML = `
+                <div class="meta">${meta}</div>
+                <div class="bubble">${formatted}</div>
+            `;
+            scroller.appendChild(msg);
+            scroller.scrollTop = scroller.scrollHeight;
+        }
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const val = input.value.trim();
+                if (!val) return;
+                
+                addMessage(val, 'user');
+                ws.send(JSON.stringify({ type: "user_chat", message: val }));
+                input.value = '';
+            }
+        });
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'buddy_chat') {
+                addMessage(data.response, 'buddy');
+            } else if (data.type === 'status_update') {
+                const log = document.getElementById('system-log');
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.innerText = `> ${data.status}`;
+                log.prepend(entry);
+                if (log.childElementCount > 20) log.removeChild(log.lastChild);
+            } else if (data.type === 'pose_update') {
+                 // Map telemetry to Sidebar
+                 if (data.vitality_index) {
+                     document.getElementById('vitality-val').innerText = data.vitality_index.toFixed(2);
+                     document.getElementById('vitality-bar').style.width = (data.vitality_index * 100) + '%';
+                     document.getElementById('purity-val').innerText = data.purity.toFixed(2);
+                     document.getElementById('purity-bar').style.width = (data.purity * 100) + '%';
+                     document.getElementById('drift-val').innerText = data.drift.toFixed(4);
+                     document.getElementById('drift-bar').style.width = (Math.abs(data.drift) * 500) + '%';
+                 }
+            }
+        };
+
+        ws.onopen = () => console.log("Sovereign Link: ESTABLISHED");
+        ws.onclose = () => console.warn("Sovereign Link: LOST");
+    </script>
+</body>
+</html>

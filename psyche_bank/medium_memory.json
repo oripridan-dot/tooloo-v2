@@ -1,0 +1,3042 @@
+{
+  "file_tooloo_v4_hub_tools_manifest_unifier_v1_0_1.py_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tools/manifest_unifier_v1_0_1.py",
+      "chunk_index": 0,
+      "total_chunks": 2,
+      "text": "# 6W_STAMP\n# WHO: TooLoo V3 (Ouroboros Sentinel)\n# WHAT: HEALED_MANIFEST_UNIFIER.PY | Version: 1.0.1 | Version: 1.0.1\n# WHERE: tooloo_v4_hub/tools/manifest_unifier.py\n# WHEN: 2026-04-03T21:23:03.969682+00:00\n# WHY: Heal STAMP_PURITY_MISSING and maintain architectural purity\n# HOW: Ouroboros Non-Destructive Saturation\n# TRUST: T3:arch-purity\n# PURITY: 1.00\n# ==========================================================\n\nimport json\nimport os\nfrom pathlib import Path\n\ndef run_unifier():\n    psyche_path = Path(\"tooloo_v4_hub/psyche_bank\")\n    system_manifest_path = psyche_path / \"system_manifest.json\"\n    \n    if not system_manifest_path.exists():\n        print(\"ERROR: system_manifest.json missing. Cannot unify.\")\n        return",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MANIFEST_UNIFIER.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tools/manifest_unifier.py",
+        "when": "2026-04-03T21:23:03.969682+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.077837+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.077833"
+    }
+  },
+  "file_tooloo_v4_hub_tools_manifest_unifier_v1_0_1.py_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tools/manifest_unifier_v1_0_1.py",
+      "chunk_index": 1,
+      "total_chunks": 2,
+      "text": "# 1. Load the Core Manifest\n    manifest = json.loads(system_manifest_path.read_text())\n    \n    # 2. Add sub-trees for design and sovereignty\n    sources = {\n        \"sovereignty\": psyche_path / \"sovereignty_manifest_v3.json\",\n        \"navigation\": psyche_path / \"navigation_index.json\",\n        \"principles\": psyche_path / \"design_principles.json\"\n    }\n    \n    for key, path in sources.items():\n        if path.exists():\n            try:\n                data = json.loads(path.read_text())\n                manifest[\"nodes\"][f\"psyche_bank/{path.name}\"] = {\n                    \"id\": f\"psyche_bank/{path.name}\",\n                    \"type\": \"manifest_fragment\",\n                    \"status\": \"Migrated\",\n                    \"data\": data,\n                    \"last_updated\": os.path.getmtime(path)\n                }\n                print(f\"\u2705 Migrated -> {path.name}\")\n                # os.remove(path) # Wait for verification before deleting\n            except Exception as e:\n                print(f\"FAILED to migrate {path.name}: {e}\")\n\n    # 3. Update Meta\n    manifest[\"meta\"][\"status\"] = \"UNIFIED\"\n    manifest[\"meta\"][\"fragmentation_purity\"] = 1.0\n\n    # 4. Save\n    system_manifest_path.write_text(json.dumps(manifest, indent=2))\n    print(f\"Manifest Unification Complete. Unified {len(sources)} fragments into {system_manifest_path.name}.\")\n\nif __name__ == \"__main__\":\n    run_unifier()",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MANIFEST_UNIFIER.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tools/manifest_unifier.py",
+        "when": "2026-04-03T21:23:03.969682+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.077888+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.077887"
+    }
+  },
+  "file_tooloo_v4_hub_tools_cloud_transition_v1_0_1.py_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tools/cloud_transition_v1_0_1.py",
+      "chunk_index": 0,
+      "total_chunks": 3,
+      "text": "# 6W_STAMP\n# WHO: TooLoo V3 (Ouroboros Sentinel)\n# WHAT: HEALED_CLOUD_TRANSITION.PY | Version: 1.0.1 | Version: 1.0.1\n# WHERE: tooloo_v4_hub/tools/cloud_transition.py\n# WHEN: 2026-04-03T21:23:03.974399+00:00\n# WHY: Heal STAMP_PURITY_MISSING and maintain architectural purity\n# HOW: Ouroboros Non-Destructive Saturation\n# TRUST: T3:arch-purity\n# PURITY: 1.00\n# ==========================================================\n\nimport asyncio\nimport os\nimport json\nimport httpx\nimport logging\nfrom pathlib import Path\nfrom tooloo_v4_hub.kernel.cognitive.narrative_ledger import get_narrative_ledger\nfrom tooloo_v4_hub.kernel.cognitive.cognitive_registry import get_cognitive_registry\nfrom tooloo_v4_hub.kernel.mcp_nexus import get_mcp_nexus\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(\"CloudTransition\")",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_CLOUD_TRANSITION.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tools/cloud_transition.py",
+        "when": "2026-04-03T21:23:03.974399+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.081134+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.081130"
+    }
+  },
+  "file_tooloo_v4_hub_tools_cloud_transition_v1_0_1.py_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tools/cloud_transition_v1_0_1.py",
+      "chunk_index": 1,
+      "total_chunks": 3,
+      "text": "async def perform_handover():\n    # 1. Configuration\n    CLOUD_HUB_URL = os.getenv(\"CLOUD_HUB_URL\", \"https://tooloo-sovereign-hub-gru3xdvw6a-uc.a.run.app\")\n    SOVEREIGN_KEY = os.getenv(\"SOVEREIGN_KEY\", \"SOVEREIGN_HUB_2026_V3\")\n    \n    logger.info(f\"Initiating Sovereign Handover to: {CLOUD_HUB_URL}\")\n    \n    # 2. Gather Narrative\n    ledger = get_narrative_ledger()\n    narrative_data = {\n        \"milestones\": [m.__dict__ for m in ledger.milestones]\n    }\n    \n    # 3. Gather Cognitive State\n    registry = get_cognitive_registry()\n    state = registry.get_state(\"default\")\n    cognitive_data = {\n        \"intent_vector\": state.intent_vector,\n        \"stage\": state.stage,\n        \"cognitive_load\": state.cognitive_load,\n        \"resonance\": state.resonance\n    }\n    \n    # 4. Gather Recent Engrams\n    nexus = get_mcp_nexus()\n    engrams = []\n    try:\n        # Get last 20 engrams\n        engrams = await nexus.call_tool(\"memory_organ\", \"memory_query\", {\"query\": \"\", \"top_k\": 20})\n    except Exception as e:\n        logger.warning(f\"Failed to gather engrams: {e}\")",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_CLOUD_TRANSITION.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tools/cloud_transition.py",
+        "when": "2026-04-03T21:23:03.974399+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.081183+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.081182"
+    }
+  },
+  "file_tooloo_v4_hub_tools_cloud_transition_v1_0_1.py_chunk_2": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tools/cloud_transition_v1_0_1.py",
+      "chunk_index": 2,
+      "total_chunks": 3,
+      "text": "# 5. Build Payload\n    payload = {\n        \"narrative\": narrative_data,\n        \"cognitive_state\": cognitive_data,\n        \"engrams\": engrams,\n        \"session_id\": \"default\",\n        \"sovereignty_takeover\": True  # Rule 18: Primary Developer Pulse\n    }\n    \n    # 6. Dispatch Pulse\n    async with httpx.AsyncClient(timeout=60.0) as client:\n        try:\n            response = await client.post(\n                f\"{CLOUD_HUB_URL}/context/sync\",\n                json=payload,\n                headers={\"X-Sovereign-Key\": SOVEREIGN_KEY}\n            )\n            \n            if response.status_code == 200:\n                logger.info(\"Transition Pulse: SUCCESS. Context is now persistent in the Cloud Hub.\")\n                print(\"\\n[HANDOVER COMPLETE] Rule 18 Manifested.\")\n                print(f\"Cloud Hub URL: {CLOUD_HUB_URL}\")\n                print(\"Buddy is now the Primary Developer in the Cloud.\")\n            else:\n                logger.error(f\"Transition Pulse: FAILED ({response.status_code}). Detail: {response.text}\")\n                \n        except Exception as e:\n            logger.error(f\"Communication Failure: {e}\")\n\n\nif __name__ == \"__main__\":\n    asyncio.run(perform_handover())",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_CLOUD_TRANSITION.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tools/cloud_transition.py",
+        "when": "2026-04-03T21:23:03.974399+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.081233+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.081232"
+    }
+  },
+  "file_tooloo_v4_hub_tools_cloud_sync_back_v1_0_1.py_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tools/cloud_sync_back_v1_0_1.py",
+      "chunk_index": 0,
+      "total_chunks": 3,
+      "text": "# 6W_STAMP\n# WHO: TooLoo V3 (Ouroboros Sentinel)\n# WHAT: HEALED_CLOUD_SYNC_BACK.PY | Version: 1.0.1 | Version: 1.0.1\n# WHERE: tooloo_v4_hub/tools/cloud_sync_back.py\n# WHEN: 2026-04-03T21:23:03.975833+00:00\n# WHY: Heal STAMP_PURITY_MISSING and maintain architectural purity\n# HOW: Ouroboros Non-Destructive Saturation\n# TRUST: T3:arch-purity\n# PURITY: 1.00\n# ==========================================================\n\nimport asyncio\nimport os\nimport httpx\nimport logging\nimport json\nfrom tooloo_v4_hub.kernel.cognitive.narrative_ledger import get_narrative_ledger\nfrom tooloo_v4_hub.kernel.cognitive.cognitive_registry import get_cognitive_registry\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(\"CloudSyncBack\")",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_CLOUD_SYNC_BACK.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tools/cloud_sync_back.py",
+        "when": "2026-04-03T21:23:03.975833+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.085240+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.085235"
+    }
+  },
+  "file_tooloo_v4_hub_tools_cloud_sync_back_v1_0_1.py_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tools/cloud_sync_back_v1_0_1.py",
+      "chunk_index": 1,
+      "total_chunks": 3,
+      "text": "async def perform_sync_back():\n    # 1. Configuration\n    CLOUD_HUB_URL = os.getenv(\"CLOUD_HUB_URL\", \"https://tooloo-sovereign-hub-gru3xdvw6a-uc.a.run.app\")\n    SOVEREIGN_KEY = os.getenv(\"SOVEREIGN_KEY\", \"SOVEREIGN_HUB_2026_V3\")\n    \n    logger.info(f\"Syncing back from Cloud Hub: {CLOUD_HUB_URL}\")\n    \n    # 2. Pull Pulse\n    async with httpx.AsyncClient(timeout=30.0) as client:\n        try:\n            response = await client.get(\n                f\"{CLOUD_HUB_URL}/psyche/pull\",\n                headers={\"X-Sovereign-Key\": SOVEREIGN_KEY}\n            )\n            \n            if response.status_code == 200:\n                data = response.json()\n                logger.info(\"Cloud Psyche Pulled: SUCCESS.\")\n                \n                # 3. Update Narrative Ledger\n                ledger = get_narrative_ledger()\n                for m in data.get(\"narrative\", {}).get(\"milestones\", []):\n                    ledger.record_milestone(\n                        id=m[\"id\"], \n                        title=m[\"title\"], \n                        description=m[\"description\"],\n                        purity=m.get(\"purity_impact\", 0.0),\n                        tags=m.get(\"tags\", [])\n                    )\n                \n                # 4. Update Cognitive State\n                registry = get_cognitive_registry()\n                state = registry.get_state(\"default\")\n                cs = data.get(\"cognitive_state\", {})\n                state.intent_vector = cs.get(\"intent_vector\", state.intent_vector)\n                state.stage = cs.get(\"stage\", state.stage)\n                state.cognitive_load = cs.get(\"cognitive_load\", state.cognitive_load)\n                state.resonance = cs.get(\"resonance\", state.resonance)\n                \n                logger.info(f\"Local Node Synchronized. Stage: {state.stage} | Purity: 1.00\")\n                print(f\"\\n[SYNC COMPLETE] Rule 18 Alignment: PERFECT.\")\n            else:\n                logger.error(f\"Sync Back Pulse: FAILED ({response.status_code}).\")\n                \n        except Exception as e:\n            logger.error(f\"Communication Failure: {e}\")",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_CLOUD_SYNC_BACK.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tools/cloud_sync_back.py",
+        "when": "2026-04-03T21:23:03.975833+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.085287+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.085285"
+    }
+  },
+  "file_tooloo_v4_hub_tools_cloud_sync_back_v1_0_1.py_chunk_2": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tools/cloud_sync_back_v1_0_1.py",
+      "chunk_index": 2,
+      "total_chunks": 3,
+      "text": "if __name__ == \"__main__\":\n    asyncio.run(perform_sync_back())",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_CLOUD_SYNC_BACK.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tools/cloud_sync_back.py",
+        "when": "2026-04-03T21:23:03.975833+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.085351+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.085350"
+    }
+  },
+  "file_tooloo_v4_hub_portal_index_v1_0_1.html_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/index_v1_0_1.html",
+      "chunk_index": 0,
+      "total_chunks": 4,
+      "text": "<!--\n6W_STAMP\nWHO: TooLoo V3 (Ouroboros Sentinel)\nWHAT: HEALED_INDEX.HTML | Version: 1.0.1 | Version: 1.0.1\nWHERE: tooloo_v4_hub/portal/index.html\nWHEN: 2026-04-03T21:23:03.976969+00:00\nWHY: Heal STAMP_MISSING and maintain architectural purity\nHOW: Ouroboros Non-Destructive Saturation\nTRUST: T3:arch-purity\nPURITY: 1.00\n==========================================================\n-->",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_INDEX.HTML | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/index.html",
+        "when": "2026-04-03T21:23:03.976969+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.090524+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.090520"
+    }
+  },
+  "file_tooloo_v4_hub_portal_index_v1_0_1.html_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/index_v1_0_1.html",
+      "chunk_index": 1,
+      "total_chunks": 4,
+      "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>TooLoo V4 | Sovereign Dashboard</title>\n    <link rel=\"stylesheet\" href=\"/portal/style.css\">\n    <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">\n</head>\n<body class=\"sovereign-v4\">\n    <!-- Sovereign HUD (Rule 2/16: Real-time Awareness) -->\n    <header id=\"sovereign-hud\">\n        <div class=\"hud-left\">\n            <span class=\"hub-v-stamp\">TooLoo Sovereign</span>\n            <div id=\"hub-health-pulse\" class=\"online\"></div>\n        </div>\n        <div class=\"hud-center\">\n            <div class=\"hud-item\" id=\"stage-pill\">\n                <span id=\"tel-stage\" class=\"hud-value\">CHAT</span>\n            </div>\n            <div class=\"hud-item separator\"></div>\n            <div class=\"hud-item\">\n                <span class=\"hud-label\">PURITY</span>\n                <span id=\"tel-purity\" class=\"hud-value small\">1.00</span>\n            </div>\n            <div class=\"hud-item\">\n                <span class=\"hud-label\">VITALITY</span>\n                <span id=\"tel-vitality\" class=\"hud-value small\">1.00</span>\n            </div>\n            <div class=\"hud-item\">\n                <span class=\"hud-label\">COST</span>\n                <span id=\"tel-cost\" class=\"hud-value small\">$0.00</span>\n            </div>\n        </div>\n        <div class=\"hud-right\">\n            <span id=\"tel-story\" class=\"hud-label-wide\">Story: Genesis</span>\n        </div>\n    </header>",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_INDEX.HTML | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/index.html",
+        "when": "2026-04-03T21:23:03.976969+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.090555+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.090554"
+    }
+  },
+  "file_tooloo_v4_hub_portal_index_v1_0_1.html_chunk_2": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/index_v1_0_1.html",
+      "chunk_index": 2,
+      "total_chunks": 4,
+      "text": "<main class=\"zen-container\">\n        <!-- Single Column Chat Focus -->\n        <section class=\"chat-portal\">\n            <div id=\"chat-messages\" class=\"message-stream\">\n                <!-- Messages manifest here -->\n            </div>\n            <!-- Sovereign Promptbar (Rule 7: UX Supremacy) -->\n            <div id=\"sovereign-promptbar\" class=\"promptbar-floating\">\n                <div class=\"promptbar-glass\">\n                    <div id=\"handover-track\" class=\"handover-track hidden\">\n                        <div id=\"handover-progress\" class=\"handover-progress-fill\"></div>\n                    </div>\n                    \n                    <div class=\"promptbar-inner\">\n                        <div class=\"promptbar-status-pulse\">\n                            <div id=\"input-dynamics\" class=\"status-chip\">DYNAMICS_READY</div>\n                            <div id=\"active-mission-id\" class=\"status-chip hidden\">MISSION: NONE</div>\n                        </div>\n                        \n                        <div class=\"input-wrapper\">\n                            <textarea id=\"chat-input\" placeholder=\"Issue a sovereign mandate...\" rows=\"1\" spellcheck=\"false\"></textarea>\n                            <button id=\"send-btn\" class=\"send-trigger-v2\">\n                                <svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                    <path d=\"M7 11L12 6L17 11M12 18V7\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n                                </svg>\n                            </button>\n                        </div>\n                    </div>\n                    \n                    <!-- Path Selection Overlay (Rule 7: Choice UX) -->\n                    <div id=\"path-selection-overlay\" class=\"path-selection-overlay hidden\">\n                        <header class=\"overlay-hdr\">SELECT ARCHITECTURAL PATH</header>\n                        <div id=\"path-cards-container\" class=\"path-cards-container\"></div>\n                    </div>\n                </div>\n            </div>\n        </section>\n        \n        <!-- North Star Dashboard (Rule 1: Autonomous Planner UI) -->\n        <aside id=\"north-star-dashboard\" class=\"north-star-panel\">\n            <header class=\"ns-header\">\n                <span class=\"ns-tag\">NORTH_STAR</span>\n                <button id=\"stash-pivot-btn\" title=\"Stash and Pivot\">\n                    <svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                        <path d=\"M12 4V20M12 4L8 8M12 4L16 8\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n                    </svg>\n                </button>\n            </header>\n            \n            <div class=\"ns-content\">\n                <div class=\"ns-section\">\n                    <label>MACRO_GOAL</label>\n                    <div id=\"ns-macro-goal\" class=\"ns-value editable\" contenteditable=\"true\">Initial Mission</div>\n                </div>\n                \n                <div class=\"ns-section highlighted\">\n                    <label>CURRENT_FOCUS</label>\n                    <div id=\"ns-current-focus\" class=\"ns-value editable\" contenteditable=\"true\">System Setup</div>\n                </div>\n                \n                <div class=\"ns-section\">\n                    <label>THE_ROADMAP</label>\n                    <ul id=\"ns-micro-goals\" class=\"ns-list\">\n                        <!-- Goals populated here -->\n                    </ul>\n                </div>\n                \n                <div class=\"ns-section\">\n                    <label>MILESTONES</label>\n                    <ul id=\"ns-milestones\" class=\"ns-list dimmed\">\n                        <!-- Milestones populated here -->\n                    </ul>\n                </div>\n            </div>\n            \n            <footer class=\"ns-footer\">\n                <div id=\"ns-sync-status\" class=\"syncing\">SYNCING...</div>\n            </footer>\n        </aside>\n        \n        <!-- Manifestation Sandbox (Rule 7: Real-time Visualization) -->\n        <div id=\"manifestation-sandbox\" class=\"manifestation-overlay hidden\">\n            <div class=\"sandbox-hdr\">\n                <span>SOVEREIGN_VISUAL_MANIFEST</span>\n                <button id=\"close-sandbox\">\u00d7</button>\n            </div>\n            <div id=\"sandbox-content\"></div>\n        </div>\n    </main>",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_INDEX.HTML | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/index.html",
+        "when": "2026-04-03T21:23:03.976969+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.090606+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.090604"
+    }
+  },
+  "file_tooloo_v4_hub_portal_index_v1_0_1.html_chunk_3": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/index_v1_0_1.html",
+      "chunk_index": 3,
+      "total_chunks": 4,
+      "text": "<!-- Shard Drawer (Hidden by default, reveals on demand) -->\n    <div id=\"shard-tray\" class=\"shard-collection-drawer hidden\"></div>\n\n    <!-- Handover Overlay (Rule 18: Silent Cinematic) -->\n    <div id=\"handover-overlay\" class=\"handover-overlay-silent hidden\">\n        <div class=\"handover-content\">\n            <h2 class=\"handover-title\">SOVEREIGNTY HANDOVER</h2>\n            <p class=\"handover-msg\">Migrating Psyche to Cloud Hub...</p>\n        </div>\n    </div>\n\n\n    <!-- Template for SOTA Shards -->\n    <template id=\"sota-shard\">\n        <div class=\"shard-weave\">\n            <header class=\"shard-hdr\">\n                <span class=\"shard-tag\">SOTA</span>\n                <span class=\"shard-category\"></span>\n            </header>\n            <div class=\"shard-text\"></div>\n            <footer class=\"shard-footer\">\n                <span class=\"shard-time\"></span>\n            </footer>\n        </div>\n    </template>\n\n    <script src=\"/portal/app.js\"></script>\n</body>\n</html>",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_INDEX.HTML | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/index.html",
+        "when": "2026-04-03T21:23:03.976969+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.090731+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.090730"
+    }
+  },
+  "file_tooloo_v4_hub_portal_style_v1_0_1.css_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/style_v1_0_1.css",
+      "chunk_index": 0,
+      "total_chunks": 9,
+      "text": "/*\n * 6W_STAMP\n * WHO: TooLoo V3 (Ouroboros Sentinel)\n * WHAT: HEALED_STYLE.CSS | Version: 1.0.1 | Version: 1.0.1\n * WHERE: tooloo_v4_hub/portal/style.css\n * WHEN: 2026-04-03T21:23:03.978392+00:00\n * WHY: Heal STAMP_MISSING and maintain architectural purity\n * HOW: Ouroboros Non-Destructive Saturation\n * TRUST: T3:arch-purity\n * PURITY: 1.00\n * ==========================================================\n */\n\n:root {\n    --zen-bg: hsl(230, 25%, 3%);\n    --zen-surface: hsla(230, 20%, 6%, 0.8);\n    --zen-border: hsla(230, 10%, 40%, 0.1);\n    --text-primary: hsl(230, 15%, 95%);\n    --text-secondary: hsl(230, 10%, 55%);\n    \n    --accent-blue: hsl(190, 80%, 55%);\n    --accent-cyan: hsl(175, 80%, 50%);\n    --accent-amber: hsl(35, 90%, 55%);\n    \n    --font-ui: 'Outfit', 'Inter', sans-serif;\n    --font-code: 'JetBrains Mono', monospace;\n    --hud-height: 40px;\n    \n    --vibe-color: var(--accent-blue);\n}\n\n/* Base Zen Styles */\n* { box-sizing: border-box; margin: 0; padding: 0; outline: none; }\n\nbody {\n    background: var(--zen-bg);\n    color: var(--text-primary);\n    font-family: var(--font-ui);\n    height: 100vh;\n    overflow: hidden;\n}\n\n#sovereign-hud {\n    height: var(--hud-height);\n    width: 100%;\n    background: var(--zen-surface);\n    border-bottom: 1px solid var(--zen-border);\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding: 0 1.5rem;\n    position: fixed;\n    top: 0;\n    z-index: 1000;\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_STYLE.CSS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/style.css",
+        "when": "2026-04-03T21:23:03.978392+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.097532+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.097527"
+    }
+  },
+  "file_tooloo_v4_hub_portal_style_v1_0_1.css_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/style_v1_0_1.css",
+      "chunk_index": 1,
+      "total_chunks": 9,
+      "text": ".hub-v-stamp { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1rem; }\n#hub-health-pulse { width: 6px; height: 6px; background: var(--accent-cyan); border-radius: 50%; box-shadow: 0 0 5px var(--accent-cyan); display: inline-block; margin-left: 0.5rem; }\n\n.hud-center { display: flex; align-items: center; gap: 1.5rem; }\n.hud-item { display: flex; align-items: center; gap: 0.5rem; }\n.separator { width: 1px; height: 12px; background: var(--zen-border); }\n\n.hud-label { font-size: 0.55rem; color: var(--text-secondary); font-weight: 700; }\n.hud-value { font-family: var(--font-code); font-size: 0.8rem; color: var(--text-primary); }\n.hud-value.small { font-size: 0.7rem; }\n\n.hud-right { font-size: 0.65rem; color: var(--text-secondary); }\n\n/* Zen Container */\n.zen-container {\n    position: relative;\n    height: 100vh;\n    padding-top: var(--hud-height);\n    display: flex;\n    justify-content: center;\n    padding-right: 320px; /* Room for North Star */\n}\n\n.chat-portal {\n    width: 100%;\n    max-width: 800px;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n    border-left: 1px solid var(--zen-border);\n    border-right: 1px solid var(--zen-border);\n    background: hsla(230, 25%, 2%, 0.3);\n}\n\n.message-stream {\n    flex-grow: 1;\n    overflow-y: auto;\n    padding: 3rem 2rem;\n    scrollbar-width: thin;\n    scrollbar-color: var(--zen-border) transparent;\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_STYLE.CSS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/style.css",
+        "when": "2026-04-03T21:23:03.978392+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.097633+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.097630"
+    }
+  },
+  "file_tooloo_v4_hub_portal_style_v1_0_1.css_chunk_2": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/style_v1_0_1.css",
+      "chunk_index": 2,
+      "total_chunks": 9,
+      "text": ".message { margin-bottom: 2.5rem; animation: fadeIn 0.3s ease-out; }\n.meta { font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.8rem; }\n.buddy-entry .meta { color: var(--vibe-color); }\n.user-entry .meta { justify-content: flex-end; }\n.content { font-size: 1rem; line-height: 1.5; font-weight: 400; color: var(--text-primary); }\n.user-entry .content { text-align: right; opacity: 0.8; }\n\n/* Sovereign Promptbar (Rule 7: UX Supremacy) */\n.promptbar-floating {\n    position: fixed;\n    bottom: 2rem;\n    left: 50%;\n    transform: translateX(-50%);\n    width: calc(100% - 4rem);\n    max-width: 800px;\n    z-index: 2500;\n    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n/* Compensate for North Star Panel */\n.zen-container:has(#north-star-dashboard:not(.hidden)) .promptbar-floating {\n    left: calc(50% - 160px);\n}\n\n.promptbar-glass {\n    background: hsla(230, 25%, 4%, 0.75);\n    backdrop-filter: blur(24px) saturate(180%);\n    -webkit-backdrop-filter: blur(24px) saturate(180%);\n    border: 1px solid hsla(230, 10%, 50%, 0.2);\n    border-radius: 20px;\n    padding: 0.75rem 0.75rem 0.75rem 1.25rem;\n    box-shadow: \n        0 10px 30px -10px rgba(0,0,0,0.5),\n        0 0 0 1px hsla(230, 10%, 50%, 0.05),\n        inset 0 0 20px hsla(230, 10%, 100%, 0.02);\n    display: flex;\n    flex-direction: column;\n    gap: 0.5rem;\n    position: relative;\n    overflow: hidden;\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_STYLE.CSS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/style.css",
+        "when": "2026-04-03T21:23:03.978392+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.097720+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.097717"
+    }
+  },
+  "file_tooloo_v4_hub_portal_style_v1_0_1.css_chunk_3": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/style_v1_0_1.css",
+      "chunk_index": 3,
+      "total_chunks": 9,
+      "text": ".promptbar-glass::before {\n    content: \"\";\n    position: absolute;\n    top: 0; left: 0; right: 0; height: 1px;\n    background: linear-gradient(90deg, transparent, hsla(230, 10%, 100%, 0.1), transparent);\n}\n\n.promptbar-status-pulse {\n    display: flex;\n    gap: 0.75rem;\n    margin-bottom: 0.25rem;\n}\n\n.status-chip {\n    font-family: var(--font-code);\n    font-size: 0.55rem;\n    font-weight: 700;\n    letter-spacing: 0.05rem;\n    color: var(--text-secondary);\n    opacity: 0.6;\n    text-transform: uppercase;\n}\n\n.status-chip#input-dynamics { color: var(--vibe-color); opacity: 1; text-shadow: 0 0 10px var(--vibe-color); }\n\n.input-wrapper {\n    display: flex;\n    align-items: flex-end;\n    gap: 1rem;\n}\n\n#chat-input {\n    flex-grow: 1;\n    background: transparent;\n    border: none;\n    padding: 0.5rem 0;\n    color: var(--text-primary);\n    font-family: var(--font-ui);\n    font-size: 1.05rem;\n    font-weight: 400;\n    line-height: 1.5;\n    resize: none;\n    max-height: 200px;\n}\n\n#chat-input::placeholder {\n    color: var(--text-secondary);\n    opacity: 0.4;\n}\n\n.send-trigger-v2 {\n    width: 36px;\n    height: 36px;\n    min-width: 36px;\n    background: var(--zen-border);\n    border: none;\n    border-radius: 12px;\n    color: var(--text-secondary);\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);\n    margin-bottom: 2px;\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_STYLE.CSS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/style.css",
+        "when": "2026-04-03T21:23:03.978392+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.097803+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.097801"
+    }
+  },
+  "file_tooloo_v4_hub_portal_style_v1_0_1.css_chunk_4": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/style_v1_0_1.css",
+      "chunk_index": 4,
+      "total_chunks": 9,
+      "text": ".send-trigger-v2:hover {\n    background: var(--vibe-color);\n    color: var(--zen-bg);\n    transform: translateY(-2px) scale(1.05);\n    box-shadow: 0 5px 15px var(--vibe-color);\n}\n\n.send-trigger-v2 svg { width: 18px; height: 18px; }\n\n/* Handover Track (Inside Glass) */\n.handover-track {\n    position: absolute;\n    top: 0; left: 0; right: 0;\n    height: 2px;\n    background: transparent;\n    overflow: hidden;\n}\n\n.handover-progress-fill {\n    height: 100%;\n    background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));\n    width: 0%;\n    transition: width 0.3s ease;\n}\n\n/* Atmosphere System */\nbody.atmosphere-chat { --vibe-color: var(--accent-blue); }\nbody.atmosphere-design { --vibe-color: var(--accent-cyan); }\nbody.atmosphere-develop { --vibe-color: var(--accent-amber); }\n\n/* Handover Silent Overlay */\n.handover-overlay-silent {\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    background: rgba(0,0,0,0.85);\n    backdrop-filter: blur(10px);\n    z-index: 5000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    animation: fadeIn 0.5s ease;\n}\n.handover-title { font-size: 1rem; letter-spacing: 0.3rem; margin-bottom: 0.5rem; opacity: 0.9; }\n.handover-msg { font-size: 0.8rem; color: var(--text-secondary); }\n\n@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }\n.hidden { display: none !important; }",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_STYLE.CSS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/style.css",
+        "when": "2026-04-03T21:23:03.978392+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.097867+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.097866"
+    }
+  },
+  "file_tooloo_v4_hub_portal_style_v1_0_1.css_chunk_5": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/style_v1_0_1.css",
+      "chunk_index": 5,
+      "total_chunks": 9,
+      "text": "/* Manifestation Sandbox (Rule 7) */\n.manifestation-overlay {\n    position: absolute;\n    top: 5rem;\n    right: 2rem;\n    width: 400px;\n    max-height: 70vh;\n    background: var(--zen-surface);\n    backdrop-filter: blur(20px);\n    border: 1px solid var(--zen-border);\n    border-radius: 12px;\n    box-shadow: 0 20px 40px rgba(0,0,0,0.4);\n    z-index: 2000;\n    display: flex;\n    flex-direction: column;\n    overflow: hidden;\n    animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.sandbox-hdr {\n    padding: 0.75rem 1rem;\n    background: hsla(230, 20%, 10%, 0.5);\n    border-bottom: 1px solid var(--zen-border);\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n    font-size: 0.65rem;\n    font-weight: 700;\n    color: var(--vibe-color);\n    letter-spacing: 0.1rem;\n}\n\n#close-sandbox {\n    background: none;\n    border: none;\n    color: var(--text-secondary);\n    font-size: 1.2rem;\n    cursor: pointer;\n    line-height: 1;\n}\n\n#sandbox-content {\n    padding: 1.5rem;\n    overflow-y: auto;\n    font-size: 0.9rem;\n    color: var(--text-primary);\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_STYLE.CSS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/style.css",
+        "when": "2026-04-03T21:23:03.978392+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.097939+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.097938"
+    }
+  },
+  "file_tooloo_v4_hub_portal_style_v1_0_1.css_chunk_6": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/style_v1_0_1.css",
+      "chunk_index": 6,
+      "total_chunks": 9,
+      "text": "@keyframes slideIn {\n    from { opacity: 0; transform: translateX(20px); }\n    to { opacity: 1; transform: translateX(0); }\n}\n/* North Star Dashboard (Rule 1) */\n.north-star-panel {\n    position: absolute;\n    top: var(--hud-height);\n    right: 0;\n    width: 320px;\n    height: calc(100vh - var(--hud-height));\n    background: hsla(230, 25%, 5%, 0.6);\n    backdrop-filter: blur(15px);\n    border-left: 1px solid var(--zen-border);\n    display: flex;\n    flex-direction: column;\n    z-index: 1500;\n    animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.ns-header {\n    padding: 1.5rem;\n    display: flex;\n    justify-content: space-between;\n    align-items: center;\n    border-bottom: 1px solid var(--zen-border);\n}\n\n.ns-tag {\n    font-size: 0.6rem;\n    font-weight: 800;\n    color: var(--vibe-color);\n    letter-spacing: 0.2rem;\n}\n\n#stash-pivot-btn {\n    background: var(--zen-border);\n    border: none;\n    width: 24px;\n    height: 24px;\n    border-radius: 4px;\n    color: var(--text-secondary);\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.3s ease;\n}\n\n#stash-pivot-btn:hover {\n    background: var(--vibe-color);\n    color: var(--zen-bg);\n}\n\n#stash-pivot-btn svg { width: 14px; height: 14px; }\n\n.ns-content {\n    flex-grow: 1;\n    overflow-y: auto;\n    padding: 1.5rem;\n    display: flex;\n    flex-direction: column;\n    gap: 2rem;\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_STYLE.CSS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/style.css",
+        "when": "2026-04-03T21:23:03.978392+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.097988+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.097987"
+    }
+  },
+  "file_tooloo_v4_hub_portal_style_v1_0_1.css_chunk_7": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/style_v1_0_1.css",
+      "chunk_index": 7,
+      "total_chunks": 9,
+      "text": ".ns-section label {\n    display: block;\n    font-size: 0.5rem;\n    font-weight: 800;\n    color: var(--text-secondary);\n    margin-bottom: 0.75rem;\n    letter-spacing: 0.1rem;\n}\n\n.ns-value {\n    font-size: 0.95rem;\n    line-height: 1.4;\n    color: var(--text-primary);\n    font-weight: 500;\n}\n\n.ns-section.highlighted .ns-value {\n    color: var(--vibe-color);\n    font-family: var(--font-code);\n    font-size: 0.85rem;\n}\n\n.ns-value.editable {\n    padding: 0.4rem;\n    border-radius: 4px;\n    transition: background 0.3s ease;\n    cursor: text;\n}\n\n.ns-value.editable:hover {\n    background: var(--zen-border);\n}\n\n.ns-value.editable:focus {\n    background: hsla(230, 20%, 20%, 0.3);\n    outline: none;\n}\n\n.ns-list {\n    list-style: none;\n    display: flex;\n    flex-direction: column;\n    gap: 0.8rem;\n}\n\n.ns-list li {\n    font-size: 0.75rem;\n    color: var(--text-primary);\n    opacity: 0.8;\n    display: flex;\n    align-items: flex-start;\n    gap: 0.6rem;\n    line-height: 1.3;\n}\n\n.ns-list li::before {\n    content: \"\u25ab\";\n    color: var(--vibe-color);\n    font-size: 0.8rem;\n}\n\n.ns-list.dimmed li {\n    opacity: 0.4;\n    text-decoration: line-through;\n}\n\n.ns-list.dimmed li::before {\n    content: \"\u25aa\";\n    color: var(--text-secondary);\n}\n\n.ns-footer {\n    padding: 1rem 1.5rem;\n    border-top: 1px solid var(--zen-border);\n}\n\n#ns-sync-status {\n    font-size: 0.5rem;\n    font-family: var(--font-code);\n    color: var(--text-secondary);\n    display: flex;\n    align-items: center;\n    gap: 0.5rem;\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_STYLE.CSS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/style.css",
+        "when": "2026-04-03T21:23:03.978392+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.098057+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.098055"
+    }
+  },
+  "file_tooloo_v4_hub_portal_style_v1_0_1.css_chunk_8": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/style_v1_0_1.css",
+      "chunk_index": 8,
+      "total_chunks": 9,
+      "text": "#ns-sync-status.syncing::after {\n    content: \"\";\n    width: 6px;\n    height: 6px;\n    background: var(--accent-cyan);\n    border-radius: 50%;\n    animation: pulse 1.5s infinite;\n}\n\n@keyframes pulse {\n    0% { transform: scale(0.8); opacity: 0.5; }\n    50% { transform: scale(1.2); opacity: 1; }\n    100% { transform: scale(0.8); opacity: 0.5; }\n}\n\n@keyframes slideInRight {\n    from { transform: translateX(100%); }\n    to { transform: translateX(0); }\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_STYLE.CSS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/style.css",
+        "when": "2026-04-03T21:23:03.978392+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.098130+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.098128"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 0,
+      "total_chunks": 20,
+      "text": "// 6W_STAMP\n// WHO: TooLoo V3 (Ouroboros Sentinel)\n// WHAT: HEALED_APP.JS | Version: 1.0.1 | Version: 1.0.1\n// WHERE: tooloo_v4_hub/portal/app.js\n// WHEN: 2026-04-03T21:23:03.980261+00:00\n// WHY: Heal STAMP_MISSING and maintain architectural purity\n// HOW: Ouroboros Non-Destructive Saturation\n// TRUST: T3:arch-purity\n// PURITY: 1.00\n// ==========================================================\n\n/**\n * WHO: TooLoo V4 (Sovereign Architect)\n * WHAT: DASHBOARD_LOGIC_V4 | Version: 1.5.0\n * WHERE: tooloo_v4_hub/portal/app.js\n * WHY: Rule 7/16 - Async Mission Telemetry and Path Selection Choice cards\n * PURITY: 1.00\n */\n\nconst config = {\n    apiHost: window.location.origin,\n    sovereignKey: \"SOVEREIGN_HUB_2026_V3\"\n};",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109199+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109194"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 1,
+      "total_chunks": 20,
+      "text": "const dom = {\n    stream: document.getElementById('chat-messages'),\n    input: document.getElementById('chat-input'),\n    sendBtn: document.getElementById('send-btn'),\n    weave: document.getElementById('shard-tray'),\n    sandbox: {\n        panel: document.getElementById('manifestation-sandbox'),\n        content: document.getElementById('sandbox-content'),\n        close: document.getElementById('close-sandbox')\n    },\n    mission: {\n        log: document.getElementById('mission-log-stream'),\n        info: document.getElementById('active-mission-info'),\n        goal: document.getElementById('mission-goal-label')\n    },\n    paths: {\n        overlay: document.getElementById('path-selection-overlay'),\n        container: document.getElementById('path-cards-container')\n    },\n    hud: {\n        purity: document.getElementById('tel-purity'),\n        vitality: document.getElementById('tel-vitality'),\n        emergence: document.getElementById('tel-emergence'),\n        story: document.getElementById('tel-story'),\n        human: document.getElementById('tel-human'),\n        node: document.getElementById('hub-node-id'),\n        lamp: document.getElementById('hub-health-pulse'),\n        purityGauge: document.getElementById('purity-gauge'),\n        vitalityGauge: document.getElementById('vitality-gauge'),\n        delta: document.getElementById('tel-delta'),\n        cost: document.getElementById('tel-cost'),\n        calibrationPulse: document.getElementById('calibration-pulse-dot'),\n        stage: document.getElementById('tel-stage')\n    },\n    handover: {\n        overlay: document.getElementById('handover-overlay'),\n        track: document.getElementById('handover-track'),\n        progress: document.getElementById('handover-progress')\n    },\n    northStar: {\n        panel: document.getElementById('north-star-dashboard'),\n        macro: document.getElementById('ns-macro-goal'),\n        focus: document.getElementById('ns-current-focus'),\n        roadmap: document.getElementById('ns-micro-goals'),\n        milestones: document.getElementById('ns-milestones'),\n        status: document.getElementById('ns-sync-status'),\n        stashBtn: document.getElementById('stash-pivot-btn')\n    },\n    promptbar: {\n        container: document.getElementById('sovereign-promptbar'),\n        dynamics: document.getElementById('input-dynamics'),\n        missionId: document.getElementById('active-mission-id')\n    }\n};",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109253+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109252"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_2": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 2,
+      "total_chunks": 20,
+      "text": "let currentThinkingBubble = null;\nlet isProcessing = false;\nlet typingQueue = [];\nlet isTyping = false;\nlet currentStreamingMessage = null;\n\n// --- SOTA UX Telemetry (Rule 7/16) ---\nclass UXTelemetry {\n    constructor() {\n        this.metrics = { fps: 60, fid: 0, memory: 0, jank: 0, pulseWeightB: 0, overheadMs: 0 };\n        this.frameTimes = [];\n        this.observer = null;\n        this.isActive = true;\n    }\n\n    start() {\n        if (!this.isActive) return;\n        console.log(\"Sovereign Telemetry: UX Pulse Awakening...\");\n        this.initFPS();\n        this.initFID();\n        this.initMemory();\n        this.broadcast(); // Initiate recursive adaptive pulse (Rule 7)\n    }\n\n    initFPS() {\n        const checkFPS = (time) => {\n            if (!this.isActive) return;\n            this.frameTimes.push(time);\n            if (this.frameTimes.length > 60) {\n                const diff = this.frameTimes[this.frameTimes.length - 1] - this.frameTimes[0];\n                this.metrics.fps = Math.round(60 / (diff / 1000));\n                if (this.metrics.fps < 30) this.metrics.jank++;\n                this.frameTimes = [];\n            }\n            requestAnimationFrame(checkFPS);\n        };\n        requestAnimationFrame(checkFPS);\n    }",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109305+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109303"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_3": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 3,
+      "total_chunks": 20,
+      "text": "initFID() {\n        try {\n            this.observer = new PerformanceObserver((list) => {\n                if (!this.isActive) return;\n                for (const entry of list.getEntries()) {\n                    if (entry.entryType === 'first-input') {\n                        this.metrics.fid = entry.processingStart - entry.startTime;\n                    }\n                }\n            });\n            this.observer.observe({ type: 'first-input', buffered: true });\n        } catch (e) { console.warn(\"FID Observer Not Supported\"); }\n    }\n\n    initMemory() {\n        if (performance.memory) {\n            setInterval(() => {\n                if (!this.isActive) return;\n                this.metrics.memory = Math.round(performance.memory.usedJSHeapSize / 1048576);\n            }, 5000);\n        }\n    }",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109363+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109362"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_4": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 4,
+      "total_chunks": 20,
+      "text": "broadcast() {\n        if (!this.isActive) return;\n        if (socket && socket.readyState === WebSocket.OPEN) {\n            const start = performance.now();\n            \n            // Rule 7: Payload Compression (Minified Keys)\n            const payload = {\n                f: this.metrics.fps,\n                fi: this.metrics.fid,\n                m: this.metrics.memory,\n                j: this.metrics.jank,\n                t: Date.now(),\n                n: dom.hud.node.innerText\n            };\n            \n            // Consolidate 'Heartbeat' Request: Ask for Telemetry/Shards in the same pulse\n            const msg = JSON.stringify({\n                type: \"ux_telemetry\",\n                payload: payload,\n                request_sync: true // Ask Hub for latest health/shards\n            });\n            \n            this.metrics.pulseWeightB = new Blob([msg]).size;\n            socket.send(msg);\n            this.metrics.overheadMs = performance.now() - start;\n            \n            // Adaptive Sampling: Slow down if healthy, speed up if janky\n            let nextInterval = 10000;\n            if (this.metrics.fps < 30) nextInterval = 5000;\n            else if (parseFloat(dom.hud.purity.innerText) > 0.98) nextInterval = 30000;\n\n            this.metrics.jank = 0;\n            \n            // Self-correction for next broadcast\n            clearTimeout(this.broadcastTimer);\n            this.broadcastTimer = setTimeout(() => this.broadcast(), nextInterval);\n        }\n    }\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109398+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109397"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_5": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 5,
+      "total_chunks": 20,
+      "text": "const ux = new UXTelemetry();\n\n// --- Initialize Telemetry Pulse ---\nasync function startTelemetryPulse() {\n    ux.start(); // Start SOTA Performance Loop\n    restoreHistory(); // Tier 2: Session Resumption\n}\n\nasync function restoreHistory() {\n    try {\n        console.log(\"Sovereign Nexus: Restoring Session History...\");\n        const response = await fetch(`${config.apiHost}/context/history?limit=20`, {\n            headers: { 'X-Sovereign-Key': config.sovereignKey }\n        });\n        const data = await response.json();\n        if (data.status === 'success' && data.messages.length > 0) {\n            // Clear current stream if any (optional, but good for clean restoration)\n            dom.stream.innerHTML = '';\n            data.messages.forEach(msg => {\n                appendMessage(msg.role === 'user' ? 'user' : 'buddy', msg.content, msg.dynamics);\n            });\n            dom.stream.scrollTop = dom.stream.scrollHeight;\n        }\n    } catch (err) {\n        console.warn(\"History Restoration Fault:\", err);\n    }\n}\n\nasync function updateMemoryShards() {\n    try {\n        const response = await fetch(`${config.apiHost}/memory/shards?limit=5`, {\n            headers: { 'X-Sovereign-Key': config.sovereignKey }\n        });\n        const data = await response.json();\n        if (data.status === 'success') {\n            renderShardTray(data.shards);\n        }\n    } catch (err) {\n        console.error(\"Shard Retrieval Error\", err);\n    }\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109455+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109454"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_6": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 6,
+      "total_chunks": 20,
+      "text": "function renderShardTray(shards) {\n    if (!shards || !dom.weave) return;\n    \n    // Simple diffing to avoid flickering\n    const currentCount = dom.weave.children.length;\n    if (currentCount === shards.length) return;\n\n    dom.weave.innerHTML = '';\n    shards.forEach(shard => {\n        const el = document.createElement('div');\n        el.className = 'shard-weave';\n        \n        const type = shard.metadata?.type || 'ENGRAM';\n        const tier = shard.tier || 'MEDIUM';\n        const source = shard.metadata?.source || 'Workspace';\n        const fileName = source.split('/').pop();\n\n        el.innerHTML = `\n            <header class=\"shard-hdr\" style=\"font-size: 0.6rem; display: flex; justify-content: space-between; margin-bottom: 0.5rem;\">\n                <span class=\"shard-tag\" style=\"color: var(--vibe-color); font-weight: 700;\">${type}</span>\n                <span class=\"shard-category\" style=\"opacity: 0.5;\">${tier.toUpperCase()}</span>\n            </header>\n            <div class=\"shard-text\" style=\"font-size: 0.75rem; line-height: 1.4; color: var(--text-secondary); height: 40px; overflow: hidden; text-overflow: ellipsis;\">\n                ${fileName}: Ingested metadata and SOTA context.\n            </div>\n            <footer class=\"shard-footer\" style=\"font-size: 0.550rem; opacity: 0.3; margin-top: 0.5rem; text-align: right;\">\n                ${new Date().toLocaleTimeString()}\n            </footer>\n        `;\n        dom.weave.appendChild(el);\n    });\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109523+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109521"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_7": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 7,
+      "total_chunks": 20,
+      "text": "async function updateTelemetry() {\n    try {\n        const response = await fetch(`${config.apiHost}/health`, {\n            headers: { 'X-Sovereign-Key': config.sovereignKey }\n        });\n        const data = await response.json();\n        \n        if (data.status === 'SOVEREIGN' || data.status === 'Awakened') {\n            dom.hud.node.innerText = data.hub_id || \"SOVEREIGN_NODE\";\n            dom.hud.purity.innerText = (data.purity || 1.0).toFixed(2);\n            dom.hud.purityGauge.style.width = `${(data.purity || 1.0) * 100}%`;\n            if (data.session_cost_usd !== undefined) dom.hud.cost.innerText = `$${data.session_cost_usd.toFixed(2)}`;\n            dom.hud.lamp.classList.add('online');\n        }\n    } catch (err) {\n        dom.hud.lamp.classList.remove('online');\n    }\n}\n\n// --- WebSocket Core ---\nlet wsReconnectAttempts = 0;\nconst MAX_RECONNECT_DELAY = 30000;\n\nfunction initWebSocket() {\n    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';\n    const wsUrl = `${protocol}//${window.location.host}/ws`;\n    console.log(\"Sovereign Nexus: Unified WebSocket connecting to\", wsUrl);\n    socket = new WebSocket(wsUrl);\n\n    socket.onopen = () => {\n        console.log(\"Sovereign Nexus: WebSocket OPEN\");\n        wsReconnectAttempts = 0; // Reset on successful connection\n    };",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109577+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109576"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_8": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 8,
+      "total_chunks": 20,
+      "text": "socket.onmessage = (event) => {\n        try {\n            const data = JSON.parse(event.data);\n            handleSovereignEvent(data);\n        } catch (e) { console.error(\"Event parse error\", e); }\n    };\n\n    socket.onerror = (err) => {\n        console.error(\"Sovereign Nexus: WebSocket error\", err);\n    };\n\n    socket.onclose = (event) => {\n        console.warn(`Sovereign Nexus: WebSocket closed (code=${event.code}). Reconnecting...`);\n        wsReconnectAttempts++;\n        const delay = Math.min(1000 * Math.pow(2, wsReconnectAttempts), MAX_RECONNECT_DELAY);\n        setTimeout(initWebSocket, delay);\n    };\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109633+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109632"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_9": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 9,
+      "total_chunks": 20,
+      "text": "function handleSovereignEvent(data) {\n    switch (data.type) {\n        case \"hub_heartbeat\":\n            // Keep-alive acknowledged\n            console.debug(\"Hub Heartbeat: STABLE\");\n            break;\n        case \"buddy_token\":\n            clearThinking();\n            handleBuddyToken(data.token);\n            break;\n        case \"thinking_pulse\":\n            showThinking(data.thought);\n            break;\n        case \"buddy_chat\":\n            clearThinking();\n            finalizeBuddyMessage(data);\n            stopProcessing();\n            break;\n        case \"mission_telemetry\":\n            updateMissionHUD(data);\n            if (data.level === 'CHOICE') {\n                renderPathSelection(data.metadata.options.map(opt => ({\n                    title: opt,\n                    summary: data.metadata.rationale,\n                    id: opt.toLowerCase().replace(/\\s+/g, '_')\n                })));\n            }\n            break;\n        case \"pose_update\":\n            // Metrics updates\n            if (dom.hud.vitality) dom.hud.vitality.innerText = (data.vitality_index || 1.0).toFixed(2);\n            if (dom.hud.emergence) dom.hud.emergence.innerText = (data.drift || 0.0).toFixed(4);\n            break;\n        case \"calibration_pulse\":\n            triggerCalibrationPulse(data.pulse);\n            break;\n        case \"stage_update\":\n            const s = data.payload ? data.payload.stage : data.stage;\n            if (s) updateSovereignStage(s);\n            break;\n        case \"handover_ready\":\n            initiateCinematicHandover(data.payload);\n            break;\n        case \"NORTH_STAR_UPDATE\":\n            handleNorthStarUpdate(data.payload);\n            break;\n        case \"mission_start\":\n            if (dom.promptbar.missionId) {\n                dom.promptbar.missionId.innerText = `MISSION: ${data.mission_id}`;\n                dom.promptbar.missionId.classList.remove('hidden');\n            }\n            break;\n        case \"mission_complete\":\n            if (dom.promptbar.missionId) {\n                dom.promptbar.missionId.classList.add('hidden');\n            }\n            break;\n        case \"hub_sync\":\n            const sync = data.payload;\n            if (sync.status === 'SOVEREIGN') {\n                dom.hud.node.innerText = sync.hub_id || \"SOVEREIGN_NODE\";\n                dom.hud.purity.innerText = (sync.purity || 1.0).toFixed(2);\n                dom.hud.purityGauge.style.width = `${(sync.purity || 1.0) * 100}%`;\n                if (dom.hud.vitality) dom.hud.vitality.innerText = (sync.vitality || 1.0).toFixed(2);\n                if (sync.session_cost_usd !== undefined) dom.hud.cost.innerText = `$${sync.session_cost_usd.toFixed(2)}`;\n                dom.hud.lamp.classList.add('online');\n                if (sync.shards) renderShardTray(sync.shards);\n            }\n            break;\n    }\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109663+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109662"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_10": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 10,
+      "total_chunks": 20,
+      "text": "function handleNorthStarUpdate(payload) {\n    if (!payload || !dom.northStar.panel) return;\n    \n    console.log(\"North Star: Synchronizing Trajectory...\");\n    \n    // Update Macro & Focus (if not currently focused by user)\n    if (document.activeElement !== dom.northStar.macro) {\n        dom.northStar.macro.innerText = payload.macro_goal;\n    }\n    if (document.activeElement !== dom.northStar.focus) {\n        dom.northStar.focus.innerText = payload.current_focus;\n    }\n    \n    // Update Roadmap\n    dom.northStar.roadmap.innerHTML = '';\n    (payload.micro_goals || []).forEach(goal => {\n        const li = document.createElement('li');\n        li.innerText = goal;\n        dom.northStar.roadmap.appendChild(li);\n    });\n    \n    // Update Milestones\n    dom.northStar.milestones.innerHTML = '';\n    (payload.completed_milestones || []).forEach(ms => {\n        const li = document.createElement('li');\n        li.innerText = ms;\n        dom.northStar.milestones.appendChild(li);\n    });\n    \n    // Pulse Sync Status\n    dom.northStar.status.innerText = \"STABLE\";\n    dom.northStar.status.classList.remove('syncing');\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109739+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109738"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_11": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 11,
+      "total_chunks": 20,
+      "text": "function sendNorthStarManualUpdate() {\n    const payload = {\n        macro_goal: dom.northStar.macro.innerText.trim(),\n        current_focus: dom.northStar.focus.innerText.trim()\n    };\n    \n    if (socket && socket.readyState === WebSocket.OPEN) {\n        dom.northStar.status.innerText = \"SYNCING...\";\n        dom.northStar.status.classList.add('syncing');\n        socket.send(JSON.stringify({\n            type: \"manual_north_star_update\",\n            payload: payload\n        }));\n    }\n}\n\nfunction updateSovereignStage(stage) {\n    if (dom.hud.stage) {\n        dom.hud.stage.innerText = stage.toUpperCase();\n        document.body.className = `sovereign-v4 atmosphere-${stage.toLowerCase()}`;\n    }\n}\n\nasync function initiateCinematicHandover(payload) {\n    dom.handover.track.classList.remove('hidden');\n    let progress = 0;\n    const interval = setInterval(() => {\n        progress += 2;\n        dom.handover.progress.style.width = `${progress}%`;\n        if (progress >= 100) {\n            clearInterval(interval);\n            dom.handover.overlay.classList.remove('hidden');\n            setTimeout(() => {\n                window.location.href = payload.cloud_url || config.apiHost;\n            }, 1000);\n        }\n    }, 50);\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109783+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109781"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_12": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 12,
+      "total_chunks": 20,
+      "text": "function triggerCalibrationPulse(pulse) {\n    if (dom.hud.delta) {\n        dom.hud.delta.innerText = pulse.delta.toFixed(4);\n    }\n    if (dom.hud.calibrationPulse) {\n        dom.hud.calibrationPulse.classList.remove('active');\n        void dom.hud.calibrationPulse.offsetWidth; // Trigger reflow\n        dom.hud.calibrationPulse.classList.add('active');\n    }\n}\n\nfunction updateMissionHUD(data) {\n    dom.mission.info.classList.remove('hidden');\n    dom.mission.goal.innerText = `GOAL: ${data.goal}`;\n    \n    const entry = data.entry;\n    const log = document.createElement('div');\n    log.className = `log-entry ${entry.level.toLowerCase()}`;\n    \n    const time = new Date(entry.timestamp * 1000).toLocaleTimeString();\n    log.innerHTML = `<span class=\"log-time\" style=\"opacity: 0.4\">[${time}]</span> ${entry.message}`;\n    \n    dom.mission.log.appendChild(log);\n    dom.mission.log.scrollTop = dom.mission.log.scrollHeight;\n    \n    if (entry.level === 'END') {\n        setTimeout(() => dom.mission.info.classList.add('hidden'), 5000);\n    }\n}\n\nfunction handleBuddyToken(token) {\n    if (!currentStreamingMessage) {\n        currentStreamingMessage = createMessageElement('buddy');\n        dom.stream.appendChild(currentStreamingMessage);\n    }\n    \n    // Rule 7: Buffer tokens for gradual 'Human-Centric' display\n    for (const char of token) {\n        typingQueue.push(char);\n    }\n    \n    if (!isTyping) {\n        processTypingQueue();\n    }\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109824+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109823"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_13": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 13,
+      "total_chunks": 20,
+      "text": "async function processTypingQueue() {\n    if (typingQueue.length === 0) {\n        isTyping = false;\n        return;\n    }\n\n    isTyping = true;\n    const char = typingQueue.shift();\n    const content = currentStreamingMessage.querySelector('.content');\n    \n    // Minimal DOM update\n    content.innerText += char;\n    dom.stream.scrollTop = dom.stream.scrollHeight;\n\n    // Rule 7: Leverage human cognition latency (Rhythmic Delay)\n    // Fast for small queues, slightly accelerate for deep queues to avoid lagging behind\n    const baseDelay = typingQueue.length > 50 ? 5 : 20;\n    const delay = Math.random() * 15 + baseDelay; \n    \n    setTimeout(processTypingQueue, delay);\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109875+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109874"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_14": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 14,
+      "total_chunks": 20,
+      "text": "function finalizeBuddyMessage(data) {\n    if (currentStreamingMessage) {\n        // Enforce full response purity\n        const content = currentStreamingMessage.querySelector('.content');\n        content.innerText = data.content; // Use Pydantic 'content' field\n        \n        // Add dynamics/metadata\n        if (data.dynamics) {\n            updateAtmosphere(data.dynamics);\n            const meta = currentStreamingMessage.querySelector('.meta');\n            meta.innerText = `BUDDY | STAGE: ${data.dynamics.stage} | VS: ${data.dynamics.value_score.toFixed(2)}`;\n        }\n        \n        // Handle Manifestations (Rule 7)\n        if (data.manifestation) {\n            if (data.manifestation.type === 'path_selection') {\n                renderPathSelection(data.manifestation.content);\n            } else {\n                renderSandbox(data.manifestation);\n            }\n        }\n        \n        currentStreamingMessage = null;\n    } else {\n        // Fallback for non-streamed responses\n        appendMessage('buddy', data.content, data.dynamics);\n    }\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109913+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109912"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_15": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 15,
+      "total_chunks": 20,
+      "text": "function createMessageElement(sender, text = '') {\n    const msg = document.createElement('div');\n    msg.className = `message ${sender}-entry`;\n    msg.innerHTML = `\n        <div class=\"meta\">${sender.toUpperCase()}</div>\n        <div class=\"content\">${text}</div>\n    `;\n    return msg;\n}\nfunction renderPathSelection(options) {\n    dom.paths.container.innerHTML = '';\n    dom.paths.overlay.classList.remove('hidden');\n    \n    options.forEach(opt => {\n        const card = document.createElement('div');\n        card.className = 'choice-card';\n        card.innerHTML = `\n            <div class=\"choice-title\">${opt.title}</div>\n            <div class=\"choice-summary\">${opt.summary}</div>\n        `;\n        card.onclick = () => selectPath(opt);\n        dom.paths.container.appendChild(card);\n    });\n}\n\nfunction selectPath(option) {\n    dom.paths.overlay.classList.add('hidden');\n    appendMessage('user', `MISSION_MANIFEST: Selecting Path -> ${option.title}`);\n    if (socket && socket.readyState === WebSocket.OPEN) {\n        socket.send(JSON.stringify({ \n            type: \"user_chat\", \n            message: `I select the path: ${option.id}. Proceed with ${option.title}.` \n        }));\n    }\n}\n\nfunction updateAtmosphere(dynamics) {\n    const intent = (dynamics.intent || 'LISTEN').toLowerCase();\n    document.body.className = `sovereign-v4 atmosphere-${intent}`;\n    if (dom.hud.human) dom.hud.human.innerText = (dynamics.resonance || 1.0).toFixed(2);\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.109951+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.109949"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_16": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 16,
+      "total_chunks": 20,
+      "text": "function renderSandbox(manifestation) {\n    if (!manifestation || !manifestation.content || !dom.sandbox.panel) return;\n    dom.sandbox.panel.classList.remove('hidden');\n    dom.sandbox.content.innerHTML = manifestation.content;\n}\n\n// --- Event Listeners ---\nfunction setupEventListeners() {\n    if (dom.input) {\n        dom.input.addEventListener('keydown', (e) => {\n            if (e.key === 'Enter' && !e.shiftKey) {\n                e.preventDefault();\n                handleSendMessage();\n            }\n        });\n\n        // Auto-grow textarea\n        dom.input.addEventListener('input', function() {\n            this.style.height = 'auto';\n            this.style.height = (this.scrollHeight) + 'px';\n        });\n\n        // Visual feedback for focus\n        dom.input.addEventListener('focus', () => {\n            if (dom.promptbar.container) dom.promptbar.container.classList.add('focused');\n        });\n        dom.input.addEventListener('blur', () => {\n            if (dom.promptbar.container) dom.promptbar.container.classList.remove('focused');\n        });\n    }\n\n    if (dom.sendBtn) {\n        dom.sendBtn.addEventListener('click', () => {\n            handleSendMessage();\n        });\n    }\n\n    if (dom.sandbox.close) {\n        dom.sandbox.close.onclick = () => {\n            if (dom.sandbox.panel) dom.sandbox.panel.classList.add('hidden');\n        };\n    }",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.110002+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.110001"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_17": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 17,
+      "total_chunks": 20,
+      "text": "// --- North Star Listeners ---\n    if (dom.northStar.macro) {\n        dom.northStar.macro.onblur = () => sendNorthStarManualUpdate();\n    }\n    if (dom.northStar.focus) {\n        dom.northStar.focus.onblur = () => sendNorthStarManualUpdate();\n    }\n    if (dom.northStar.stashBtn) {\n        dom.northStar.stashBtn.onclick = () => {\n            appendMessage('user', \"STASH_AND_PIVOT: Archiving current roadmap and clearing the deck for a new vector.\");\n            // Reset local UI for immediate feedback\n            dom.northStar.macro.innerText = \"New Vector Origin\";\n            dom.northStar.focus.innerText = \"Recalibrating...\";\n            dom.northStar.roadmap.innerHTML = '';\n            sendNorthStarManualUpdate();\n        };\n    }\n}\nasync function handleSendMessage() {\n    const text = dom.input.value.trim();\n    if (!text || isProcessing) return;\n\n    appendMessage('user', text);\n    dom.input.value = '';\n    dom.input.rows = 1;\n    startProcessing();",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.110050+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.110049"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_18": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 18,
+      "total_chunks": 20,
+      "text": "if (socket && socket.readyState === WebSocket.OPEN) {\n        socket.send(JSON.stringify({ type: \"user_chat\", message: text }));\n    } else {\n        console.warn(\"WebSocket Unlinked. Falling back to REST Cognitive Pipeline...\");\n        try {\n            const response = await fetch(`${config.apiHost}/chat`, {\n                method: 'POST',\n                headers: { \n                    'Content-Type': 'application/json',\n                    'X-Sovereign-Key': config.sovereignKey \n                },\n                body: JSON.stringify({ message: text })\n            });\n            const data = await response.json();\n            if (data.status === 'success') {\n                handleSovereignEvent(data);\n            } else {\n                appendMessage('buddy', \"Cognitive Fault: \" + (data.response || \"Unknown Error\"));\n                stopProcessing();\n            }\n        } catch (err) {\n            console.error(\"REST Fallback Error:\", err);\n            appendMessage('buddy', \"Hub Communication Severed. Re-awakening logic...\");\n            stopProcessing();\n            initWebSocket();\n        }\n    }\n}\n\nfunction startProcessing() {\n    isProcessing = true;\n    if (dom.sendBtn) dom.sendBtn.classList.add('active');\n}\n\nfunction stopProcessing() {\n    isProcessing = false;\n    if (dom.sendBtn) dom.sendBtn.classList.remove('active');\n}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.110092+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.110091"
+    }
+  },
+  "file_tooloo_v4_hub_portal_app_v1_0_1.js_chunk_19": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/portal/app_v1_0_1.js",
+      "chunk_index": 19,
+      "total_chunks": 20,
+      "text": "function showThinking(thought) {\n    if (!currentThinkingBubble) {\n        currentThinkingBubble = document.createElement('div');\n        currentThinkingBubble.className = 'thinking-pulse';\n        // Insert right beneath the last message or at the bottom\n        dom.stream.appendChild(currentThinkingBubble);\n    }\n    currentThinkingBubble.innerText = `COGNITIVE_REASONING: ${thought}...`;\n    dom.stream.scrollTop = dom.stream.scrollHeight;\n}\n\nfunction clearThinking() {\n    if (currentThinkingBubble) {\n        currentThinkingBubble.remove();\n        currentThinkingBubble = null;\n    }\n}\n\nfunction appendMessage(role, text, dynamics = null) {\n    const msg = document.createElement('div');\n    msg.className = `message ${role}-entry`;\n    \n    let dynamicsHtml = '';\n    if (dynamics) {\n        dynamicsHtml = `<span class=\"dynamics-badge\">${dynamics.intent}</span>`;\n    }\n\n    msg.innerHTML = `\n        <div class=\"meta\">\n            ${role === 'user' ? 'Architect' : 'Buddy'} \n            <span>${new Date().toLocaleTimeString()}</span>\n            ${dynamicsHtml}\n        </div>\n        <div class=\"content\">${text}</div>\n    `;\n\n    dom.stream.appendChild(msg);\n    dom.stream.scrollTop = dom.stream.scrollHeight;\n}\n\n// --- Initialization ---\nstartTelemetryPulse();\ninitWebSocket();\nsetupEventListeners();",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_APP.JS | Version: 1.0.1",
+        "where": "tooloo_v4_hub/portal/app.js",
+        "when": "2026-04-03T21:23:03.980261+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.110144+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.110143"
+    }
+  },
+  "file_tooloo_v4_hub_missions_mission_introspect_v1_0_1.py_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/missions/mission_introspect_v1_0_1.py",
+      "chunk_index": 0,
+      "total_chunks": 3,
+      "text": "# 6W_STAMP\n# WHO: TooLoo V3 (Ouroboros Sentinel)\n# WHAT: HEALED_MISSION_INTROSPECT.PY | Version: 1.0.1 | Version: 1.0.1\n# WHERE: tooloo_v4_hub/missions/mission_introspect.py\n# WHEN: 2026-04-03T21:23:03.981639+00:00\n# WHY: Heal STAMP_MISSING and maintain architectural purity\n# HOW: Ouroboros Non-Destructive Saturation\n# TRUST: T3:arch-purity\n# PURITY: 1.00\n# ==========================================================\n\n# WHO: TooLoo V4 (Sovereign Architect)\n# WHAT: MISSION_INTROSPECT | Version: 1.0.0\n# WHERE: tooloo_v4_hub/missions/mission_introspect.py\n# WHEN: 2026-04-02T02:20:00.000000\n# WHY: Rule 10, 11 (Brutal Honesty) - Grounding the Hub's Strategic Intent\n# HOW: SovereignMegaDAG + Memory Audit + 6W Traceability\n# TIER: T3:architectural-purity\n# ==========================================================\n\nimport asyncio\nimport logging\nimport json\nimport sys\nfrom pathlib import Path\n\n# Add project root to path\nPROJECT_ROOT = Path(__file__).parent.parent.parent\nsys.path.append(str(PROJECT_ROOT))\n\nfrom tooloo_v4_hub.kernel.mega_dag import get_mega_dag\nfrom tooloo_v4_hub.kernel.cognitive.mission_manager import get_mission_manager",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MISSION_INTROSPECT.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/missions/mission_introspect.py",
+        "when": "2026-04-03T21:23:03.981639+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.131852+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.131846"
+    }
+  },
+  "file_tooloo_v4_hub_missions_mission_introspect_v1_0_1.py_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/missions/mission_introspect_v1_0_1.py",
+      "chunk_index": 1,
+      "total_chunks": 3,
+      "text": "async def run_introspection():\n    logging.basicConfig(level=logging.INFO)\n    logger = logging.getLogger(\"DeepIntrospect\")\n    \n    logger.info(\"\ud83d\udd2d INITIATING DEEP INTROSPECTION PULSE...\")\n    \n    dag = get_mega_dag()\n    \n    # Mission Scope: The entire Hub's existence and promise\n    goal = \"\"\"\n    Perform a 'Brutally Honest' Deep Audit of TooLoo's actual architecture vs. its claims.\n    1. Determine the 'True Goal': What is Tooloo promised to be? (Audit README, MANIFEST_MISSION).\n    2. Audit the 'Reality': What is actually implemented in the Kernel and Organs?\n    3. Identify 'API Dependence': How much of our 'intelligence' is just OpenAI/Vertex API calls?\n    4. Detect 'Simulation Stubs': Where are we using math to simulate real DSP or logic?\n    5. Evaluate 'Usability': What can a user ACTUALLY do with Tooloo right now vs. what is planned?\n    6. Claudio SOTA Audit: Check `claudio_processor/core` for POD alignment issues and SIMD/Neon opportunities.\n    7. Generate the 'Brutally Honest Report' in tooloo_v4_hub/psyche_bank/introspect_report.md.\n    \"\"\"\n    \n    context = {\n        \"env_state\": {\"env\": \"local\", \"audit_depth\": \"deep\"},\n        \"intent\": {\n            \"Root_Cause_Analysis\": 1.0,\n            \"Constitutional\": 1.0,\n            \"Syntax_Precision\": 0.9,\n            \"Architectural_Foresight\": 1.0,\n            \"Complexity\": 1.0\n        },\n        \"jit_boosted\": True\n    }\n    \n    try:\n        # Launch the Mega Mission\n        result = await dag.execute_mega_goal(goal, context)\n        \n        logger.info(f\"\u2705 INTROSPECTION COMPLETE. Mission ID: {result['mission_id']}\")\n        \n    except Exception as e:\n        logger.error(f\"\u274c Introspect Mission Fault: {e}\")\n        raise",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MISSION_INTROSPECT.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/missions/mission_introspect.py",
+        "when": "2026-04-03T21:23:03.981639+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.131921+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.131919"
+    }
+  },
+  "file_tooloo_v4_hub_missions_mission_introspect_v1_0_1.py_chunk_2": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/missions/mission_introspect_v1_0_1.py",
+      "chunk_index": 2,
+      "total_chunks": 3,
+      "text": "if __name__ == \"__main__\":\n    asyncio.run(run_introspection())",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MISSION_INTROSPECT.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/missions/mission_introspect.py",
+        "when": "2026-04-03T21:23:03.981639+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.132017+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.132015"
+    }
+  },
+  "file_tooloo_v4_hub_missions_grand_convergence_mission_v1_0_1.py_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/missions/grand_convergence_mission_v1_0_1.py",
+      "chunk_index": 0,
+      "total_chunks": 3,
+      "text": "# 6W_STAMP\n# WHO: TooLoo V3 (Ouroboros Sentinel)\n# WHAT: HEALED_GRAND_CONVERGENCE_MISSION.PY | Version: 1.0.1 | Version: 1.0.1\n# WHERE: tooloo_v4_hub/missions/grand_convergence_mission.py\n# WHEN: 2026-04-03T21:23:03.982905+00:00\n# WHY: Heal STAMP_MISSING and maintain architectural purity\n# HOW: Ouroboros Non-Destructive Saturation\n# TRUST: T3:arch-purity\n# PURITY: 1.00\n# ==========================================================\n\n# WHO: TooLoo V4 (Sovereign Architect)\n# WHAT: GRAND_CONVERGENCE_MISSION | Version: 1.0.0\n# WHERE: tooloo_v4_hub/missions/grand_convergence_mission.py\n# WHEN: 2026-04-02T02:05:00.000000\n# WHY: Rule 1, 12, 16 - Autonomous Purity Hardening and Convergence\n# HOW: SovereignMegaDAG + Cognitive Organ + Ouroboros Self-Healing\n# TIER: T3:architectural-purity\n# ==========================================================\n\nimport asyncio\nimport logging\nimport json\nimport sys\nfrom pathlib import Path\n\n# Add project root to path\nPROJECT_ROOT = Path(__file__).parent.parent.parent\nsys.path.append(str(PROJECT_ROOT))\n\nfrom tooloo_v4_hub.kernel.mega_dag import get_mega_dag\nfrom tooloo_v4_hub.kernel.cognitive.mission_manager import get_mission_manager\nfrom tooloo_v4_hub.kernel.cognitive.value_evaluator import get_value_evaluator",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_GRAND_CONVERGENCE_MISSION.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/missions/grand_convergence_mission.py",
+        "when": "2026-04-03T21:23:03.982905+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.151394+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.151388"
+    }
+  },
+  "file_tooloo_v4_hub_missions_grand_convergence_mission_v1_0_1.py_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/missions/grand_convergence_mission_v1_0_1.py",
+      "chunk_index": 1,
+      "total_chunks": 3,
+      "text": "async def run_convergence():\n    logging.basicConfig(level=logging.INFO)\n    logger = logging.getLogger(\"GrandConvergence\")\n    \n    logger.info(\"\ud83c\udf0c INITIATING GRAND SOVEREIGN CONVERGENCE...\")\n    \n    dag = get_mega_dag()\n    evaluator = get_value_evaluator()\n    \n    # Mission Scope: The entire Hub Kernel and core Organs\n    goal = \"\"\"\n    Execute a recursive fractal audit of the TooLoo V4 Hub.\n    1. Investigate Kernel (Orchestrator, Nexus, MegaDAG) for Architectural Foresight.\n    2. Investigate Organs (Cognitive, System, Memory) for Syntax Precision and Rule 13 Decoupling.\n    3. Evaluate 16D Mental Dimensions for every discovered component.\n    4. Automatically trigger Ouroboros Self-Healing for any component with Purity < 0.90.\n    5. Calibrate the 22D World Model based on the Global Purity Score.\n    \"\"\"\n    \n    context = {\n        \"env_state\": {\"env\": \"local\", \"cloud_scaling\": True},\n        \"intent\": {\n            \"Constitutional\": 1.0,\n            \"Architectural_Foresight\": 1.0,\n            \"Root_Cause_Analysis\": 0.9,\n            \"Syntax_Precision\": 1.0,\n            \"Safety\": 1.0,\n            \"Complexity\": 0.8\n        },\n        \"jit_boosted\": True\n    }\n    \n    try:\n        # Launch the Mega Mission\n        result = await dag.execute_mega_goal(goal, context)\n        \n        logger.info(f\"\u2705 CONVERGENCE COMPLETE. Mission ID: {result['mission_id']}\")\n        logger.info(f\"Latency: {result['latency']:.2f}s\")\n        logger.info(f\"ROI Metrics: {json.dumps(result['roi_metrics'], indent=2)}\")\n        \n        # Manifest the final report as a JSON file for the Sandbox to consume\n        report_path = PROJECT_ROOT / \"tooloo_v4_hub\" / \"psyche_bank\" / \"convergence_report.json\"\n        with open(report_path, \"w\") as f:\n            json.dump(result, f, indent=2)\n            \n        logger.info(f\"Report manifested at: {report_path}\")\n        \n    except Exception as e:\n        logger.error(f\"\u274c Grand Convergence Fault: {e}\")\n        raise",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_GRAND_CONVERGENCE_MISSION.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/missions/grand_convergence_mission.py",
+        "when": "2026-04-03T21:23:03.982905+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.151465+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.151463"
+    }
+  },
+  "file_tooloo_v4_hub_missions_grand_convergence_mission_v1_0_1.py_chunk_2": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/missions/grand_convergence_mission_v1_0_1.py",
+      "chunk_index": 2,
+      "total_chunks": 3,
+      "text": "if __name__ == \"__main__\":\n    asyncio.run(run_convergence())",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_GRAND_CONVERGENCE_MISSION.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/missions/grand_convergence_mission.py",
+        "when": "2026-04-03T21:23:03.982905+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.151564+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.151563"
+    }
+  },
+  "file_tooloo_v4_hub_missions_mission_claudio_grounding_v1_0_1.py_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/missions/mission_claudio_grounding_v1_0_1.py",
+      "chunk_index": 0,
+      "total_chunks": 3,
+      "text": "# 6W_STAMP\n# WHO: TooLoo V3 (Ouroboros Sentinel)\n# WHAT: HEALED_MISSION_CLAUDIO_GROUNDING.PY | Version: 1.0.1 | Version: 1.0.1\n# WHERE: tooloo_v4_hub/missions/mission_claudio_grounding.py\n# WHEN: 2026-04-03T21:23:03.984270+00:00\n# WHY: Heal STAMP_MISSING and maintain architectural purity\n# HOW: Ouroboros Non-Destructive Saturation\n# TRUST: T3:arch-purity\n# PURITY: 1.00\n# ==========================================================\n\n# WHO: TooLoo V4 (Sovereign Architect)\n# WHAT: MISSION_CLAUDIO_GROUNDING | Version: 1.0.0\n# WHERE: tooloo_v4_hub/missions/mission_claudio_grounding.py\n# WHEN: 2026-04-02T02:22:00.000000\n# WHY: Rule 13 (Physics over Syntax) - Feasibility and Defiance\n# HOW: SovereignMegaDAG + DSP Benchmarks + JIT SOTA Research\n# TIER: T3:architectural-purity\n# ==========================================================\n\nimport asyncio\nimport logging\nimport json\nimport sys\nfrom pathlib import Path\n\n# Add project root to path\nPROJECT_ROOT = Path(__file__).parent.parent.parent\nsys.path.append(str(PROJECT_ROOT))\n\nfrom tooloo_v4_hub.kernel.mega_dag import get_mega_dag\nfrom tooloo_v4_hub.kernel.cognitive.mission_manager import get_mission_manager",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MISSION_CLAUDIO_GROUNDING.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/missions/mission_claudio_grounding.py",
+        "when": "2026-04-03T21:23:03.984270+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.173543+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.173535"
+    }
+  },
+  "file_tooloo_v4_hub_missions_mission_claudio_grounding_v1_0_1.py_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/missions/mission_claudio_grounding_v1_0_1.py",
+      "chunk_index": 1,
+      "total_chunks": 3,
+      "text": "async def run_grounding():\n    logging.basicConfig(level=logging.INFO)\n    logger = logging.getLogger(\"ClaudioGrounding\")\n    \n    logger.info(\"\u26a1 INITIATING CLAUDIO GROUNDING PULSE (DEFIANCE MODE)...\")\n    \n    dag = get_mega_dag()\n    \n    # Mission Scope: The Claudio Audio Architecture feasibility\n    goal = \"\"\"\n    Validate, Verify, Defy, and Prove the feasibility of the Claudio Vision.\n    1. Investigate 'Audio-to-Intent': Is real-time intent extraction from waveforms possible (mel-spectrogram/LLM mapping)?\n    2. Investigate 'Vector Audio': Feasibility of using SIMD/Accelerate framework for high-quality audio gen.\n    3. Investigate 'Analog Simulation': Can component-level simulation (WDF) run in real-time at 128-sample latency on a Mac?\n    4. DEFIANCE: Actively challenge the 'Better than real thing' vision.\n    5. Generate the 'Claudio Feasibility Report' in tooloo_v4_hub/psyche_bank/claudio_feasibility_report.md.\n    \"\"\"\n    \n    context = {\n        \"env_state\": {\"env\": \"local\", \"hardware\": \"mac-silicon\"},\n        \"intent\": {\n            \"Architectural_Foresight\": 1.0,\n            \"Root_Cause_Analysis\": 1.0,\n            \"Limitations\": 1.0,\n            \"Safety\": 1.0,\n            \"Complexity\": 1.0\n        },\n        \"jit_boosted\": True\n    }\n    \n    try:\n        # Launch the Mega Mission\n        result = await dag.execute_mega_goal(goal, context)\n        \n        logger.info(f\"\u2705 GROUNDING COMPLETE. Mission ID: {result['mission_id']}\")\n        \n    except Exception as e:\n        logger.error(f\"\u274c Grounding Mission Fault: {e}\")\n        raise",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MISSION_CLAUDIO_GROUNDING.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/missions/mission_claudio_grounding.py",
+        "when": "2026-04-03T21:23:03.984270+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.173614+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.173612"
+    }
+  },
+  "file_tooloo_v4_hub_missions_mission_claudio_grounding_v1_0_1.py_chunk_2": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/missions/mission_claudio_grounding_v1_0_1.py",
+      "chunk_index": 2,
+      "total_chunks": 3,
+      "text": "if __name__ == \"__main__\":\n    asyncio.run(run_grounding())",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MISSION_CLAUDIO_GROUNDING.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/missions/mission_claudio_grounding.py",
+        "when": "2026-04-03T21:23:03.984270+00:00",
+        "why": "Heal STAMP_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.173695+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.173693"
+    }
+  },
+  "file_tooloo_v4_hub_tests_master_validation_v1_0_1_v1_0_1.py_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tests/master_validation_v1_0_1_v1_0_1.py",
+      "chunk_index": 0,
+      "total_chunks": 3,
+      "text": "# 6W_STAMP\n# WHO: TooLoo V3 (Ouroboros Sentinel)\n# WHAT: HEALED_MASTER_VALIDATION_V1_0_1.PY | Version: 1.0.1 | Version: 1.0.1\n# WHERE: tooloo_v4_hub/tests/master_validation_v1_0_1.py\n# WHEN: 2026-04-03T21:23:03.985251+00:00\n# WHY: Heal LEGACY_IMPORT and maintain architectural purity\n# HOW: Ouroboros Non-Destructive Saturation\n# TRUST: T3:arch-purity\n# PURITY: 1.00\n# ==========================================================\n\nimport os\nimport json\nimport asyncio\nimport logging\nfrom datetime import datetime\nfrom pathlib import Path\nfrom tooloo_v4_hub.kernel.mcp_nexus import get_mcp_nexus\nfrom tooloo_v4_hub.kernel.cognitive.ouroboros import get_ouroboros\nfrom tooloo_v4_hub.kernel.cognitive.audit_agent import get_audit_agent\nfrom tooloo_v4_hub.kernel.cognitive.calibration import get_calibration_engine\n\nlogging.basicConfig(level=logging.INFO, format=\"%(asctime)s - %(name)s - %(levelname)s - %(message)s\")\nlogger = logging.getLogger(\"MasterValidation\")\n\nclass MasterValidationPulse:\n    \"\"\"The High-Agency Stress-Test for TooLoo V3 Sovereignty.\"\"\"\n    \n    def __init__(self):\n        self.root = Path(\"tooloo_v4_hub\")\n        self.manifest_path = self.root / \"psyche_bank\" / \"sovereignty_manifest_v3.json\"",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MASTER_VALIDATION_V1_0_1.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tests/master_validation_v1_0_1.py",
+        "when": "2026-04-03T21:23:03.985251+00:00",
+        "why": "Heal LEGACY_IMPORT and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.195865+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.195860"
+    }
+  },
+  "file_tooloo_v4_hub_tests_master_validation_v1_0_1_v1_0_1.py_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tests/master_validation_v1_0_1_v1_0_1.py",
+      "chunk_index": 1,
+      "total_chunks": 3,
+      "text": "async def execute(self):\n        self.nexus = get_mcp_nexus()\n        logger.info(\"Initializing Master Validation Pulse...\")\n        \n        import sys\n        # Rule 13: Local Federated Tethering for Master Pulse\n        await self.nexus.attach_organ(\"system_organ\", [sys.executable, \"tooloo_v4_hub/organs/system_organ/mcp_server.py\"])\n        await self.nexus.attach_organ(\"memory_organ\", [sys.executable, \"tooloo_v4_hub/organs/memory_organ/mcp_server.py\"])\n        await self.nexus.attach_organ(\"audio_organ\", [sys.executable, \"tooloo_v4_hub/organs/audio_organ/mcp_server.py\"])\n        \n        report = {\"timestamp\": datetime.utcnow().isoformat(), \"results\": {}}\n        \n        # 1. Purity Scan (Zero Legacy Contamination)\n        # We check all files except the chaos_test itself (which Ouroboros will handle)\n        purity_flaws = []\n        for file in self.root.rglob(\"*.py\"):\n            if \"chaos_test.py\" in str(file): continue\n            content = file.read_text()\n            if \"import engine\" in content:\n                purity_flaws.append(str(file))\n        \n        report[\"results\"][\"purity_check\"] = {\n            \"status\": \"PASS\" if not purity_flaws else \"FAIL\",\n            \"flaws\": purity_flaws\n        }\n        \n        # 2. Ouroboros Self-Healing (Chaos Neutralization)\n        logger.info(\"Triggering Ouroboros Healing on chaos_test.py...\")\n        ouroboros = get_ouroboros()\n        await ouroboros.execute_self_play()\n        \n        # Verify Chaos test is patched\n        chaos_content = (self.root / \"kernel\" / \"chaos_test.py\").read_text()\n        report[\"results\"][\"ouroboros_effectiveness\"] = {\n            \"status\": \"PASS\" if \"# [OUROBOROS-HEALED]\" in chaos_content else \"FAIL\"\n        }\n        \n        # 3. Federated Blitz (Connectivity + 6W)\n        logger.info(\"Executing Federated Blitz (Memory + Circus + Audio)...\")\n        try:\n            # Atomic multi-organ call pulse (Normalized V4 signatures)\n            await self.nexus.call_tool(\"memory_organ\", \"memory_store\", {\"engram_id\": \"validation-pulse\", \"data\": {\"status\": \"val-start\"}})\n            # await self.nexus.call_tool(\"circus_spoke\", \"manifest_node\", {\"id\": \"val-pulse-node\", \"shape\": \"box\", \"color\": \"0x00ffff\"})\n            \n            # Real-Mode: Audio Engram Extraction\n            audio_b64 = \"AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8=\" # Dummy chunk\n            await self.nexus.call_tool(\"audio_organ\", \"extract_engram\", {\"audio_b64\": audio_b64})\n            report[\"results\"][\"federated_blitz\"] = {\"status\": \"PASS\"}\n        except Exception as e:\n            logger.error(f\"Blitz Failure: {e}\")\n            report[\"results\"][\"federated_blitz\"] = {\"status\": \"FAIL\", \"error\": str(e)}",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MASTER_VALIDATION_V1_0_1.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tests/master_validation_v1_0_1.py",
+        "when": "2026-04-03T21:23:03.985251+00:00",
+        "why": "Heal LEGACY_IMPORT and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.195929+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.195927"
+    }
+  },
+  "file_tooloo_v4_hub_tests_master_validation_v1_0_1_v1_0_1.py_chunk_2": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tests/master_validation_v1_0_1_v1_0_1.py",
+      "chunk_index": 2,
+      "total_chunks": 3,
+      "text": "# 4. Calibration Check (Autopoietic Refinement)\n        logger.info(\"Verifying Weight Calibration...\")\n        calibrator = get_calibration_engine()\n        initial_val = 0.2245 # Mocked for comparison\n        await calibrator.refine_weights(domain=\"logic\", delta=0.01)\n        report[\"results\"][\"autopoietic_refinement\"] = {\"status\": \"PASS\"}\n\n        # 2. Sovereignty Audit (6W/SOTA Integrity)\n        from tooloo_v4_hub.kernel.cognitive.audit_agent import get_audit_agent as get_audit_agent\n        auditor = get_audit_agent()\n        audit_res = await auditor.calculate_vitality_index()\n        report[\"results\"][\"final_audit\"] = audit_res\n\n        # 6. Save Manifest\n        with open(self.manifest_path, \"w\") as f:\n            json.dump(report, f, indent=2)\n        \n        logger.info(f\"Master Validation Pulse Complete. Manifest saved: {self.manifest_path}\")\n        return report\n\nif __name__ == \"__main__\":\n    pulse = MasterValidationPulse()\n    asyncio.run(pulse.execute())",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_MASTER_VALIDATION_V1_0_1.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tests/master_validation_v1_0_1.py",
+        "when": "2026-04-03T21:23:03.985251+00:00",
+        "why": "Heal LEGACY_IMPORT and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.196029+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.196027"
+    }
+  },
+  "file_tooloo_v4_hub_tests_test_claude_3_7_v1_0_1.py_chunk_0": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tests/test_claude_3_7_v1_0_1.py",
+      "chunk_index": 0,
+      "total_chunks": 3,
+      "text": "# 6W_STAMP\n# WHO: TooLoo V3 (Ouroboros Sentinel)\n# WHAT: HEALED_TEST_CLAUDE_3_7.PY | Version: 1.0.1 | Version: 1.0.1\n# WHERE: tooloo_v4_hub/tests/test_claude_3_7.py\n# WHEN: 2026-04-03T21:23:03.986324+00:00\n# WHY: Heal STAMP_PURITY_MISSING and maintain architectural purity\n# HOW: Ouroboros Non-Destructive Saturation\n# TRUST: T3:arch-purity\n# PURITY: 1.00\n# ==========================================================\n\nimport asyncio\nimport os\nimport sys\nfrom tooloo_v4_hub.organs.anthropic_organ.anthropic_logic import VertexAnthropicLogic",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_TEST_CLAUDE_3_7.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tests/test_claude_3_7.py",
+        "when": "2026-04-03T21:23:03.986324+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.221876+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.221871"
+    }
+  },
+  "file_tooloo_v4_hub_tests_test_claude_3_7_v1_0_1.py_chunk_1": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tests/test_claude_3_7_v1_0_1.py",
+      "chunk_index": 1,
+      "total_chunks": 3,
+      "text": "async def test_thinking_pulse():\n    print(\"--- \ud83e\udde0 Claude 3.7 SOTA Thinking Pulse ---\")\n    \n    # Force use of legacy project for now if new project keeps 404ing\n    # project_id = os.getenv(\"ACTIVE_SOVEREIGN_PROJECT\", \"too-loo-zi8g7e\") \n    project_id = \"too-loo-zi8g7e\" # Stable node\n    region = \"us-central1\"\n    \n    # Ensure credentials are set\n    os.environ[\"GOOGLE_APPLICATION_CREDENTIALS\"] = \"/Users/oripridan/ANTIGRAVITY/tooloo-v2/service-account.json\"\n    \n    print(f\"Node: {project_id} @ {region}\")\n    logic = VertexAnthropicLogic(project_id=project_id, region=region)\n    \n    messages = [\n        {\"role\": \"user\", \"content\": \"Explain why Rule 16 (Calibration) is essential for an autopoietic AI architecture.\"}\n    ]\n    \n    print(\"Pulse SENT. Thinking Phase ACTIVE...\")\n    try:\n        # Note: thinking_chat uses Synchronous client for now due to SDK v0.39 limits\n        res = await logic.thinking_chat(\n            messages=messages,\n            thinking_budget=2048,\n            model=\"claude-3-7-sonnet\"\n        )\n        \n        if res[\"status\"] == \"success\":\n            print(\"\\n--- \ud83e\udde0 THINKING ---\\n\")\n            print(res[\"thinking\"][:500] + \"...\")\n            print(\"\\n--- \ud83d\udcac RESPONSE ---\\n\")\n            print(res[\"content\"])\n            print(\"\\n\u2705 Claude 3.7 SOTA: VERIFIED.\")\n        else:\n            print(f\"\u274c Fault: {res.get('error')}\")\n            \n    except Exception as e:\n        print(f\"\u274c Execution Error: {e}\")",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_TEST_CLAUDE_3_7.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tests/test_claude_3_7.py",
+        "when": "2026-04-03T21:23:03.986324+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.221916+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.221914"
+    }
+  },
+  "file_tooloo_v4_hub_tests_test_claude_3_7_v1_0_1.py_chunk_2": {
+    "data": {
+      "type": "code_context",
+      "source": "tooloo_v4_hub/tests/test_claude_3_7_v1_0_1.py",
+      "chunk_index": 2,
+      "total_chunks": 3,
+      "text": "if __name__ == \"__main__\":\n    asyncio.run(test_thinking_pulse())",
+      "stamping": {
+        "who": "TooLoo V3 (Ouroboros Sentinel)",
+        "what": "HEALED_TEST_CLAUDE_3_7.PY | Version: 1.0.1",
+        "where": "tooloo_v4_hub/tests/test_claude_3_7.py",
+        "when": "2026-04-03T21:23:03.986324+00:00",
+        "why": "Heal STAMP_PURITY_MISSING and maintain architectural purity",
+        "how": "Ouroboros Non-Destructive Saturation",
+        "tier_link": null,
+        "domain_tokens": null,
+        "memory_nexus": null,
+        "purity_score": 1.0,
+        "is_nuance": false,
+        "predicted_v": null,
+        "actual_v": null,
+        "eval_delta": null,
+        "latency_ms": null,
+        "token_count": null,
+        "thinking_effort": null,
+        "version": "1.0.1",
+        "trust_level": "T3:arch-purity",
+        "payload_hash": null,
+        "intent_16d": {},
+        "env_context": {}
+      }
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-03T21:23:04.221991+00:00",
+    "stamp": {
+      "who": "Hub",
+      "what": "Batch_Store",
+      "when": "2026-04-04T00:23:04.221989"
+    }
+  },
+  "pred_20260404_034704_4434": {
+    "data": {
+      "type": "prediction",
+      "goal": "Synthesize a 6W-stamped Audio Processor component (dsp_limiter.py) in the tooloo_v4_hub/shared/dsp directory.",
+      "context": {
+        "user_id": "stress-harness",
+        "priority": "critical",
+        "intent": {
+          "Complexity": 0.9,
+          "Architectural_Foresight": 1.0
+        },
+        "sota_data": [
+          {
+            "type": "text",
+            "text": "Unknown tool: sota_pulse"
+          }
+        ]
+      },
+      "prediction": {
+        "context_6w": 1.0,
+        "intent_16d": 0.55625,
+        "environment": 1.0,
+        "purity": 1.0,
+        "vitality": 1.0,
+        "efficiency": 1.0,
+        "sota_alignment": 1.0,
+        "dimensions": {
+          "Architectural_Foresight": 1.0,
+          "Root_Cause_Analysis": 0.5,
+          "Syntax_Precision": 0.5,
+          "Constitutional": 0.5,
+          "Efficiency": 0.5,
+          "Quality": 0.5,
+          "Speed": 0.5,
+          "Safety": 0.5,
+          "Security": 0.5,
+          "Complexity": 0.9,
+          "Financial": 0.5,
+          "Legal": 0.5,
+          "Human_Factor": 0.5,
+          "Limitations": 0.5,
+          "Environment": 0.5,
+          "Vector_Intent": 0.5
+        },
+        "cost_usd": 0.0,
+        "provider": null,
+        "model": null,
+        "routing_reason": null,
+        "focus_coefficient": 1.2,
+        "creativity_multiplier": 1.0
+      },
+      "timestamp": "2026-04-04T00:47:04.356885+00:00"
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-04T00:47:04.358310+00:00",
+    "stamp": {
+      "who": "Sovereign-Hub-Logic",
+      "what": "MEMORY_MANIFEST: MEDIUM",
+      "where": "memory_logic.py",
+      "when": "2026-04-04T00:47:04.358267+00:00",
+      "why": "Rule 9/10 Sovereign Persistence",
+      "how": "Heuristic Layering",
+      "tier_link": null,
+      "domain_tokens": null,
+      "memory_nexus": null,
+      "purity_score": 1.0,
+      "is_nuance": false,
+      "predicted_v": null,
+      "actual_v": null,
+      "eval_delta": null,
+      "latency_ms": null,
+      "token_count": null,
+      "thinking_effort": null,
+      "version": "1.3.0",
+      "trust_level": "T3:arch-purity",
+      "payload_hash": null,
+      "intent_16d": {},
+      "env_context": {}
+    }
+  },
+  "pred_20260404_034803_1987": {
+    "data": {
+      "type": "prediction",
+      "goal": "Synthesize a 6W-stamped Audio Processor component (dsp_limiter.py) in the tooloo_v4_hub/shared/dsp directory.",
+      "context": {
+        "user_id": "stress-harness",
+        "priority": "critical",
+        "intent": {
+          "Complexity": 0.9,
+          "Architectural_Foresight": 1.0
+        },
+        "sota_data": [
+          {
+            "type": "text",
+            "text": "Unknown tool: sota_pulse"
+          }
+        ]
+      },
+      "prediction": {
+        "context_6w": 1.0,
+        "intent_16d": 0.55625,
+        "environment": 1.0,
+        "purity": 1.0,
+        "vitality": 1.0,
+        "efficiency": 1.0,
+        "sota_alignment": 1.0,
+        "dimensions": {
+          "Architectural_Foresight": 1.0,
+          "Root_Cause_Analysis": 0.5,
+          "Syntax_Precision": 0.5,
+          "Constitutional": 0.5,
+          "Efficiency": 0.5,
+          "Quality": 0.5,
+          "Speed": 0.5,
+          "Safety": 0.5,
+          "Security": 0.5,
+          "Complexity": 0.9,
+          "Financial": 0.5,
+          "Legal": 0.5,
+          "Human_Factor": 0.5,
+          "Limitations": 0.5,
+          "Environment": 0.5,
+          "Vector_Intent": 0.5
+        },
+        "cost_usd": 0.0,
+        "provider": null,
+        "model": null,
+        "routing_reason": null,
+        "focus_coefficient": 1.2,
+        "creativity_multiplier": 1.0
+      },
+      "timestamp": "2026-04-04T00:48:03.129318+00:00"
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-04T00:48:03.131840+00:00",
+    "stamp": {
+      "who": "Sovereign-Hub-Logic",
+      "what": "MEMORY_MANIFEST: MEDIUM",
+      "where": "memory_logic.py",
+      "when": "2026-04-04T00:48:03.131749+00:00",
+      "why": "Rule 9/10 Sovereign Persistence",
+      "how": "Heuristic Layering",
+      "tier_link": null,
+      "domain_tokens": null,
+      "memory_nexus": null,
+      "purity_score": 1.0,
+      "is_nuance": false,
+      "predicted_v": null,
+      "actual_v": null,
+      "eval_delta": null,
+      "latency_ms": null,
+      "token_count": null,
+      "thinking_effort": null,
+      "version": "1.3.0",
+      "trust_level": "T3:arch-purity",
+      "payload_hash": null,
+      "intent_16d": {},
+      "env_context": {}
+    }
+  },
+  "pred_20260404_034847_4953": {
+    "data": {
+      "type": "prediction",
+      "goal": "Synthesize a 6W-stamped Audio Processor component (dsp_limiter.py) in the tooloo_v4_hub/shared/dsp directory.",
+      "context": {
+        "user_id": "stress-harness",
+        "priority": "critical",
+        "intent": {
+          "Complexity": 0.9,
+          "Architectural_Foresight": 1.0
+        },
+        "sota_data": [
+          {
+            "type": "text",
+            "text": "Unknown tool: sota_pulse"
+          }
+        ]
+      },
+      "prediction": {
+        "context_6w": 1.0,
+        "intent_16d": 0.55625,
+        "environment": 1.0,
+        "purity": 1.0,
+        "vitality": 1.0,
+        "efficiency": 1.0,
+        "sota_alignment": 1.0,
+        "dimensions": {
+          "Architectural_Foresight": 1.0,
+          "Root_Cause_Analysis": 0.5,
+          "Syntax_Precision": 0.5,
+          "Constitutional": 0.5,
+          "Efficiency": 0.5,
+          "Quality": 0.5,
+          "Speed": 0.5,
+          "Safety": 0.5,
+          "Security": 0.5,
+          "Complexity": 0.9,
+          "Financial": 0.5,
+          "Legal": 0.5,
+          "Human_Factor": 0.5,
+          "Limitations": 0.5,
+          "Environment": 0.5,
+          "Vector_Intent": 0.5
+        },
+        "cost_usd": 0.0,
+        "provider": null,
+        "model": null,
+        "routing_reason": null,
+        "focus_coefficient": 1.2,
+        "creativity_multiplier": 1.0
+      },
+      "timestamp": "2026-04-04T00:48:47.725649+00:00"
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-04T00:48:47.729168+00:00",
+    "stamp": {
+      "who": "Sovereign-Hub-Logic",
+      "what": "MEMORY_MANIFEST: MEDIUM",
+      "where": "memory_logic.py",
+      "when": "2026-04-04T00:48:47.729072+00:00",
+      "why": "Rule 9/10 Sovereign Persistence",
+      "how": "Heuristic Layering",
+      "tier_link": null,
+      "domain_tokens": null,
+      "memory_nexus": null,
+      "purity_score": 1.0,
+      "is_nuance": false,
+      "predicted_v": null,
+      "actual_v": null,
+      "eval_delta": null,
+      "latency_ms": null,
+      "token_count": null,
+      "thinking_effort": null,
+      "version": "1.3.0",
+      "trust_level": "T3:arch-purity",
+      "payload_hash": null,
+      "intent_16d": {},
+      "env_context": {}
+    }
+  },
+  "out_20260404_034847_4953": {
+    "data": {
+      "type": "outcome",
+      "p_id": "pred_20260404_034847_4953",
+      "outcome": {
+        "actual_emergence": 3.0,
+        "results": [
+          [
+            [
+              [
+                {
+                  "type": "text",
+                  "text": "Unknown tool: sovereign_audit"
+                }
+              ],
+              [
+                {
+                  "type": "text",
+                  "text": "Unknown tool: design"
+                }
+              ]
+            ],
+            [
+              [
+                {
+                  "type": "text",
+                  "text": "Error executing tool fs_write: 3 validation errors for fs_writeArguments\ncontent\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...red/dsp/dsp_limiter.py'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nwhy\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...red/dsp/dsp_limiter.py'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nhow\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...red/dsp/dsp_limiter.py'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+                }
+              ],
+              [
+                {
+                  "type": "text",
+                  "text": "Error executing tool fs_write: 3 validation errors for fs_writeArguments\ncontent\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...ppend_or_modify_header'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nwhy\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...ppend_or_modify_header'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nhow\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...ppend_or_modify_header'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+                }
+              ]
+            ],
+            [
+              [
+                {
+                  "type": "text",
+                  "text": "Error executing tool fs_write: 3 validation errors for fs_writeArguments\ncontent\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...red/dsp/dsp_limiter.py'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nwhy\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...red/dsp/dsp_limiter.py'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nhow\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...red/dsp/dsp_limiter.py'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+                }
+              ],
+              [
+                {
+                  "type": "text",
+                  "text": "Error executing tool cli_run: 1 validation error for cli_runArguments\ncwd\n  Field required [type=missing, input_value={'command': 'python -c \\'...antiated successfully.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+                }
+              ]
+            ]
+          ]
+        ],
+        "eval_delta": 1.44375,
+        "latency": 15.301871061325073
+      },
+      "timestamp": "2026-04-04T00:49:03.042823+00:00"
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-04T00:49:03.046191+00:00",
+    "stamp": {
+      "who": "Sovereign-Hub-Logic",
+      "what": "MEMORY_MANIFEST: MEDIUM",
+      "where": "memory_logic.py",
+      "when": "2026-04-04T00:49:03.046105+00:00",
+      "why": "Rule 9/10 Sovereign Persistence",
+      "how": "Heuristic Layering",
+      "tier_link": null,
+      "domain_tokens": null,
+      "memory_nexus": null,
+      "purity_score": 1.0,
+      "is_nuance": false,
+      "predicted_v": null,
+      "actual_v": null,
+      "eval_delta": null,
+      "latency_ms": null,
+      "token_count": null,
+      "thinking_effort": null,
+      "version": "1.3.0",
+      "trust_level": "T3:arch-purity",
+      "payload_hash": null,
+      "intent_16d": {},
+      "env_context": {}
+    }
+  },
+  "pred_20260404_034932_6717": {
+    "data": {
+      "type": "prediction",
+      "goal": "Synthesize a 6W-stamped Audio Processor component (dsp_limiter.py) in the tooloo_v4_hub/shared/dsp directory.",
+      "context": {
+        "user_id": "stress-harness",
+        "priority": "critical",
+        "intent": {
+          "Complexity": 0.9,
+          "Architectural_Foresight": 1.0
+        },
+        "sota_data": [
+          {
+            "type": "text",
+            "text": "Unknown tool: sota_pulse"
+          }
+        ]
+      },
+      "prediction": {
+        "context_6w": 1.0,
+        "intent_16d": 0.55625,
+        "environment": 1.0,
+        "purity": 1.0,
+        "vitality": 1.0,
+        "efficiency": 1.0,
+        "sota_alignment": 1.0,
+        "dimensions": {
+          "Architectural_Foresight": 1.0,
+          "Root_Cause_Analysis": 0.5,
+          "Syntax_Precision": 0.5,
+          "Constitutional": 0.5,
+          "Efficiency": 0.5,
+          "Quality": 0.5,
+          "Speed": 0.5,
+          "Safety": 0.5,
+          "Security": 0.5,
+          "Complexity": 0.9,
+          "Financial": 0.5,
+          "Legal": 0.5,
+          "Human_Factor": 0.5,
+          "Limitations": 0.5,
+          "Environment": 0.5,
+          "Vector_Intent": 0.5
+        },
+        "cost_usd": 0.0,
+        "provider": null,
+        "model": null,
+        "routing_reason": null,
+        "focus_coefficient": 1.2,
+        "creativity_multiplier": 1.0
+      },
+      "timestamp": "2026-04-04T00:49:32.207789+00:00"
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-04T00:49:32.210030+00:00",
+    "stamp": {
+      "who": "Sovereign-Hub-Logic",
+      "what": "MEMORY_MANIFEST: MEDIUM",
+      "where": "memory_logic.py",
+      "when": "2026-04-04T00:49:32.209982+00:00",
+      "why": "Rule 9/10 Sovereign Persistence",
+      "how": "Heuristic Layering",
+      "tier_link": null,
+      "domain_tokens": null,
+      "memory_nexus": null,
+      "purity_score": 1.0,
+      "is_nuance": false,
+      "predicted_v": null,
+      "actual_v": null,
+      "eval_delta": null,
+      "latency_ms": null,
+      "token_count": null,
+      "thinking_effort": null,
+      "version": "1.3.0",
+      "trust_level": "T3:arch-purity",
+      "payload_hash": null,
+      "intent_16d": {},
+      "env_context": {}
+    }
+  },
+  "out_20260404_034932_6717": {
+    "data": {
+      "type": "outcome",
+      "p_id": "pred_20260404_034932_6717",
+      "outcome": {
+        "actual_emergence": 3.0,
+        "results": [
+          [
+            [
+              null,
+              null
+            ],
+            [
+              {
+                "type": "text",
+                "text": "Error executing tool fs_write: 3 validation errors for fs_writeArguments\ncontent\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...nt_type': 'python_code'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nwhy\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...nt_type': 'python_code'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nhow\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...nt_type': 'python_code'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+              }
+            ],
+            [
+              null,
+              [
+                {
+                  "type": "text",
+                  "text": "Error executing tool fs_write: 3 validation errors for fs_writeArguments\ncontent\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...y', 'append_mode': True}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nwhy\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...y', 'append_mode': True}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nhow\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...y', 'append_mode': True}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+                }
+              ]
+            ],
+            [
+              {
+                "type": "text",
+                "text": "Error executing tool fs_write: 3 validation errors for fs_writeArguments\ncontent\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...rwrite_if_exists': True}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nwhy\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...rwrite_if_exists': True}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nhow\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...rwrite_if_exists': True}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+              }
+            ],
+            [
+              [
+                {
+                  "type": "text",
+                  "text": "Error executing tool cli_run: 1 validation error for cli_runArguments\ncwd\n  Field required [type=missing, input_value={'command': 'run_linter_a...red/dsp/dsp_limiter.py'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+                }
+              ],
+              [
+                {
+                  "type": "text",
+                  "text": "Error executing tool cli_run: 1 validation error for cli_runArguments\ncwd\n  Field required [type=missing, input_value={'command': 'run_tests_fo...nent.sh dsp_limiter.py'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+                }
+              ]
+            ]
+          ]
+        ],
+        "eval_delta": 1.44375,
+        "latency": 19.37311100959778
+      },
+      "timestamp": "2026-04-04T00:49:51.595977+00:00"
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-04T00:49:51.598097+00:00",
+    "stamp": {
+      "who": "Sovereign-Hub-Logic",
+      "what": "MEMORY_MANIFEST: MEDIUM",
+      "where": "memory_logic.py",
+      "when": "2026-04-04T00:49:51.598051+00:00",
+      "why": "Rule 9/10 Sovereign Persistence",
+      "how": "Heuristic Layering",
+      "tier_link": null,
+      "domain_tokens": null,
+      "memory_nexus": null,
+      "purity_score": 1.0,
+      "is_nuance": false,
+      "predicted_v": null,
+      "actual_v": null,
+      "eval_delta": null,
+      "latency_ms": null,
+      "token_count": null,
+      "thinking_effort": null,
+      "version": "1.3.0",
+      "trust_level": "T3:arch-purity",
+      "payload_hash": null,
+      "intent_16d": {},
+      "env_context": {}
+    }
+  },
+  "pred_20260404_035048_3523": {
+    "data": {
+      "type": "prediction",
+      "goal": "Synthesize a 6W-stamped Audio Processor component (dsp_limiter.py) in the tooloo_v4_hub/shared/dsp directory.",
+      "context": {
+        "user_id": "stress-harness",
+        "priority": "critical",
+        "intent": {
+          "Complexity": 0.9,
+          "Architectural_Foresight": 1.0
+        },
+        "sota_data": [
+          {
+            "type": "text",
+            "text": "Unknown tool: sota_pulse"
+          }
+        ]
+      },
+      "prediction": {
+        "context_6w": 1.0,
+        "intent_16d": 0.55625,
+        "environment": 1.0,
+        "purity": 1.0,
+        "vitality": 1.0,
+        "efficiency": 1.0,
+        "sota_alignment": 1.0,
+        "dimensions": {
+          "Architectural_Foresight": 1.0,
+          "Root_Cause_Analysis": 0.5,
+          "Syntax_Precision": 0.5,
+          "Constitutional": 0.5,
+          "Efficiency": 0.5,
+          "Quality": 0.5,
+          "Speed": 0.5,
+          "Safety": 0.5,
+          "Security": 0.5,
+          "Complexity": 0.9,
+          "Financial": 0.5,
+          "Legal": 0.5,
+          "Human_Factor": 0.5,
+          "Limitations": 0.5,
+          "Environment": 0.5,
+          "Vector_Intent": 0.5
+        },
+        "cost_usd": 0.0,
+        "provider": null,
+        "model": null,
+        "routing_reason": null,
+        "focus_coefficient": 1.2,
+        "creativity_multiplier": 1.0
+      },
+      "timestamp": "2026-04-04T00:50:48.759833+00:00"
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-04T00:50:48.763660+00:00",
+    "stamp": {
+      "who": "Sovereign-Hub-Logic",
+      "what": "MEMORY_MANIFEST: MEDIUM",
+      "where": "memory_logic.py",
+      "when": "2026-04-04T00:50:48.763551+00:00",
+      "why": "Rule 9/10 Sovereign Persistence",
+      "how": "Heuristic Layering",
+      "tier_link": null,
+      "domain_tokens": null,
+      "memory_nexus": null,
+      "purity_score": 1.0,
+      "is_nuance": false,
+      "predicted_v": null,
+      "actual_v": null,
+      "eval_delta": null,
+      "latency_ms": null,
+      "token_count": null,
+      "thinking_effort": null,
+      "version": "1.3.0",
+      "trust_level": "T3:arch-purity",
+      "payload_hash": null,
+      "intent_16d": {},
+      "env_context": {}
+    }
+  },
+  "pred_20260404_035103_4535": {
+    "data": {
+      "type": "prediction",
+      "goal": "Synthesize a 6W-stamped Audio Processor component (dsp_limiter.py) in the tooloo_v4_hub/shared/dsp directory.",
+      "context": {
+        "user_id": "stress-harness",
+        "priority": "critical",
+        "intent": {
+          "Complexity": 0.9,
+          "Architectural_Foresight": 1.0
+        },
+        "sota_data": [
+          {
+            "type": "text",
+            "text": "Unknown tool: sota_pulse"
+          }
+        ]
+      },
+      "prediction": {
+        "context_6w": 1.0,
+        "intent_16d": 0.55625,
+        "environment": 1.0,
+        "purity": 1.0,
+        "vitality": 1.0,
+        "efficiency": 1.0,
+        "sota_alignment": 1.0,
+        "dimensions": {
+          "Architectural_Foresight": 1.0,
+          "Root_Cause_Analysis": 0.5,
+          "Syntax_Precision": 0.5,
+          "Constitutional": 0.5,
+          "Efficiency": 0.5,
+          "Quality": 0.5,
+          "Speed": 0.5,
+          "Safety": 0.5,
+          "Security": 0.5,
+          "Complexity": 0.9,
+          "Financial": 0.5,
+          "Legal": 0.5,
+          "Human_Factor": 0.5,
+          "Limitations": 0.5,
+          "Environment": 0.5,
+          "Vector_Intent": 0.5
+        },
+        "cost_usd": 0.0,
+        "provider": null,
+        "model": null,
+        "routing_reason": null,
+        "focus_coefficient": 1.2,
+        "creativity_multiplier": 1.0
+      },
+      "timestamp": "2026-04-04T00:51:03.215154+00:00"
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-04T00:51:03.219770+00:00",
+    "stamp": {
+      "who": "Sovereign-Hub-Logic",
+      "what": "MEMORY_MANIFEST: MEDIUM",
+      "where": "memory_logic.py",
+      "when": "2026-04-04T00:51:03.219690+00:00",
+      "why": "Rule 9/10 Sovereign Persistence",
+      "how": "Heuristic Layering",
+      "tier_link": null,
+      "domain_tokens": null,
+      "memory_nexus": null,
+      "purity_score": 1.0,
+      "is_nuance": false,
+      "predicted_v": null,
+      "actual_v": null,
+      "eval_delta": null,
+      "latency_ms": null,
+      "token_count": null,
+      "thinking_effort": null,
+      "version": "1.3.0",
+      "trust_level": "T3:arch-purity",
+      "payload_hash": null,
+      "intent_16d": {},
+      "env_context": {}
+    }
+  },
+  "out_20260404_035048_3523": {
+    "data": {
+      "type": "outcome",
+      "p_id": "pred_20260404_035048_3523",
+      "outcome": {
+        "actual_emergence": 3.0,
+        "results": [
+          [
+            [
+              null,
+              null,
+              null
+            ],
+            [
+              {
+                "status": "error",
+                "node_id": "node_2_1_0",
+                "error": "Organ 'system_organ' has no active session (Status: Offline)."
+              },
+              {
+                "status": "error",
+                "node_id": "node_2_2_0",
+                "error": "Organ 'system_organ' has no active session (Status: Offline)."
+              }
+            ],
+            [
+              {
+                "status": "error",
+                "node_id": "node_3_1_0",
+                "error": "Organ 'system_organ' has no active session (Status: Offline)."
+              },
+              {
+                "status": "error",
+                "node_id": "node_3_2_0",
+                "error": "Organ 'system_organ' has no active session (Status: Offline)."
+              }
+            ]
+          ]
+        ],
+        "eval_delta": 1.44375,
+        "latency": 19.406275033950806
+      },
+      "timestamp": "2026-04-04T00:51:08.191239+00:00"
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-04T00:51:08.198563+00:00",
+    "stamp": {
+      "who": "Sovereign-Hub-Logic",
+      "what": "MEMORY_MANIFEST: MEDIUM",
+      "where": "memory_logic.py",
+      "when": "2026-04-04T00:51:08.198188+00:00",
+      "why": "Rule 9/10 Sovereign Persistence",
+      "how": "Heuristic Layering",
+      "tier_link": null,
+      "domain_tokens": null,
+      "memory_nexus": null,
+      "purity_score": 1.0,
+      "is_nuance": false,
+      "predicted_v": null,
+      "actual_v": null,
+      "eval_delta": null,
+      "latency_ms": null,
+      "token_count": null,
+      "thinking_effort": null,
+      "version": "1.3.0",
+      "trust_level": "T3:arch-purity",
+      "payload_hash": null,
+      "intent_16d": {},
+      "env_context": {}
+    }
+  },
+  "out_20260404_035103_4535": {
+    "data": {
+      "type": "outcome",
+      "p_id": "pred_20260404_035103_4535",
+      "outcome": {
+        "actual_emergence": 3.0,
+        "results": [
+          [
+            [
+              [
+                {
+                  "type": "text",
+                  "text": "{\n  \"exit_code\": 127,\n  \"stdout\": \"\",\n  \"stderr\": \"/bin/sh: research: command not found\\n\"\n}"
+                }
+              ]
+            ],
+            [
+              [
+                {
+                  "type": "text",
+                  "text": "Successfully wrote and stamped file: /Users/oripridan/ANTIGRAVITY/tooloo-v2/tooloo_v4_hub/shared/dsp/dsp_limiter.py"
+                }
+              ],
+              [
+                {
+                  "type": "text",
+                  "text": "Error executing tool fs_write: 1 validation error for fs_writeArguments\ncontent\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s...    self._gain = 1.0\\n'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+                }
+              ],
+              [
+                {
+                  "type": "text",
+                  "text": "Successfully wrote and stamped file: /Users/oripridan/ANTIGRAVITY/tooloo-v2/tooloo_v4_hub/shared/dsp/test_dsp_limiter.py"
+                }
+              ]
+            ],
+            [
+              [
+                {
+                  "type": "text",
+                  "text": "Unknown tool: sovereign_audit"
+                }
+              ],
+              [
+                {
+                  "type": "text",
+                  "text": "Error executing tool fs_write: 1 validation error for fs_writeArguments\ncontent\n  Field required [type=missing, input_value={'path': 'tooloo_v4_hub/s... on audio samples.\\n\\n'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing"
+                }
+              ]
+            ]
+          ]
+        ],
+        "eval_delta": 1.44375,
+        "latency": 35.677103996276855
+      },
+      "timestamp": "2026-04-04T00:51:38.910476+00:00"
+    },
+    "tier": "medium",
+    "timestamp": "2026-04-04T00:51:38.912171+00:00",
+    "stamp": {
+      "who": "Sovereign-Hub-Logic",
+      "what": "MEMORY_MANIFEST: MEDIUM",
+      "where": "memory_logic.py",
+      "when": "2026-04-04T00:51:38.912130+00:00",
+      "why": "Rule 9/10 Sovereign Persistence",
+      "how": "Heuristic Layering",
+      "tier_link": null,
+      "domain_tokens": null,
+      "memory_nexus": null,
+      "purity_score": 1.0,
+      "is_nuance": false,
+      "predicted_v": null,
+      "actual_v": null,
+      "eval_delta": null,
+      "latency_ms": null,
+      "token_count": null,
+      "thinking_effort": null,
+      "version": "1.3.0",
+      "trust_level": "T3:arch-purity",
+      "payload_hash": null,
+      "intent_16d": {},
+      "env_context": {}
+    }
+  }
+}

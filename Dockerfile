@@ -1,34 +1,35 @@
-FROM python:3.12-slim
+# 6W_STAMP
+# WHO: TooLoo V4 (Sovereign Architect)
+# WHAT: DOCKERFILE | Version: 1.0.0
+# WHERE: Dockerfile
+# WHY: Rule 18 Cloud-Native Mandate
+# HOW: Python 3.11-slim + Multi-Stage Prep
+# ==========================================================
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl build-essential && rm -rf /var/lib/apt/lists/*
+FROM python:3.11-slim
 
-# Install node for pyright
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
-RUN npm install -g pyright
+# Rule 14: Infrastructure immunity - prevent bloated image
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV PYTHONPATH /app
 
-# Set working directory
 WORKDIR /app
 
-# Copy python configuration
-COPY pyproject.toml uv.lock* ./
+# Install system dependencies (for potential C-extensions or tools)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install uv and sync dependencies (avoids needing a requirements.txt)
-# Install dependencies into system site-packages to avoid venv path issues in Cloud Run
-RUN pip install --no-cache-dir uv && \
-    uv pip install --system --no-cache-dir .
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
+# Copy source code
 COPY . .
 
-# Expose port and set host
+# Rule 18: Cloud Run binds to $PORT
 EXPOSE 8080
-ENV STUDIO_HOST=0.0.0.0
-ENV STUDIO_PORT=8080
 
-# Run Hub API using python3 -m uvicorn directly
-# Use PORT env variable for Cloud Run compliance
-CMD ["python3", "-m", "uvicorn", "tooloo_v3_hub.kernel.hub_api:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
+# Mandatory 6W initialization on startup
+CMD ["python3", "-m", "tooloo_v4_hub.kernel.hub_api"]

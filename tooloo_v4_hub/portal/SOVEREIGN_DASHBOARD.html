@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign Hub | Vitality Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05050a;
+            --glass: rgba(15, 15, 30, 0.6);
+            --accent: #7b61ff;
+            --success: #00ffa3;
+            --warning: #ffb800;
+            --text: #e0e0f0;
+            --border: rgba(123, 97, 255, 0.2);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 50% 50%, rgba(123, 97, 255, 0.05) 0%, transparent 70%);
+        }
+
+        .dashboard {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+        }
+
+        .status-badge {
+            background: rgba(0, 255, 163, 0.1);
+            color: var(--success);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--success);
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 12px;
+            box-shadow: 0 0 15px rgba(0, 255, 163, 0.2);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .card h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: rgba(224, 224, 240, 0.6);
+            margin: 0 0 16px 0;
+            letter-spacing: 2px;
+        }
+
+        .big-value {
+            font-size: 48px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .svi-color { color: var(--accent); text-shadow: 0 0 20px rgba(123, 97, 255, 0.4); }
+        .purity-color { color: var(--success); text-shadow: 0 0 20px rgba(0, 255, 163, 0.4); }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--success));
+            border-radius: 4px;
+            transition: width 1s ease-out;
+        }
+
+        .specialists {
+            grid-column: span 2;
+        }
+
+        .spec-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .spec-id { font-weight: 600; font-size: 14px; }
+        .spec-tier { 
+            font-size: 10px; 
+            background: var(--accent); 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            text-transform: uppercase;
+        }
+
+        .mission-log {
+             grid-column: span 3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            color: rgba(224, 224, 240, 0.8);
+        }
+
+        th { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); color: var(--accent); }
+        td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 163, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 255, 163, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 163, 0); }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <header>
+        <div>
+            <h1 style="margin: 0; font-weight: 600; font-size: 24px;">Sovereign Hub <span style="font-weight: 300; opacity: 0.5;">V4.2</span></h1>
+            <p style="margin: 4px 0 0 0; opacity: 0.6; font-size: 12px;">North Star Goal: Forge Foundational System Sovereignty</p>
+        </div>
+        <div class="status-badge"><span class="pulse"></span> 1.00 PURE</div>
+    </header>
+
+    <div class="grid">
+        <!-- SVI CARD -->
+        <div class="card">
+            <h2>Sovereign Vitality Index</h2>
+            <div class="big-value svi-color">0.9986</div>
+            <p style="opacity: 0.6; font-size: 12px;">Market Parity + Constitutional Purity</p>
+            <div class="progress-bar"><div class="progress-fill" style="width: 99.8%;"></div></div>
+        </div>
+
+        <!-- PURITY CARD -->
+        <div class="card">
+            <h2>Accountability Purity</h2>
+            <div class="big-value purity-color">1.00</div>
+            <p style="opacity: 0.6; font-size: 12px;">306 / 306 Nodes Verified (Rule 10)</p>
+            <div class="progress-bar"><div class="progress-fill" style="width: 100%; background: var(--success);"></div></div>
+        </div>
+
+        <!-- FINANCIAL CARD -->
+        <div class="card">
+            <h2>Sovereign Stewardship</h2>
+            <div class="big-value" style="color: var(--warning);">$ 0.0514</div>
+            <p style="opacity: 0.6; font-size: 12px;">Total Cloud Spend (Rule 14)</p>
+            <p style="font-size: 10px; color: var(--success); margin-top: 10px;">Efficiency: 98.4% (Non-Bloated)</p>
+        </div>
+
+        <!-- SPECIALISTS -->
+        <div class="card specialists">
+            <h2>Sovereign Brain Specialists</h2>
+            <div class="spec-list">
+                <div class="spec-item">
+                    <span class="spec-id">Claude 3.5 Sonnet</span>
+                    <span class="spec-tier">Logic/Architect</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-id">Gemini 1.5 Pro</span>
+                    <span class="spec-tier" style="background: #4285f4;">Context/Audit</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-id">GPT-4o</span>
+                    <span class="spec-tier" style="background: #19c37d;">Vision/Creative</span>
+                </div>
+                <div class="spec-item" style="border-bottom: none;">
+                    <span class="spec-id">Llama 3.3 70B</span>
+                    <span class="spec-tier" style="background: #333;">Reasoning/Logistics</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- MISSION LOG -->
+        <div class="card mission-log">
+            <h2>Recent Forensic Audit History</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Provider</th>
+                        <th>Model</th>
+                        <th>Tokens</th>
+                        <th>Cost</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Anthropic</td>
+                        <td>Claude 3.5 Sonnet</td>
+                        <td>4096</td>
+                        <td>$ 0.0123</td>
+                        <td style="color: var(--success);">PASS</td>
+                    </tr>
+                    <tr>
+                        <td>Google</td>
+                        <td>Gemini 1.5 Pro</td>
+                        <td>8192</td>
+                        <td>$ 0.0287</td>
+                        <td style="color: var(--success);">PASS</td>
+                    </tr>
+                    <tr>
+                        <td>OpenAI</td>
+                        <td>GPT-4o</td>
+                        <td>2048</td>
+                        <td>$ 0.0102</td>
+                        <td style="color: var(--success);">PASS</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

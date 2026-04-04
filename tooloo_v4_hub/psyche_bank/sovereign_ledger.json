@@ -1,0 +1,52 @@
+{
+  "total_cost_usd": 0.051404799999999994,
+  "total_tokens": 15360,
+  "provider_breakdown": {
+    "anthropic": {
+      "cost": 0.012288,
+      "tokens": 4096
+    },
+    "google": {
+      "cost": 0.028672,
+      "tokens": 8192
+    },
+    "openai": {
+      "cost": 0.010239999999999999,
+      "tokens": 2048
+    },
+    "meta": {
+      "cost": 0.0002048,
+      "tokens": 1024
+    }
+  },
+  "mission_history": [
+    {
+      "timestamp": "2026-04-04T04:31:52.265863",
+      "provider": "anthropic",
+      "model": "claude-3-5-sonnet-20240620",
+      "tokens": 4096,
+      "cost": 0.012288
+    },
+    {
+      "timestamp": "2026-04-04T04:31:52.266307",
+      "provider": "google",
+      "model": "gemini-1.5-pro",
+      "tokens": 8192,
+      "cost": 0.028672
+    },
+    {
+      "timestamp": "2026-04-04T04:31:52.266544",
+      "provider": "openai",
+      "model": "gpt-4o",
+      "tokens": 2048,
+      "cost": 0.01024
+    },
+    {
+      "timestamp": "2026-04-04T04:31:52.266800",
+      "provider": "meta",
+      "model": "meta/llama3-3@llama-3.3-70b-instruct",
+      "tokens": 1024,
+      "cost": 0.000205
+    }
+  ]
+}

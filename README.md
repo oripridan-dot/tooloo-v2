@@ -1,46 +1,35 @@
-# TooLoo V3: Pure Sovereign Cognitive Hub
+# TooLoo V4: Sovereign Hub (Galactic Enclave)
 
-Welcome to the **Sovereign Pure** architecture. This repository represents the total decoupling of reasoning from execution, achieving 100% purity and 6W-stamped verification.
+Welcome to the **Sovereign Galactic** architecture. This repository represents the total transition of the TooLoo brain to a cloud-native, high-fidelity intelligence engine.
 
-## 🏛️ Architecture: Hub & Organ Cluster
+## 🏛️ Architecture: Galactic Enclave (V4.2)
 
-The TooLoo V3 system is divided into a central Hub and a federated cluster of Organs and Spokes.
+The TooLoo V4 system is divided into a **Cloud-Native Hub** and a **Sovereign Portal**.
 
-### 1. The Hub Kernel (`tooloo_v3_hub/kernel/`)
-The Kernel is the stateless reasoning brain of the system.
-- `kernel/stamping.py`: Mandatory bit-perfect 6W-Protocol.
-- `kernel/mcp_nexus.py`: Secure conduit to all external Organs.
-- `kernel/orchestrator.py`: Orchestrates multi-agent DAGs without local execution.
+### 1. The Cloud Hub (`tooloo_v4_hub/`)
+The Permanent Brain residing in **GCP Cloud Run**.
+- **Kernel**: Stateless reasoning, cognitive triangulation, and mission orchestration.
+- **Organs**: Federated services (Memory, Audio, Reasoning) tethered via secure MCP/REST.
+- **Purity**: 1.00 Constitutional alignment with Rule 18 (Cloud-Native Mandate).
 
-### 2. The Sovereign Bank (`tooloo_v3_hub/psyche_bank/`)
-Isolated metadata and weights that define the Hub's identity.
-- `psyche_bank/world_model_v3.json`: 22D Surrogate World Model weights.
-- `psyche_bank/engram_registry.json`: Record of strategic outcomes.
+### 2. The Sovereign Portal (`portal/`)
+Your local high-fidelity interface (Mac M1) for sync and monitoring.
+- **WebSocket Streaming**: Real-time telemetry, 6W-stamped cognitive reasoning, and SVI monitoring.
+- **Glassmorphic HUD**: Premium visibility into Hub vitality and financial stewardship.
 
-### 3. Federated Organs (External)
-Organs are independent services tethered via MCP.
-- **Memory Organ**: Distributed Vector & Graph stores.
-- **Audio Organ (Claudio)**: Native C++ DSP & Synthesis.
+## 🚀 Sovereign Portal Setup
 
-## 🚀 Getting Started
-
-To initialize the V3 Hub and start the Sovereign reasoning loop:
+Launch the local portal to tether to the Galactic Hub:
 
 ```bash
-python -m tooloo_v3_hub.main
+# From the project root
+python run_tooloo.py
 ```
 
-## 📜 The Sovereign Protocol (6W)
+External Hub: [https://tooloo-v4-hub-gru3xdvw6a-uc.a.run.app](https://tooloo-v4-hub-gru3xdvw6a-uc.a.run.app)
 
-Every cognitive acts is stamped with:
-- **WHO**: The originating agent.
-- **WHAT**: The specific action or intent.
-- **WHERE**: The logical sector.
-- **WHEN**: ISO-Timestamp.
-- **WHY**: The teleological goal.
-- **HOW**: The procedural strategy.
+## 📜 The Sovereign Constitution (12 Rules)
+Refer to [GEMINI.md](GEMINI.md) for the mandatory operational discipline of the Hub.
 
 ---
-
-## 🏛️ Historical Archive
-Legacy V2 components (the transitional `engine/` monolith) have been safely migrated to `archive/tooloo-v2-legacy/`.
+**Purity Index**: 1.00 | **Vitality**: SOVEREIGN | **Status**: Manifested

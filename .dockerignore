@@ -12,3 +12,12 @@ psyche_bank/
 tests/
 studio/static/node_modules/
 uv.lock
+build/
+bin/
+*.dylib
+*.so
+claudio_batch_processor
+audio_proofs/
+claudio_processor/
+isolated_claudio_engine/
+claudio_v3/
