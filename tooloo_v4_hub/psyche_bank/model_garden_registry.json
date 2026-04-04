@@ -1,7 +1,31 @@
 {
-  "timestamp": "2026-03-31T21:45:00",
+  "timestamp": "2026-04-04T14:00:00",
   "models": {
     "google": [
+      {
+        "id": "gemini-2.5-pro",
+        "tier": "sovereign",
+        "task": "reasoning",
+        "cost_per_1M": 2.0,
+        "capabilities": {
+          "logic": 0.99,
+          "vision": 0.98,
+          "context": 1.0,
+          "constitutional": 0.98
+        }
+      },
+      {
+        "id": "gemini-2.5-flash",
+        "tier": "speed",
+        "task": "summarization",
+        "cost_per_1M": 0.075,
+        "capabilities": {
+          "logic": 0.90,
+          "coding": 0.88,
+          "creative": 0.85,
+          "vision": 0.95
+        }
+      },
       {
         "id": "gemini-1.5-pro",
         "tier": "sovereign",
@@ -16,7 +40,7 @@
       },
       {
         "id": "gemini-1.5-flash",
-        "tier": "speed",
+        "tier": "efficient",
         "task": "summarization",
         "cost_per_1M": 0.075,
         "capabilities": {
@@ -28,6 +52,19 @@
       }
     ],
     "anthropic": [
+      {
+        "id": "claude-3-7-sonnet-20250219",
+        "tier": "sovereign",
+        "task": "coding",
+        "cost_per_1M": 3.0,
+        "capabilities": {
+          "logic": 1.0,
+          "coding": 1.0,
+          "math": 0.98,
+          "constitutional": 0.99,
+          "creative": 0.96
+        }
+      },
       {
         "id": "claude-3-5-sonnet-20240620",
         "tier": "sovereign",
@@ -43,6 +80,30 @@
     ],
     "openai": [
       {
+        "id": "o1",
+        "tier": "sovereign",
+        "task": "reasoning",
+        "cost_per_1M": 15.0,
+        "capabilities": {
+          "logic": 1.0,
+          "coding": 0.98,
+          "math": 1.0,
+          "constitutional": 0.95
+        }
+      },
+      {
+        "id": "o3-mini",
+        "tier": "speed",
+        "task": "reasoning",
+        "cost_per_1M": 3.0,
+        "capabilities": {
+          "logic": 0.98,
+          "coding": 0.96,
+          "speed": 0.95,
+          "math": 0.99
+        }
+      },
+      {
         "id": "gpt-4o",
         "tier": "sovereign",
         "task": "general",
@@ -53,6 +114,46 @@
           "creative": 0.98,
           "vision": 0.99,
           "constitutional": 0.92
+        }
+      }
+    ],
+    "deepseek": [
+      {
+        "id": "deepseek-r1",
+        "tier": "sovereign",
+        "task": "reasoning",
+        "cost_per_1M": 2.0,
+        "capabilities": {
+          "logic": 0.99,
+          "coding": 0.97,
+          "math": 0.99,
+          "constitutional": 0.85
+        }
+      },
+      {
+        "id": "deepseek-v3",
+        "tier": "efficient",
+        "task": "general",
+        "cost_per_1M": 0.14,
+        "capabilities": {
+          "logic": 0.92,
+          "coding": 0.90,
+          "creative": 0.85,
+          "speed": 0.99
+        }
+      }
+    ],
+    "zhipu": [
+      {
+        "id": "glm-4",
+        "tier": "efficient",
+        "task": "general",
+        "cost_per_1M": 2.0,
+        "capabilities": {
+          "logic": 0.90,
+          "coding": 0.88,
+          "creative": 0.95,
+          "vision": 0.90
         }
       }
     ],
@@ -81,7 +182,6 @@
           "vision": 0.0
         }
       }
-    ],
-    "mistral": []
+    ]
   }
 }

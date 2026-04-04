@@ -1,8 +1,8 @@
 # WHO: TooLoo V4.2.0 (Sovereign Architect)
-# WHAT: MODULE_ORCHESTRATOR | Version: 2.0.0
+# WHAT: MODULE_ORCHESTRATOR | Version: 2.1.0
 # WHERE: tooloo_v4_hub/kernel/orchestrator.py
-# WHY: Rule 16 Empirical Calibration & SMP v2 Sovereign Manifestation
-# HOW: Integrated Matrix Decomposition + Rule 16 Feedback Loop
+# WHY: Primitives 1 & 8: Simplicity, 2-Level Verification, and Accountability
+# HOW: Deterministic Execution via LivingMap -> MegaDAG -> Crucible
 # PURITY: 1.00
 # ==========================================================
 
@@ -15,9 +15,7 @@ import gc
 import json
 
 from tooloo_v4_hub.kernel.governance.stamping import StampingEngine, SixWProtocol
-from tooloo_v4_hub.kernel.cognitive.value_evaluator import get_value_evaluator, ValueScore
-from tooloo_v4_hub.kernel.cognitive.audit_agent import get_audit_agent
-from tooloo_v4_hub.kernel.cognitive.delta_calculator import get_delta_calculator
+from tooloo_v4_hub.kernel.cognitive.crucible_validator import get_crucible_validator
 from tooloo_v4_hub.kernel.cognitive.llm_client import get_llm_client
 from tooloo_v4_hub.kernel.cognitive.mission_manager import get_mission_manager
 from tooloo_v4_hub.kernel.cognitive.recovery_pulse import get_recovery_pulse
@@ -42,8 +40,8 @@ class BuddyDelegator:
 
 class SovereignOrchestrator:
     """
-    The Adaptive Empirical Orchestrator for TooLoo V4.2.0.
-    Enforces the SMP v2: Purpose -> Matrix Plan -> Resilient Execution -> Calibration.
+    The Deterministic Orchestrator for TooLoo V4.2.0.
+    Enforces practical purpose execution without simulated mathematical abstraction.
     """
 
     def __init__(self):
@@ -51,7 +49,7 @@ class SovereignOrchestrator:
         self._nexus = get_mcp_nexus()
         self._parallel_limit: Optional[asyncio.Semaphore] = None
         self.delegator = BuddyDelegator(self)
-        logger.info("Sovereign Orchestrator V4.2.0 (SMP v2 / High-Agency) Awakened.")
+        logger.info("Sovereign Orchestrator V4.2.0 (Deterministic / High-Agency) Awakened.")
 
     async def execute_goal(self, goal: str, context: Dict[str, Any], mode: str = "DIRECT") -> List[Dict[str, Any]]:
         logger.info(f"Orchestrator V4.2: Initiating Sovereign Mission -> {goal}")
@@ -59,96 +57,93 @@ class SovereignOrchestrator:
         # 0. MISSION INITIALIZATION
         mm = get_mission_manager()
         m_id = mm.create_mission(goal)
-        await mm.stream_telemetry(m_id, f"MISSION_INITIALIZED", level="START", metadata={"goal": goal})
+        
+        # Rule 1: Load Project Constitution
+        from tooloo_v4_hub.kernel.governance.knowledge_gateway import get_knowledge_gateway
+        gateway = get_knowledge_gateway()
+        sovereign_rules = gateway.load_sovereign_md()
+        
+        await mm.stream_telemetry(m_id, f"MISSION_INITIALIZED", level="START", metadata={
+            "goal": goal,
+            "has_sovereign_md": bool(sovereign_rules)
+        })
         
         # Ouroboros Heartbeat
         get_recovery_pulse().update_context(mission=goal)
         
-        # 1. PHASE 0: ECOSYSTEM INVENTORY (Rule 6) AND SOTA INJECTION (Rule 4)
+        start_time = time.time()
+
+        # 1. PHASE 0: ECOSYSTEM INVENTORY (Rule 6)
         from tooloo_v4_hub.kernel.governance.living_map import get_living_map
         living_map = get_living_map()
         existing = living_map.query_capabilities(goal)
         
-        # Rule 4: Mandatory SOTA JIT Injection (Pre-Flight)
-        logger.info("Rule 4: Forcing JIT SOTA Pulse...")
-        sota_context = await self._nexus.call_tool("vertex_organ", "sota_pulse", {"query": goal})
-        context["sota_data"] = sota_context
-        
         if existing and mode != "FORCE":
             logger.info(f"Map Query: Reusing component '{existing[0]['id']}' (Alignment: PERFECT).")
             return [{"status": "success", "reused": True, "node": existing[0]["id"]}]
-
-        # 2. PHASE: PRE-FLIGHT PREDICTION (C+I)/ENV = Emergence
-        evaluator = get_value_evaluator()
-        prediction = evaluator.calculate_emergence(goal, context)
-        logger.info(f"Pre-Flight Prediction: Emergence = {prediction.total_emergence:.4f}")
+            
+        # 1.5 OMNI-DIRECTIONAL MULTI-AGENT HANDOFF (OpenAI Paradigm)
+        # Instead of monolithic execution, we route context to specialized agents.
+        persona = "GeneralSpecialist"
+        goal_lower = goal.lower()
+        if "architect" in goal_lower or "design" in goal_lower or "plan" in goal_lower:
+            persona = "ArchitectAgent"
+        elif "code" in goal_lower or "build" in goal_lower or "implement" in goal_lower:
+            persona = "CoderAgent"
+        elif "verify" in goal_lower or "test" in goal_lower or "audit" in goal_lower:
+            persona = "VerifierAgent"
+            
+        logger.info(f"Orchestrator V4.2: Handoff -> Routing mission to {persona}")
+        await mm.stream_telemetry(m_id, f"AGENT_HANDOFF: Routed to {persona}", level="PROCESS")
         
-        # 3. MODEL GARDEN ROUTING (Rule 5)
-        try:
-            routing = await self._nexus.call_tool("vertex_organ", "garden_route", {
-                "intent_vector": prediction.dimensions
-            })
-            prediction.provider = routing.get("provider", prediction.provider)
-            prediction.model = routing.get("model", prediction.model)
-            logger.info(f"Model Garden Routing: {prediction.provider} ({prediction.model})")
-        except:
-             logger.warning("Vertex Organ unavailable. Falling back to Kernel Heuristics.")
-
-        # 4. STORE PREDICTION
-        from tooloo_v4_hub.organs.memory_organ.memory_logic import get_memory_logic
-        memory = await get_memory_logic()
-        p_id = await memory.store_prediction(goal, context, prediction.dict())
+        # Grounding Injection (Google Cloud Paradigm)
+        grounding_data = await gateway.get_dynamic_grounding(goal)
+        context["agent_persona"] = persona
+        context["dynamic_grounding"] = grounding_data
         
-        # 5. SMP v2: OMNI-DIRECTIONAL MEGA DAG (V4.2 MATRIX MODE)
+        # 2. OMNI-DIRECTIONAL MEGA DAG (Execution Phase)
         await mm.stream_telemetry(m_id, "STRATEGY: MEGA (V4.2 Matrix Parallel)", level="PROCESS")
+        
+        # Rule 7: Parallel Optimization (Claude-Style)
+        # If goal contains multiple sub-tasks (heuristic), we can potentially parallelize.
         mega = get_mega_dag()
-        mega_results = await mega.execute_mega_goal(goal, context)
+        
+        # Enhanced Execution: Split and Execute
+        # For now, we use the MegaDAG which handles the DAG structure.
+        # We wrap it in a semaphore to prevent over-concurrency (Rule 5).
+        if not self._parallel_limit:
+            self._parallel_limit = asyncio.Semaphore(5) # max 5 parallel tool flows
+            
+        async with self._parallel_limit:
+            mega_results = await mega.execute_mega_goal(goal, context)
             
         if mega_results.get("status") == "HALTED":
             return [{"status": "halted", "findings": mega_results.get("findings"), "mission_id": m_id}]
 
-        execution_time = mega_results["latency"]
-        results = mega_results["results"]
+        execution_latency = mega_results.get("latency", (time.time() - start_time) * 1000)
+        results = mega_results.get("results", [])
 
-        # 6. PHASE: POST-FLIGHT MEASUREMENT & CALIBRATION (Rule 16)
-        metrics = {
-            "status": "success",
-            "purity": 1.0,
-            "vitality": 1.0,
-            "latency": execution_time,
-            "results": results
-        }
+        # 3. AUDIT & RECEIPT (Primitive 8: 2-Level Verification)
+        crucible = get_crucible_validator()
+        audit_result = await crucible.audit_plan(goal, results)
         
-        delta_calc = get_delta_calculator()
-        observed_emergence = delta_calc.compute_observed_emergence(metrics)
-        
-        # Rule 16: Mathematical Verification of Evaluation Prediction Delta (EVD / eval_prediction_delta)
-        eval_prediction_delta = abs(prediction.total_emergence - observed_emergence)
-        logger.info(f"Rule 16: Evaluation Prediction Delta (EVD) = {eval_prediction_delta:.4f}")
-
-        # Store Outcome (Rule 16: Empirical Grounding)
-        await memory.store_outcome(p_id, {
-            "actual_emergence": observed_emergence, 
-            "results": results,
-            "eval_delta": eval_prediction_delta,
-            "latency": execution_time
-        })
-        
-        # Update calibration engine with the delta
-        await delta_calc.calculate_delta(prediction, observed_emergence, domain="logic")
-        
-        # 7. AUDIT & RECEIPT
-        auditor = get_audit_agent()
-        crucible = await auditor.run_crucible(goal, results, context)
+        if audit_result.status == "FAIL":
+             logger.error(f"CRUCIBLE REJECTION: {audit_result.findings}")
+             await mm.stream_telemetry(m_id, "MISSION_FAILED_AUDIT", level="ERROR", metadata={"findings": audit_result.findings})
+             return [{"status": "fail", "findings": audit_result.findings, "mission_id": m_id}]
         
         receipt = {
             "strategy": "MEGA_SMD_V4",
-            "audit_status": crucible.status,
-            "predicted_emergence": prediction.total_emergence,
-            "actual_emergence": observed_emergence,
-            "eval_delta": eval_prediction_delta,
+            "audit_status": audit_result.status,
+            "purity_score": audit_result.purity_score,
+            "latency_ms": execution_latency,
             "results_count": len(results)
         }
+
+        # 4. STORE OUTCOME (Real metrics, no simulated deltas)
+        from tooloo_v4_hub.organs.memory_organ.memory_logic import get_memory_logic
+        memory = await get_memory_logic()
+        await memory.log_execution_receipt(m_id, receipt)
         
         mm.complete_mission(m_id, results)
         await mm.stream_telemetry(m_id, "MISSION_SUCCESS: Sovereign Hub Evolution Confirmed.", level="END")

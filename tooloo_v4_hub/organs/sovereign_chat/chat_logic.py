@@ -35,8 +35,7 @@ from tooloo_v4_hub.kernel.cognitive.protocols import (
     CognitivePulse,
     HandoverEvent,
 )
-from tooloo_v4_hub.kernel.cognitive.north_star import get_north_star
-from tooloo_v4_hub.kernel.cognitive.north_star_synthesizer import get_north_star_synthesizer
+from tooloo_v4_hub.kernel.governance.living_map import get_living_map
 from tooloo_v4_hub.spokes.repositories import ChatRepository
 
 logger = logging.getLogger("SovereignChat-Logic")
@@ -81,11 +80,14 @@ class SovereignChatLogic:
             self.active_connections.append(websocket)
             logger.info("Principal Architect Tethered to Sovereign Chat.")
             
-            # Rule 1: Sync North Star on Connect
-            from dataclasses import asdict
+            # Rule 1: Sync System Vitality on Connect
+            living_map = get_living_map()
             await websocket.send_text(json.dumps({
-                "type": "NORTH_STAR_UPDATE",
-                "payload": asdict(get_north_star().state)
+                "type": "SYSTEM_STATUS_UPDATE",
+                "payload": {
+                    "node_count": len(living_map.nodes),
+                    "status": "VITAL" if len(living_map.nodes) > 10 else "BOOTSTRAPPING"
+                }
             }))
             try:
                 while True:
@@ -102,13 +104,8 @@ class SovereignChatLogic:
                             self.repo.store_message(inbound_msg)
                         logger.info(f"Sovereign Chat Received: {message}")
                         asyncio.create_task(self.execute_hub_chat(message))
-                    elif mtype == "manual_north_star_update":
-                        payload = msg.get("payload", {})
-                        navigator = get_north_star()
-                        navigator.update(**payload)
-                        logger.info(f"North Star Manually Overridden: {payload.get('macro_goal')}")
-                        from dataclasses import asdict
-                        await self.broadcast({"type": "NORTH_STAR_UPDATE", "payload": asdict(navigator.state)})
+                    elif mtype == "ping":
+                        await websocket.send_text(json.dumps({"type": "pong"}))
             except WebSocketDisconnect:
                 self.active_connections.remove(websocket)
                 logger.info("Architect Untethered.")
@@ -169,28 +166,9 @@ class SovereignChatLogic:
                 await self.broadcast({"type": "hub_heartbeat", "pulse": "STABLE"})
 
     async def initialize_agency(self) -> None:
-        """Rule 12/16: Bootstraps Buddy's Autonomous Agentic Layer."""
-        from tooloo_v4_hub.kernel.cognitive.autonomous_agency import get_autonomous_agency
-        from tooloo_v4_hub.kernel.cognitive.history_synthesizer import get_history_synthesizer
-        
-        logger.info("Buddy Agency: Initializing Collective Intelligence...")
-        
-        # 1. Synthesize History (Collective Common Sense)
-        synthesizer = get_history_synthesizer()
-        await synthesizer.synthesize_collective_state()
-        
-        # 2. Start Proactive Agency Loop
-        agency = get_autonomous_agency()
-        asyncio.create_task(agency.start_agency_loop())
-        
-        # 3. Start Heartbeat Pulse
+        """Rule 12: Bootstraps Buddy's Pulse."""
+        logger.info("Buddy Agency: Core Pulse ACTIVE.")
         asyncio.create_task(self._heartbeat_loop())
-
-        # 4. Initialize North Star Strategic Roadmap
-        ns_synthesizer = get_north_star_synthesizer()
-        asyncio.create_task(ns_synthesizer.synthesize_state())
-        
-        logger.info("Buddy Agency: Autonomous Pulse ACTIVE.")
 
 
 _chat_logic: Optional[SovereignChatLogic] = None

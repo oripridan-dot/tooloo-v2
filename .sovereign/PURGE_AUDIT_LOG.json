@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-04-04T09:17:08.546693",
+  "operator": "Principal-Architect-REMEDIATION-PROTOCOL",
+  "rule": "Rule 11 Anti-Band-Aid + Rule 10 6W Compliance",
+  "actions": [
+    {
+      "file": "tooloo_v4_hub/psyche_bank/medium_memory.json",
+      "pre_purge_sha256": "ac420ddfc9381429fe3a3eadf365fb56f05008491c3ce386724dbbd2e7ee8cda",
+      "post_purge_sha256": "83df2fd8ab091e88d7bd099726dac393a804512306e6c644a80556c978c24522",
+      "records_before": 646,
+      "records_after": 645,
+      "purged_count": 1,
+      "purged_ids": [
+        "pred_20260403_192617_6373"
+      ],
+      "backup": "tooloo_v4_hub/psyche_bank/medium_memory.json.PRE_PURGE_BACKUP",
+      "verification": "PASS"
+    },
+    {
+      "file": "tooloo_v4_hub/psyche_bank/long_memory.json",
+      "pre_purge_sha256": "1bf6c6991f31ff303495b65c3b018cb695dce94aa0b4aa77bae20d76b8cf5f59",
+      "post_purge_sha256": "1bf6c6991f31ff303495b65c3b018cb695dce94aa0b4aa77bae20d76b8cf5f59",
+      "records_before": 334,
+      "records_after": 334,
+      "purged_count": 0,
+      "purged_ids": [],
+      "backup": "tooloo_v4_hub/psyche_bank/long_memory.json.PRE_PURGE_BACKUP",
+      "verification": "PASS"
+    },
+    {
+      "file": "psyche_bank/medium_memory.json",
+      "pre_purge_sha256": "8f76413907ff9b1a57927872871a792101d35d6ab495a4150c2865642957130d",
+      "post_purge_sha256": "8f76413907ff9b1a57927872871a792101d35d6ab495a4150c2865642957130d",
+      "records_before": 2,
+      "records_after": 2,
+      "purged_count": 0,
+      "purged_ids": [],
+      "backup": "psyche_bank/medium_memory.json.PRE_PURGE_BACKUP",
+      "verification": "PASS"
+    }
+  ]
+}

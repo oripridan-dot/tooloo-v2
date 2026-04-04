@@ -1,14 +1,14 @@
 {
-  "total_cost_usd": 0.051404799999999994,
-  "total_tokens": 15360,
+  "total_cost_usd": 0.15927402500000012,
+  "total_tokens": 124689,
   "provider_breakdown": {
     "anthropic": {
       "cost": 0.012288,
       "tokens": 4096
     },
     "google": {
-      "cost": 0.028672,
-      "tokens": 8192
+      "cost": 0.13654122500000013,
+      "tokens": 117521
     },
     "openai": {
       "cost": 0.010239999999999999,
@@ -21,32 +21,704 @@
   },
   "mission_history": [
     {
-      "timestamp": "2026-04-04T04:31:52.265863",
-      "provider": "anthropic",
-      "model": "claude-3-5-sonnet-20240620",
-      "tokens": 4096,
-      "cost": 0.012288
-    },
-    {
-      "timestamp": "2026-04-04T04:31:52.266307",
+      "timestamp": "2026-04-04T08:27:59.017151",
       "provider": "google",
-      "model": "gemini-1.5-pro",
-      "tokens": 8192,
-      "cost": 0.028672
+      "model": "gemini-2.5-flash",
+      "tokens": 500,
+      "cost": 0.0005
     },
     {
-      "timestamp": "2026-04-04T04:31:52.266544",
-      "provider": "openai",
-      "model": "gpt-4o",
-      "tokens": 2048,
-      "cost": 0.01024
+      "timestamp": "2026-04-04T08:28:12.607881",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1623,
+      "cost": 0.001623
     },
     {
-      "timestamp": "2026-04-04T04:31:52.266800",
-      "provider": "meta",
-      "model": "meta/llama3-3@llama-3.3-70b-instruct",
-      "tokens": 1024,
-      "cost": 0.000205
+      "timestamp": "2026-04-04T08:28:44.376801",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1402,
+      "cost": 0.001402
+    },
+    {
+      "timestamp": "2026-04-04T08:29:01.171370",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1329,
+      "cost": 0.001329
+    },
+    {
+      "timestamp": "2026-04-04T08:29:43.369814",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1390,
+      "cost": 0.00139
+    },
+    {
+      "timestamp": "2026-04-04T08:29:50.010686",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 673,
+      "cost": 0.000673
+    },
+    {
+      "timestamp": "2026-04-04T08:30:07.322996",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 2056,
+      "cost": 0.002056
+    },
+    {
+      "timestamp": "2026-04-04T08:30:43.739278",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1575,
+      "cost": 0.001575
+    },
+    {
+      "timestamp": "2026-04-04T08:31:19.819298",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 379,
+      "cost": 0.000379
+    },
+    {
+      "timestamp": "2026-04-04T08:45:41.173639",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1043,
+      "cost": 0.001043
+    },
+    {
+      "timestamp": "2026-04-04T08:47:44.492335",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 2184,
+      "cost": 0.002184
+    },
+    {
+      "timestamp": "2026-04-04T08:53:10.990077",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1486,
+      "cost": 0.001486
+    },
+    {
+      "timestamp": "2026-04-04T08:54:47.546731",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1394,
+      "cost": 0.001394
+    },
+    {
+      "timestamp": "2026-04-04T08:56:09.442081",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 639,
+      "cost": 0.000639
+    },
+    {
+      "timestamp": "2026-04-04T08:56:31.452198",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 687,
+      "cost": 0.000687
+    },
+    {
+      "timestamp": "2026-04-04T08:56:33.702294",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 93,
+      "cost": 9.3e-05
+    },
+    {
+      "timestamp": "2026-04-04T08:56:47.118051",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1312,
+      "cost": 0.001312
+    },
+    {
+      "timestamp": "2026-04-04T08:57:11.181473",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 844,
+      "cost": 0.000844
+    },
+    {
+      "timestamp": "2026-04-04T08:57:36.815149",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 586,
+      "cost": 0.000586
+    },
+    {
+      "timestamp": "2026-04-04T08:57:40.460553",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 160,
+      "cost": 0.00016
+    },
+    {
+      "timestamp": "2026-04-04T08:57:52.854130",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1225,
+      "cost": 0.001225
+    },
+    {
+      "timestamp": "2026-04-04T09:04:58.225272",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1791,
+      "cost": 0.001791
+    },
+    {
+      "timestamp": "2026-04-04T09:09:55.054998",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 266,
+      "cost": 0.000266
+    },
+    {
+      "timestamp": "2026-04-04T09:10:21.999126",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 563,
+      "cost": 0.000563
+    },
+    {
+      "timestamp": "2026-04-04T09:10:24.242518",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 128,
+      "cost": 0.000128
+    },
+    {
+      "timestamp": "2026-04-04T09:10:39.814393",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1419,
+      "cost": 0.001419
+    },
+    {
+      "timestamp": "2026-04-04T09:11:00.870226",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 853,
+      "cost": 0.000853
+    },
+    {
+      "timestamp": "2026-04-04T09:11:27.225538",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 809,
+      "cost": 0.000809
+    },
+    {
+      "timestamp": "2026-04-04T09:11:31.925691",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 263,
+      "cost": 0.000263
+    },
+    {
+      "timestamp": "2026-04-04T09:11:48.151195",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1621,
+      "cost": 0.001621
+    },
+    {
+      "timestamp": "2026-04-04T09:23:10.392273",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 381,
+      "cost": 0.000381
+    },
+    {
+      "timestamp": "2026-04-04T09:23:32.298696",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 685,
+      "cost": 0.000685
+    },
+    {
+      "timestamp": "2026-04-04T09:23:35.147998",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 146,
+      "cost": 0.000146
+    },
+    {
+      "timestamp": "2026-04-04T09:23:48.070659",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1401,
+      "cost": 0.001401
+    },
+    {
+      "timestamp": "2026-04-04T09:24:14.997155",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 687,
+      "cost": 0.000687
+    },
+    {
+      "timestamp": "2026-04-04T09:24:39.479878",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 644,
+      "cost": 0.000644
+    },
+    {
+      "timestamp": "2026-04-04T09:24:45.841224",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 126,
+      "cost": 0.000126
+    },
+    {
+      "timestamp": "2026-04-04T09:24:58.002172",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1392,
+      "cost": 0.001392
+    },
+    {
+      "timestamp": "2026-04-04T09:26:31.397462",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 860,
+      "cost": 0.00086
+    },
+    {
+      "timestamp": "2026-04-04T09:33:21.034183",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1051,
+      "cost": 0.001051
+    },
+    {
+      "timestamp": "2026-04-04T09:33:46.799096",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1018,
+      "cost": 0.001018
+    },
+    {
+      "timestamp": "2026-04-04T09:34:04.794023",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1866,
+      "cost": 0.001866
+    },
+    {
+      "timestamp": "2026-04-04T09:34:20.559993",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1835,
+      "cost": 0.001835
+    },
+    {
+      "timestamp": "2026-04-04T09:34:46.055613",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1047,
+      "cost": 0.001047
+    },
+    {
+      "timestamp": "2026-04-04T09:35:09.507205",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 669,
+      "cost": 0.000669
+    },
+    {
+      "timestamp": "2026-04-04T09:35:30.817702",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1891,
+      "cost": 0.001891
+    },
+    {
+      "timestamp": "2026-04-04T09:35:47.923705",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1626,
+      "cost": 0.001626
+    },
+    {
+      "timestamp": "2026-04-04T09:36:42.069073",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1738,
+      "cost": 0.001738
+    },
+    {
+      "timestamp": "2026-04-04T12:10:12.262822",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 584,
+      "cost": 0.000584
+    },
+    {
+      "timestamp": "2026-04-04T12:10:38.131943",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 874,
+      "cost": 0.000874
+    },
+    {
+      "timestamp": "2026-04-04T12:10:41.097501",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 217,
+      "cost": 0.000217
+    },
+    {
+      "timestamp": "2026-04-04T12:10:52.061241",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1345,
+      "cost": 0.001345
+    },
+    {
+      "timestamp": "2026-04-04T12:11:22.164746",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1313,
+      "cost": 0.001313
+    },
+    {
+      "timestamp": "2026-04-04T12:11:50.122315",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 925,
+      "cost": 0.000925
+    },
+    {
+      "timestamp": "2026-04-04T12:11:59.322756",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 407,
+      "cost": 0.000407
+    },
+    {
+      "timestamp": "2026-04-04T12:12:12.948351",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1679,
+      "cost": 0.001679
+    },
+    {
+      "timestamp": "2026-04-04T12:13:08.346190",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1092,
+      "cost": 0.001092
+    },
+    {
+      "timestamp": "2026-04-04T12:27:17.351147",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1418,
+      "cost": 0.001418
+    },
+    {
+      "timestamp": "2026-04-04T12:27:45.917018",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 988,
+      "cost": 0.000988
+    },
+    {
+      "timestamp": "2026-04-04T12:28:08.973623",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1836,
+      "cost": 0.001836
+    },
+    {
+      "timestamp": "2026-04-04T12:28:27.700439",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1870,
+      "cost": 0.00187
+    },
+    {
+      "timestamp": "2026-04-04T12:28:53.294938",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 772,
+      "cost": 0.000772
+    },
+    {
+      "timestamp": "2026-04-04T12:29:16.843390",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 914,
+      "cost": 0.000914
+    },
+    {
+      "timestamp": "2026-04-04T12:29:35.687865",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 861,
+      "cost": 0.000861
+    },
+    {
+      "timestamp": "2026-04-04T12:29:49.000423",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1402,
+      "cost": 0.001402
+    },
+    {
+      "timestamp": "2026-04-04T12:31:01.049922",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1167,
+      "cost": 0.001167
+    },
+    {
+      "timestamp": "2026-04-04T13:11:25.562706",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 75,
+      "cost": 7.5e-05
+    },
+    {
+      "timestamp": "2026-04-04T13:11:48.841587",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 555,
+      "cost": 0.000555
+    },
+    {
+      "timestamp": "2026-04-04T13:11:51.363852",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 25,
+      "cost": 2.5e-05
+    },
+    {
+      "timestamp": "2026-04-04T13:11:59.672671",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 961,
+      "cost": 0.000961
+    },
+    {
+      "timestamp": "2026-04-04T13:12:19.332814",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 373,
+      "cost": 0.000373
+    },
+    {
+      "timestamp": "2026-04-04T13:12:43.028346",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 665,
+      "cost": 0.000665
+    },
+    {
+      "timestamp": "2026-04-04T13:12:47.893732",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 32,
+      "cost": 3.2e-05
+    },
+    {
+      "timestamp": "2026-04-04T13:12:59.592546",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1147,
+      "cost": 0.001147
+    },
+    {
+      "timestamp": "2026-04-04T13:17:38.573874",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 942,
+      "cost": 0.000942
+    },
+    {
+      "timestamp": "2026-04-04T13:18:05.731964",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1174,
+      "cost": 0.001174
+    },
+    {
+      "timestamp": "2026-04-04T13:18:09.637483",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 531,
+      "cost": 0.000531
+    },
+    {
+      "timestamp": "2026-04-04T13:18:22.843611",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 1627,
+      "cost": 0.001627
+    },
+    {
+      "timestamp": "2026-04-04T13:18:57.333539",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1616,
+      "cost": 0.001616
+    },
+    {
+      "timestamp": "2026-04-04T13:19:27.901598",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1619,
+      "cost": 0.001619
+    },
+    {
+      "timestamp": "2026-04-04T13:19:44.863045",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 812,
+      "cost": 0.000812
+    },
+    {
+      "timestamp": "2026-04-04T13:20:02.111778",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 2058,
+      "cost": 0.002058
+    },
+    {
+      "timestamp": "2026-04-04T13:50:40.322031",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 37,
+      "cost": 3e-06
+    },
+    {
+      "timestamp": "2026-04-04T13:50:53.094397",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 106,
+      "cost": 8e-06
+    },
+    {
+      "timestamp": "2026-04-04T13:54:47.958595",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 97,
+      "cost": 7e-06
+    },
+    {
+      "timestamp": "2026-04-04T13:56:19.730852",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 89,
+      "cost": 8.9e-05
+    },
+    {
+      "timestamp": "2026-04-04T14:06:31.047501",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 89,
+      "cost": 7e-06
+    },
+    {
+      "timestamp": "2026-04-04T14:07:13.082509",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 89,
+      "cost": 7e-06
+    },
+    {
+      "timestamp": "2026-04-04T14:07:47.700443",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 89,
+      "cost": 7e-06
+    },
+    {
+      "timestamp": "2026-04-04T18:18:12.647659",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 97,
+      "cost": 7e-06
+    },
+    {
+      "timestamp": "2026-04-04T18:20:49.362642",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 97,
+      "cost": 7e-06
+    },
+    {
+      "timestamp": "2026-04-04T18:21:21.738818",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 89,
+      "cost": 7e-06
+    },
+    {
+      "timestamp": "2026-04-04T18:21:34.328884",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 89,
+      "cost": 7e-06
+    },
+    {
+      "timestamp": "2026-04-04T18:22:07.816976",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1391,
+      "cost": 0.002782
+    },
+    {
+      "timestamp": "2026-04-04T18:22:45.395097",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1626,
+      "cost": 0.003252
+    },
+    {
+      "timestamp": "2026-04-04T18:22:59.925648",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 944,
+      "cost": 7.1e-05
+    },
+    {
+      "timestamp": "2026-04-04T18:23:28.490281",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 2093,
+      "cost": 0.000157
+    },
+    {
+      "timestamp": "2026-04-04T18:24:06.603961",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 1656,
+      "cost": 0.003312
+    },
+    {
+      "timestamp": "2026-04-04T18:24:31.969613",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "tokens": 715,
+      "cost": 0.00143
+    },
+    {
+      "timestamp": "2026-04-04T18:24:35.064882",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "tokens": 230,
+      "cost": 1.7e-05
     }
   ]
 }

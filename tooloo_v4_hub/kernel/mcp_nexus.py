@@ -43,7 +43,8 @@ class MCPNexus:
         self.tethers: Dict[str, Any] = {}
         self.request_futures: Dict[str, asyncio.Future] = {}
         self._init_lock = asyncio.Lock()  # Rule 12: Atomic Awakening
-        logger.info("Sovereign MCP Nexus V1.4.0 Awakened (Serialization-Hardened).")
+        self._dynamic_tool_cache: Dict[str, Any] = {}  # JIT Ram Cache
+        logger.info("Sovereign MCP Nexus Awakened with JIT Gateway Capabilities.")
 
     async def initialize_default_organs(self):
         """Rule 13: Auto-tethers the core organ cluster (Lazy if LEAN_MODE active)."""
@@ -51,16 +52,17 @@ class MCPNexus:
             # Check if already initialized inside the lock
             if any(t.get("status") == "Online" for t in self.tethers.values()):
                 return
-        # Federated Cloud Logic (Cloud Mode Immunity)
-        # Rule 18: In Cloud Run, we WANT LEAN_MODE to prevent OOM on start
-        lean_mode = os.getenv("LEAN_MODE", "false").lower() == "true"
+        # Rule 18/19: LEAN_MODE Default to True universally to save RAM
+        # Only fully disable if the user forcefully sets LEAN_MODE=false
+        lean_mode = os.getenv("LEAN_MODE", "true").lower() == "true"
         if os.getenv("CLOUD_NATIVE_WORKSPACE") == "true" and not lean_mode:
-            # Default to Lean in Cloud unless explicitly forced otherwise, 
-            # as the Hub is the primary orchestrator and organs should be JIT.
+            # Enforce Lean in Cloud Native
             lean_mode = True
-            logger.info("Nexus: Cloud Native detected. Defaulting to LEAN_MODE=True for stability.")
+            logger.info("Nexus: Cloud Native detected. Overriding to LEAN_MODE=True for OOM stability.")
+        elif lean_mode:
+            logger.info("Nexus: LEAN_MODE defaults to True for local development (Rule 19 Clean-Enclave).")
         else:
-            logger.info("Nexus: LEAN_MODE forced to False or local mode active.")
+            logger.warning("Nexus: LEAN_MODE forcefully disabled. Warning: RAM usage will spike.")
         
         logger.info(f"Nexus Initialization: LEAN_MODE={lean_mode} (Raw: {os.getenv('LEAN_MODE')})")
         if lean_mode:
@@ -82,6 +84,7 @@ class MCPNexus:
             "sovereign_chat": ["python3", "-m", "tooloo_v4_hub.organs.sovereign_chat.mcp_server", "--port", "8087"],
             "memory_organ": ["organs", "memory_organ", "mcp_server.py"],
             "cognitive_organ": ["organs", "cognitive_organ", "mcp_server.py"],
+            "swarm_organ": ["organs", "swarm_organ", "mcp_server.py"],
             "audio_organ": ["organs", "audio_organ", "mcp_server.py"]
         }
         
@@ -216,7 +219,36 @@ class MCPNexus:
             logger.warning(f"Tether type '{tether_type}' not yet implemented for real-mode.")
 
     async def call_tool(self, organ_name: str, tool_name: str, arguments: Dict[str, Any]) -> Any:
-        """Dispatches an async tool call via the MCP SDK or REST (Rule 2)."""
+        """Dispatches an async tool call via the MCP SDK, REST, or JIT Web Source."""
+        
+        # [JIT SKILL INTERCEPT] Fetch and Execute ephemeral Python code
+        if organ_name == "jit_skill":
+            logger.info(f"Nexus: Intercepted JIT Skill execution for '{tool_name}'")
+            from tooloo_v4_hub.kernel.governance.knowledge_gateway import get_knowledge_gateway
+            gw = get_knowledge_gateway()
+            
+            # Fetch from RAM or Dedicated Web Source
+            code = await gw.fetch_skill_code(tool_name)
+            if not code:
+                raise ValueError(f"Nexus: Dedicated JIT Server rejected or failed to provide '{tool_name}'")
+            
+            # Rule 19: Ephemeral Execution Context
+            local_env = {}
+            try:
+                exec(code, globals(), local_env)
+                if "process" in local_env:
+                    import inspect
+                    if inspect.iscoroutinefunction(local_env["process"]):
+                        res = await local_env["process"](arguments)
+                    else:
+                        res = local_env["process"](arguments)
+                    return [{"type": "text", "text": json.dumps(res)}]
+                else:
+                     return [{"type": "text", "text": "JIT Execution completed (No explicit response returned)."}]
+            except Exception as e:
+                logger.error(f"JIT execution corruption on {tool_name}: {e}")
+                raise ValueError(f"JIT Tool execution failed for {tool_name}: {e}")
+                
         # 1. Bootstrap the Nexus (Lazy Organ Discovery) - Rule 13
         # WE DO NOT START ORGANS HERE in Cloud Mode to allow Uvicorn to bind immediately.
         # The organs will awaken on the first /execute or /call_tool call.

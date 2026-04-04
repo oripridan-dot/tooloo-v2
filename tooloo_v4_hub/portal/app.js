@@ -8,7 +8,7 @@
 
 const config = {
     // Rule 18: Cloud-Native Mandate. Mac is the Portal; Hub is the Brain.
-    apiHost: "https://tooloo-v4-hub-gru3xdvw6a-uc.a.run.app", 
+    apiHost: "http://localhost:8080", 
     sovereignKey: "SOVEREIGN_HUB_2026_V3"
 };
 
@@ -257,6 +257,12 @@ async function updateTelemetry() {
             dom.hud.node.innerText = data.hub_id || "SOVEREIGN_NODE";
             dom.hud.purity.innerText = (data.purity || 1.0).toFixed(2);
             dom.hud.purityGauge.style.width = `${(data.purity || 1.0) * 100}%`;
+            
+            if (data.vitality !== undefined) {
+                dom.hud.vitality.innerText = data.vitality.toFixed(2);
+                dom.hud.vitalityGauge.style.width = `${data.vitality * 100}%`;
+            }
+            
             if (data.session_cost_usd !== undefined) dom.hud.cost.innerText = `$${data.session_cost_usd.toFixed(2)}`;
             dom.hud.lamp.classList.add('online');
         }
@@ -270,9 +276,9 @@ let wsReconnectAttempts = 0;
 const MAX_RECONNECT_DELAY = 30000;
 
 function initWebSocket() {
-    // Rule 18: Connect directly to the Cloud Enclave from the Local Portal
     const cloudHost = config.apiHost.replace("https://", "").replace("http://", "");
-    const wsUrl = `wss://${cloudHost}/ws`;
+    const wsProtocol = config.apiHost.includes("localhost") ? "ws://" : "wss://";
+    const wsUrl = `${wsProtocol}${cloudHost}/ws`;
     console.log("Sovereign Nexus: Unified WebSocket connecting to", wsUrl);
     socket = new WebSocket(wsUrl);
 
@@ -497,6 +503,7 @@ function handleBuddyToken(token) {
 }
 
 async function processTypingQueue() {
+    isTyping = true;
     if (typingQueue.length === 0) {
         isTyping = false;
         return;
@@ -513,14 +520,20 @@ async function processTypingQueue() {
         return;
     }
     
-    // Minimal DOM update
-    content.innerText += char;
+    // Adaptive DOM update: dump chunks if we are falling behind
+    const chunkSize = typingQueue.length > 100 ? 10 : (typingQueue.length > 20 ? 5 : 1);
+    let chars = "";
+    for(let i=0; i<chunkSize; i++) {
+        if(typingQueue.length > 0) chars += typingQueue.shift();
+    }
+    
+    // Use textContent instead of innerText for major performance gain (no reflow)
+    content.textContent += chars;
     dom.stream.scrollTop = dom.stream.scrollHeight;
 
     // Rule 7: Leverage human cognition latency (Rhythmic Delay)
-    // Fast for small queues, slightly accelerate for deep queues to avoid lagging behind
-    const baseDelay = typingQueue.length > 50 ? 5 : 20;
-    const delay = Math.random() * 15 + baseDelay; 
+    const baseDelay = typingQueue.length > 50 ? 2 : 15;
+    const delay = Math.random() * 10 + baseDelay; 
     
     setTimeout(processTypingQueue, delay);
 }

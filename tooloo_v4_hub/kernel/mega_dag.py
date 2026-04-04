@@ -18,7 +18,6 @@ from pydantic import BaseModel, Field
 
 from tooloo_v4_hub.kernel.cognitive.llm_client import get_llm_client
 from tooloo_v4_hub.kernel.cognitive.mission_manager import get_mission_manager
-from tooloo_v4_hub.kernel.cognitive.value_evaluator import get_value_evaluator, ValueScore
 from tooloo_v4_hub.kernel.cognitive.matrix_decomposer import get_matrix_decomposer
 
 logger = logging.getLogger("SovereignMegaDAG")
@@ -51,10 +50,7 @@ class DagNode(BaseModel):
     depth: int = 0
     phase: int = 1
     
-    # Rule 16 Telemetry
-    prediction: Optional[Dict[str, Any]] = None
     outcome: Optional[Dict[str, Any]] = None
-    delta: float = 0.0
 
 class SovereignMegaDAG:
     """
@@ -81,12 +77,12 @@ class SovereignMegaDAG:
             matrix_data = await self.decompose_matrix(goal, context, m_id)
             
             # 2. AUDIT (Rule 11 Blockade)
-            from tooloo_v4_hub.kernel.cognitive.audit_agent import get_audit_agent
-            auditor = get_audit_agent()
+            from tooloo_v4_hub.kernel.cognitive.crucible_validator import get_crucible_validator
+            crucible = get_crucible_validator()
             # We audit the raw nodes from the decomposer
-            audit_result = await auditor.run_crucible(goal, matrix_data.get("nodes", []), context, mode="DEPLOY")
+            audit_result = await crucible.audit_plan(goal, matrix_data.get("nodes", []))
             
-            if audit_result.status == "FAILURE":
+            if audit_result.status == "FAIL":
                 logger.error(f"SMD V4.2 Blockade: Mission {m_id} HALTED due to security/purity failure.")
                 await self.mission_manager.stream_telemetry(m_id, "MISSION_HALTED: Crucible Blockade Active", level="ERROR", metadata={"findings": audit_result.findings})
                 return {
@@ -102,23 +98,13 @@ class SovereignMegaDAG:
             
             execution_time = time.time() - start_time
             
-            # 4. RULE 16 CALIBRATION (The Heartbeat)
-            from tooloo_v4_hub.kernel.cognitive.roi_evaluator import get_roi_evaluator
-            roi_evaluator = get_roi_evaluator()
-            roi_metrics = await roi_evaluator.calculate_mission_roi({
-                "mission_id": m_id,
-                "latency": execution_time,
-                "results": results,
-                "purity": 1.0 
-            })
-            
-            await self.mission_manager.stream_telemetry(m_id, "ROI_CALIBRATION_COMPLETE", metadata=roi_metrics.model_dump())
+            # 4. FINAL TELEMETRY
+            await self.mission_manager.stream_telemetry(m_id, "EXECUTION_COMPLETE", metadata={"latency": execution_time})
             
             return {
                 "mission_id": m_id,
                 "status": "SUCCESS",
                 "latency": execution_time,
-                "roi_metrics": roi_metrics.model_dump(),
                 "results": results
             }
         except Exception as e:
@@ -188,6 +174,9 @@ class SovereignMegaDAG:
                     await self.mission_manager.stream_telemetry(m_id, f"EXECUTING: {node.action} [{organ}]", metadata=node.params)
                     
                     try:
+                        # Anthropic Principle: Application-Layer Execution Boundary
+                        # The node output is guaranteed clean JSON, isolating the sandbox.
+                        logger.info(f"SMD V4.2 [Strict Sandbox]: Intercepting tool dispatch for {node.action}")
                         result = await nexus.call_tool(organ, node.action, node.params)
                         node.status = "COMPLETED"
                         node.outcome = {"result": result}

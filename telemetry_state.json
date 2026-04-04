@@ -1,26 +1,35 @@
 {
   "purity": {
     "purity_score": 1.0,
-    "stamped_count": 299,
-    "total_nodes": 299,
+    "stamped_count": 139,
+    "total_nodes": 139,
+    "ghost_evicted": 0,
     "unstamped": []
   },
   "latency": {
-    "latency_ms": 1420.17,
-    "latency_score": 0.0
+    "latency_ms": 0.64,
+    "latency_score": 1.0
   },
   "efficiency": {
-    "audit_overhead_ms": 0.0175,
-    "efficiency_score": 0.9965,
-    "complexity_bloat_delta": 0.0012
+    "audit_overhead_ms": 3902.8214,
+    "efficiency_score": 1.0,
+    "complexity_bloat_delta": 0.139
+  },
+  "enforcement": {
+    "status": "success",
+    "audited_processes": 0,
+    "terminated_processes": [],
+    "violations_found": 0
   },
   "market_parity": {
-    "parity_score": 0.176,
-    "target_latency_ms": 250.0,
-    "actual_latency_ms": 1420.17,
-    "delta_ms": 1170.17
+    "parity_score": 1.0,
+    "latency_parity": 1.0,
+    "cognitive_quality": 1.0,
+    "sovereign_nodes": 8,
+    "delta_ms": -249.36
   },
-  "svi": 0.5843,
-  "status": "DEGRADED",
-  "timestamp": 1775257623.0773618
+  "svi": 1.0,
+  "prompt_regression_delta": 0.0,
+  "status": "VITAL",
+  "timestamp": 1775316094.3360589
 }

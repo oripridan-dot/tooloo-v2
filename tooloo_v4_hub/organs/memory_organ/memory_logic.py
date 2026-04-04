@@ -28,6 +28,10 @@ from tooloo_v4_hub.organs.memory_organ.firestore_persistence import get_firestor
 from functools import lru_cache
 import collections
 
+class SovereignConstitutionException(Exception):
+    """Rule 10/11 Violation: Structural data integrity breach."""
+    pass
+
 logger = logging.getLogger("MemoryOrganLogic")
 
 TIER_FAST = "fast"
@@ -71,15 +75,27 @@ class MemoryOrganLogic:
         self._query_latency_cache = collections.OrderedDict() # Rule 7: LRU Result Cache
         self._lock = asyncio.Lock()
         
-        self.cloud_native = os.getenv("CLOUD_NATIVE", "true").lower() == "true"
-        self.project_id = os.getenv("ACTIVE_SOVEREIGN_PROJECT", "too-loo-zi8g7e")
+        cloud_env = os.getenv("CLOUD_NATIVE", "true").lower() == "true"
+        self.project_id = os.getenv("ACTIVE_SOVEREIGN_PROJECT")
         self.region = os.getenv("ACTIVE_SOVEREIGN_REGION", "me-west1")
         
+        can_run_cloud = bool(self.project_id or os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+        self.cloud_native = cloud_env and can_run_cloud
+        
+        if cloud_env and not can_run_cloud:
+            logger.warning("Memory: CLOUD_NATIVE=true but ACTIVE_SOVEREIGN_PROJECT is missing. Falling back to robust local offline persistence.")
+        
         if self.cloud_native:
+            # Enforce defaults for safe Vertex init
+            self.project_id = self.project_id or "too-loo-zi8g7e"
             self.firestore = get_firestore_persistence()
-            vertexai.init(project=self.project_id, location=self.region)
-            self.embedding_model = TextEmbeddingModel.from_pretrained("text-embedding-004")
-            logger.info(f"Memory: Cloud Native ACTIVE (Project: {self.project_id}). Vertex AI Embeddings and Firestore initialized.")
+            try:
+                vertexai.init(project=self.project_id, location=self.region)
+                self.embedding_model = TextEmbeddingModel.from_pretrained("text-embedding-004")
+                logger.info(f"Memory: Cloud Native ACTIVE (Project: {self.project_id}). Vertex AI Embeddings and Firestore initialized.")
+            except Exception as e:
+                logger.error(f"Memory: Vertex AI Init Failed: {e}. Falling back to HEURISTIC.")
+                self.embedding_model = None
         else:
             self.firestore = None
             self.embedding_model = None
@@ -203,29 +219,22 @@ class MemoryOrganLogic:
         """Wrapper for store_engram to maintain Hub Orchestrator compatibility."""
         return await self.store_engram(engram_id, data, layer)
 
-    async def store_prediction(self, goal: str, context: Dict[str, Any], prediction: Dict[str, Any]) -> str:
-        """Rule 16: Specialized storage for mission predictions."""
-        p_id = f"pred_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{hash(goal) % 10000}"
+    async def log_execution_receipt(self, mission_id: str, receipt: Dict[str, Any]) -> str:
+        """Primitive 8: Solidified storage for mission execution receipts."""
+        r_id = f"mission_receipt_{mission_id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
         payload = {
-            "type": "prediction",
-            "goal": goal,
-            "context": context,
-            "prediction": prediction,
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            "type": "execution_receipt",
+            "mission_id": mission_id,
+            "receipt": receipt,
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "stamping": {
+                "who": "Sovereign-Orchestrator",
+                "what": "Execution Tracking",
+                "rules": [8, 10, 11]
+            }
         }
-        await self.store_engram(p_id, payload, layer=TIER_MEDIUM)
-        return p_id
-
-    async def store_outcome(self, p_id: str, outcome: Dict[str, Any]) -> Dict[str, Any]:
-        """Rule 16: Specialized storage for mission outcomes (closes the loop)."""
-        o_id = f"out_{p_id[5:]}"
-        payload = {
-            "type": "outcome",
-            "p_id": p_id,
-            "outcome": outcome,
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
-        }
-        return await self.store_engram(o_id, payload, layer=TIER_MEDIUM)
+        await self.store_engram(r_id, payload, layer=TIER_MEDIUM)
+        return r_id
 
     async def store_knowledge_item(self, ki_id: str, decision: str, rationale: str, impact: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -266,11 +275,35 @@ class MemoryOrganLogic:
         if layer not in self.paths:
             layer = TIER_MEDIUM
         
+        # Rule 10: Pre-emptive Zero-Trust Ingestion Protocol
+        self._validate_rule_10(engram_id, data)
+        
         if self.firestore:
             return await self.firestore.store_engram(engram_id, data, layer)
             
         async with self._lock:
             return await asyncio.to_thread(self._sync_store, engram_id, data, layer)
+
+    def _validate_rule_10(self, engram_id: str, data: Dict[str, Any]):
+        """Mandated validation layer to reject atomic ghost data (Rule 1, 10)."""
+        stamp = data.get("stamp") or data.get("stamping")
+        
+        if not stamp:
+            raise SovereignConstitutionException(f"Rule 10 Violation: Engram '{engram_id}' missing mandatory 6W stamp.")
+        
+        # Mandatory 6W Fields
+        mandatory = ["who", "what", "where", "why", "how"]
+        missing = [f for f in mandatory if not stamp.get(f) or stamp.get(f) == "Hub"]
+        
+        # Root-level source check
+        if data.get("source") is None and stamp.get("where") is None:
+            missing.append("source/where")
+            
+        if missing:
+            raise SovereignConstitutionException(
+                f"Rule 10 Violation: Engram '{engram_id}' failed structural validation. "
+                f"Missing or generic fields: {', '.join(missing)}"
+            )
 
     async def store_engrams(self, engrams: List[Dict[str, Any]], layer: str = TIER_MEDIUM) -> Dict[str, Any]:
         """Batch store engrams (Rule 11: Optimized IO)."""

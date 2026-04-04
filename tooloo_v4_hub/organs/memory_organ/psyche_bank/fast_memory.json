@@ -1,14 +1,1 @@
-{
-  "session-01": {
-    "data": {
-      "text": "User asked for research."
-    },
-    "tier": "fast",
-    "timestamp": "2026-04-01T00:51:29.924295+00:00",
-    "stamp": {
-      "who": "Hub-Autonomous-Memory",
-      "when": "2026-04-01T00:51:29.924291+00:00",
-      "what": "MEMORY_STORE: fast"
-    }
-  }
-}
+{}

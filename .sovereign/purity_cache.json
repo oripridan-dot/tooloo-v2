@@ -1,0 +1,558 @@
+{
+  "tooloo_v4_hub/__init__.py": {
+    "mtime": 1775145629.1479492,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/main.py": {
+    "mtime": 1775274497.9829423,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/cloud_mission.py": {
+    "mtime": 1775256302.0162268,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/viewport_warmup.py": {
+    "mtime": 1775145628.5153964,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/reclaim_purity.py": {
+    "mtime": 1775232503.3655505,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/global_aligner.py": {
+    "mtime": 1775232503.366032,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/pathway_b_demo.py": {
+    "mtime": 1775145628.5283267,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/tree_builder.py": {
+    "mtime": 1775145628.531193,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/constitutional_ingestion.py": {
+    "mtime": 1775232503.3667333,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/calibration_pulse.py": {
+    "mtime": 1775145628.548039,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/manifest_buddy_demo.py": {
+    "mtime": 1775145628.5513878,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/memory_migration.py": {
+    "mtime": 1775232503.3685293,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/v4_benchmark.py": {
+    "mtime": 1775145628.560099,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/manifest_unifier.py": {
+    "mtime": 1775145628.566197,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/topography_pulse.py": {
+    "mtime": 1775145628.5701895,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/sovereign_launcher.py": {
+    "mtime": 1775145628.5745873,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/sota_mega_session.py": {
+    "mtime": 1775145628.5780814,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/cloud_transition.py": {
+    "mtime": 1775166733.875399,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tools/cloud_sync_back.py": {
+    "mtime": 1775166777.0849712,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/missions/memory_training_mission.py": {
+    "mtime": 1775232503.372072,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/psyche_bank/__init__.py": {
+    "mtime": 1775145628.6139963,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_pathway_b.py": {
+    "mtime": 1775145628.6553578,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_audit_agent.py": {
+    "mtime": 1775145628.6584313,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_orchestrator_pipeline.py": {
+    "mtime": 1775145628.6622345,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_claude_3_7.py": {
+    "mtime": 1775145628.6656144,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_real_component_evaluation.py": {
+    "mtime": 1775145628.6691053,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_visionary_engine.py": {
+    "mtime": 1775145628.6733024,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/sovereign_readiness_audit.py": {
+    "mtime": 1775165673.0465045,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/decompiler_performance_audit.py": {
+    "mtime": 1775232503.3764372,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_cognitive_dynamics.py": {
+    "mtime": 1775232503.376906,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_calibration_feedback.py": {
+    "mtime": 1775145628.684479,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/sovereign_agency_stress_test.py": {
+    "mtime": 1775251452.8241673,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/master_validation.py": {
+    "mtime": 1775212636.6033955,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_state_registry_integrity.py": {
+    "mtime": 1775145628.8620155,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_native_claudio.py": {
+    "mtime": 1775232503.3787801,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_claude_4_6.py": {
+    "mtime": 1775145628.872237,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_regional_sovereignty.py": {
+    "mtime": 1775145628.8880303,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/shift_atmosphere.py": {
+    "mtime": 1775145628.916547,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_smrp_replication.py": {
+    "mtime": 1775250124.410973,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/mega_dag_phase_2_checkpoint.py": {
+    "mtime": 1775232503.3810983,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/run_mega_sota.py": {
+    "mtime": 1775145628.963299,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_sota_verification.py": {
+    "mtime": 1775145628.9910362,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/mega_dag_checkpoint.py": {
+    "mtime": 1775232503.381934,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/mega_sota_test.py": {
+    "mtime": 1775145629.0136316,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_calibration.py": {
+    "mtime": 1775145629.0401561,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_recovery_heartbeat.py": {
+    "mtime": 1775232503.382541,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/mass_training.py": {
+    "mtime": 1775145629.0848584,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_autopoietic_calibration.py": {
+    "mtime": 1775251519.0782223,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/v4_architectural_check.py": {
+    "mtime": 1775259838.949515,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_kms_hardening.py": {
+    "mtime": 1775250114.6423743,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/primitive_alignment_test.py": {
+    "mtime": 1775257630.652933,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_preservation_scoring.py": {
+    "mtime": 1775145629.1246538,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_real_memory_sync.py": {
+    "mtime": 1775249766.775106,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/collaboration_latency_test.py": {
+    "mtime": 1775232503.383696,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_billing_manager.py": {
+    "mtime": 1775251525.0328186,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/tests/test_operational_pulse.py": {
+    "mtime": 1775145629.1392174,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/shared/base_mcp.py": {
+    "mtime": 1775145629.1513183,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/shared/__init__.py": {
+    "mtime": 1775145629.1546657,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/__init__.py": {
+    "mtime": 1775145629.2599628,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/scripts/cloud_instrument_challenge.py": {
+    "mtime": 1775145629.4542527,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/scripts/gsp-discover-models.py": {
+    "mtime": 1775145629.5485685,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/spokes/gcs_repository.py": {
+    "mtime": 1775232503.3903284,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/spokes/repositories.py": {
+    "mtime": 1775232503.390736,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/skills/protocolintegrity_lock.py": {
+    "mtime": 1775282698.2368474,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/skills/drift_interceptor.py": {
+    "mtime": 1775281541.193166,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/skills/svi_analytics_suite.py": {
+    "mtime": 1775281664.5048974,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/skills/:_verified_purge_protocol.**.py": {
+    "mtime": 1775293988.3545835,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/skills/consensuscompliancedaemon.py": {
+    "mtime": 1775281991.0067117,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/skills/.**.py": {
+    "mtime": 1775283991.4040475,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/skills/text_reverser.py": {
+    "mtime": 1775280679.82466,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/skills/protocol_enforcer.py": {
+    "mtime": 1775282087.5679994,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/temp_stress_sector/nuance_logic.py": {
+    "mtime": 1775231969.828851,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/mcp_nexus.py": {
+    "mtime": 1775277963.782821,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/chaos_test.py": {
+    "mtime": 1775145630.3218832,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/__init__.py": {
+    "mtime": 1775145630.3587587,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/claudio_bridge.py": {
+    "mtime": 1775232503.3954997,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/hub_api.py": {
+    "mtime": 1775274575.1606865,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/reconciliation_pulse.py": {
+    "mtime": 1775250414.6137064,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/narrative_ledger.py": {
+    "mtime": 1775145629.6770031,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/cognitive_registry.py": {
+    "mtime": 1775166392.9857316,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/crucible_validator.py": {
+    "mtime": 1775299808.228557,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/self_healing_pulse.py": {
+    "mtime": 1775294307.6343226,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/protocols.py": {
+    "mtime": 1775263572.4120102,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/sota_pulse.py": {
+    "mtime": 1775145629.7122977,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/memory_compressor.py": {
+    "mtime": 1775232503.4015949,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/__init__.py": {
+    "mtime": 1775145629.7243416,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/context_pruner.py": {
+    "mtime": 1775278216.4343867,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/mission_manager.py": {
+    "mtime": 1775145630.1597853,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/skill_forge.py": {
+    "mtime": 1775280496.827023,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/knowledge_crawler.py": {
+    "mtime": 1775145630.1677487,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/design_knowledge_injector.py": {
+    "mtime": 1775275213.443485,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/transmission.py": {
+    "mtime": 1775232503.4033432,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/llm_client.py": {
+    "mtime": 1775315606.6962495,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/chat_engine.py": {
+    "mtime": 1775315627.5429764,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/briefing_pulse.py": {
+    "mtime": 1775232503.404813,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/agent_types.py": {
+    "mtime": 1775257564.71055,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/command_registry.py": {
+    "mtime": 1775257611.3068676,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/cognitive/recovery_pulse.py": {
+    "mtime": 1775257594.1317275,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/missions/sovereign_sage.py": {
+    "mtime": 1775232503.407938,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/smrp_config.py": {
+    "mtime": 1775230628.973778,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/audit.py": {
+    "mtime": 1775145630.5513453,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/living_map.py": {
+    "mtime": 1775274644.996047,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/billing_manager.py": {
+    "mtime": 1775250384.9743152,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/__init__.py": {
+    "mtime": 1775145630.557844,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/knowledge_gateway.py": {
+    "mtime": 1775300775.6999574,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/permission_system.py": {
+    "mtime": 1775257586.4465976,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/sota_benchmarker.py": {
+    "mtime": 1775300851.8866944,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/kms_manager.py": {
+    "mtime": 1775251852.7030222,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/stamping.py": {
+    "mtime": 1775231838.3838892,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/kernel/governance/protocol_gate.py": {
+    "mtime": 1775282378.1235564,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/cognitive_organ/mcp_server.py": {
+    "mtime": 1775232503.3845417,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/sovereign_chat/chat_logic_runner.py": {
+    "mtime": 1775232503.3853693,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/sovereign_chat/index.html": {
+    "mtime": 1775145629.2317142,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/sovereign_chat/chat_logic.py": {
+    "mtime": 1775278627.7023273,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/sovereign_chat/mcp_server.py": {
+    "mtime": 1775255454.1833549,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/swarm_organ/mcp_server.py": {
+    "mtime": 1775277956.6490653,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/system_organ/mcp_server.py": {
+    "mtime": 1775300634.6354196,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/memory_organ/memory_logic.py": {
+    "mtime": 1775284290.9086854,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/memory_organ/sqlite_persistence.py": {
+    "mtime": 1775261158.5616586,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/memory_organ/memory_indexer.py": {
+    "mtime": 1775278242.7496238,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/memory_organ/__init__.py": {
+    "mtime": 1775145629.2858787,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/memory_organ/web_server.py": {
+    "mtime": 1775249104.5713758,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/memory_organ/firestore_persistence.py": {
+    "mtime": 1775264212.9258504,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/memory_organ/mcp_server.py": {
+    "mtime": 1775145629.3119946,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/vertex_organ/vertex_logic.py": {
+    "mtime": 1775266204.7561278,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/vertex_organ/mcp_server.py": {
+    "mtime": 1775145629.3261242,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/circus_spoke/index.html": {
+    "mtime": 1775145629.36942,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/circus_spoke/claudio_studio.css": {
+    "mtime": 1775145629.3745234,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/circus_spoke/__init__.py": {
+    "mtime": 1775145629.378753,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/circus_spoke/claudio_studio.js": {
+    "mtime": 1775145629.4013708,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/circus_spoke/circus_logic.py": {
+    "mtime": 1775145629.4120426,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/circus_spoke/mcp_server.py": {
+    "mtime": 1775145629.4167943,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/audio_organ/audio_logic.py": {
+    "mtime": 1775212577.8227935,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/organs/audio_organ/mcp_server.py": {
+    "mtime": 1775212588.9824252,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/shared/dsp/dsp_limiter.py": {
+    "mtime": 1775263898.8727298,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/shared/dsp/test_dsp_limiter.py": {
+    "mtime": 1775263898.8933523,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/psyche_bank/learnings/MASSIVE_ANTHROPIC_INGESTION.py": {
+    "mtime": 1775232503.3730552,
+    "is_stamped": true
+  },
+  "tooloo_v4_hub/psyche_bank/learnings/ANTHROPIC_LEARNING_SESSION.py": {
+    "mtime": 1775232503.3733552,
+    "is_stamped": true
+  },
+  "run_tooloo.py": {
+    "mtime": 1775168754.3676617,
+    "is_stamped": true
+  }
+}

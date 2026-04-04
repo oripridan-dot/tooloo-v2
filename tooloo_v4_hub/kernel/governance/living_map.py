@@ -98,12 +98,7 @@ class LivingMap:
         logger.info(f"LivingMap: Hub topography rebuilt. {len(self.nodes)} components mapped.")
         self._save_manifest()
         
-        # Rule 9: Trigger Full Context Sync
-        try:
-            from tooloo_v4_hub.kernel.cognitive.psyche_syncer import get_psyche_syncer
-            syncer = get_psyche_syncer()
-            asyncio.create_task(syncer.sync_all())
-        except: pass
+        # Rule 9: Context Sync is now handled autonomously by memory pulses.
 
     def register_node(self, path: str, metadata: Dict[str, Any], dependencies: List[str] = []):
         """Atomic registration of a new or modified component."""
@@ -121,12 +116,7 @@ class LivingMap:
             self.edges.append({"source": node_id, "target": target, "relation": "depends_on"})
         self._save_manifest()
         
-        # Rule 9: Trigger Incremental Context Sync
-        try:
-            from tooloo_v4_hub.kernel.cognitive.psyche_syncer import get_psyche_syncer
-            syncer = get_psyche_syncer()
-            asyncio.create_task(syncer.sync_node(node_id))
-        except: pass
+        # Rule 9: Context Sync is now handled autonomously by memory pulses.
 
     def query_capabilities(self, inquiry: str) -> List[Dict[str, Any]]:
         """Searches for existing components satisfying a capability requirement."""

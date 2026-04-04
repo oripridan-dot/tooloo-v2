@@ -19,6 +19,7 @@ from pathlib import Path
 from tooloo_v4_hub.kernel.governance.living_map import get_living_map
 from tooloo_v4_hub.organs.memory_organ.memory_logic import get_memory_logic
 from tooloo_v4_hub.kernel.governance.stamping import StampingEngine
+from tooloo_v4_hub.kernel.governance.knowledge_gateway import get_knowledge_gateway
 
 logger = logging.getLogger("SOTABenchmarker")
 
@@ -28,25 +29,44 @@ class SOTABenchmarker:
     and External Market Parity (Rule 16 / SMP v2).
     """
     
-    def __init__(self, registry_path: str = "tooloo_v4_hub/psyche_bank/model_garden_registry.json"):
+    def __init__(self):
         self.living_map = get_living_map()
-        self.registry_path = Path(registry_path)
-        self.registry_data = self._load_registry()
+        self.registry_data = {}
+        self.cache_path = Path(".sovereign/purity_cache.json")
+        self.cache_path.parent.mkdir(exist_ok=True)
+        self._purity_cache = self._load_purity_cache()
         
-    def _load_registry(self) -> Dict[str, Any]:
-        """Loads external benchmarks from the SOTA Registry."""
-        if self.registry_path.exists():
+    def _load_purity_cache(self) -> Dict[str, Any]:
+        if self.cache_path.exists():
             try:
-                data = json.loads(self.registry_path.read_text())
-                # Normalize structure if it's the psyche_bank version
-                return data.get("models", data)
-            except Exception as e:
-                logger.error(f"SOTA Registry Corruption: {e}")
+                return json.loads(self.cache_path.read_text())
+            except:
+                return {}
         return {}
+
+    def _save_purity_cache(self):
+        try:
+            self.cache_path.write_text(json.dumps(self._purity_cache, indent=2))
+        except Exception as e:
+            logger.error(f"Failed to save Purity Cache: {e}")
+        
+    async def _fetch_registry(self) -> Dict[str, Any]:
+        """Loads external benchmarks JIT from the dedicated Knowledge Gateway."""
+        try:
+            gateway = get_knowledge_gateway()
+            data = await gateway.fetch_json("sota_registry")
+            if not data:
+                # Fallback to model_garden_registry if sota_registry doesn't have parity metrics
+                data = await gateway.fetch_json("model_garden_registry")
+            return data.get("models", data)
+        except Exception as e:
+            logger.error(f"SOTA Registry Gateway Fetch Error: {e}")
+            return {}
 
     async def run_full_audit(self) -> Dict[str, Any]:
         """Performs a global system audit and returns the Vitality Report."""
         logger.info("Executing Sovereign Audit Pulse (Rule 16 + Market Parity)...")
+        self.registry_data = await self._fetch_registry()
         
         # 1. Measure 6W Purity (Rule 10)
         purity_report = await self._audit_6w_purity()
@@ -57,7 +77,12 @@ class SOTABenchmarker:
         # 3. Rule 7 Efficiency (Gatekeeping Overhead)
         efficiency_report = await self._measure_rule7_efficiency()
         
-        # 4. Market Parity Audit (Intelligence + Latency)
+        # 4. Protocol Enforcement (Buddy Mandate)
+        from tooloo_v4_hub.kernel.governance.protocol_gate import get_protocol_gate
+        gate = get_protocol_gate()
+        enforcement_result = await gate.enforce_consensus_protocol()
+        
+        # 5. Market Parity Audit (Intelligence + Latency)
         market_report = await self._audit_market_parity(latency_report)
         
         # 5. Calculate Sovereign Vitality Index (SVI)
@@ -69,15 +94,46 @@ class SOTABenchmarker:
             (market_report["parity_score"] * 0.3)
         )
         
+        # Load previous for regression
+        previous_svi = 1.0
+        try:
+            if os.path.exists("telemetry_state.json"):
+                with open("telemetry_state.json", "r") as f:
+                    prev_state = json.load(f)
+                    previous_svi = prev_state.get("svi", 1.0)
+        except: pass
+        
+        prompt_regression = previous_svi - svi if previous_svi > svi else 0.0
+        
         report = {
             "purity": purity_report,
             "latency": latency_report,
             "efficiency": efficiency_report,
+            "enforcement": enforcement_result,
             "market_parity": market_report,
             "svi": round(svi, 4),
+            "prompt_regression_delta": round(prompt_regression, 4),
             "status": "VITAL" if svi > 0.90 else "DEGRADED",
             "timestamp": time.time()
         }
+        
+        # Rule 16: Persistence of Telemetry (Sync Loop)
+        try:
+            with open("telemetry_state.json", "w") as f:
+                json.dump(report, f, indent=2)
+            
+            with open("buddy_audit_latest.md", "w") as f:
+                f.write(f"# Buddy Audit Pulse: {time.ctime()}\n\n")
+                f.write(f"**STATUS:** {report['status']}\n")
+                f.write(f"**SVI:** {report['svi']}\n")
+                f.write(f"**LATENCY:** {report['latency']['latency_ms']}ms\n")
+                f.write(f"**PURITY:** {report['purity']['purity_score']}\n")
+                if prompt_regression > 0:
+                    f.write(f"**PROMPT REGRESSION WARNING:** SVI Dropped by {round(prompt_regression, 4)}\n\n")
+                if report['status'] == "DEGRADED":
+                    f.write("> [!CAUTION]\n> System DEGRADED. Fast-path Bypasses DISABLED via Sovereign Protocol Enforcer.\n")
+        except Exception as e:
+            logger.error(f"Failed to persist telemetry: {e}")
         
         logger.info(f"Audit Complete. SVI: {report['svi']} | Cognitive Quality: {market_report['cognitive_quality']}")
         return report
@@ -121,8 +177,11 @@ class SOTABenchmarker:
             await validator.audit_plan("Sovereign Validation Overhead Audit", [{"action": "nop"}])
             audit_overhead_ms = (time.perf_counter() - start) * 1000
             
-            # Rule 7: Target < 2ms for non-blocking validation
-            score = max(0.0, 1.0 - (audit_overhead_ms / 2.0))
+            # Rule 7 (Updated for LLM-as-a-Judge): Target < 5000ms for cognitive validation
+            if audit_overhead_ms < 5000.0:
+                 score = 1.0
+            else:
+                 score = max(0.0, 1.0 - ((audit_overhead_ms - 5000.0) / 5000.0))
             
             # Calculate density bloat (Ratio of nodes to total system files)
             total_nodes = len(self.living_map.nodes) if hasattr(self.living_map, "nodes") else 1
@@ -137,29 +196,64 @@ class SOTABenchmarker:
             return {"audit_overhead_ms": 0, "efficiency_score": 1.0, "complexity_bloat_delta": 0.0}
 
     async def _audit_6w_purity(self) -> Dict[str, Any]:
-        """Audits Living Map nodes for 6W stamp validity."""
-        total_nodes = len(self.living_map.nodes) if hasattr(self.living_map, "nodes") else 0
-        if total_nodes == 0:
+        """Audits Living Map nodes for 6W stamp validity.
+        Rule 11: Only count nodes that exist on disk. Ghost nodes are evicted."""
+        all_nodes = list(self.living_map.nodes.items())
+        if not all_nodes:
             return {"purity_score": 1.0, "unstamped_count": 0}
-            
+
         stamped_count = 0
         unstamped = []
-        
-        for node_id, node in self.living_map.nodes.items():
+        ghost_nodes_evicted = []
+        cache_updated = False
+        existing_count = 0
+
+        for node_id, node in all_nodes:
             path = Path(node_id)
-            if not path.exists(): continue
-            
-            content = path.read_text(errors="ignore")
-            if StampingEngine.is_stamped(content):
+            if not path.exists():
+                # Rule 11: Ghost node — evict from Living Map to prevent perpetual purity drag
+                ghost_nodes_evicted.append(node_id)
+                continue
+
+            existing_count += 1
+            mtime = path.stat().st_mtime
+            cache_entry = self._purity_cache.get(node_id)
+
+            if cache_entry and cache_entry.get("mtime") == mtime:
+                is_stamped = cache_entry.get("is_stamped", False)
+            else:
+                content = path.read_text(errors="ignore")
+                is_stamped = StampingEngine.is_stamped(content)
+                self._purity_cache[node_id] = {
+                    "mtime": mtime,
+                    "is_stamped": is_stamped
+                }
+                cache_updated = True
+
+            if is_stamped:
                 stamped_count += 1
             else:
                 unstamped.append(node_id)
-                
-        purity_score = stamped_count / total_nodes
+
+        # Evict ghost nodes from the Living Map
+        if ghost_nodes_evicted:
+            for ghost_id in ghost_nodes_evicted:
+                self.living_map.nodes.pop(ghost_id, None)
+            logger.warning(f"Purity Audit: Evicted {len(ghost_nodes_evicted)} ghost nodes from Living Map.")
+            self.living_map._save_manifest()
+
+        if cache_updated:
+            self._save_purity_cache()
+
+        if existing_count == 0:
+            return {"purity_score": 1.0, "unstamped_count": 0, "ghost_evicted": len(ghost_nodes_evicted)}
+
+        purity_score = stamped_count / existing_count
         return {
             "purity_score": round(purity_score, 4),
             "stamped_count": stamped_count,
-            "total_nodes": total_nodes,
+            "total_nodes": existing_count,
+            "ghost_evicted": len(ghost_nodes_evicted),
             "unstamped": unstamped[:10]
         }
 

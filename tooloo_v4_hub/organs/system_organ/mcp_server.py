@@ -43,6 +43,17 @@ async def fs_read(path: str) -> str:
     return p.read_text(errors="ignore")
 
 @mcp.tool()
+async def fs_read_range(path: str, offset: int = 0, limit: int = 500) -> str:
+    """Reads a specific line range from a file (Rule 7: Efficiency)."""
+    p = Path(path)
+    if not p.is_absolute():
+         return "Error: Absolute path required."
+    
+    lines = p.read_text(errors="ignore").splitlines()
+    selected = lines[offset : offset + limit]
+    return "\n".join(selected)
+
+@mcp.tool()
 async def fs_write(path: str, content: str, why: str = "Autonomous Mission Manifestation", how: str = "Sovereign Hub fs_write Pulse") -> str:
     """Writes content to a file, applying a 6W stamp for architectural traceability."""
     p = Path(path)
@@ -68,6 +79,45 @@ async def fs_write(path: str, content: str, why: str = "Autonomous Mission Manif
     return f"Successfully wrote and stamped file: {p}"
 
 @mcp.tool()
+async def fs_fuzzy_edit(path: str, target: str, replacement: str, before: str = "", after: str = "", why: str = "Robust Targeted Refactoring") -> str:
+    """
+    Performs a robust string replacement using context strings (Rule 7: Claude-Style).
+    Matches 'before + target + after' to resolve ambiguity.
+    """
+    p = Path(path)
+    if not p.is_absolute():
+         p = Path(os.getcwd()) / p
+    
+    if not p.exists():
+        return f"Error: File {path} does not exist."
+    
+    content = p.read_text(errors="ignore")
+    full_target = before + target + after
+    
+    if full_target not in content:
+        return f"Error: Contextual target not found in {path}. Check 'before' and 'after' strings."
+    
+    # Replace exactly one instance of the full contextual block
+    new_block = before + replacement + after
+    new_content = content.replace(full_target, new_block, 1)
+    
+    # 1. Create Protocol for Stamping
+    protocol = SixWProtocol(
+        who="TooLoo V3 (Sovereign Architect)",
+        what=f"FS_FUZZY_EDIT:{p.name}",
+        where=str(p),
+        why=why,
+        how="Sovereign Hub fs_fuzzy_edit Pulse",
+        trust_level="T4:zero-trust",
+        domain_tokens="fs, mcp, diff, robust"
+    )
+    
+    p.write_text(new_content)
+    StampingEngine.stamp_file(str(p), protocol)
+    
+    return f"Successfully fuzzy-edited and stamped file: {p}"
+
+@mcp.tool()
 async def fs_ls(path: str) -> str:
     """Lists the contents of a directory."""
     p = Path(path)
@@ -76,7 +126,7 @@ async def fs_ls(path: str) -> str:
 
 @mcp.tool()
 async def cli_run(command: str, cwd: Optional[str] = None) -> str:
-    """Executes a shell command in the specified directory."""
+    """Executes a shell command with Claude-style output truncation (10k char limit)."""
     if not cwd:
         cwd = os.getcwd()
     
@@ -88,10 +138,16 @@ async def cli_run(command: str, cwd: Optional[str] = None) -> str:
     )
     stdout, stderr = await process.communicate()
     
+    def truncate(data: bytes, limit: int = 10000) -> str:
+        text = data.decode(errors="ignore")
+        if len(text) > limit:
+            return text[:limit] + f"\n... [TRUNCATED {len(text)-limit} CHARS]. Use targeted grep/read for full output."
+        return text
+
     result = {
         "exit_code": process.returncode,
-        "stdout": stdout.decode(),
-        "stderr": stderr.decode()
+        "stdout": truncate(stdout),
+        "stderr": truncate(stderr)
     }
     return json.dumps(result, indent=2)
 
@@ -119,6 +175,41 @@ async def read_url_content(Url: str) -> str:
             return text[:20000] # Limit to 20k chars for Hub stability
         except Exception as e:
             return f"Error: Failed to fetch {Url}: {str(e)}"
+
+@mcp.tool()
+async def grep_search(query: str, directory: str = ".", case_sensitive: bool = False) -> str:
+    """Searches the codebase for a specific string/pattern, returning file paths and line numbers. Ignores cache and node_modules by default."""
+    logger.info(f"SystemOrgan: Executing grep search for '{query}' in {directory} (Case Sensitive: {case_sensitive})")
+    p = Path(directory)
+    if not p.is_absolute():
+        p = Path(os.getcwd()) / p
+        
+    if not p.exists():
+        return f"Error: Directory {directory} not found."
+        
+    try:
+        flags = "-rnI"
+        if not case_sensitive:
+            flags += "i"
+            
+        excludes = "--exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.venv --exclude-dir=node_modules"
+        
+        process = await asyncio.create_subprocess_shell(
+            f"grep {flags} {excludes} '{query}' {p}",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        text = stdout.decode(errors="ignore")
+        if not text.strip():
+             return f"No matches found for '{query}'."
+             
+        limit = 15000
+        if len(text) > limit:
+            return text[:limit] + f"\n... [TRUNCATED {len(text)-limit} CHARS]"
+        return text
+    except Exception as e:
+        return f"Error: grep search failed - {str(e)}"
 
 if __name__ == "__main__":
     mcp.run()

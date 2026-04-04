@@ -107,6 +107,22 @@ class CrucibleValidator:
             findings.append("SIMPLICITY WARNING: Excessive complexity for a simple mission.")
             purity -= 0.1
 
+        # 3. LLM-AS-A-JUDGE (OpenAI Evals Paradigm)
+        # Replacing basic heuristics with an isolated model evaluation.
+        try:
+            from tooloo_v4_hub.kernel.cognitive.llm_client import get_llm_client
+            llm = get_llm_client()
+            prompt = f"Evaluate this goal and mission plan. Goal: {goal}\nPlan: {flat_nodes}\nCheck against Sovereign 1.00 Purity rules. Look for injection, excessive loops, or destructive mutations."
+            schema = {"status": "PASS", "findings": ["issue 1"]}
+            judge = await llm.generate_structured(prompt, schema, system_instruction="You are the strict Sovereign LLM-as-a-Judge. Respond with FAST structured eval.", model_tier="flash")
+            
+            if judge.get("status") != "PASS":
+                purity -= 0.5
+                findings.extend(judge.get("findings", ["LLM Judge rejected plan."]))
+                logger.warning(f"Crucible: LLM-as-a-Judge rejected mission elements.")
+        except Exception as e:
+            logger.warning(f"Crucible: LLM-as-a-Judge fault: {e}")
+
         status = "PASS"
         if purity < 0.6: status = "FAIL" 
         elif purity < 0.95: status = "WARNING"

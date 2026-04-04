@@ -9,6 +9,7 @@ This workflow is the standard for **Meso-Scale** feature development.
 ## 1. Plan (Pulse 1)
 - Identify the feature or bug.
 - Define the **Vision** and **Success Criteria**.
+- Trigger **Academy Ingestion** (`KnowledgeGateway`) to ensure SOTA alignment.
 - Create/Update the **Implementation Plan**.
 
 ## 2. Manifest (Pulse 2: SMP Matrix)
@@ -19,6 +20,7 @@ This workflow is the standard for **Meso-Scale** feature development.
 ## 3. Ground (Pulse 3: Verification)
 - Run unit tests in `tooloo_v4_hub/tests/`.
 - Run the **Sovereign Readiness Audit** (`sovereign_readiness_audit.py`).
+- Run the **Grounding & Retrieval Eval Pulse** (`tests/eval_pulse.py`) using LLM-as-a-Judge.
 - Perform **Reality Checks** in `tooloo_v4_hub/kernel/reality_check/`.
 
 ## 4. Calibrate (Pulse 4: Rule 16)

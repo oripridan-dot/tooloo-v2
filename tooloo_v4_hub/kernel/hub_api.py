@@ -31,9 +31,8 @@ CLOUD_AUDIO_URL = os.getenv("CLOUD_AUDIO_URL", "https://claudio-supreme-sota-gru
 CLOUD_HUB_URL = os.getenv("CLOUD_HUB_URL", "https://sovereign-hub-v4-awakening-hwn5gyft5q-zf.a.run.app")
 LEAN_MODE = os.getenv("LEAN_MODE", "true").lower() == "true"
 
-from tooloo_v4_hub.kernel.cognitive.self_evaluation_pulse import get_self_evaluator
 from tooloo_v4_hub.kernel.mcp_nexus import get_mcp_nexus
-from tooloo_v4_hub.kernel.cognitive.audit_agent import get_audit_agent
+from tooloo_v4_hub.kernel.governance.sota_benchmarker import get_benchmarker
 
 # Federated Cloud Logic
 if os.getenv("CLOUD_NATIVE_WORKSPACE") == "true":
@@ -227,11 +226,11 @@ class ContextSyncRequest(BaseModel):
 async def get_system_sync_payload() -> Dict[str, Any]:
     """Rule 13: Consolidated System Health and Telemetry Pulse."""
     try:
-        from tooloo_v4_hub.kernel.cognitive.audit_agent import get_audit_agent
+        from tooloo_v4_hub.kernel.governance.sota_benchmarker import get_benchmarker
         from tooloo_v4_hub.kernel.governance.billing_manager import get_billing_manager
-        auditor = get_audit_agent()
+        benchmarker = get_benchmarker()
         billing = get_billing_manager()
-        vitality_data = await auditor.calculate_vitality_index()
+        vitality_data = await benchmarker.run_full_audit()
         
         # Rule 14: Sovereign Financial Grounding
         cost_summary = billing.get_session_summary()
@@ -255,8 +254,8 @@ async def get_system_sync_payload() -> Dict[str, Any]:
         return {
             "status": "SOVEREIGN",
             "hub_id": "SOVEREIGN_HUB_V4_GALACTIC",
-            "purity": vitality_data.get("purity_index", 1.00),
-            "vitality": vitality_data.get("vitality_index", 1.00),
+            "purity": vitality_data.get("purity", {}).get("purity_score", 1.00),
+            "vitality": vitality_data.get("svi", 1.00),
             "session_cost_usd": cost_summary.get("total_cost_usd", 0.0),
             "financial_vitality": cost_summary.get("financial_vitality", 1.0),
             "revision": SOVEREIGN_REVISION,
@@ -277,9 +276,9 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Startup Hardware Warmup Failure: {e}")
 
-    # Rule 12: Autonomous Self-Evaluation Pulse (Background Task)
-    evaluator = get_self_evaluator()
-    asyncio.create_task(evaluator.start_autonomous_pulse(interval=600)) # Audit every 10 minutes
+    # Rule 12: Autonomous Self-Evaluation Pulse via Benchmarker (Background Task)
+    benchmarker = get_benchmarker()
+    # Assuming there's an outer loop, but for now we skip start_autonomous_pulse since benchmarker just runs full audit.
 
     # Rule 12/14: Buddy Self-Healing (Financial Stewardship)
     healer = get_self_healer()
@@ -302,8 +301,8 @@ async def health():
 
 @app.get("/vitality", dependencies=[Depends(verify_sovereign_key)])
 async def vitality():
-    auditor = get_audit_agent()
-    return await auditor.calculate_vitality_index()
+    benchmarker = get_benchmarker()
+    return await benchmarker.run_full_audit()
 
 @app.post("/execute", dependencies=[Depends(verify_sovereign_key)])
 async def execute_goal(request: GoalRequest, background_tasks: BackgroundTasks):
@@ -428,8 +427,8 @@ async def pull_psyche():
 
 @app.post("/audit", dependencies=[Depends(verify_sovereign_key)])
 async def audit():
-    auditor = get_audit_agent()
-    return await auditor.perform_audit()
+    benchmarker = get_benchmarker()
+    return await benchmarker.run_full_audit()
 
 @app.get("/context/history", dependencies=[Depends(verify_sovereign_key)])
 async def get_chat_history(limit: int = 50, session_id: str = "default"):
@@ -503,9 +502,9 @@ async def call_tool_direct(request: ToolCallRequest):
 
 @app.post("/self_evaluate", dependencies=[Depends(verify_sovereign_key)])
 async def trigger_self_evaluation():
-    """Manual trigger for the Sovereign Self-Evaluation Cycle (Rule 16)."""
-    evaluator = get_self_evaluator()
-    report = await evaluator.run_evaluation_cycle()
+    """Manual trigger for the Sovereign Self-Evaluation Cycle."""
+    benchmarker = get_benchmarker()
+    report = await benchmarker.run_full_audit()
     return report
 
 @app.post("/audio/synthesize", dependencies=[Depends(verify_sovereign_key)])

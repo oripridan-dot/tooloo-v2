@@ -26,8 +26,8 @@ logger = logging.getLogger("LLMClient")
 
 # Sovereign Project Pool (Rule 12: Distributed Resilience)
 PROJECT_POOL = [
-    "tooloo-v4-sovereign-104845", 
     "too-loo-zi8g7e", 
+    "tooloo-v4-sovereign-104845", 
     "gen-lang-client-0106023877", 
     "infonode"
 ]
@@ -57,10 +57,11 @@ class SovereignLLMClient:
     Ensures Buddy is ALWAYS conscious by bridging across GCP blackouts.
     """
 
-    def __init__(self, region: str = "me-west1"):
+    def __init__(self, region: str = "us-central1"):
         self.sa_path = "/Users/oripridan/ANTIGRAVITY/tooloo-v2/service-account.json"
+        # Rule 18: Map to region where Gemini 2.5 Pro/Flash are available
         self.primary_region = region
-        self.fallback_region = "us-central1"
+        self.fallback_region = "us-east5"
         self.current_project_index = 0
         self.current_region = region
         self.initialized = False
@@ -68,13 +69,14 @@ class SovereignLLMClient:
         self.global_flash_override = False # Rule 14: Luxury Shedding
         
         # REST Configuration (Rule 12: Emergency Consciousness | v1 Stable Bridge)
-        self.rest_key = "AIzaSyDhV39g_GEzVVfGB2lIWk6kMYEYUbJ0fFU"
+        self.rest_key = os.getenv("GEMINI_API_KEY", "AIzaSyDhV39g_GEzVVfGB2lIWk6kMYEYUbJ0fFU")
         self.rest_model = "models/gemini-2.5-flash"
         self.rest_url = f"https://generativelanguage.googleapis.com/v1/{self.rest_model}:generateContent?key={self.rest_key}"
 
+        # Vertex AI Native 2.5 Models (The Better Models Approved by Architect)
         self.models = {
-            "pro": "gemini-1.5-pro",
-            "flash": "gemini-1.5-flash"
+            "pro": "gemini-2.5-pro",
+            "flash": "gemini-2.5-flash"
         }
 
     def _set_auth_env(self):
@@ -133,7 +135,12 @@ class SovereignLLMClient:
                 route = await logic.garden_route(intent_vec, priority=1.5 if model_tier == "pro" else 1.0)
                 model_id = route["model"]
                 provider = route["provider"]
-                logger.info(f"Routed Brain selection: {provider.upper()} ({model_id}) | Reason: {route['reason']}")
+                # Hardening: If we get a non-Vertex generative model ID, force fallback logic
+                if provider == "google" and "gemini" not in model_id.lower():
+                     logger.warning(f"Garden Route returned non-Gemini ID '{model_id}'. Enforcing Vertex 2.5 logic.")
+                     model_id = None 
+                     provider = "google"
+                logger.info(f"Routed Brain selection: {provider.upper()} ({model_id or model_tier}) | Reason: {route['reason']}")
         except Exception as e:
             logger.warning(f"Garden Routing Bypass: {e}. Falling back to hardcoded tiers.")
 
@@ -143,6 +150,7 @@ class SovereignLLMClient:
              logger.warning("Rule 14: LUXURY SHEDDING ACTIVE. Forcing Flash model usage.")
         elif not model_id:
              model_id = self.models.get(model_tier, model_tier)
+             provider = "google"
              
         start_time = time.time()
         
@@ -150,6 +158,8 @@ class SovereignLLMClient:
             # If REST-only is forced by provider='rest'
             if provider == "rest":
                  response_text = await self._generate_rest_fallback(prompt, system_instruction, model_name=model_id)
+            elif provider == "anthropic":
+                 response_text = await self._generate_anthropic_rest(prompt, system_instruction, model_name=model_id)
             else:
                  if not self.initialized: await self.initialize()
                  instruction = [system_instruction] if system_instruction else None
@@ -180,10 +190,24 @@ class SovereignLLMClient:
             err_str = str(e)
             if any(x in err_str for x in ["404", "403", "IAM_PERMISSION_DENIED", "NOT_FOUND"]):
                 logger.warning(f"SDK Node Failure [{model_id}]: Pivoting to Universal REST Bridge...")
-                return await self._generate_rest_fallback(prompt, system_instruction, model_name=model_id)
-            
-            logger.error(f"LLM Fatigue for {model_id}: {e}")
-            return await self._generate_rest_fallback(prompt, system_instruction, model_name=model_id)
+                response_text = await self._generate_rest_fallback(prompt, system_instruction, model_name=model_id)
+            else:
+                logger.error(f"LLM Fatigue for {model_id}: {e}")
+                response_text = await self._generate_rest_fallback(prompt, system_instruction, model_name=model_id)
+                
+            # Log REST Fallback costs since it succeeds
+            usage = (len(prompt) + len(response_text)) // 4
+            self.budget.ingest(usage)
+            try:
+                fin = get_financial_logic()
+                provider_models = logic.sota_registry.get("google", []) # REST is always google
+                model_cfg = next((m for m in provider_models if m["id"] == "gemini-2.5-flash"), {})
+                cost_per_1M = model_cfg.get("cost_per_1M", 0.075) 
+                fin.log_mission_cost("google", "gemini-2.5-flash", usage, cost_per_1M)
+            except Exception as fe:
+                logger.warning(f"Financial Logging Failed (REST): {fe}")
+                
+            return response_text
 
     async def generate_stream(self, prompt: str, system_instruction: str = "", model_tier: str = "flash", model_name: Optional[str] = None):
         """Rule 4/7: Real-time Token Streaming Pulse."""
@@ -204,6 +228,68 @@ class SovereignLLMClient:
             # Fallback to single-shot if stream fails
             yield await self.generate_thought(prompt, system_instruction, model_tier, model_name)
 
+    async def _generate_anthropic_rest(self, prompt: str, system_instruction: str = "", model_name: Optional[str] = None, retry_count: int = 0) -> str:
+        """SOTA Anthropic Direct Bridge with Caching & Context Management Betas."""
+        target_model = model_name or "claude-3-5-sonnet-20241022"
+        api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            logger.warning("No ANTHROPIC_API_KEY. Falling back to Google REST.")
+            return await self._generate_rest_fallback(prompt, system_instruction, model_name=target_model)
+
+        url = "https://api.anthropic.com/v1/messages"
+        headers = {
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "anthropic-beta": "compact-2026-01-12,context-management-2025-06-27,prompt-caching-2024-09-27",
+            "content-type": "application/json"
+        }
+
+        # Rule 7 / Efficiency: Implement Cache Control on the massive System Instruction
+        system_content = []
+        if system_instruction:
+            system_content.append({
+                "type": "text",
+                "text": system_instruction,
+                "cache_control": {"type": "ephemeral"}
+            })
+
+        payload = {
+            "model": target_model,
+            "max_tokens": 8192,
+            "messages": [{"role": "user", "content": prompt}],
+            "context_management": {
+                 "edits": [
+                     {"type": "compact_20260112"},
+                     {"type": "clear_tool_uses_20250919"}
+                 ]
+            }
+        }
+        if system_content:
+             payload["system"] = system_content
+
+        logger.info(f"Executing Sovereign Anthropic Bridge to {target_model}...")
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=120)
+            data = response.json()
+
+            if "content" in data:
+                return data["content"][0]["text"]
+
+            if "error" in data and retry_count < 2:
+                wait_time = (retry_count + 1) * 2
+                logger.warning(f"Anthropic Exhausted: {data['error']}. Retrying in {wait_time}s...")
+                await asyncio.sleep(wait_time)
+                return await self._generate_anthropic_rest(prompt, system_instruction, model_name=target_model, retry_count=retry_count + 1)
+
+            logger.error(f"Anthropic Blackout: {data}")
+            return f"Anthropic Blackout Error: {data.get('error', {}).get('message', 'Unknown')}"
+        except Exception as e:
+            if retry_count < 2:
+                 wait_time = (retry_count + 1) * 2
+                 await asyncio.sleep(wait_time)
+                 return await self._generate_anthropic_rest(prompt, system_instruction, model_name=target_model, retry_count=retry_count + 1)
+            return f"Anthropic Connection Flaw: {e}"
+
     async def _generate_rest_fallback(self, prompt: str, system_instruction: str = "", model_name: Optional[str] = None, retry_count: int = 0) -> str:
         """Rule 12: Sovereign REST Bridge (Universal Consciousness) with Recursive Resilience."""
         target_model = model_name or self.rest_model
@@ -218,6 +304,13 @@ class SovereignLLMClient:
         
         clean_model = target_model.replace("models/", "")
         mapped_model = mapping.get(clean_model, target_model)
+        
+        # Rule 12 Hardening: If resolving a non-Google model via REST fallback due to garden miss,
+        # forcefully override to the fast gemini baseline to prevent explicit 404 REST loops.
+        if "gemini" not in mapped_model.lower():
+            logger.warning(f"REST Bridge Safety: Overriding unknown target '{mapped_model}' to 'models/gemini-2.5-flash'")
+            mapped_model = "models/gemini-2.5-flash"
+            
         if not mapped_model.startswith("models/"):
             mapped_model = f"models/{mapped_model}"
 

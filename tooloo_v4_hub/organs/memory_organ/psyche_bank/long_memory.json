@@ -1,14 +1,1 @@
-{
-  "core-rule-09": {
-    "data": {
-      "text": "3-Tier memory is critical."
-    },
-    "tier": "long",
-    "timestamp": "2026-04-01T00:51:29.923793+00:00",
-    "stamp": {
-      "who": "Hub-Autonomous-Memory",
-      "when": "2026-04-01T00:51:29.923624+00:00",
-      "what": "MEMORY_STORE: long"
-    }
-  }
-}
+{}
