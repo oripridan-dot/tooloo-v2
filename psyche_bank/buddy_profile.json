@@ -1,0 +1,16 @@
+{
+  "expertise_score": 0.0105,
+  "preferred_style": "visual",
+  "frequent_intents": [
+    "DESIGN",
+    "IDEATE",
+    "AUDIT",
+    "CASUAL",
+    "BUILD"
+  ],
+  "active_goals": [],
+  "completed_goals": [],
+  "knowledge_anchors": [],
+  "session_count": 0,
+  "last_updated": "2026-03-23T05:15:36.648772+00:00"
+}

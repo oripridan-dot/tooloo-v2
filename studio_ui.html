@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Creation Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .canvas-bg {
+            background-image: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 h-screen overflow-hidden flex">
+
+    <div class="w-1/3 flex flex-col border-r border-slate-800 bg-slate-900/50 relative z-10">
+        <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+            <h1 class="text-lg font-semibold tracking-wide text-white">Studio<span class="text-blue-500">.ai</span></h1>
+            <div class="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded-full border border-green-500/30">System: Fluid</div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-5 space-y-6" id="chat-history">
+            <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(37,99,235,0.5)]">AI</div>
+                <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-700/50 shadow-lg">
+                    <p class="text-sm">Welcome back. The canvas is ready. What are we creating today?</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3 flex-row-reverse">
+                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-sm">U</div>
+                <div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] shadow-lg shadow-blue-900/20">
+                    <p class="text-sm">Let's generate a massive, futuristic synth-wave cityscape. Make it cinematic.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(37,99,235,0.5)]">AI</div>
+                <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-700/50 shadow-lg">
+                    <p class="text-sm">Rendering cityscape. Applying neon highlights and volumetric fog.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-5 border-t border-slate-800 bg-slate-900">
+            <div class="relative">
+                <input type="text" id="prompt-input" class="w-full bg-slate-800 border border-slate-700 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors shadow-inner text-white placeholder-slate-400" placeholder="Describe what you want to change...">
+                <button id="send-btn" class="absolute right-2 top-2 bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-2/3 flex flex-col relative canvas-bg">
+        <div class="flex-1 p-8 flex items-center justify-center relative">
+            <div id="canvas-container" class="relative group w-full h-full max-h-[70vh] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-700 transition-all duration-500">
+                <img id="main-image" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop" alt="Generated Output" class="w-full h-full object-cover transition-all duration-500">
+                
+                <div id="loading-overlay" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-sm font-medium text-blue-400 tracking-wider uppercase">Generating</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="h-24 glass-panel absolute bottom-8 left-8 right-8 rounded-2xl flex items-center px-6 gap-6 shadow-2xl">
+            <div class="flex flex-col gap-1">
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Style Engine</span>
+                <div class="flex gap-2">
+                    <button class="style-btn active-style px-3 py-1.5 text-xs bg-blue-600/20 text-blue-400 border border-blue-500/50 rounded-lg font-medium hover:bg-blue-600/30 transition">Cinematic</button>
+                    <button class="style-btn px-3 py-1.5 text-xs bg-slate-800 text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-700 transition">Anime</button>
+                    <button class="style-btn px-3 py-1.5 text-xs bg-slate-800 text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-700 transition">Line Art</button>
+                </div>
+            </div>
+
+            <div class="w-px h-10 bg-slate-700 mx-2"></div>
+
+            <div class="flex flex-col gap-1">
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Aspect Ratio</span>
+                <div class="flex gap-2">
+                    <button class="ratio-btn px-3 py-1.5 text-xs bg-slate-800 text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-700 transition">1:1</button>
+                    <button class="ratio-btn active-ratio px-3 py-1.5 text-xs bg-blue-600/20 text-blue-400 border border-blue-500/50 rounded-lg font-medium hover:bg-blue-600/30 transition">16:9</button>
+                </div>
+            </div>
+
+            <div class="flex-1"></div>
+
+            <button class="px-5 py-2.5 bg-white text-slate-900 font-semibold text-sm rounded-xl hover:bg-slate-200 transition shadow-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export Asset
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('prompt-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatHistory = document.getElementById('chat-history');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const mainImage = document.getElementById('main-image');
+
+        // Pill toggle logic
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.style-btn').forEach(b => {
+                    b.className = 'style-btn px-3 py-1.5 text-xs bg-slate-800 text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-700 transition';
+                });
+                btn.className = 'style-btn active-style px-3 py-1.5 text-xs bg-blue-600/20 text-blue-400 border border-blue-500/50 rounded-lg font-medium hover:bg-blue-600/30 transition';
+            });
+        });
+
+        document.querySelectorAll('.ratio-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.ratio-btn').forEach(b => {
+                    b.className = 'ratio-btn px-3 py-1.5 text-xs bg-slate-800 text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-700 transition';
+                });
+                btn.className = 'ratio-btn active-ratio px-3 py-1.5 text-xs bg-blue-600/20 text-blue-400 border border-blue-500/50 rounded-lg font-medium hover:bg-blue-600/30 transition';
+            });
+        });
+
+        const unsplashImages = [
+            'photo-1506905925346-21bda4d32df4',
+            'photo-1519501025264-65ba15a82390',
+            'photo-1477959858617-67f85cf4f1df',
+            'photo-1531366936337-7c912a4589a7',
+            'photo-1444628838545-ac4016a5418a',
+        ];
+        let imgIdx = 0;
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(text));
+            return div.innerHTML;
+        }
+
+        function handleSend() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            const safeText = escapeHtml(text);
+
+            // Add User Message
+            const userDiv = document.createElement('div');
+            userDiv.className = 'flex items-start gap-3 flex-row-reverse opacity-0 translate-y-2 transition-all duration-300';
+            userDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-sm shrink-0">U</div>
+                <div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] shadow-lg shadow-blue-900/20">
+                    <p class="text-sm">${safeText}</p>
+                </div>`;
+            chatHistory.appendChild(userDiv);
+            setTimeout(() => userDiv.classList.remove('opacity-0', 'translate-y-2'), 10);
+
+            input.value = '';
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            // Show loading
+            loadingOverlay.classList.remove('opacity-0');
+            mainImage.classList.add('scale-105', 'blur-sm');
+
+            setTimeout(() => {
+                const aiDiv = document.createElement('div');
+                aiDiv.className = 'flex items-start gap-3 opacity-0 translate-y-2 transition-all duration-300';
+                aiDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(37,99,235,0.5)] shrink-0">AI</div>
+                    <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none max-w-[85%] border border-slate-700/50 shadow-lg">
+                        <p class="text-sm">Done. Canvas updated based on your request.</p>
+                    </div>`;
+                chatHistory.appendChild(aiDiv);
+                setTimeout(() => {
+                    aiDiv.classList.remove('opacity-0', 'translate-y-2');
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                }, 10);
+
+                imgIdx = (imgIdx + 1) % unsplashImages.length;
+                const newSrc = `https://images.unsplash.com/${unsplashImages[imgIdx]}?q=80&w=2564&auto=format&fit=crop`;
+                mainImage.onload = () => {
+                    loadingOverlay.classList.add('opacity-0');
+                    mainImage.classList.remove('scale-105', 'blur-sm');
+                };
+                mainImage.src = newSrc;
+            }, 2500);
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
+    </script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+{
+  "EXPLAIN:707b70c43276a1fe": {
+    "response": "It sounds like you're ready to understand where we're headed with the system and what the plan looks like. That's a great goal to have as we move forward!\n\nLet's break down what's next and map out a roadmap. Think of this like planning a journey: we need to know where we are, where we want to go, and the best way to get there.\n\nHere’s a roadmap for the system, focusing on the latest developments and what comes next:\n\n1.  **Understanding the Foundation (Where we are):**\n    *   **Core Primitive - Scaled Dot-Product Attention:** At the heart of systems like this is a concept called **Scaled Dot-Product Attention**. Imagine it like a spotlight that helps the system focus on the most important parts of information when it’s processing something. It's really good at finding connections.\n    *   **Flash Attention 3:** To make this spotlight more efficient, we use techniques like **Flash Attention 3**. This is like making the spotlight brighter and faster by optimizing how it uses its power, so it doesn't get bogged down with too much information. It's a big step for speed and handling more data.\n\n2.  **Next Steps - Building Smarter and Faster (Where we're going):**\n    *   **Enhanced Understanding & Context:** We're working on making the system even better at understanding the nuances of what you're asking or telling it. This means improving its ability to grasp context, so it can provide more relevant and helpful responses. Think of it as teaching the spotlight to not just find information, but to understand *why* that information is important for your specific need.\n    *   **Optimizing for Human Interaction:** A big part of what's next is ensuring the system communicates in a way that feels natural and supportive for you. This involves refining how it listens, how it responds, and how it helps you achieve your goals without getting in the way. We want it to feel like a truly helpful partner.\n    *   **Introducing New Capabilities:** Based on what we learn and the exciting possibilities we see, we'll be introducing new features and ways the system can assist you. This could range from better ways to visualize information to more advanced tools for problem-solving.\n\n3.  **Our Journey Together (How we get there):**\n    *   **Iterative Improvement:** We'll be constantly learning from our interactions. Every question you ask, every task you give the system, helps us understand what’s working well and where we can improve. It’s a continuous cycle of learning and getting better.\n    *   **Focus on Your Goals:** My primary focus, and the system's, is always on *your* goals. The roadmap is designed to ensure we’re building capabilities that directly help you achieve what you set out to do, whether that’s understanding complex topics, creating something new, or solving a problem.\n\nHow does this roadmap sound for now? We can dive deeper into any of these points if you like!",
+    "intent": "EXPLAIN",
+    "created_at": 1774218886.676843
+  },
+  "EXPLAIN:f13e408aff834517": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): [foundations] Scaled Dot-Product Attention: The Core Primitive: Attention(Q,K,V) = softmax(QKᵀ/√d_k)V. All transformer variants are built on this primitive. Flash Attention 3 fuses kernels to achieve near-memory-bandwidth-bound performance, reducing memory from O(N²) to O(N). Understanding this is prerequisite for any LLM work.; [conversational_design] Persona Consistency: The Core AI Trust Signal: Inconsistent AI persona (different tone, knowledge level, or values across turns) is the #1 trust destroyer in longitudinal AI use studies. Buddy must maintain consistent: vocabulary level, response structure, uncertainty language, and value signals across sessions. Persona is more important than accuracy for long-term engagement..",
+    "intent": "EXPLAIN",
+    "created_at": 1774223403.7520041
+  },
+  "EXPLAIN:9e9de468d7436a98": {
+    "response": "Building on what we were working on — Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): [foundations] Scaled Dot-Product Attention: The Core Primitive: Attention(Q,K,V) = softmax(QKᵀ/√d_k)V. All transformer variants are built on this primitive. Flash Attention 3 fuses kernels to achieve near-memory-bandwidth-bound performance, reducing memory from O(N²) to O(N). Understanding this is prerequisite for any LLM work.; [conversational_design] Persona Consistency: The Core AI Trust Signal: Inconsistent AI persona (different tone, knowledge level, or values across turns) is the #1 trust destroyer in longitudinal AI use studies. Buddy must maintain consistent: vocabulary level, response structure, uncertainty language, and value signals across sessions. Persona is more important than accuracy for long-term engagement..",
+    "intent": "EXPLAIN",
+    "created_at": 1774223403.8788352
+  },
+  "EXPLAIN:8d3b5bdb9ca3548e": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): [foundations] Scaled Dot-Product Attention: The Core Primitive: Attention(Q,K,V) = softmax(QKᵀ/√d_k)V. All transformer variants are built on this primitive. Flash Attention 3 fuses kernels to achieve near-memory-bandwidth-bound performance, reducing memory from O(N²) to O(N). Understanding this is prerequisite for any LLM work.; [conversational_design] Persona Consistency: The Core AI Trust Signal: Inconsistent AI persona (different tone, knowledge level, or values across turns) is the #1 trust destroyer in longitudinal AI use studies. Buddy must maintain consistent: vocabulary level, response structure, uncertainty language, and value signals across sessions. Persona is more important than accuracy for long-term engagement..",
+    "intent": "EXPLAIN",
+    "created_at": 1774223982.0059383
+  },
+  "EXPLAIN:6bea4c0464bcbbf1": {
+    "response": "Let me take a different angle on this — sometimes it just needs a fresh framing. Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774225724.6053157
+  },
+  "EXPLAIN:32fdab908877565b": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774225725.158424
+  },
+  "EXPLAIN:8013625398515443": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774225725.2730727
+  },
+  "EXPLAIN:9216266ebde471bf": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774225775.0679054
+  },
+  "EXPLAIN:3ed63341a61908c3": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774225775.2035277
+  },
+  "EXPLAIN:338a7496fa55f75c": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774225775.881252
+  },
+  "EXPLAIN:e0a5e26465011c83": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774225776.1228
+  },
+  "EXPLAIN:455c170de29a4299": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774226779.3365057
+  },
+  "EXPLAIN:84523333e4d3451d": {
+    "response": "Building on what we were working on — Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774238568.1100569
+  },
+  "EXPLAIN:9bfd071fe7a2c6b1": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774239125.127797
+  },
+  "EXPLAIN:4add110c49d76542": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774239125.2581747
+  },
+  "EXPLAIN:4cd8ddefbc3273f0": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774239126.2404397
+  },
+  "EXPLAIN:dfe5e89c81dd6504": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774239131.9371946
+  },
+  "EXPLAIN:4e3f422c1b865364": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774239136.125212
+  },
+  "EXPLAIN:317e183c84bf8c25": {
+    "response": "Let me take a different angle on this — sometimes it just needs a fresh framing. Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774239290.6653757
+  },
+  "EXPLAIN:a12fb76ac70944d6": {
+    "response": "Happy to walk you through this. I'll build the picture layer by layer — starting simple, adding depth as we go. Want a diagram or runbook alongside the explanation? Just say so.\n\nCurrent best practice (structured): Diátaxis framework (tutorials / how-tos / reference / explanation) is SOTA documentation structure; Mermaid.js v11 is natively supported in GitHub, Notion, and Confluence for inline diagrams.",
+    "intent": "EXPLAIN",
+    "created_at": 1774239291.3927186
+  }
+}

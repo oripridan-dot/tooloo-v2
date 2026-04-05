@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TooLoo — AI Product Creation Demo</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#060a12;color:#cbd5e1;height:100vh;overflow:hidden;
+    display:flex;flex-direction:column}
+
+  /* ── TOP PIPELINE BAR ─────────────────────────────────── */
+  .topbar{height:54px;background:linear-gradient(180deg,#0d1626 0%,#080c14 100%);
+    border-bottom:1px solid #111e2e;display:flex;align-items:center;
+    padding:0 24px;gap:0;flex-shrink:0}
+  .logo{font-size:17px;font-weight:800;letter-spacing:-0.5px;color:#fff;margin-right:36px}
+  .logo span{color:#3b82f6}
+  .pipeline{display:flex;align-items:center;flex:1}
+  .pstep{display:flex;align-items:center;gap:7px;padding:5px 14px;
+    border-radius:999px;font-size:12px;font-weight:500;color:#2d4060;
+    transition:all .5s ease}
+  .pstep.active{color:#93c5fd;background:rgba(59,130,246,.1)}
+  .pstep.done{color:#4ade80}
+  .pstep .dot{width:8px;height:8px;border-radius:50%;background:#1a2a3a;
+    flex-shrink:0;transition:all .5s}
+  .pstep.active .dot{background:#3b82f6;box-shadow:0 0 10px rgba(59,130,246,.9);
+    animation:pdot 1.5s infinite}
+  .pstep.done .dot{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.5)}
+  .pconn{width:28px;height:1px;background:#111e2e;flex-shrink:0;transition:background .5s}
+  .pconn.done{background:#4ade80}
+  .pconn.active{background:#3b82f6}
+  @keyframes pdot{0%,100%{box-shadow:0 0 8px rgba(59,130,246,.8)}
+    50%{box-shadow:0 0 18px rgba(59,130,246,1)}}
+
+  /* ── MAIN SPLIT ────────────────────────────────────────── */
+  .main{display:flex;flex:1;overflow:hidden}
+
+  /* ── CHAT PANEL ────────────────────────────────────────── */
+  .chat{width:36%;display:flex;flex-direction:column;
+    border-right:1px solid #0e1a28;background:#070b14}
+  .chat-head{padding:14px 20px;border-bottom:1px solid #0e1a28;
+    display:flex;align-items:center;justify-content:space-between}
+  .buddy-pill{display:flex;align-items:center;gap:8px;
+    font-size:13px;font-weight:600;color:#e2e8f0}
+  .bavatar{width:30px;height:30px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,#1d4ed8,#7c3aed);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;color:#fff;
+    box-shadow:0 0 14px rgba(29,78,216,.5)}
+  .sys-badge{font-size:10px;padding:3px 9px;border-radius:999px;
+    background:rgba(74,222,128,.08);color:#4ade80;
+    border:1px solid rgba(74,222,128,.25)}
+  .chat-msgs{flex:1;overflow-y:auto;padding:14px;
+    display:flex;flex-direction:column;gap:10px}
+  .chat-msgs::-webkit-scrollbar{width:3px}
+  .chat-msgs::-webkit-scrollbar-thumb{background:#1a2535;border-radius:3px}
+  .msg{display:flex;gap:8px;align-items:flex-start;
+    opacity:0;transform:translateY(8px);transition:opacity .35s,transform .35s}
+  .msg.show{opacity:1;transform:translateY(0)}
+  .msg.user{flex-direction:row-reverse}
+  .mavatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700}
+  .msg.buddy .mavatar{background:linear-gradient(135deg,#1d4ed8,#7c3aed);
+    color:#fff;box-shadow:0 0 10px rgba(29,78,216,.4)}
+  .msg.user .mavatar{background:#1a2535;color:#64748b}
+  .mbubble{max-width:84%;padding:10px 13px;border-radius:16px;
+    font-size:12.5px;line-height:1.55}
+  .msg.buddy .mbubble{background:#0d1a2b;border:1px solid #1a3048;
+    border-top-left-radius:4px;color:#cbd5e1}
+  .msg.user .mbubble{background:#1d4ed8;border-top-right-radius:4px;color:#fff}
+  .sys-event{display:flex;align-items:flex-start;gap:7px;padding:7px 10px;
+    background:rgba(16,185,129,.04);border:1px solid rgba(16,185,129,.12);
+    border-radius:7px;font-size:11px;color:#10b981;
+    font-family:'SF Mono','Fira Code',monospace;
+    opacity:0;transform:translateY(4px);transition:opacity .3s,transform .3s}
+  .sys-event.show{opacity:1;transform:translateY(0)}
+  .sys-event::before{content:'▶';font-size:8px;margin-top:2px;flex-shrink:0}
+  .typing{display:flex;gap:8px;align-items:center;
+    opacity:0;transition:opacity .3s;flex-shrink:0}
+  .typing.show{opacity:1}
+  .tdots{display:flex;gap:4px;padding:9px 13px;background:#0d1a2b;
+    border:1px solid #1a3048;border-radius:14px;border-top-left-radius:4px}
+  .tdot{width:6px;height:6px;border-radius:50%;background:#3b82f6;
+    animation:tpulse 1.2s infinite}
+  .tdot:nth-child(2){animation-delay:.2s}
+  .tdot:nth-child(3){animation-delay:.4s}
+  @keyframes tpulse{0%,60%,100%{opacity:.25;transform:translateY(0)}
+    30%{opacity:1;transform:translateY(-3px)}}
+  .chat-foot{padding:11px 14px;border-top:1px solid #0e1a28}
+  .chat-input{background:#0d1a2b;border:1px solid #1a3048;border-radius:10px;
+    padding:9px 13px;font-size:12px;color:#2d4060}
+
+  /* ── CANVAS PANEL ──────────────────────────────────────── */
+  .canvas{flex:1;display:flex;flex-direction:column;
+    background:#060a12;position:relative}
+  .canvas-head{padding:13px 22px;border-bottom:1px solid #0e1a28;
+    display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .clabel{font-size:11px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:#1e3048;transition:color .4s}
+  .clabel.lit{color:#3b82f6}
+  .cbadges{display:flex;gap:8px}
+  .cbadge{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:500;
+    border:1px solid #111e2e;background:#0a1020;color:#2d4060}
+  .cbadge.on{border-color:#1d4ed8;background:rgba(29,78,216,.12);color:#93c5fd}
+  .deploy-btn{display:none;padding:6px 16px;border-radius:8px;
+    background:linear-gradient(135deg,#1d4ed8,#7c3aed);
+    color:#fff;font-size:12px;font-weight:600;border:none;cursor:pointer;
+    box-shadow:0 0 20px rgba(29,78,216,.4);animation:glow 2s infinite}
+  @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(29,78,216,.4)}
+    50%{box-shadow:0 0 30px rgba(29,78,216,.7)}}
+  .canvas-arena{flex:1;position:relative;overflow:hidden;padding:20px}
+
+  /* ── STAGE SCREENS ─────────────────────────────────────── */
+  .screen{position:absolute;inset:20px;border-radius:14px;
+    overflow:hidden;opacity:0;transition:opacity .7s ease;pointer-events:none}
+  .screen.show{opacity:1;pointer-events:auto}
+
+  /* Stage 0 — idle grid */
+  .s0{background:#070b14;display:flex;align-items:center;justify-content:center}
+  .s0-grid{position:absolute;inset:0;
+    background-image:linear-gradient(to right,rgba(59,130,246,.035) 1px,transparent 1px),
+      linear-gradient(to bottom,rgba(59,130,246,.035) 1px,transparent 1px);
+    background-size:28px 28px}
+  .s0-center{z-index:1;text-align:center;position:relative}
+  .s0-center h2{font-size:26px;font-weight:200;color:#121e2e;
+    letter-spacing:.25em;text-transform:uppercase}
+  .s0-center p{margin-top:6px;font-size:12px;color:#0e1a28}
+
+  /* Stage 1 — wireframe */
+  .s1{background:#070b14;border:1px solid #111e2e}
+  .wf{height:100%;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .wf-nav{height:40px;border:1.5px dashed #162638;border-radius:5px;
+    display:flex;align-items:center;padding:0 14px;gap:10px;
+    opacity:0;transition:opacity .6s}
+  .wf-nav.in{opacity:1}
+  .wf-logo-bar{width:70px;height:9px;background:#162638;border-radius:3px}
+  .wf-links{display:flex;gap:6px;margin-left:auto}
+  .wf-link-bar{width:36px;height:7px;background:#111e2e;border-radius:3px}
+  .wf-kpis{display:flex;gap:10px}
+  .wf-kpi{flex:1;height:74px;border:1.5px dashed #162638;border-radius:6px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:7px;opacity:0;transition:opacity .6s;position:relative}
+  .wf-kpi.in{opacity:1}
+  .wf-kpi-v{width:55px;height:12px;background:#162638;border-radius:3px}
+  .wf-kpi-l{width:38px;height:7px;background:#111e2e;border-radius:3px}
+  .wf-kpi-tag{position:absolute;bottom:-18px;font-size:9px;color:#162638;
+    text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  .wf-chart{flex:1;border:1.5px dashed #162638;border-radius:6px;
+    padding:10px;display:flex;align-items:flex-end;gap:6px;
+    position:relative;opacity:0;transition:opacity .6s}
+  .wf-chart.in{opacity:1}
+  .wf-chart-lbl{position:absolute;top:7px;left:11px;font-size:9px;
+    color:#162638;text-transform:uppercase;letter-spacing:.04em}
+  .wf-bar{flex:1;background:#111e2e;border-radius:2px;border:1px solid #162638}
+  .wf-tx{border:1.5px dashed #162638;border-radius:6px;padding:10px;
+    display:flex;flex-direction:column;gap:6px;opacity:0;transition:opacity .6s}
+  .wf-tx.in{opacity:1}
+  .wf-tx-lbl{font-size:9px;color:#162638;text-transform:uppercase;
+    letter-spacing:.04em;margin-bottom:2px}
+  .wf-row{display:flex;align-items:center;gap:7px;padding:2px 0}
+  .wf-dot{width:7px;height:7px;border-radius:50%;
+    background:#111e2e;border:1px solid #162638;flex-shrink:0}
+  .wf-txt{flex:1;height:7px;background:#111e2e;border-radius:3px}
+  .wf-val{width:36px;height:7px;background:#111e2e;border-radius:3px}
+
+  /* Stage 2 — prototype */
+  .s2{background:#0c1422;border:1px solid #111e2e}
+  .p-nav{height:44px;background:#0e1826;border-bottom:1px solid #111e2e;
+    display:flex;align-items:center;padding:0 18px;gap:22px}
+  .p-nav-logo{font-size:13px;font-weight:700;color:#3b82f6}
+  .p-navlink{font-size:11.5px;color:#334155}
+  .p-navlink.on{color:#94a3b8}
+  .p-body{flex:1;padding:14px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+  .p-kpis{display:flex;gap:9px}
+  .p-kpi{flex:1;background:#0e1826;border:1px solid #111e2e;
+    border-radius:7px;padding:11px}
+  .p-kpi-v{font-size:17px;font-weight:700;color:#cbd5e1;margin-bottom:3px}
+  .p-kpi-l{font-size:10px;color:#334155;margin-bottom:5px}
+  .p-kpi-d{font-size:10px}
+  .p-kpi-d.up{color:#22c55e}.p-kpi-d.dn{color:#ef4444}
+  .p-chart{flex:1;background:#0e1826;border:1px solid #111e2e;
+    border-radius:7px;padding:11px;position:relative;overflow:hidden}
+  .p-chart-lbl{font-size:10px;color:#334155;margin-bottom:7px}
+  .p-chart svg{width:100%;height:85%}
+  .p-tx{background:#0e1826;border:1px solid #111e2e;border-radius:7px;padding:11px}
+  .p-tx-lbl{font-size:10px;color:#334155;margin-bottom:7px}
+  .p-tx-row{display:flex;align-items:center;gap:8px;padding:5px 0;
+    border-bottom:1px solid #0c1422;font-size:11.5px}
+  .p-tx-row:last-child{border-bottom:none}
+  .p-tick{font-weight:600;color:#94a3b8;width:38px}
+  .p-name{flex:1;color:#334155}
+  .p-time{font-size:10px;color:#1e2d3d}
+  .p-amt{font-weight:600;width:58px;text-align:right}
+  .p-amt.up{color:#22c55e}.p-amt.dn{color:#ef4444}
+
+  /* Stage 3 — refined (reuses proto structure with upgraded tokens)*/
+  .s3{background:#09101c;border:1px solid #111e2e}
+  .rfx-badge{position:absolute;top:8px;right:8px;z-index:10;
+    background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);
+    color:#a5b4fc;font-size:10px;padding:3px 9px;border-radius:4px;font-weight:600}
+
+  /* Stage 4 — final product */
+  .s4{background:#060a12;border:1px solid #111e2e;overflow:hidden}
+  .prod{height:100%;display:flex;flex-direction:column}
+  .prod-nav{height:50px;
+    background:linear-gradient(90deg,#0c1828 0%,#0d1a30 100%);
+    border-bottom:1px solid #111e2e;
+    display:flex;align-items:center;padding:0 20px;gap:28px}
+  .prod-logo{font-size:15px;font-weight:800;letter-spacing:-.5px;
+    background:linear-gradient(90deg,#60a5fa,#a78bfa);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .prod-nl{font-size:12px;font-weight:500;color:#334155}
+  .prod-nl.on{color:#e2e8f0}
+  .prod-live{margin-left:auto;display:flex;align-items:center;
+    gap:6px;font-size:11px;color:#4ade80}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;
+    box-shadow:0 0 9px rgba(74,222,128,.8);animation:pdot 2s infinite}
+  .prod-body{flex:1;padding:18px 20px;display:flex;flex-direction:column;
+    gap:14px;overflow:hidden}
+  .prod-kpis{display:flex;gap:11px}
+  .prod-kpi{flex:1;background:linear-gradient(145deg,#0e1c30,#0c1828);
+    border:1px solid #1a3048;border-radius:11px;padding:15px;position:relative;overflow:hidden}
+  .prod-kpi::before{content:'';position:absolute;top:0;left:0;right:0;
+    height:2px;border-radius:11px 11px 0 0}
+  .prod-kpi.bl::before{background:linear-gradient(90deg,#3b82f6,#6366f1)}
+  .prod-kpi.gr::before{background:linear-gradient(90deg,#10b981,#3b82f6)}
+  .prod-kpi.pu::before{background:linear-gradient(90deg,#a78bfa,#ec4899)}
+  .prod-kpi.am::before{background:linear-gradient(90deg,#f59e0b,#ef4444)}
+  .prod-kpi-l{font-size:10px;font-weight:600;letter-spacing:.07em;
+    text-transform:uppercase;color:#334155;margin-bottom:7px}
+  .prod-kpi-v{font-size:21px;font-weight:700;color:#f1f5f9;letter-spacing:-.5px;margin-bottom:4px}
+  .prod-kpi-d{font-size:11px;font-weight:500}
+  .prod-kpi-d.up{color:#4ade80}.prod-kpi-d.dn{color:#f87171}
+  .prod-lower{flex:1;display:flex;gap:12px;min-height:0}
+  .prod-chart{flex:1.6;background:linear-gradient(145deg,#0e1c30,#0c1828);
+    border:1px solid #1a3048;border-radius:11px;padding:15px;
+    display:flex;flex-direction:column;overflow:hidden}
+  .prod-chart-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .prod-chart-title{font-size:12.5px;font-weight:600;color:#94a3b8}
+  .prod-chart-tabs{display:flex;gap:3px}
+  .pctab{padding:3px 9px;border-radius:5px;font-size:10px;color:#334155}
+  .pctab.on{background:rgba(59,130,246,.15);color:#93c5fd}
+  .prod-chart-area{flex:1;position:relative}
+  .prod-chart-area svg{width:100%;height:100%}
+  .prod-tx{flex:1;background:linear-gradient(145deg,#0e1c30,#0c1828);
+    border:1px solid #1a3048;border-radius:11px;padding:15px;
+    display:flex;flex-direction:column;overflow:hidden}
+  .prod-tx-title{font-size:12.5px;font-weight:600;color:#94a3b8;margin-bottom:10px}
+  .prod-tx-rows{display:flex;flex-direction:column;gap:1px;overflow:hidden}
+  .prod-tx-row{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px}
+  .prod-tx-row:hover{background:rgba(255,255,255,.025)}
+  .prod-tx-icon{width:28px;height:28px;border-radius:7px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:800}
+  .prod-tx-info{flex:1;min-width:0}
+  .prod-tx-name{font-size:11.5px;font-weight:600;color:#cbd5e1}
+  .prod-tx-time{font-size:10px;color:#334155;margin-top:1px}
+  .prod-tx-amt{font-size:12.5px;font-weight:700}
+  .prod-tx-amt.up{color:#4ade80}.prod-tx-amt.dn{color:#f87171}
+
+  /* ── DAG MINI VIZ ──────────────────────────────────────── */
+  .dagbar{padding:11px 20px;border-top:1px solid #0e1a28;
+    display:flex;align-items:center;gap:14px;background:#060a12;
+    height:50px;flex-shrink:0}
+  .dag-lbl{font-size:10px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:#192433;flex-shrink:0}
+  .dag-nodes{display:flex;gap:6px;align-items:center}
+  .dnode{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .dnode-dot{width:9px;height:9px;border-radius:50%;
+    background:#0e1a28;border:1px solid #192433;transition:all .4s}
+  .dnode-dot.active{background:#3b82f6;border-color:#3b82f6;
+    box-shadow:0 0 10px rgba(59,130,246,.8);animation:pdot 1s infinite}
+  .dnode-dot.done{background:#4ade80;border-color:#4ade80;
+    box-shadow:0 0 6px rgba(74,222,128,.5);animation:none}
+  .dnode-lbl{font-size:8.5px;color:#192433;white-space:nowrap;
+    transition:color .3s}
+  .dnode-dot.active~.dnode-lbl{color:#3b82f6}
+  .dnode-dot.done~.dnode-lbl{color:#4ade80}
+  .dconn{width:14px;height:1px;background:#0e1a28;
+    margin-bottom:13px;flex-shrink:0;transition:background .4s}
+  .dconn.active{background:#3b82f6}
+  .dconn.done{background:#4ade80}
+  .dag-timer{margin-left:auto;font-size:11px;
+    font-family:'SF Mono',monospace;color:#192433}
+  .dag-timer.lit{color:#4ade80}
+</style>
+</head>
+<body>
+
+<!-- TOP PIPELINE BAR -->
+<div class="topbar">
+  <div class="logo">TooLoo<span>.</span>ai</div>
+  <div class="pipeline">
+    <div class="pstep" id="ps0"><div class="dot"></div>Brief</div>
+    <div class="pconn" id="pc0"></div>
+    <div class="pstep" id="ps1"><div class="dot"></div>Wireframe</div>
+    <div class="pconn" id="pc1"></div>
+    <div class="pstep" id="ps2"><div class="dot"></div>Prototype</div>
+    <div class="pconn" id="pc2"></div>
+    <div class="pstep" id="ps3"><div class="dot"></div>Refine</div>
+    <div class="pconn" id="pc3"></div>
+    <div class="pstep" id="ps4"><div class="dot"></div>Product</div>
+  </div>
+</div>
+
+<!-- MAIN SPLIT -->
+<div class="main">
+
+  <!-- CHAT PANEL -->
+  <div class="chat">
+    <div class="chat-head">
+      <div class="buddy-pill">
+        <div class="bavatar">B</div>Buddy
+      </div>
+      <div class="sys-badge" id="sys-badge">Initialising...</div>
+    </div>
+    <div class="chat-msgs" id="chat-msgs">
+      <div class="typing show" id="typing">
+        <div class="bavatar" style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">B</div>
+        <div class="tdots">
+          <div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-foot">
+      <div class="chat-input">Buddy is orchestrating your product...</div>
+    </div>
+  </div>
+
+  <!-- CANVAS PANEL -->
+  <div class="canvas">
+    <div class="canvas-head">
+      <div class="clabel" id="clabel">CANVAS READY</div>
+      <div class="cbadges">
+        <div class="cbadge" id="badge-jit">JITBooster</div>
+        <div class="cbadge" id="badge-trib">Tribunal</div>
+        <button class="deploy-btn" id="deploy-btn">▶ Deploy v1.0</button>
+      </div>
+    </div>
+
+    <div class="canvas-arena">
+
+      <!-- S0: idle -->
+      <div class="screen s0 show" id="s0">
+        <div class="s0-grid"></div>
+        <div class="s0-center">
+          <h2>Canvas</h2>
+          <p>Waiting for intent...</p>
+        </div>
+      </div>
+
+      <!-- S1: wireframe -->
+      <div class="screen s1" id="s1">
+        <div class="wf">
+          <div class="wf-nav" id="wf-nav">
+            <div class="wf-logo-bar"></div>
+            <div class="wf-links">
+              <div class="wf-link-bar"></div><div class="wf-link-bar"></div><div class="wf-link-bar"></div>
+            </div>
+          </div>
+          <div class="wf-kpis">
+            <div class="wf-kpi" id="wf-k0"><div class="wf-kpi-v"></div><div class="wf-kpi-l"></div><div class="wf-kpi-tag">Portfolio</div></div>
+            <div class="wf-kpi" id="wf-k1"><div class="wf-kpi-v"></div><div class="wf-kpi-l"></div><div class="wf-kpi-tag">P&L</div></div>
+            <div class="wf-kpi" id="wf-k2"><div class="wf-kpi-v"></div><div class="wf-kpi-l"></div><div class="wf-kpi-tag">Trades</div></div>
+            <div class="wf-kpi" id="wf-k3"><div class="wf-kpi-v"></div><div class="wf-kpi-l"></div><div class="wf-kpi-tag">Win Rate</div></div>
+          </div>
+          <div class="wf-chart" id="wf-chart">
+            <div class="wf-chart-lbl">Performance Chart</div>
+            <div class="wf-bar" style="height:40%"></div>
+            <div class="wf-bar" style="height:65%"></div>
+            <div class="wf-bar" style="height:45%"></div>
+            <div class="wf-bar" style="height:80%"></div>
+            <div class="wf-bar" style="height:55%"></div>
+            <div class="wf-bar" style="height:90%"></div>
+            <div class="wf-bar" style="height:70%"></div>
+            <div class="wf-bar" style="height:85%"></div>
+          </div>
+          <div class="wf-tx" id="wf-tx">
+            <div class="wf-tx-lbl">Transaction Feed</div>
+            <div class="wf-row"><div class="wf-dot"></div><div class="wf-txt"></div><div class="wf-val"></div></div>
+            <div class="wf-row"><div class="wf-dot"></div><div class="wf-txt"></div><div class="wf-val"></div></div>
+            <div class="wf-row"><div class="wf-dot"></div><div class="wf-txt"></div><div class="wf-val"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- S2: prototype -->
+      <div class="screen s2" id="s2">
+        <div style="display:flex;flex-direction:column;height:100%">
+          <div class="p-nav">
+            <div class="p-nav-logo">TradePulse</div>
+            <div class="p-navlink on">Portfolio</div>
+            <div class="p-navlink">Markets</div>
+            <div class="p-navlink">Analytics</div>
+          </div>
+          <div class="p-body">
+            <div class="p-kpis">
+              <div class="p-kpi"><div class="p-kpi-v">$124,850</div><div class="p-kpi-l">Portfolio Value</div><div class="p-kpi-d up">↑ +2.4%</div></div>
+              <div class="p-kpi"><div class="p-kpi-v">+$2,985</div><div class="p-kpi-l">Today's P&amp;L</div><div class="p-kpi-d up">↑ Today</div></div>
+              <div class="p-kpi"><div class="p-kpi-v">847</div><div class="p-kpi-l">Total Trades</div><div class="p-kpi-d up">↑ +12</div></div>
+              <div class="p-kpi"><div class="p-kpi-v">94.2%</div><div class="p-kpi-l">Win Rate</div><div class="p-kpi-d dn">↓ −0.3%</div></div>
+            </div>
+            <div class="p-chart">
+              <div class="p-chart-lbl">PERFORMANCE — 30D</div>
+              <svg viewBox="0 0 400 100" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="cg2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3b82f6" stop-opacity=".25"/>
+                    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0,80 C30,74 60,62 90,56 C110,52 130,68 160,50 C188,34 210,44 240,28 C268,13 295,22 325,16 C358,9 380,12 400,6" stroke="#3b82f6" stroke-width="2" fill="none"/>
+                <path d="M0,80 C30,74 60,62 90,56 C110,52 130,68 160,50 C188,34 210,44 240,28 C268,13 295,22 325,16 C358,9 380,12 400,6 L400,100 L0,100Z" fill="url(#cg2)"/>
+              </svg>
+            </div>
+            <div class="p-tx">
+              <div class="p-tx-lbl">RECENT TRANSACTIONS</div>
+              <div class="p-tx-row"><div class="p-tick">AAPL</div><div class="p-name">Apple Inc. — BUY 3</div><div class="p-time">09:42</div><div class="p-amt up">+$234</div></div>
+              <div class="p-tx-row"><div class="p-tick">MSFT</div><div class="p-name">Microsoft — SELL 1</div><div class="p-time">09:38</div><div class="p-amt dn">−$89</div></div>
+              <div class="p-tx-row"><div class="p-tick">TSLA</div><div class="p-name">Tesla Inc. — BUY 2</div><div class="p-time">09:31</div><div class="p-amt up">+$512</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- S3: refined -->
+      <div class="screen s3" id="s3">
+        <div style="position:relative;height:100%">
+          <div class="rfx-badge" id="rfx-badge">↑ WCAG AA · 8pt Grid · Type Scale · Contrast +0.47</div>
+          <div style="display:flex;flex-direction:column;height:100%">
+            <div class="p-nav" style="background:#0c1828;border-color:#1a3048">
+              <div style="font-size:14px;font-weight:800;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent">TradePulse</div>
+              <div class="p-navlink on" style="color:#e2e8f0;font-weight:500">Portfolio</div>
+              <div class="p-navlink">Markets</div>
+              <div class="p-navlink">Analytics</div>
+              <div style="margin-left:auto;font-size:11px;color:#4ade80;display:flex;align-items:center;gap:5px"><div class="live-dot"></div>Live</div>
+            </div>
+            <div class="p-body" style="gap:13px">
+              <div class="p-kpis" style="gap:11px">
+                <div class="p-kpi" style="background:linear-gradient(145deg,#0e1c30,#0c1828);border-color:#1a3048;border-radius:10px;border-top:2px solid #3b82f6">
+                  <div class="p-kpi-l" style="font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#475569;margin-bottom:7px">Portfolio</div>
+                  <div class="p-kpi-v" style="font-size:20px;font-weight:700;color:#f1f5f9;letter-spacing:-.5px">$124,850</div>
+                  <div class="p-kpi-d up" style="font-size:11px;color:#4ade80;margin-top:5px">▲ +2.4% today</div>
+                </div>
+                <div class="p-kpi" style="background:linear-gradient(145deg,#0e1c30,#0c1828);border-color:#1a3048;border-radius:10px;border-top:2px solid #10b981">
+                  <div class="p-kpi-l" style="font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#475569;margin-bottom:7px">P&amp;L Today</div>
+                  <div class="p-kpi-v" style="font-size:20px;font-weight:700;color:#4ade80;letter-spacing:-.5px">+$2,985</div>
+                  <div class="p-kpi-d up" style="font-size:11px;color:#4ade80;margin-top:5px">▲ Best day this month</div>
+                </div>
+                <div class="p-kpi" style="background:linear-gradient(145deg,#0e1c30,#0c1828);border-color:#1a3048;border-radius:10px;border-top:2px solid #a78bfa">
+                  <div class="p-kpi-l" style="font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#475569;margin-bottom:7px">Total Trades</div>
+                  <div class="p-kpi-v" style="font-size:20px;font-weight:700;color:#f1f5f9;letter-spacing:-.5px">847</div>
+                  <div class="p-kpi-d up" style="font-size:11px;color:#4ade80;margin-top:5px">▲ +12 today</div>
+                </div>
+                <div class="p-kpi" style="background:linear-gradient(145deg,#0e1c30,#0c1828);border-color:#1a3048;border-radius:10px;border-top:2px solid #f59e0b">
+                  <div class="p-kpi-l" style="font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#475569;margin-bottom:7px">Win Rate</div>
+                  <div class="p-kpi-v" style="font-size:20px;font-weight:700;color:#f1f5f9;letter-spacing:-.5px">94.2%</div>
+                  <div class="p-kpi-d dn" style="font-size:11px;color:#f87171;margin-top:5px">▼ −0.3% vs week</div>
+                </div>
+              </div>
+              <div style="flex:1;background:linear-gradient(145deg,#0e1c30,#0c1828);border:1px solid #1a3048;border-radius:10px;padding:13px;position:relative;overflow:hidden">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                  <span style="font-size:12px;font-weight:600;color:#94a3b8">Performance — 30D</span>
+                  <span style="font-size:10px;color:#334155">1W · 1M · 3M · 1Y</span>
+                </div>
+                <svg viewBox="0 0 400 90" preserveAspectRatio="none" style="width:100%;height:80%">
+                  <defs>
+                    <linearGradient id="cg3" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#3b82f6" stop-opacity=".2"/>
+                      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                    </linearGradient>
+                    <filter id="glow3"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                  </defs>
+                  <line x1="0" y1="30" x2="400" y2="30" stroke="#1a3048" stroke-width="1"/>
+                  <line x1="0" y1="60" x2="400" y2="60" stroke="#1a3048" stroke-width="1"/>
+                  <path d="M0,75 C30,70 60,60 90,54 C110,50 130,64 160,46 C188,30 210,40 240,24 C268,10 295,18 325,12 C358,5 380,9 400,4" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round" filter="url(#glow3)"/>
+                  <path d="M0,75 C30,70 60,60 90,54 C110,50 130,64 160,46 C188,30 210,40 240,24 C268,10 295,18 325,12 C358,5 380,9 400,4 L400,90 L0,90Z" fill="url(#cg3)"/>
+                  <circle cx="400" cy="4" r="4" fill="#3b82f6" filter="url(#glow3)"/>
+                </svg>
+              </div>
+              <div style="background:linear-gradient(145deg,#0e1c30,#0c1828);border:1px solid #1a3048;border-radius:10px;padding:13px">
+                <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px">Recent Transactions</div>
+                <div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid #0c1422">
+                  <div style="width:28px;height:28px;border-radius:7px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#60a5fa;flex-shrink:0">A</div>
+                  <div style="flex:1"><div style="font-size:11.5px;font-weight:600;color:#cbd5e1">AAPL · BUY 3</div><div style="font-size:10px;color:#334155">09:42 AM · $388/sh</div></div>
+                  <div style="font-size:12.5px;font-weight:700;color:#4ade80">+$234.60</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid #0c1422">
+                  <div style="width:28px;height:28px;border-radius:7px;background:rgba(99,102,241,.15);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#a5b4fc;flex-shrink:0">M</div>
+                  <div style="flex:1"><div style="font-size:11.5px;font-weight:600;color:#cbd5e1">MSFT · SELL 1</div><div style="font-size:10px;color:#334155">09:38 AM · $413/sh</div></div>
+                  <div style="font-size:12.5px;font-weight:700;color:#f87171">−$89.20</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:9px;padding:6px 0">
+                  <div style="width:28px;height:28px;border-radius:7px;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#f87171;flex-shrink:0">T</div>
+                  <div style="flex:1"><div style="font-size:11.5px;font-weight:600;color:#cbd5e1">TSLA · BUY 2</div><div style="font-size:10px;color:#334155">09:31 AM · $256/sh</div></div>
+                  <div style="font-size:12.5px;font-weight:700;color:#4ade80">+$512.00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- S4: final product -->
+      <div class="screen s4" id="s4">
+        <div class="prod">
+          <div class="prod-nav">
+            <div class="prod-logo">TradePulse</div>
+            <div class="prod-nl on">Portfolio</div>
+            <div class="prod-nl">Markets</div>
+            <div class="prod-nl">Analytics</div>
+            <div class="prod-nl">AI Advisor</div>
+            <div class="prod-live"><div class="live-dot"></div>Live Feed</div>
+          </div>
+          <div class="prod-body">
+            <div class="prod-kpis">
+              <div class="prod-kpi bl">
+                <div class="prod-kpi-l">Portfolio Value</div>
+                <div class="prod-kpi-v">$124,850</div>
+                <div class="prod-kpi-d up">▲ +2.4% today</div>
+              </div>
+              <div class="prod-kpi gr">
+                <div class="prod-kpi-l">Today's P&amp;L</div>
+                <div class="prod-kpi-v" style="color:#4ade80">+$2,985</div>
+                <div class="prod-kpi-d up">▲ Best day this month</div>
+              </div>
+              <div class="prod-kpi pu">
+                <div class="prod-kpi-l">Total Trades</div>
+                <div class="prod-kpi-v">847</div>
+                <div class="prod-kpi-d up">▲ +12 today</div>
+              </div>
+              <div class="prod-kpi am">
+                <div class="prod-kpi-l">Win Rate</div>
+                <div class="prod-kpi-v">94.2%</div>
+                <div class="prod-kpi-d dn">▼ −0.3% vs week</div>
+              </div>
+            </div>
+            <div class="prod-lower">
+              <div class="prod-chart">
+                <div class="prod-chart-hd">
+                  <div class="prod-chart-title">Performance Overview</div>
+                  <div class="prod-chart-tabs">
+                    <div class="pctab">1W</div><div class="pctab on">1M</div>
+                    <div class="pctab">3M</div><div class="pctab">1Y</div>
+                  </div>
+                </div>
+                <div class="prod-chart-area">
+                  <svg viewBox="0 0 400 130" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="cg4" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#3b82f6" stop-opacity=".3"/>
+                        <stop offset="100%" stop-color="#3b82f6" stop-opacity=".02"/>
+                      </linearGradient>
+                      <filter id="glow4"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    </defs>
+                    <line x1="0" y1="32" x2="400" y2="32" stroke="#1a3048" stroke-width="1"/>
+                    <line x1="0" y1="65" x2="400" y2="65" stroke="#1a3048" stroke-width="1"/>
+                    <line x1="0" y1="98" x2="400" y2="98" stroke="#1a3048" stroke-width="1"/>
+                    <path d="M0,105 C25,98 50,86 78,78 C98,72 118,88 148,66 C174,46 198,58 228,38 C254,20 280,30 310,20 C340,11 370,14 400,7" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round" filter="url(#glow4)"/>
+                    <path d="M0,105 C25,98 50,86 78,78 C98,72 118,88 148,66 C174,46 198,58 228,38 C254,20 280,30 310,20 C340,11 370,14 400,7 L400,130 L0,130Z" fill="url(#cg4)"/>
+                    <circle cx="400" cy="7" r="5" fill="#3b82f6" filter="url(#glow4)"/>
+                    <rect x="312" y="0" width="82" height="20" rx="4" fill="rgba(14,28,48,.95)" stroke="#1a3048" stroke-width="1"/>
+                    <text x="353" y="13" fill="#93c5fd" font-size="10" text-anchor="middle" font-family="sans-serif" font-weight="600">+24.8% YTD</text>
+                  </svg>
+                </div>
+              </div>
+              <div class="prod-tx">
+                <div class="prod-tx-title">Live Transactions</div>
+                <div class="prod-tx-rows">
+                  <div class="prod-tx-row">
+                    <div class="prod-tx-icon" style="background:rgba(59,130,246,.15);color:#60a5fa">A</div>
+                    <div class="prod-tx-info"><div class="prod-tx-name">AAPL · BUY 3</div><div class="prod-tx-time">09:42 AM · $388.20/sh</div></div>
+                    <div class="prod-tx-amt up">+$234.60</div>
+                  </div>
+                  <div class="prod-tx-row">
+                    <div class="prod-tx-icon" style="background:rgba(99,102,241,.15);color:#a5b4fc">M</div>
+                    <div class="prod-tx-info"><div class="prod-tx-name">MSFT · SELL 1</div><div class="prod-tx-time">09:38 AM · $412.80/sh</div></div>
+                    <div class="prod-tx-amt dn">−$89.20</div>
+                  </div>
+                  <div class="prod-tx-row">
+                    <div class="prod-tx-icon" style="background:rgba(239,68,68,.15);color:#f87171">T</div>
+                    <div class="prod-tx-info"><div class="prod-tx-name">TSLA · BUY 2</div><div class="prod-tx-time">09:31 AM · $256.00/sh</div></div>
+                    <div class="prod-tx-amt up">+$512.00</div>
+                  </div>
+                  <div class="prod-tx-row">
+                    <div class="prod-tx-icon" style="background:rgba(245,158,11,.15);color:#fbbf24">N</div>
+                    <div class="prod-tx-info"><div class="prod-tx-name">NVDA · BUY 1</div><div class="prod-tx-time">09:22 AM · $875.40/sh</div></div>
+                    <div class="prod-tx-amt up">+$875.40</div>
+                  </div>
+                  <div class="prod-tx-row">
+                    <div class="prod-tx-icon" style="background:rgba(16,185,129,.15);color:#34d399">G</div>
+                    <div class="prod-tx-info"><div class="prod-tx-name">GOOG · SELL 2</div><div class="prod-tx-time">09:15 AM · $183.60/sh</div></div>
+                    <div class="prod-tx-amt dn">−$367.20</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /canvas-arena -->
+
+    <!-- DAG MINI VIZ -->
+    <div class="dagbar">
+      <div class="dag-lbl">Cognitive DAG</div>
+      <div class="dag-nodes">
+        <div class="dnode"><div class="dnode-dot" id="dn-receptor"></div><div class="dnode-lbl">Receptor</div></div>
+        <div class="dconn" id="dc0"></div>
+        <div class="dnode"><div class="dnode-dot" id="dn-jit"></div><div class="dnode-lbl">JITBooster</div></div>
+        <div class="dconn" id="dc1"></div>
+        <div class="dnode"><div class="dnode-dot" id="dn-gapper"></div><div class="dnode-lbl">Gapper</div></div>
+        <div class="dconn" id="dc2"></div>
+        <div class="dnode"><div class="dnode-dot" id="dn-innov"></div><div class="dnode-lbl">Innovator</div></div>
+        <div class="dconn" id="dc3"></div>
+        <div class="dnode"><div class="dnode-dot" id="dn-optim"></div><div class="dnode-lbl">Optimizer</div></div>
+        <div class="dconn" id="dc4"></div>
+        <div class="dnode"><div class="dnode-dot" id="dn-trib"></div><div class="dnode-lbl">Tribunal</div></div>
+        <div class="dconn" id="dc5"></div>
+        <div class="dnode"><div class="dnode-dot" id="dn-v16d"></div><div class="dnode-lbl">Validator16D</div></div>
+        <div class="dconn" id="dc6"></div>
+        <div class="dnode"><div class="dnode-dot" id="dn-refine"></div><div class="dnode-lbl">Refinement</div></div>
+        <div class="dconn" id="dc7"></div>
+        <div class="dnode"><div class="dnode-dot" id="dn-output"></div><div class="dnode-lbl">Output</div></div>
+      </div>
+      <div class="dag-timer" id="dag-timer">—</div>
+    </div>
+
+  </div><!-- /canvas -->
+</div><!-- /main -->
+
+<script>
+// ── SECURITY HELPERS ────────────────────────────────
+function esc(s){
+  const d=document.createElement('div');
+  d.appendChild(document.createTextNode(String(s)));
+  return d.innerHTML;
+}
+
+// ── ELEMENTS ────────────────────────────────────────
+const chatMsgs = document.getElementById('chat-msgs');
+const typing   = document.getElementById('typing');
+const clabel   = document.getElementById('clabel');
+const timer    = document.getElementById('dag-timer');
+const sysBadge = document.getElementById('sys-badge');
+
+let timerInterval = null;
+let elapsed = 0;
+
+// ── DAG HELPERS ─────────────────────────────────────
+function dagOn(id, connId){
+  document.getElementById(id).className = 'dnode-dot active';
+  if(connId) document.getElementById(connId).className = 'dconn active';
+}
+function dagDone(id, connId){
+  document.getElementById(id).className = 'dnode-dot done';
+  if(connId) document.getElementById(connId).className = 'dconn done';
+}
+
+// ── PIPELINE STEPS ──────────────────────────────────
+function pipeStage(n){
+  for(let i=0;i<=4;i++){
+    const s=document.getElementById('ps'+i);
+    s.classList.remove('active','done');
+    const c=document.getElementById('pc'+i);
+    if(c){ c.classList.remove('active','done'); }
+    if(i<n){ s.classList.add('done'); if(c) c.classList.add('done'); }
+    else if(i===n){ s.classList.add('active'); }
+  }
+}
+
+// ── SCREEN SWITCH ────────────────────────────────────
+function showScreen(n){
+  const labels=['CANVAS READY','WIREFRAME','PROTOTYPE','REFINING','PRODUCT v1.0'];
+  for(let i=0;i<=4;i++){
+    document.getElementById('s'+i).classList.remove('show');
+  }
+  document.getElementById('s'+n).classList.add('show');
+  clabel.textContent = labels[n];
+  clabel.classList.toggle('lit', n>0);
+
+  if(n===1){
+    // Animate wireframe elements in sequence
+    setTimeout(()=>document.getElementById('wf-nav').classList.add('in'),150);
+    setTimeout(()=>document.getElementById('wf-k0').classList.add('in'),350);
+    setTimeout(()=>document.getElementById('wf-k1').classList.add('in'),500);
+    setTimeout(()=>document.getElementById('wf-k2').classList.add('in'),650);
+    setTimeout(()=>document.getElementById('wf-k3').classList.add('in'),800);
+    setTimeout(()=>document.getElementById('wf-chart').classList.add('in'),1050);
+    setTimeout(()=>document.getElementById('wf-tx').classList.add('in'),1350);
+  }
+  if(n===4){
+    document.getElementById('deploy-btn').style.display='';
+    stopTimer('41s · ✓ 37 nodes');
+    timer.classList.add('lit');
+  }
+}
+
+// ── CHAT HELPERS ─────────────────────────────────────
+function showTyping(){ typing.classList.add('show'); scrollChat(); }
+function hideTyping(){ typing.classList.remove('show'); }
+function scrollChat(){ requestAnimationFrame(()=>{ chatMsgs.scrollTop=chatMsgs.scrollHeight; }); }
+
+function buddy(text){
+  hideTyping();
+  const d=document.createElement('div');
+  d.className='msg buddy';
+  d.innerHTML=`<div class="mavatar">B</div><div class="mbubble">${esc(text)}</div>`;
+  chatMsgs.insertBefore(d,typing);
+  requestAnimationFrame(()=>d.classList.add('show'));
+  scrollChat();
+}
+
+function user(text){
+  const d=document.createElement('div');
+  d.className='msg user';
+  d.innerHTML=`<div class="mavatar">U</div><div class="mbubble">${esc(text)}</div>`;
+  chatMsgs.insertBefore(d,typing);
+  requestAnimationFrame(()=>d.classList.add('show'));
+  scrollChat();
+}
+
+function sysEvent(text){
+  const d=document.createElement('div');
+  d.className='sys-event';
+  d.textContent=text;
+  chatMsgs.insertBefore(d,typing);
+  requestAnimationFrame(()=>d.classList.add('show'));
+  scrollChat();
+}
+
+// ── TIMER ────────────────────────────────────────────
+function startTimer(){
+  const t0=Date.now();
+  timerInterval=setInterval(()=>{
+    const s=((Date.now()-t0)/1000).toFixed(0);
+    timer.textContent=s+'s running';
+  },500);
+}
+function stopTimer(label){
+  clearInterval(timerInterval);
+  timer.textContent=label;
+}
+
+// ── BADGE HELPERS ────────────────────────────────────
+function badgeOn(id){ document.getElementById(id).classList.add('on'); }
+function badgeOff(id){ document.getElementById(id).classList.remove('on'); }
+
+// ── DEMO SCRIPT ──────────────────────────────────────
+// Format: [delayMs, fn]
+const script = [
+  // === Brief phase ===
+  [600,  ()=>{ pipeStage(0); dagOn('dn-receptor',null); startTimer();
+               sysBadge.textContent='N-Stroke Active'; }],
+  [1000, ()=>showTyping()],
+  [2200, ()=>buddy("Hey! I've restored your project context. You want to build a fintech trading dashboard — real-time metrics, mobile-first, dark-mode. Confirming?")],
+  [5000, ()=>user("Yes. Clean, professional. For a trading platform.")],
+  [5400, ()=>showTyping()],
+  [6000, ()=>{ dagDone('dn-receptor',null); dagOn('dn-jit','dc0'); badgeOn('badge-jit'); }],
+  [6200, ()=>sysEvent("JITBooster: Fetching 2026 fintech UX SOTA signals via Gemini-2.5-flash...")],
+  [7800, ()=>{ dagDone('dn-jit','dc0'); badgeOff('badge-jit'); dagOn('dn-gapper','dc1'); }],
+  [8000, ()=>sysEvent("Receptor: 4 SOTA signals loaded · WCAG AA mandatory · 8pt grid · Confidence: 0.97")],
+  [8500, ()=>buddy("Got it. WCAG AA contrast, 8pt spacing system, dark-mode-first. Gapper is mapping the user flow. Wireframe incoming.")],
+  [10200,()=>sysEvent("Swarm → Wave 1: Gapper initialized · 9 DAG nodes · 3 execution waves planned")],
+  [10800,()=>pipeStage(1)],
+  [11000,()=>showScreen(1)],
+
+  // === Wireframe phase ===
+  [14500,()=>{ dagDone('dn-gapper','dc1'); }],
+  [14800,()=>buddy("Wireframe locked. Four KPI cards, performance chart, live transaction feed — here's the user flow. Does this match your vision?")],
+  [18000,()=>user("Exactly right. Build the prototype.")],
+  [18400,()=>showTyping()],
+  [19200,()=>{ dagOn('dn-innov','dc2'); dagOn('dn-optim',null); }],
+  [19500,()=>sysEvent("Wave 2 FORK: Innovator ∥ Optimizer ∥ Tester · NStroke: stroke 3/7 · Fan-out: 3 parallel nodes")],
+  [19800,()=>pipeStage(2)],
+  [21500,()=>{ dagDone('dn-innov','dc2'); dagDone('dn-optim',null); }],
+  [22000,()=>showScreen(2)],
+
+  // === Prototype phase ===
+  [24500,()=>buddy("Prototype is up. I'm flagging two issues automatically: KPI card contrast fails WCAG AA by 0.47, and the chart padding breaks on 375px viewport.")],
+  [28500,()=>user("Fix both.")],
+  [28900,()=>showTyping()],
+  [29600,()=>{ dagOn('dn-trib','dc3'); badgeOn('badge-trib'); }],
+  [29900,()=>sysEvent("Tribunal: OWASP scan running · checking for XSS, injection vectors, unsafe patterns...")],
+  [31200,()=>{ dagDone('dn-trib','dc3'); badgeOff('badge-trib'); dagOn('dn-v16d','dc4'); }],
+  [31500,()=>sysEvent("Tribunal: ✓ All clear · 0 security vectors · Patch cleared for apply")],
+  [32500,()=>sysEvent("Validator16D: composite score 0.91 → refinement pass initiated: contrast + spacing + type scale")],
+  [33500,()=>pipeStage(3)],
+  [34000,()=>showScreen(3)],
+
+  // === Refined phase ===
+  [36200,()=>{ dagDone('dn-v16d','dc4'); dagOn('dn-refine','dc5'); }],
+  [36500,()=>buddy("Refinements applied. WCAG AA: ✓ passed. 8pt spacing normalized. Typography scale clarified. Validator16D now at 0.96. RefinementSupervisor: all nodes green.")],
+  [40500,()=>sysEvent("RefinementSupervisor: 37 nodes green · Pipeline confidence: 0.97 · Latency so far: 38s")],
+  [42000,()=>user("That's the one. Ship it.")],
+  [42400,()=>showTyping()],
+  [43200,()=>{ dagDone('dn-refine','dc5'); dagOn('dn-output','dc6'); }],
+  [43800,()=>sysEvent("NStroke: stroke 7/7 complete · Packaging final artefact · Tribunal final scan: ✓")],
+  [44500,()=>{ dagDone('dn-output','dc6'); }],
+  [45000,()=>pipeStage(4)],
+  [45500,()=>showScreen(4)],
+
+  // === Product phase ===
+  [47500,()=>buddy("Done. TradePulse v1.0 is packaged. 37 nodes green, pipeline ran in 41s, confidence 0.97. The canvas is showing your live product — hit Deploy when ready.")],
+  [50500,()=>hideTyping()],
+];
+
+// Execute
+script.forEach(([delay, fn]) => setTimeout(fn, delay));
+</script>
+</body>
+</html>
