@@ -1,3 +1,0 @@
-{"timestamp": 1775257638.875488, "action": "run_command", "tier": "BUILT_IN", "result": "DENY", "reason": "Agent Type AgentType.GUIDE is too low-tier for PermissionTier.BUILT_IN action."}
-{"timestamp": 1775258754.6882172, "action": "run_command", "tier": "BUILT_IN", "result": "DENY", "reason": "Agent Type AgentType.GUIDE is too low-tier for PermissionTier.BUILT_IN action."}
-{"timestamp": 1775258855.091786, "action": "run_command", "tier": "BUILT_IN", "result": "DENY", "reason": "Agent Type AgentType.GUIDE is too low-tier for PermissionTier.BUILT_IN action."}

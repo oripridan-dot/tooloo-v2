@@ -4,43 +4,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tooloo-v2"
-version = "2.1.0"
-description = "TooLoo V2 — Pure DAG Cognitive OS. Self-building autonomous intelligence engine."
+version = "3.0.0"
+description = "TooLoo Core - Basic capabilities, executions, and Mega DAG variations."
 requires-python = ">=3.12"
 dependencies = [
-    "networkx>=3.2",
-    "sympy>=1.12",
     "pydantic>=2.12",
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.30",
     "python-dotenv>=1.2",
-    "google-genai>=1.64.0",
-    "google-cloud-aiplatform>=1.60.0",
     "anthropic[vertex]>=0.40",
+    "google-genai>=1.64.0",
     "httpx>=0.28",
-    "python-multipart>=0.0.9",
-    "opentelemetry-api>=1.28",
-    "opentelemetry-sdk>=1.28",
-    "opentelemetry-exporter-otlp>=1.28",
-    "eth-typing>=5.1.0",
-    "rlp>=4.0.1",
-    "psutil>=5.9",
-    "google-cloud-firestore>=2.16",
-    "websockets>=16.0",
-    "prometheus-client>=0.24.1",
-    "numpy>=2.4.3",
-    "streamlit>=1.41.0",
-    "requests>=2.31.0",
-    "soundfile>=0.12.1",
-    "matplotlib>=3.8.0",
-    "beautifulsoup4>=4.12.3",
     "pytest>=8.0.0",
-    "openai>=1.50.0",
-    "numba",
-    "mcp>=1.26.0",
-    "scipy>=1.17.1",
-    "aiosqlite>=0.21.0",
+    "google-cloud-aiplatform>=1.145.0",
+    "pytest-timeout>=2.4.0",
+    "openai>=2.30.0",
+    "google-auth>=2.49.1",
 ]
+
+[tool.setuptools.packages.find]
+include = ["src*", "tests*"]
 
 [project.optional-dependencies]
 dev = [
@@ -51,22 +32,8 @@ dev = [
     "ruff>=0.15",
 ]
 
-[project.scripts]
-tooloo-studio = "studio.api:main"
-
-[tool.setuptools.packages.find]
-include = ["engine*", "studio*", "sandbox*", "src*", "scripts*", "tooloo_v4_hub*", "lab*"]
-
 [tool.pytest.ini_options]
-# Exclude tests that require external environment not present in offline CI:
-#   - test_playwright_ui.py  requires `playwright` installed + chromium + live server on :8099
-#   - test_ingestion.py      targets a separate service (src/api/main.py) not in this repo
-# Run them explicitly:
-#   pytest tests/test_playwright_ui.py --headed=false -v --timeout=60
-addopts = "--ignore=tests/test_playwright_ui.py"
-markers = [
-    "playwright: marks tests as Playwright UI tests (deselect with -m 'not playwright')",
-]
+addopts = "-v --timeout=60"
 
 [tool.ruff]
 line-length = 100

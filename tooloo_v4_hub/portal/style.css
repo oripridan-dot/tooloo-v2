@@ -2,8 +2,8 @@
 
 :root {
     --zen-bg: hsl(230, 25%, 3%);
-    --zen-surface: hsla(230, 20%, 6%, 0.6);
-    --zen-border: hsla(230, 10%, 60%, 0.15);
+    --zen-surface: hsla(230, 20%, 6%, 0.65);
+    --zen-border: hsla(230, 10%, 60%, 0.1);
     --text-primary: hsl(230, 15%, 95%);
     --text-secondary: hsl(230, 10%, 65%);
     
@@ -14,10 +14,18 @@
     
     --font-ui: 'Outfit', 'Inter', system-ui, sans-serif;
     --font-code: 'JetBrains Mono', monospace;
-    --hud-height: 44px;
+    --hud-height: 48px;
     
     --vibe-color: var(--accent-blue);
-    --vibe-glow: hsla(200, 100%, 60%, 0.3);
+    --vibe-glow: hsla(200, 100%, 60%, 0.35);
+
+    /* Fluid Typography SOTA */
+    --text-sm: clamp(0.75rem, 0.7vw + 0.5rem, 0.9rem);
+    --text-base: clamp(0.9rem, 1vw + 0.6rem, 1.1rem);
+    --text-lg: clamp(1.1rem, 1.5vw + 0.8rem, 1.35rem);
+    
+    /* Cinematic Beziers */
+    --ease-sota: cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 /* Base Zen Styles */
@@ -26,13 +34,19 @@
 body {
     background: var(--zen-bg);
     background-image: 
-        radial-gradient(circle at 50% -20%, var(--vibe-glow), transparent 60%),
-        radial-gradient(circle at 0% 0%, hsla(230, 25%, 10%, 0.5), transparent 40%);
+        radial-gradient(circle at 10% 20%, var(--vibe-glow), transparent 50%),
+        radial-gradient(circle at 90% 80%, hsla(230, 100%, 20%, 0.15), transparent 40%);
     color: var(--text-primary);
     font-family: var(--font-ui);
     height: 100vh;
     overflow: hidden;
-    transition: background 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background 1.5s var(--ease-sota), color 0.5s ease;
+    animation: slowMeshPulse 12s infinite alternate var(--ease-sota);
+}
+
+@keyframes slowMeshPulse {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
 }
 
 #sovereign-hud {
@@ -57,8 +71,8 @@ body {
 .separator { width: 1px; height: 12px; background: var(--zen-border); }
 
 .hud-label { font-size: 0.55rem; color: var(--text-secondary); font-weight: 700; }
-.hud-value { font-family: var(--font-code); font-size: 0.8rem; color: var(--text-primary); }
-.hud-value.small { font-size: 0.7rem; }
+.hud-value { font-family: var(--font-code); font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+.hud-value.small { font-size: 0.9rem; }
 
 .hud-right { font-size: 0.65rem; color: var(--text-secondary); }
 
@@ -93,12 +107,107 @@ body {
     scrollbar-color: var(--zen-border) transparent;
 }
 
-.message { margin-bottom: 2.5rem; animation: fadeIn 0.3s ease-out; }
-.meta { font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.8rem; }
+.message { margin-bottom: 2rem; animation: fadeIn 0.25s ease-out; position: relative; }
+.meta { font-size: 0.68rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.8rem; }
+.meta-role { font-weight: 600; letter-spacing: 0.02rem; }
 .buddy-entry .meta { color: var(--vibe-color); }
 .user-entry .meta { justify-content: flex-end; }
-.content { font-size: 1rem; line-height: 1.5; font-weight: 400; color: var(--text-primary); }
-.user-entry .content { text-align: right; opacity: 0.8; }
+
+/* User message bubble */
+.user-entry .content {
+    background: hsla(230, 40%, 12%, 0.6);
+    border-radius: 16px 16px 4px 16px;
+    padding: 0.85rem 1.1rem;
+    text-align: right;
+    float: right;
+    clear: both;
+    max-width: 85%;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--text-primary);
+    opacity: 0.9;
+}
+
+/* Buddy message bubble */
+.buddy-entry .content {
+    background: hsla(200, 20%, 8%, 0.5);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--zen-border);
+    border-left: 2px solid var(--vibe-color);
+    border-radius: 4px 16px 16px 16px;
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--text-primary);
+    overflow-x: auto;
+}
+
+/* Markdown content styles inside .content */
+.content h1, .content h2, .content h3 { font-family: var(--font-ui); font-weight: 600; margin: 1.2rem 0 0.5rem; color: var(--text-primary); }
+.content h1 { font-size: 1.2rem; }
+.content h2 { font-size: 1.05rem; }
+.content h3 { font-size: 0.95rem; color: var(--vibe-color); }
+.content p { margin: 0.5rem 0; }
+.content ul, .content ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+.content li { margin-bottom: 0.3rem; line-height: 1.5; }
+.content strong { color: var(--text-primary); font-weight: 600; }
+.content em { color: var(--text-secondary); font-style: italic; }
+.content a { color: var(--vibe-color); text-decoration: underline; text-underline-offset: 2px; }
+.content blockquote {
+    border-left: 3px solid var(--vibe-color);
+    margin: 0.8rem 0;
+    padding: 0.5rem 1rem;
+    background: hsla(200, 20%, 5%, 0.4);
+    border-radius: 0 8px 8px 0;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+.content pre {
+    background: hsla(230, 25%, 5%, 0.8);
+    border: 1px solid var(--zen-border);
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+.content code {
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    background: hsla(230, 25%, 10%, 0.6);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    color: var(--accent-cyan);
+}
+.content pre code {
+    background: none;
+    padding: 0;
+    color: var(--text-primary);
+}
+
+/* Copy button */
+.copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 28px;
+    height: 28px;
+    background: var(--zen-surface);
+    border: 1px solid var(--zen-border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease;
+}
+.copy-btn svg { width: 13px; height: 13px; }
+.message:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { background: var(--vibe-color); color: var(--zen-bg); border-color: var(--vibe-color); }
 
 /* Sovereign Promptbar (Rule 7: UX Supremacy) */
 .promptbar-floating {
@@ -112,10 +221,7 @@ body {
     transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Compensate for North Star Panel */
-.zen-container:has(#north-star-dashboard:not(.hidden)) .promptbar-floating {
-    left: calc(50% - 160px);
-}
+
 
 .promptbar-glass {
     background: hsla(230, 25%, 2%, 0.7);
@@ -258,6 +364,51 @@ body.atmosphere-critical { --vibe-color: var(--accent-crimson); --vibe-glow: hsl
 }
 .handover-title { font-size: 1rem; letter-spacing: 0.3rem; margin-bottom: 0.5rem; opacity: 0.9; }
 .handover-msg { font-size: 0.8rem; color: var(--text-secondary); }
+
+/* Thinking pulse animation */
+.thinking-pulse {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 1rem;
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0.7;
+}
+
+.thinking-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.thinking-dots span {
+    width: 5px;
+    height: 5px;
+    background: var(--vibe-color);
+    border-radius: 50%;
+    animation: thinkBounce 1.2s ease-in-out infinite;
+}
+
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+.thinking-label {
+    font-family: var(--font-code);
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.03rem;
+}
+
+@keyframes thinkBounce {
+    0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 0.7; transform: translateY(0); }
+}
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .hidden { display: none !important; }
@@ -447,7 +598,7 @@ body.atmosphere-critical { --vibe-color: var(--accent-crimson); --vibe-glow: hsl
 }
 
 .ns-footer {
-    padding: 1rem 1.5rem;
+    padding: 1.5rem 1.5rem 2.5rem 1.5rem;
     border-top: 1px solid var(--zen-border);
 }
 
@@ -478,4 +629,64 @@ body.atmosphere-critical { --vibe-color: var(--accent-crimson); --vibe-glow: hsl
 @keyframes slideInRight {
     from { transform: translateX(100%); }
     to { transform: translateX(0); }
+}
+
+/* Premium Select Styling for North Star */
+.ns-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: hsla(230, 25%, 15%, 0.4);
+    border: 1px solid var(--zen-border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    padding: 0.5rem;
+    font-family: var(--font-code);
+    font-size: 0.9rem;
+    width: 100%;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+    outline: none;
+}
+.ns-select:hover {
+    background: hsla(230, 25%, 25%, 0.6);
+    border-color: var(--vibe-color);
+}
+.ns-select:focus {
+    box-shadow: 0 0 10px hsla(190, 90%, 60%, 0.3);
+    border-color: var(--vibe-color);
+}
+.ns-select option {
+    background: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+/* Model Picker chip in promptbar */
+.model-picker-chip {
+    appearance: none;
+    -webkit-appearance: none;
+    background: hsla(230, 25%, 10%, 0.5);
+    border: 1px solid var(--zen-border);
+    border-radius: 6px;
+    color: var(--vibe-color);
+    padding: 0.15rem 0.5rem;
+    font-family: var(--font-code);
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.04rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    text-transform: uppercase;
+}
+.model-picker-chip:hover {
+    background: hsla(230, 25%, 18%, 0.7);
+    border-color: var(--vibe-color);
+}
+.model-picker-chip option {
+    background: hsl(230, 25%, 5%);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    text-transform: none;
+    letter-spacing: 0;
 }

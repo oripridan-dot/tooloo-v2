@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TooLoo V4 Sovereign Dashboard — autonomous AI orchestration hub powered by Buddy.">
     <title>TooLoo V4 | Sovereign Dashboard</title>
     <link rel="stylesheet" href="./style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
 </head>
 <body class="sovereign-v4">
     <!-- Sovereign HUD (Rule 2/16: Real-time Awareness) -->
@@ -49,23 +52,29 @@
                     <div id="handover-track" class="handover-track hidden">
                         <div id="handover-progress" class="handover-progress-fill"></div>
                     </div>
-                    
+
                     <div class="promptbar-inner">
                         <div class="promptbar-status-pulse">
                             <div id="input-dynamics" class="status-chip">DYNAMICS_READY</div>
                             <div id="active-mission-id" class="status-chip hidden">MISSION: NONE</div>
+                            <!-- Model picker -->
+                            <select id="model-picker" class="model-picker-chip" title="Select Buddy's reasoning model">
+                                <option value="gemini-2.5-pro-exp-03-25">2.5 Pro ✦</option>
+                                <option value="gemini-2.0-flash">2.0 Flash</option>
+                                <option value="gemini-flash-latest">Flash Lite</option>
+                            </select>
                         </div>
-                        
+
                         <div class="input-wrapper">
                             <textarea id="chat-input" placeholder="Issue a sovereign mandate..." rows="1" spellcheck="false"></textarea>
-                            <button id="send-btn" class="send-trigger-v2">
+                            <button id="send-btn" class="send-trigger-v2" title="Send (Enter)">
                                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Path Selection Overlay (Rule 7: Choice UX) -->
                     <div id="path-selection-overlay" class="path-selection-overlay hidden">
                         <header class="overlay-hdr">SELECT ARCHITECTURAL PATH</header>
@@ -74,7 +83,7 @@
                 </div>
             </div>
         </section>
-        
+
         <!-- North Star Dashboard (Rule 1: Autonomous Planner UI) -->
         <aside id="north-star-dashboard" class="north-star-panel">
             <header class="ns-header">
@@ -85,25 +94,35 @@
                     </svg>
                 </button>
             </header>
-            
+
             <div class="ns-content">
                 <div class="ns-section">
                     <label>MACRO_GOAL</label>
-                    <div id="ns-macro-goal" class="ns-value editable" contenteditable="true">Initial Mission</div>
+                    <select id="ns-macro-goal" class="ns-value ns-select">
+                        <option value="Initial Mission">Initial Mission</option>
+                        <option value="Architectural Overhaul">Architectural Overhaul</option>
+                        <option value="Cognitive Deepening">Cognitive Deepening</option>
+                        <option value="System Manifestation">System Manifestation</option>
+                    </select>
                 </div>
-                
+
                 <div class="ns-section highlighted">
                     <label>CURRENT_FOCUS</label>
-                    <div id="ns-current-focus" class="ns-value editable" contenteditable="true">System Setup</div>
+                    <select id="ns-current-focus" class="ns-value ns-select glow-text">
+                        <option value="System Setup">System Setup</option>
+                        <option value="UX/UI Polish">UX/UI Polish</option>
+                        <option value="Memory Compilation">Memory Compilation</option>
+                        <option value="SOTA Alignment">SOTA Alignment</option>
+                    </select>
                 </div>
-                
+
                 <div class="ns-section">
                     <label>THE_ROADMAP</label>
                     <ul id="ns-micro-goals" class="ns-list">
                         <!-- Goals populated here -->
                     </ul>
                 </div>
-                
+
                 <div class="ns-section">
                     <label>MILESTONES</label>
                     <ul id="ns-milestones" class="ns-list dimmed">
@@ -111,12 +130,12 @@
                     </ul>
                 </div>
             </div>
-            
+
             <footer class="ns-footer">
                 <div id="ns-sync-status" class="syncing">SYNCING...</div>
             </footer>
         </aside>
-        
+
         <!-- Manifestation Sandbox (Rule 7: Real-time Visualization) -->
         <div id="manifestation-sandbox" class="manifestation-overlay hidden">
             <div class="sandbox-hdr">
@@ -137,7 +156,6 @@
             <p class="handover-msg">Migrating Psyche to Cloud Hub...</p>
         </div>
     </div>
-
 
     <!-- Template for SOTA Shards -->
     <template id="sota-shard">

@@ -1,23 +1,36 @@
-/**
- * WHO: TooLoo V4 (Sovereign Architect)
- * WHAT: DASHBOARD_LOGIC_V4 | Version: 1.5.0
- * WHERE: tooloo_v4_hub/portal/app.js
- * WHY: Rule 7/16 - Async Mission Telemetry and Path Selection Choice cards
- * PURITY: 1.00
- */
-
+// Always route to the Sovereign Cloud backend.
+const CLOUD_URL = "https://buddys-chat-gru3xdvw6a-zf.a.run.app";
 const config = {
-    // Rule 18: Cloud-Native Mandate. Mac is the Portal; Hub is the Brain.
-    apiHost: "http://localhost:8080", 
-    sovereignKey: "SOVEREIGN_HUB_2026_V3"
+    sovereignKey: "SOVEREIGN_HUB_2026_V3",
+    apiHost: CLOUD_URL,
 };
 
 let socket = null;
+
+// Configure marked.js for safe rendering
+if (typeof marked !== 'undefined') {
+    marked.setOptions({
+        breaks: true,       // \n → <br>
+        gfm: true,          // GitHub Flavored Markdown
+        headerIds: false,   // No anchor IDs (XSS safe)
+        mangle: false
+    });
+}
+
+function renderMarkdown(text) {
+    if (typeof marked === 'undefined') return text;
+    try {
+        return marked.parse(text);
+    } catch (e) {
+        return text;
+    }
+}
 
 const dom = {
     stream: document.getElementById('chat-messages'),
     input: document.getElementById('chat-input'),
     sendBtn: document.getElementById('send-btn'),
+    modelPicker: document.getElementById('model-picker'),
     weave: document.getElementById('shard-tray'),
     sandbox: {
         panel: document.getElementById('manifestation-sandbox'),
@@ -74,6 +87,8 @@ let isProcessing = false;
 let typingQueue = [];
 let isTyping = false;
 let currentStreamingMessage = null;
+let streamingText = '';  // accumulates raw text during streaming
+let userScrolledUp = false;  // scroll-lock flag
 
 // --- SOTA UX Telemetry (Rule 7/16) ---
 class UXTelemetry {
@@ -276,9 +291,7 @@ let wsReconnectAttempts = 0;
 const MAX_RECONNECT_DELAY = 30000;
 
 function initWebSocket() {
-    const cloudHost = config.apiHost.replace("https://", "").replace("http://", "");
-    const wsProtocol = config.apiHost.includes("localhost") ? "ws://" : "wss://";
-    const wsUrl = `${wsProtocol}${cloudHost}/ws`;
+    const wsUrl = CLOUD_URL.replace('https://', 'wss://') + '/ws';
     console.log("Sovereign Nexus: Unified WebSocket connecting to", wsUrl);
     socket = new WebSocket(wsUrl);
 
@@ -349,7 +362,7 @@ function handleSovereignEvent(data) {
         case "handover_ready":
             initiateCinematicHandover(data.payload);
             break;
-        case "NORTH_STAR_UPDATE":
+        case "north_star_update":
             handleNorthStarUpdate(data.payload);
             break;
         case "mission_start":
@@ -366,17 +379,16 @@ function handleSovereignEvent(data) {
         case "hub_sync":
             const sync = data.payload;
             if (sync.status === 'SOVEREIGN') {
-                dom.hud.node.innerText = sync.hub_id || "SOVEREIGN_NODE";
-                dom.hud.purity.innerText = (sync.purity || 1.0).toFixed(2);
-                dom.hud.purityGauge.style.width = `${(sync.purity || 1.0) * 100}%`;
+                if (dom.hud.node) dom.hud.node.innerText = sync.hub_id || "SOVEREIGN_NODE";
+                if (dom.hud.purity) dom.hud.purity.innerText = (sync.purity || 1.0).toFixed(2);
+                if (dom.hud.purityGauge) dom.hud.purityGauge.style.width = `${(sync.purity || 1.0) * 100}%`;
                 if (dom.hud.vitality) dom.hud.vitality.innerText = (sync.vitality || 1.0).toFixed(2);
-                if (sync.session_cost_usd !== undefined) {
+                if (sync.session_cost_usd !== undefined && dom.hud.cost) {
                     dom.hud.cost.innerText = `$${sync.session_cost_usd.toFixed(4)}`;
-                    if (sync.financial_vitality < 0.9) dom.hud.cost.style.color = 'var(--accent-crimson)';
-                    else dom.hud.cost.style.color = 'var(--text-primary)';
                 }
                 dom.hud.lamp.classList.add('online');
                 if (sync.shards) renderShardTray(sync.shards);
+                if (sync.north_star) handleNorthStarUpdate(sync.north_star);
             }
             break;
     }
@@ -387,17 +399,17 @@ function handleNorthStarUpdate(payload) {
     
     console.log("North Star: Synchronizing Trajectory...");
     
-    // Update Macro & Focus (if not currently focused by user)
+    // Update Macro & Focus (value for select dropdowns)
     if (document.activeElement !== dom.northStar.macro) {
-        dom.northStar.macro.innerText = payload.macro_goal;
+        dom.northStar.macro.value = payload.macro || payload.macro_goal;
     }
     if (document.activeElement !== dom.northStar.focus) {
-        dom.northStar.focus.innerText = payload.current_focus;
+        dom.northStar.focus.value = payload.focus || payload.current_focus;
     }
     
     // Update Roadmap
     dom.northStar.roadmap.innerHTML = '';
-    (payload.micro_goals || []).forEach(goal => {
+    (payload.roadmap || payload.micro_goals || []).forEach(goal => {
         const li = document.createElement('li');
         li.innerText = goal;
         dom.northStar.roadmap.appendChild(li);
@@ -405,7 +417,7 @@ function handleNorthStarUpdate(payload) {
     
     // Update Milestones
     dom.northStar.milestones.innerHTML = '';
-    (payload.completed_milestones || []).forEach(ms => {
+    (payload.milestones || payload.completed_milestones || []).forEach(ms => {
         const li = document.createElement('li');
         li.innerText = ms;
         dom.northStar.milestones.appendChild(li);
@@ -418,16 +430,17 @@ function handleNorthStarUpdate(payload) {
 
 function sendNorthStarManualUpdate() {
     const payload = {
-        macro_goal: dom.northStar.macro.innerText.trim(),
-        current_focus: dom.northStar.focus.innerText.trim()
+        macro: dom.northStar.macro.value,
+        focus: dom.northStar.focus.value
     };
     
     if (socket && socket.readyState === WebSocket.OPEN) {
         dom.northStar.status.innerText = "SYNCING...";
         dom.northStar.status.classList.add('syncing');
         socket.send(JSON.stringify({
-            type: "manual_north_star_update",
-            payload: payload
+            type: "north_star_intent",
+            macro: payload.macro,
+            focus: payload.focus
         }));
     }
 }
@@ -490,68 +503,42 @@ function handleBuddyToken(token) {
     if (!currentStreamingMessage) {
         currentStreamingMessage = createMessageElement('buddy');
         dom.stream.appendChild(currentStreamingMessage);
+        streamingText = '';
     }
-    
-    // Rule 7: Buffer tokens for gradual 'Human-Centric' display
-    for (const char of token) {
-        typingQueue.push(char);
-    }
-    
-    if (!isTyping) {
-        processTypingQueue();
-    }
+    streamingText += token;
+
+    // Real-time raw text display during streaming (no markdown yet — avoid partial parse flicker)
+    const content = currentStreamingMessage.querySelector('.content');
+    if (content) content.textContent = streamingText;
+
+    scrollIfNotLocked();
 }
 
 async function processTypingQueue() {
-    isTyping = true;
-    if (typingQueue.length === 0) {
-        isTyping = false;
-        return;
-    }
-
-    // Rule 7: Defensive selector check for industrial stability
-    if (!currentStreamingMessage) {
-        isTyping = false;
-        return;
-    }
-    const content = currentStreamingMessage.querySelector('.content');
-    if (!content) {
-        isTyping = false;
-        return;
-    }
-    
-    // Adaptive DOM update: dump chunks if we are falling behind
-    const chunkSize = typingQueue.length > 100 ? 10 : (typingQueue.length > 20 ? 5 : 1);
-    let chars = "";
-    for(let i=0; i<chunkSize; i++) {
-        if(typingQueue.length > 0) chars += typingQueue.shift();
-    }
-    
-    // Use textContent instead of innerText for major performance gain (no reflow)
-    content.textContent += chars;
-    dom.stream.scrollTop = dom.stream.scrollHeight;
-
-    // Rule 7: Leverage human cognition latency (Rhythmic Delay)
-    const baseDelay = typingQueue.length > 50 ? 2 : 15;
-    const delay = Math.random() * 10 + baseDelay; 
-    
-    setTimeout(processTypingQueue, delay);
+    // Legacy: kept for compatibility but not used with true streaming.
+    // Tokens now go directly to streamingText in handleBuddyToken.
+    isTyping = false;
 }
+
 
 function finalizeBuddyMessage(data) {
     if (currentStreamingMessage) {
-        // Enforce full response purity
+        // Render the full accumulated text as Markdown
         const content = currentStreamingMessage.querySelector('.content');
-        content.innerText = data.content; // Use Pydantic 'content' field
-        
-        // Add dynamics/metadata
+        if (content) {
+            content.innerHTML = renderMarkdown(data.content || streamingText);
+        }
+
         if (data.dynamics) {
             updateAtmosphere(data.dynamics);
             const meta = currentStreamingMessage.querySelector('.meta');
-            meta.innerText = `BUDDY | STAGE: ${data.dynamics.stage} | VS: ${data.dynamics.value_score.toFixed(2)}`;
+            if (meta) meta.querySelector('.meta-role').textContent =
+                `Buddy · ${new Date().toLocaleTimeString()}`;
         }
-        
-        // Handle Manifestations (Rule 7)
+
+        // Inject copy button
+        _attachCopyButton(currentStreamingMessage, data.content || streamingText);
+
         if (data.manifestation) {
             if (data.manifestation.type === 'path_selection') {
                 renderPathSelection(data.manifestation.content);
@@ -559,22 +546,42 @@ function finalizeBuddyMessage(data) {
                 renderSandbox(data.manifestation);
             }
         }
-        
+
+        streamingText = '';
         currentStreamingMessage = null;
     } else {
-        // Fallback for non-streamed responses
         appendMessage('buddy', data.content, data.dynamics);
     }
+    scrollIfNotLocked();
 }
 
 function createMessageElement(sender, text = '') {
     const msg = document.createElement('div');
     msg.className = `message ${sender}-entry`;
+    const isUser = sender === 'user';
     msg.innerHTML = `
-        <div class="meta">${sender.toUpperCase()}</div>
-        <div class="content">${text}</div>
+        <div class="meta">
+            <span class="meta-role">${isUser ? 'Architect' : 'Buddy'} · ${new Date().toLocaleTimeString()}</span>
+        </div>
+        <div class="content">${isUser ? text : (text ? renderMarkdown(text) : '')}</div>
     `;
     return msg;
+}
+
+function _attachCopyButton(msgEl, rawText) {
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.title = 'Copy';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
+    btn.onclick = () => {
+        navigator.clipboard.writeText(rawText).then(() => {
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+            setTimeout(() => {
+                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
+            }, 2000);
+        });
+    };
+    msgEl.appendChild(btn);
 }
 function renderPathSelection(options) {
     dom.paths.container.innerHTML = '';
@@ -654,17 +661,17 @@ function setupEventListeners() {
 
     // --- North Star Listeners ---
     if (dom.northStar.macro) {
-        dom.northStar.macro.onblur = () => sendNorthStarManualUpdate();
+        dom.northStar.macro.onchange = () => sendNorthStarManualUpdate();
     }
     if (dom.northStar.focus) {
-        dom.northStar.focus.onblur = () => sendNorthStarManualUpdate();
+        dom.northStar.focus.onchange = () => sendNorthStarManualUpdate();
     }
     if (dom.northStar.stashBtn) {
         dom.northStar.stashBtn.onclick = () => {
             appendMessage('user', "STASH_AND_PIVOT: Archiving current roadmap and clearing the deck for a new vector.");
             // Reset local UI for immediate feedback
-            dom.northStar.macro.innerText = "New Vector Origin";
-            dom.northStar.focus.innerText = "Recalibrating...";
+            dom.northStar.macro.value = "Initial Mission";
+            dom.northStar.focus.value = "System Setup";
             dom.northStar.roadmap.innerHTML = '';
             sendNorthStarManualUpdate();
         };
@@ -676,11 +683,14 @@ async function handleSendMessage() {
 
     appendMessage('user', text);
     dom.input.value = '';
-    dom.input.rows = 1;
+    dom.input.style.height = 'auto';
     startProcessing();
+    userScrolledUp = false;  // Resume auto-scroll on new send
+
+    const selectedModel = dom.modelPicker ? dom.modelPicker.value : 'gemini-2.5-pro-exp-03-25';
 
     if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: "user_chat", message: text }));
+        socket.send(JSON.stringify({ type: "user_chat", message: text, model: selectedModel }));
     } else {
         console.warn("WebSocket Unlinked. Falling back to REST Cognitive Pipeline...");
         try {
@@ -722,11 +732,19 @@ function showThinking(thought) {
     if (!currentThinkingBubble) {
         currentThinkingBubble = document.createElement('div');
         currentThinkingBubble.className = 'thinking-pulse';
-        // Insert right beneath the last message or at the bottom
         dom.stream.appendChild(currentThinkingBubble);
     }
-    currentThinkingBubble.innerText = `COGNITIVE_REASONING: ${thought}...`;
-    dom.stream.scrollTop = dom.stream.scrollHeight;
+    currentThinkingBubble.innerHTML = `
+        <span class="thinking-dots"><span></span><span></span><span></span></span>
+        <span class="thinking-label">${thought || 'Reasoning...'}</span>
+    `;
+    scrollIfNotLocked();
+}
+
+function scrollIfNotLocked() {
+    if (!userScrolledUp) {
+        dom.stream.scrollTop = dom.stream.scrollHeight;
+    }
 }
 
 function clearThinking() {
@@ -737,28 +755,26 @@ function clearThinking() {
 }
 
 function appendMessage(role, text, dynamics = null) {
-    const msg = document.createElement('div');
-    msg.className = `message ${role}-entry`;
-    
-    let dynamicsHtml = '';
-    if (dynamics) {
-        dynamicsHtml = `<span class="dynamics-badge">${dynamics.intent}</span>`;
+    const msg = createMessageElement(role, text);
+
+    if (role === 'buddy') {
+        _attachCopyButton(msg, text);
     }
 
-    msg.innerHTML = `
-        <div class="meta">
-            ${role === 'user' ? 'Architect' : 'Buddy'} 
-            <span>${new Date().toLocaleTimeString()}</span>
-            ${dynamicsHtml}
-        </div>
-        <div class="content">${text}</div>
-    `;
-
     dom.stream.appendChild(msg);
-    dom.stream.scrollTop = dom.stream.scrollHeight;
+    scrollIfNotLocked();
+}
+
+// --- Scroll Lock: pause auto-scroll when user scrolls up ---
+function initScrollLock() {
+    dom.stream.addEventListener('scroll', () => {
+        const atBottom = dom.stream.scrollTop + dom.stream.clientHeight >= dom.stream.scrollHeight - 40;
+        userScrolledUp = !atBottom;
+    });
 }
 
 // --- Initialization ---
 initWebSocket();
 startTelemetryPulse();
 setupEventListeners();
+initScrollLock();

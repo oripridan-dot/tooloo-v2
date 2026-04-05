@@ -1,8 +1,0 @@
-google-cloud-firestore
-google-cloud-aiplatform
-uvicorn
-fastapi
-pydantic
-asyncio
-numpy
-mcp[server]

@@ -1,35 +1,30 @@
-# 6W_STAMP
-# WHO: TooLoo V4 (Sovereign Architect)
-# WHAT: DOCKERFILE | Version: 1.0.0
-# WHERE: Dockerfile
-# WHY: Rule 18 Cloud-Native Mandate
-# HOW: Python 3.11-slim + Multi-Stage Prep
-# ==========================================================
-
 FROM python:3.11-slim
-
-# Rule 14: Infrastructure immunity - prevent bloated image
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONPATH /app
 
 WORKDIR /app
 
-# Install system dependencies (for potential C-extensions or tools)
+# OS deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
+    build-essential curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
+# Deps — single install from requirements only (no inline pip duplication)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code
+# Application code
 COPY . .
 
-# Rule 18: Cloud Run binds to $PORT
+# Non-root user — Cloud Run security best practice
+RUN useradd -m -u 1001 appuser && chown -R appuser:appuser /app
+USER appuser
+
+ENV PYTHONPATH=/app
+
+# Cloud Run port
 EXPOSE 8080
 
-# Mandatory 6W initialization on startup
-CMD ["python3", "-m", "tooloo_v4_hub.kernel.hub_api"]
+# Readiness probe — Cloud Run uses this to know when the container is healthy
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+CMD ["python", "tooloo_v4_hub/portal/sovereign_api.py"]

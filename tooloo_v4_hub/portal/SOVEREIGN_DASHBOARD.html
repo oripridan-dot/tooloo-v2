@@ -50,7 +50,6 @@
             letter-spacing: 1px;
             text-transform: uppercase;
             font-size: 12px;
-            box-shadow: 0 0 15px rgba(0, 255, 163, 0.2);
         }
 
         .grid {
@@ -85,68 +84,69 @@
             font-size: 48px;
             font-weight: 600;
             margin-bottom: 8px;
+            color: var(--accent);
         }
 
-        .svi-color { color: var(--accent); text-shadow: 0 0 20px rgba(123, 97, 255, 0.4); }
-        .purity-color { color: var(--success); text-shadow: 0 0 20px rgba(0, 255, 163, 0.4); }
-
-        .progress-bar {
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            margin-top: 20px;
-            overflow: hidden;
+        .label-dim {
+            font-size: 12px;
+            opacity: 0.5;
+            font-style: italic;
         }
 
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent), var(--success));
-            border-radius: 4px;
-            transition: width 1s ease-out;
+        .notice {
+            font-size: 11px;
+            color: var(--warning);
+            margin-top: 12px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 184, 0, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 184, 0, 0.05);
         }
 
-        .specialists {
-            grid-column: span 2;
-        }
-
-        .spec-list {
+        .model-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            margin-top: 16px;
+            gap: 10px;
+            margin-top: 12px;
         }
 
-        .spec-item {
+        .model-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.04);
             border-radius: 8px;
+            font-size: 13px;
         }
 
-        .spec-id { font-weight: 600; font-size: 14px; }
-        .spec-tier { 
-            font-size: 10px; 
-            background: var(--accent); 
-            padding: 2px 6px; 
-            border-radius: 4px; 
+        .model-tag {
+            font-size: 10px;
+            background: var(--accent);
+            padding: 2px 8px;
+            border-radius: 4px;
             text-transform: uppercase;
         }
 
-        .mission-log {
-             grid-column: span 3;
-        }
+        .full-row { grid-column: 1 / -1; }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
-            color: rgba(224, 224, 240, 0.8);
+            font-size: 13px;
         }
 
-        th { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); color: var(--accent); }
-        td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        th {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--accent);
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
 
         .pulse {
             width: 8px;
@@ -159,11 +159,10 @@
         }
 
         @keyframes pulse-animation {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 163, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 255, 163, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 163, 0); }
+            0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0,255,163,0.7); }
+            70%  { transform: scale(1);    box-shadow: 0 0 0 10px rgba(0,255,163,0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0,255,163,0); }
         }
-
     </style>
 </head>
 <body>
@@ -171,100 +170,142 @@
 <div class="dashboard">
     <header>
         <div>
-            <h1 style="margin: 0; font-weight: 600; font-size: 24px;">Sovereign Hub <span style="font-weight: 300; opacity: 0.5;">V4.2</span></h1>
-            <p style="margin: 4px 0 0 0; opacity: 0.6; font-size: 12px;">North Star Goal: Forge Foundational System Sovereignty</p>
+            <h1 style="margin: 0; font-weight: 600; font-size: 24px;">
+                Sovereign Hub <span style="font-weight: 300; opacity: 0.5;">Static Reference</span>
+            </h1>
+            <p style="margin: 4px 0 0 0; opacity: 0.6; font-size: 12px;">
+                Architecture overview — live metrics served by <code>sovereign_api.py /health</code>
+            </p>
         </div>
-        <div class="status-badge"><span class="pulse"></span> 1.00 PURE</div>
+        <div class="status-badge"><span class="pulse"></span> ARCHITECTURE REF</div>
     </header>
 
     <div class="grid">
-        <!-- SVI CARD -->
-        <div class="card">
-            <h2>Sovereign Vitality Index</h2>
-            <div class="big-value svi-color">0.9986</div>
-            <p style="opacity: 0.6; font-size: 12px;">Market Parity + Constitutional Purity</p>
-            <div class="progress-bar"><div class="progress-fill" style="width: 99.8%;"></div></div>
-        </div>
 
         <!-- PURITY CARD -->
         <div class="card">
-            <h2>Accountability Purity</h2>
-            <div class="big-value purity-color">1.00</div>
-            <p style="opacity: 0.6; font-size: 12px;">306 / 306 Nodes Verified (Rule 10)</p>
-            <div class="progress-bar"><div class="progress-fill" style="width: 100%; background: var(--success);"></div></div>
+            <h2>Constitutional Purity</h2>
+            <div class="big-value" style="color: var(--success);" id="purity-val">—</div>
+            <p class="label-dim">Fetch from <code>/health</code> → <code>purity</code></p>
+            <div class="notice">This field is set statically to 1.0 in the API until a real purity measurement is wired.</div>
         </div>
 
-        <!-- FINANCIAL CARD -->
+        <!-- VITALITY CARD -->
         <div class="card">
-            <h2>Sovereign Stewardship</h2>
-            <div class="big-value" style="color: var(--warning);">$ 0.0514</div>
-            <p style="opacity: 0.6; font-size: 12px;">Total Cloud Spend (Rule 14)</p>
-            <p style="font-size: 10px; color: var(--success); margin-top: 10px;">Efficiency: 98.4% (Non-Bloated)</p>
+            <h2>Vitality</h2>
+            <div class="big-value" id="vitality-val">—</div>
+            <p class="label-dim">Fetch from <code>/health</code> → <code>vitality</code></p>
+            <div class="notice">Currently always 1.0 — no real decay signal implemented.</div>
         </div>
 
-        <!-- SPECIALISTS -->
-        <div class="card specialists">
-            <h2>Sovereign Brain Specialists</h2>
-            <div class="spec-list">
-                <div class="spec-item">
-                    <span class="spec-id">Claude 3.5 Sonnet</span>
-                    <span class="spec-tier">Logic/Architect</span>
+        <!-- COST CARD -->
+        <div class="card">
+            <h2>Session Cost</h2>
+            <div class="big-value" style="color: var(--warning);" id="cost-val">—</div>
+            <p class="label-dim">Fetch from <code>/health</code> → <code>session_cost_usd</code></p>
+            <div class="notice">Cost tracking is not wired to a real billing API. Value shown is a placeholder.</div>
+        </div>
+
+        <!-- REGISTERED MODEL PROVIDERS -->
+        <div class="card">
+            <h2>Registered Model Providers</h2>
+            <div class="model-list">
+                <div class="model-item">
+                    <span>Gemini (via REST)</span>
+                    <span class="model-tag">Default</span>
                 </div>
-                <div class="spec-item">
-                    <span class="spec-id">Gemini 1.5 Pro</span>
-                    <span class="spec-tier" style="background: #4285f4;">Context/Audit</span>
+                <div class="model-item">
+                    <span>Claude (via Anthropic Vertex)</span>
+                    <span class="model-tag" style="background: #6e48aa;">Vertex</span>
                 </div>
-                <div class="spec-item">
-                    <span class="spec-id">GPT-4o</span>
-                    <span class="spec-tier" style="background: #19c37d;">Vision/Creative</span>
+                <div class="model-item">
+                    <span>DeepSeek (via Vertex MaaS)</span>
+                    <span class="model-tag" style="background: #333;">MaaS</span>
                 </div>
-                <div class="spec-item" style="border-bottom: none;">
-                    <span class="spec-id">Llama 3.3 70B</span>
-                    <span class="spec-tier" style="background: #333;">Reasoning/Logistics</span>
+                <div class="model-item">
+                    <span>Llama 4 (via Vertex MaaS)</span>
+                    <span class="model-tag" style="background: #1a3a5c;">MaaS</span>
                 </div>
             </div>
         </div>
 
-        <!-- MISSION LOG -->
-        <div class="card mission-log">
-            <h2>Recent Forensic Audit History</h2>
+        <!-- KERNEL MODULES -->
+        <div class="card full-row">
+            <h2>Kernel Modules</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Provider</th>
-                        <th>Model</th>
-                        <th>Tokens</th>
-                        <th>Cost</th>
+                        <th>Module</th>
+                        <th>Path</th>
+                        <th>Role</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Anthropic</td>
-                        <td>Claude 3.5 Sonnet</td>
-                        <td>4096</td>
-                        <td>$ 0.0123</td>
-                        <td style="color: var(--success);">PASS</td>
+                        <td>ContinuousMegaDAG</td>
+                        <td><code>src/tooloo/core/mega_dag.py</code></td>
+                        <td>Core async orchestrator</td>
+                        <td style="color: var(--success);">ACTIVE</td>
                     </tr>
                     <tr>
-                        <td>Google</td>
-                        <td>Gemini 1.5 Pro</td>
-                        <td>8192</td>
-                        <td>$ 0.0287</td>
-                        <td style="color: var(--success);">PASS</td>
+                        <td>ModelRouter</td>
+                        <td><code>src/tooloo/core/llm.py</code></td>
+                        <td>Multi-provider LLM dispatch</td>
+                        <td style="color: var(--success);">ACTIVE</td>
                     </tr>
                     <tr>
-                        <td>OpenAI</td>
-                        <td>GPT-4o</td>
-                        <td>2048</td>
-                        <td>$ 0.0102</td>
-                        <td style="color: var(--success);">PASS</td>
+                        <td>BuddyOperator</td>
+                        <td><code>src/tooloo/core/buddy.py</code></td>
+                        <td>Contextual story weaver</td>
+                        <td style="color: var(--success);">ACTIVE</td>
+                    </tr>
+                    <tr>
+                        <td>ReflectionOperator</td>
+                        <td><code>src/tooloo/core/mega_dag.py</code></td>
+                        <td>Post-execution LLM reflection</td>
+                        <td style="color: var(--success);">ACTIVE</td>
+                    </tr>
+                    <tr>
+                        <td>ToolooOperator</td>
+                        <td><code>src/tooloo/core/mega_dag.py</code></td>
+                        <td>TooLoo subprocess integration</td>
+                        <td style="color: var(--warning);">STUB — not implemented</td>
+                    </tr>
+                    <tr>
+                        <td>SandboxFS Tools</td>
+                        <td><code>src/tooloo/tools/core_fs.py</code></td>
+                        <td>Zero-trust sandboxed I/O</td>
+                        <td style="color: var(--success);">ACTIVE</td>
+                    </tr>
+                    <tr>
+                        <td>MCP Chat Server</td>
+                        <td><code>src/tooloo/core/chat.py</code></td>
+                        <td>Human intent injection</td>
+                        <td style="color: var(--success);">ACTIVE</td>
                     </tr>
                 </tbody>
             </table>
         </div>
+
     </div>
 </div>
+
+<script>
+    // Fetch live health on load and populate the dashboard
+    async function fetchHealth() {
+        try {
+            const res = await fetch('/health');
+            const data = await res.json();
+            document.getElementById('purity-val').textContent = (data.purity ?? '—').toFixed ? data.purity.toFixed(2) : data.purity;
+            document.getElementById('vitality-val').textContent = (data.vitality ?? '—').toFixed ? data.vitality.toFixed(2) : data.vitality;
+            document.getElementById('cost-val').textContent = data.session_cost_usd != null ? `$${data.session_cost_usd.toFixed(4)}` : 'N/A';
+        } catch(e) {
+            console.warn('Health fetch failed (API not running?):', e);
+        }
+    }
+    fetchHealth();
+</script>
 
 </body>
 </html>

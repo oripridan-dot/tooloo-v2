@@ -1,35 +1,56 @@
-# TooLoo V4: Sovereign Hub (Galactic Enclave)
+# TooLoo V4: Sovereign Hub
 
-Welcome to the **Sovereign Galactic** architecture. This repository represents the total transition of the TooLoo brain to a cloud-native, high-fidelity intelligence engine.
+Autonomous intelligence engine built on a **Continuous Mega DAG** orchestrator with multi-provider LLM routing (Gemini, Claude via Vertex, DeepSeek, Llama 4).
 
-## 🏛️ Architecture: Galactic Enclave (V4.2)
+## Architecture
 
-The TooLoo V4 system is divided into a **Cloud-Native Hub** and a **Sovereign Portal**.
+```
+src/tooloo/
+  core/
+    mega_dag.py    # ContinuousMegaDAG — async event-loop orchestrator
+    llm.py         # ModelRouter — multi-provider LLM dispatch
+    buddy.py       # BuddyOperator — contextual story weaver
+    chat.py        # MCP Chat Server — human intent injection
+  tools/
+    core_fs.py     # Sandboxed filesystem tools (zero-trust /tmp/tooloo_sandbox)
+  orchestrator.py  # Entry point: ignite the DAG from CLI
 
-### 1. The Cloud Hub (`tooloo_v4_hub/`)
-The Permanent Brain residing in **GCP Cloud Run**.
-- **Kernel**: Stateless reasoning, cognitive triangulation, and mission orchestration.
-- **Organs**: Federated services (Memory, Audio, Reasoning) tethered via secure MCP/REST.
-- **Purity**: 1.00 Constitutional alignment with Rule 18 (Cloud-Native Mandate).
-
-### 2. The Sovereign Portal (`portal/`)
-Your local high-fidelity interface (Mac M1) for sync and monitoring.
-- **WebSocket Streaming**: Real-time telemetry, 6W-stamped cognitive reasoning, and SVI monitoring.
-- **Glassmorphic HUD**: Premium visibility into Hub vitality and financial stewardship.
-
-## 🚀 Sovereign Portal Setup
-
-Launch the local portal to tether to the Galactic Hub:
-
-```bash
-# From the project root
-python run_tooloo.py
+tooloo_v4_hub/portal/
+  sovereign_api.py  # FastAPI server: WebSocket + REST hub
+  index.html        # Main portal UI
+  app.js            # Portal frontend logic
+  style.css         # Portal styles
+  SOVEREIGN_DASHBOARD.html  # Architecture reference + live health fetch
 ```
 
-External Hub: [https://tooloo-v4-hub-gru3xdvw6a-uc.a.run.app](https://tooloo-v4-hub-gru3xdvw6a-uc.a.run.app)
+## Running
 
-## 📜 The Sovereign Constitution (12 Rules)
-Refer to [GEMINI.md](GEMINI.md) for the mandatory operational discipline of the Hub.
+```bash
+# Default RULE0 audit mission
+uv run python3 src/tooloo/orchestrator.py
 
----
-**Purity Index**: 1.00 | **Vitality**: SOVEREIGN | **Status**: Manifested
+# Custom mission goal
+uv run python3 src/tooloo/orchestrator.py --goal "your mission here"
+
+# MCP Chat mode (stdio transport)
+uv run python3 src/tooloo/orchestrator.py --mcp
+
+# Portal (WebSocket + REST + UI)
+uv run python3 tooloo_v4_hub/portal/sovereign_api.py
+# Then open http://localhost:8080
+```
+
+## Environment Variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `GEMINI_API_KEY` | required | Gemini REST API key |
+| `GOOGLE_CLOUD_PROJECT` | `too-loo-zi8g7e` | GCP project for Vertex |
+| `GOOGLE_CLOUD_LOCATION` | `me-west1` | Vertex region |
+| `BUDDY_MODEL` | `gemini-flash-latest` | Model used by BuddyOperator |
+
+## Constitution
+
+See [GEMINI.md](GEMINI.md) — **2 rules**:
+- **Rule 0**: Brutal Honesty (10 verbatim Claude Code enforcement clauses)
+- **Rule 1**: Additive Development (8 principles)
